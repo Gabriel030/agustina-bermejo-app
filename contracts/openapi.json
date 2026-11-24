@@ -5843,6 +5843,12 @@
       },
       "CurriculumBlockingPrerequisiteResponse" : {
         "properties" : {
+          "approvedScore" : {
+            "type" : [ "number", "null" ]
+          },
+          "minGrade" : {
+            "type" : [ "number", "null" ]
+          },
           "requirementType" : {
             "enum" : [ "APPROVED", "PASSED_COURSEWORK" ],
             "type" : "string"
@@ -5862,7 +5868,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "requirementType", "standing", "subjectCode", "subjectId", "subjectName" ],
+        "required" : [ "approvedScore", "minGrade", "requirementType", "standing", "subjectCode", "subjectId", "subjectName" ],
         "type" : "object"
       },
       "CurriculumCorequisiteResponse" : {

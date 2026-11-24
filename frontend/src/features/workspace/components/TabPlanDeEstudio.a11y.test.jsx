@@ -34,7 +34,7 @@ function subject(overrides) {
   };
 }
 
-const algebra = { subjectId: 10, subjectCode: 'MAT101', subjectName: 'Matemática I', requirementType: 'APPROVED', standing: 'NOT_TAKEN' };
+const algebra = { subjectId: 10, subjectCode: 'MAT101', subjectName: 'Matemática I', requirementType: 'APPROVED', standing: 'NOT_TAKEN', minGrade: null, approvedScore: null };
 
 const subjects = [
   subject(),

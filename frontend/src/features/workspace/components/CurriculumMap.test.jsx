@@ -30,7 +30,7 @@ function subject(overrides) {
   };
 }
 
-const prerequisiteOfAnalysis = { subjectId: 10, subjectCode: 'MAT101', subjectName: 'Matemática I', requirementType: 'APPROVED', standing: 'NOT_TAKEN' };
+const prerequisiteOfAnalysis = { subjectId: 10, subjectCode: 'MAT101', subjectName: 'Matemática I', requirementType: 'APPROVED', standing: 'NOT_TAKEN', minGrade: null, approvedScore: null };
 
 const plan = [
   subject({ programSubjectId: 1, state: 'IN_PROGRESS', finalScore: null, currentEnrollmentId: 77 }),

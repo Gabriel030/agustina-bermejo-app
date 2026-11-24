@@ -97,7 +97,7 @@ describe('TabPlanDeEstudio', () => {
           subjectName: 'Matemática II',
           state: 'BLOCKED',
           finalScore: null,
-          blockedBy: [{ subjectId: 12, subjectCode: 'MAT100', subjectName: 'Álgebra', requirementType: 'APPROVED', standing: 'NOT_TAKEN' }],
+          blockedBy: [{ subjectId: 12, subjectCode: 'MAT100', subjectName: 'Álgebra', requirementType: 'APPROVED', standing: 'NOT_TAKEN', minGrade: null, approvedScore: null }],
         }),
       ]),
     );
@@ -180,7 +180,7 @@ describe('TabPlanDeEstudio', () => {
           subjectName: 'Matemática II',
           state: 'BLOCKED',
           finalScore: null,
-          blockedBy: [{ subjectId: 12, subjectCode: 'MAT100', subjectName: 'Álgebra', requirementType: 'APPROVED', standing: 'REGULAR' }],
+          blockedBy: [{ subjectId: 12, subjectCode: 'MAT100', subjectName: 'Álgebra', requirementType: 'APPROVED', standing: 'REGULAR', minGrade: null, approvedScore: null }],
         }),
       ]),
     );
