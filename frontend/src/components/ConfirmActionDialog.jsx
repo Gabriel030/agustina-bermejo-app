@@ -18,6 +18,7 @@ export default function ConfirmActionDialog({
   pending = false,
   confirmVariant = 'destructive',
   confirmDisabled = false,
+  cancelLabel = 'Cancelar',
   buttonClassName,
   children,
   onConfirm,
@@ -39,7 +40,7 @@ export default function ConfirmActionDialog({
         <AlertDialogFooter>
           <AlertDialogCancel asChild>
             <Button variant="outline" className={buttonClassName} disabled={pending}>
-              Cancelar
+              {cancelLabel}
             </Button>
           </AlertDialogCancel>
           <Button variant={confirmVariant} className={buttonClassName} loading={pending} disabled={confirmDisabled} onClick={onConfirm}>
