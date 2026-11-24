@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { AlertTriangle, Ban, Check, Info, Minus, RefreshCw, Search, Undo2, WifiOff } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { AlertTriangle, Ban, Check, ChevronDown, ChevronLeft, Download, Info, Minus, RefreshCw, Search, Undo2, WifiOff } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
@@ -17,7 +17,19 @@ import { attendancePercentToPoints } from '@/lib/attendancePercent';
 import { StatusPill } from '@/components/StatusPill';
 import { TabCount } from '@/components/TabCount';
 import { MisPedidosDeAsistencia } from '@/features/attendance/components/MisPedidosDeAsistencia';
-import { findPendingRequestForAttendance, pendingRequestCount, requestHref } from '@/features/attendance/lib/attendanceRequests';
+import {
+  attendanceHref,
+  findPendingRequestForAttendance,
+  ordersHref,
+  pendingRequestCount,
+  pendingRequestsLabel,
+  requestHref,
+  sectionParamOf,
+  sectionParamOfRequest,
+} from '@/features/attendance/lib/attendanceRequests';
+import { ExportAttendanceDialog } from '@/features/attendance/components/ExportAttendanceDialog';
+import { EXPORT_SCOPES } from '@/features/attendance/lib/exportScopes';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
 import { AttendanceStudentRow } from '@/features/attendance/components/AttendanceStudentRow';
 import { AttendanceSummaryCard } from '@/features/attendance/components/AttendanceSummaryCard';
@@ -35,24 +47,7 @@ import {
   useHistorialAsistencia,
   useReporteAusencias,
   useMisPedidosDeAsistencia,
-  exportarAsistencia,
 } from '@/features/attendance/hooks/useDocenteAsistencia';
-
-const NOMBRE_MES = new Intl.DateTimeFormat('es-AR', { month: 'long', year: 'numeric' });
-
-function agruparFechasPorMes(fechas) {
-  const grupos = new Map();
-  for (const fecha of fechas) {
-    const mes = fecha.slice(0, 7);
-    if (!grupos.has(mes)) grupos.set(mes, []);
-    grupos.get(mes).push(fecha);
-  }
-  return [...grupos.entries()].map(([mes, fechasDelMes]) => ({
-    mes,
-    etiqueta: NOMBRE_MES.format(new Date(`${mes}-02T00:00:00`)),
-    fechas: fechasDelMes,
-  }));
-}
 
 const CLASS_DATE_LABEL = new Intl.DateTimeFormat('es-AR', { day: 'numeric', month: 'long' });
 
@@ -408,7 +403,7 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
             Pedido #{returnRequest.id} rechazado: clase del {formatDate(returnRequest.classDate)}, {returnRequest.studentName}.
             {returnRequest.rejectionReason ? ` Motivo: ${returnRequest.rejectionReason}` : ''} Podés volver a pedir el cambio.
           </span>
-          <Link to="/docente/tomar-asistencia?tab=pedidos" className="font-bold text-brand hover:underline">Volver a Mis pedidos</Link>
+          <Link to={ordersHref(`${type}-${sectionId}`)} className="font-bold text-brand hover:underline">Volver a Mis pedidos</Link>
         </div>
       )}
       <GlassCard className="flex flex-col gap-3 p-4">
@@ -527,7 +522,7 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
             {pendingRequest ? (
               <>
                 <StatusPill tone="warning">Pedido pendiente</StatusPill>
-                <Link to={requestHref(pendingRequest.id)} className="text-size-13 font-bold text-brand hover:underline">
+                <Link to={requestHref(pendingRequest.id, `${type}-${sectionId}`)} className="text-size-13 font-bold text-brand hover:underline">
                   Ver pedido #{pendingRequest.id}
                 </Link>
               </>
@@ -742,123 +737,134 @@ function TabReporteDeAsistencia({ type, sectionId }) {
   );
 }
 
-function TabExportar({ type, sectionId }) {
-  const { data: historial } = useHistorialAsistencia(type, sectionId);
-  const [scope, setScope] = useState('class');
-  const [format, setFormat] = useState('pdf');
-  const [anioFiltro, setAnioFiltro] = useState('');
-  const [classDate, setClassDate] = useState('');
-  const [exportando, setExportando] = useState(false);
+const VIEW_ALIASES = { asistencia: 'pasar-lista', exportar: 'pasar-lista' };
+const VIEWS = ['pasar-lista', 'historial', 'reporte'];
+const SCOPE_BY_VIEW = { 'pasar-lista': 'class', historial: 'history', reporte: 'absence-report' };
+const TAB_LIST_CLASS = 'group-data-horizontal/tabs:h-auto';
+const TAB_TRIGGER_CLASS = 'min-h-11';
 
-  const anios = useMemo(
-    () => [...new Set((historial?.classDates ?? []).map((f) => f.slice(0, 4)))].sort(),
-    [historial],
-  );
-  // Con carreras de varios años elegir el año primero evita mostrar de una las 300+
-  // clases de toda la comisión — mismo criterio que el filtro de Reporte de asistencia.
-  const fechasDelAnio = useMemo(
-    () => (historial?.classDates ?? []).filter((f) => f.startsWith(anioFiltro)),
-    [historial, anioFiltro],
-  );
-  const gruposPorMes = useMemo(() => agruparFechasPorMes(fechasDelAnio), [fechasDelAnio]);
+function exportDisabledReason({ ordersOpen, section, historyLoading, hasClasses }) {
+  if (ordersOpen) return 'Elegí Pasar lista, Historial o Reporte para exportar';
+  if (!section) return 'Elegí una comisión para exportar';
+  if (historyLoading) return 'Cargando clases…';
+  if (!hasClasses) return 'Todavía no diste ninguna clase';
+  return null;
+}
 
-  useEffect(() => {
-    if (!anioFiltro && anios.length) setAnioFiltro(anios[anios.length - 1]);
-  }, [anios, anioFiltro]);
-
-  useEffect(() => {
-    if (fechasDelAnio.length && !fechasDelAnio.includes(classDate)) {
-      setClassDate(fechasDelAnio[fechasDelAnio.length - 1]);
-    }
-  }, [fechasDelAnio, classDate]);
-
-  async function exportar() {
-    setExportando(true);
-    try {
-      await exportarAsistencia(type, sectionId, { format, scope, classDate: scope === 'class' ? classDate : undefined });
-    } finally {
-      setExportando(false);
-    }
-  }
+function AttendanceHeaderActions({ ordersOpen, ordersLink, pendingCount, activeScope, disabledReason, onExport, ordersRef, exportRef }) {
+  const exportDisabled = disabledReason !== null;
+  const scopes = Object.keys(EXPORT_SCOPES).sort((a, b) => (b === activeScope) - (a === activeScope));
+  const blockWhenDisabled = (event) => {
+    if (exportDisabled) event.preventDefault();
+  };
 
   return (
-    <div className="flex flex-col gap-4 pt-4">
-      <GlassCard className="flex flex-col gap-3 p-4">
-        <div className="font-heading text-size-14 font-semibold text-ink">¿Qué desea exportar?</div>
-        <Select value={scope} onValueChange={setScope}>
-          <SelectTrigger className="w-full sm:w-[280px]"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="class">Asistencia de una clase</SelectItem>
-            <SelectItem value="history">Historial de asistencia</SelectItem>
-            <SelectItem value="absence-report">Reporte de asistencia</SelectItem>
-          </SelectContent>
-        </Select>
-        {scope === 'class' && (
-          anios.length === 0 ? (
-            <p className="text-size-12-5 text-ink-faint">Todavía no diste ninguna clase en esta comisión.</p>
-          ) : (
-            <div className="flex flex-wrap gap-2">
-              <Select value={anioFiltro} onValueChange={setAnioFiltro}>
-                <SelectTrigger className="w-full sm:w-[140px]"><SelectValue /></SelectTrigger>
-                <SelectContent>
-                  {anios.map((anio) => <SelectItem key={anio} value={anio}>{anio}</SelectItem>)}
-                </SelectContent>
-              </Select>
-              <Select value={classDate} onValueChange={setClassDate}>
-                <SelectTrigger className="w-full sm:w-[280px]"><SelectValue placeholder="Elegí una clase" /></SelectTrigger>
-                <SelectContent>
-                  {gruposPorMes.map((grupo) => (
-                    <SelectGroup key={grupo.mes}>
-                      <SelectLabel>{grupo.etiqueta}</SelectLabel>
-                      {grupo.fechas.map((fecha) => <SelectItem key={fecha} value={fecha}>{fecha}</SelectItem>)}
-                    </SelectGroup>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-          )
-        )}
-      </GlassCard>
-
-      <GlassCard className="flex flex-col gap-3 p-4">
-        <div className="font-heading text-size-14 font-semibold text-ink">Formato</div>
-        <div className="flex gap-2">
-          <Button variant={format === 'pdf' ? 'primary' : 'outline'} onClick={() => setFormat('pdf')}>PDF</Button>
-          <Button variant={format === 'xlsx' ? 'primary' : 'outline'} onClick={() => setFormat('xlsx')}>XLS</Button>
-        </div>
-      </GlassCard>
-
-      <Button variant="primary" onClick={exportar} disabled={exportando || (scope === 'class' && !classDate)} className="w-fit">
-        {exportando ? 'Generando...' : 'Exportar'}
+    <div className="flex flex-wrap items-center gap-2">
+      <Button asChild variant="outline" className="min-h-11">
+        <Link
+          ref={ordersRef}
+          to={ordersLink}
+          aria-current={ordersOpen ? 'page' : undefined}
+          aria-label={pendingCount > 0 ? `Mis pedidos, ${pendingRequestsLabel(pendingCount)}` : 'Mis pedidos'}
+        >
+          Mis pedidos
+          <span aria-hidden="true"><TabCount count={pendingCount} /></span>
+        </Link>
       </Button>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button
+            ref={exportRef}
+            variant="outline"
+            className="min-h-11 aria-disabled:cursor-not-allowed aria-disabled:text-(--disabled-fg) aria-disabled:hover:text-(--disabled-fg)"
+            aria-disabled={exportDisabled || undefined}
+            aria-describedby={exportDisabled ? 'export-disabled-reason' : undefined}
+            onPointerDown={blockWhenDisabled}
+            onKeyDown={blockWhenDisabled}
+          >
+            <Download aria-hidden="true" />
+            Exportar
+            <ChevronDown aria-hidden="true" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent className="w-72" align="end" collisionPadding={8}>
+          {scopes.map((scope) => (
+            <DropdownMenuItem key={scope} onSelect={() => onExport(scope)}>
+              <span className="flex-1">{EXPORT_SCOPES[scope].menuLabel}</span>
+              {scope === activeScope && <span className="text-size-11 font-bold text-brand">Esta vista</span>}
+            </DropdownMenuItem>
+          ))}
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 }
 
-const INNER_TABS = ['asistencia', 'historial', 'reporte', 'exportar'];
+function OrdersSubview({ backLink, expandedRequestId, headingRef }) {
+  return (
+    <section aria-labelledby="my-orders-heading" className="flex flex-col gap-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 id="my-orders-heading" ref={headingRef} tabIndex={-1} className="font-heading text-xl font-bold text-ink outline-none">Mis pedidos</h2>
+        <Button asChild variant="outline" className="min-h-11">
+          <Link to={backLink}>
+            <ChevronLeft aria-hidden="true" />
+            Volver a Pasar lista
+          </Link>
+        </Button>
+      </div>
+      <MisPedidosDeAsistencia expandedRequestId={expandedRequestId} />
+    </section>
+  );
+}
 
 export function DocenteTomarAsistencia() {
-  const { data: comisiones, isLoading } = useMisComisionesParaAsistencia();
+  const { data: comisiones, isLoading, isError, error, refetch } = useMisComisionesParaAsistencia();
   const { data: pedidos } = useMisPedidosDeAsistencia();
   const [searchParams, setSearchParams] = useSearchParams();
+  const [exportScope, setExportScope] = useState(null);
+  const ordersRef = useRef(null);
+  const exportRef = useRef(null);
+  const ordersHeadingRef = useRef(null);
+  const wasOrdersOpen = useRef(false);
 
   const tabParam = searchParams.get('tab');
-  const topTab = tabParam === 'pedidos' ? 'pedidos' : 'asistencia';
-  const innerTab = INNER_TABS.includes(tabParam) ? tabParam : 'asistencia';
+  const view = VIEW_ALIASES[tabParam] ?? tabParam;
+  const ordersOpen = view === 'pedidos';
+  const activeView = VIEWS.includes(view) ? view : 'pasar-lista';
   const seccionId = searchParams.get('seccion');
   const requestIdParam = Number(searchParams.get('pedido')) || null;
 
   const lista = comisiones ?? [];
-  const seccion = lista.find((c) => `${c.type}-${c.id}` === seccionId);
-  const returnRequest = innerTab === 'historial' && requestIdParam ? (pedidos ?? []).find((p) => p.id === requestIdParam) : null;
+  const seccion = lista.find((c) => sectionParamOf(c) === seccionId);
+  const { data: historial, isLoading: historyLoading } = useHistorialAsistencia(seccion?.type, seccion?.id);
+  const classDates = historial?.classDates ?? [];
+  const openRequest = requestIdParam ? (pedidos ?? []).find((p) => p.id === requestIdParam) : null;
+  const returnRequest = activeView === 'historial' && !ordersOpen ? openRequest : null;
+  const backSection = seccionId ?? sectionParamOfRequest(openRequest, lista);
 
-  function updateParams(changes) {
+  function updateParams(changes, options) {
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
       Object.entries(changes).forEach(([key, value]) => (value == null ? next.delete(key) : next.set(key, value)));
       return next;
-    });
+    }, options);
   }
+
+  useEffect(() => {
+    if (VIEW_ALIASES[tabParam]) {
+      setSearchParams((prev) => {
+        const next = new URLSearchParams(prev);
+        next.set('tab', VIEW_ALIASES[tabParam]);
+        return next;
+      }, { replace: true });
+    }
+  }, [tabParam, setSearchParams]);
+
+  useEffect(() => {
+    if (ordersOpen) ordersHeadingRef.current?.focus();
+    else if (wasOrdersOpen.current) ordersRef.current?.focus();
+    wasOrdersOpen.current = ordersOpen;
+  }, [ordersOpen]);
 
   if (isLoading) {
     return (
@@ -869,37 +875,56 @@ export function DocenteTomarAsistencia() {
     );
   }
 
-  if (lista.length === 0) {
+  if (isError && comisiones === undefined) {
     return (
       <PageContainer>
         <h1 className="font-heading text-2xl font-bold text-ink">Tomar asistencia</h1>
         <GlassCard className="p-4">
-          <EmptyState title="Todavía no tenés comisiones asignadas" description="Cuando Dirección te asigne una comisión, aparece acá." />
+          <LoadErrorState bare error={error} resource="tus comisiones" onRetry={refetch} />
         </GlassCard>
       </PageContainer>
     );
   }
 
+  const disabledReason = exportDisabledReason({
+    ordersOpen,
+    section: seccion,
+    historyLoading,
+    hasClasses: classDates.length > 0,
+  });
+
   return (
     <PageContainer>
-      <h1 className="font-heading text-2xl font-bold text-ink">Tomar asistencia</h1>
-      <Tabs
-        value={topTab}
-        onValueChange={(value) => updateParams({ tab: value === 'pedidos' ? 'pedidos' : null, pedido: null, fecha: null })}
-      >
-        <TabsList variant="segmented">
-          <TabsTrigger value="asistencia">Tomar asistencia</TabsTrigger>
-          <TabsTrigger value="pedidos">
-            Mis pedidos
-            <TabCount count={pendingRequestCount(pedidos)} />
-          </TabsTrigger>
-        </TabsList>
-        <TabsContent value="asistencia" className="flex flex-col gap-4 pt-4">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-heading text-2xl font-bold text-ink">Tomar asistencia</h1>
+        <AttendanceHeaderActions
+          ordersOpen={ordersOpen}
+          ordersLink={ordersHref(seccionId)}
+          pendingCount={pendingRequestCount(pedidos)}
+          activeScope={ordersOpen ? null : SCOPE_BY_VIEW[activeView]}
+          disabledReason={disabledReason}
+          onExport={setExportScope}
+          ordersRef={ordersRef}
+          exportRef={exportRef}
+        />
+      </div>
+      {disabledReason && (
+        <p id="export-disabled-reason" className="-mt-2 text-size-12-5 text-ink-faint">{disabledReason}</p>
+      )}
+
+      {ordersOpen ? (
+        <OrdersSubview backLink={attendanceHref({ seccion: backSection })} expandedRequestId={requestIdParam} headingRef={ordersHeadingRef} />
+      ) : lista.length === 0 ? (
+        <GlassCard className="p-4">
+          <EmptyState title="Todavía no tenés comisiones" description="Cuando Dirección te asigne una comisión, aparece acá." />
+        </GlassCard>
+      ) : (
+        <div className="flex flex-col gap-4">
           <Select value={seccionId ?? undefined} onValueChange={(value) => updateParams({ seccion: value })}>
             <SelectTrigger className="w-full sm:w-[280px]"><SelectValue placeholder="Elegí una comisión" /></SelectTrigger>
             <SelectContent>
               {lista.map((c) => (
-                <SelectItem key={`${c.type}-${c.id}`} value={`${c.type}-${c.id}`}>{c.subjectName} · {c.sectionName}{c.termStartDate ? ` (${new Date(c.termStartDate).getFullYear()})` : ''}</SelectItem>
+                <SelectItem key={sectionParamOf(c)} value={sectionParamOf(c)}>{c.subjectName} · {c.sectionName}{c.termStartDate ? ` (${new Date(c.termStartDate).getFullYear()})` : ''}</SelectItem>
               ))}
             </SelectContent>
           </Select>
@@ -909,24 +934,31 @@ export function DocenteTomarAsistencia() {
               <EmptyState title="Elegí una comisión" description="Seleccioná arriba la comisión de la que querés tomar asistencia." />
             </GlassCard>
           ) : (
-            <Tabs value={innerTab} onValueChange={(value) => updateParams({ tab: value, pedido: null, fecha: null })}>
-              <TabsList variant="segmented">
-                <TabsTrigger value="asistencia">Asistencia</TabsTrigger>
-                <TabsTrigger value="historial">Historial</TabsTrigger>
-                <TabsTrigger value="reporte">Reporte de asistencia</TabsTrigger>
-                <TabsTrigger value="exportar">Exportar</TabsTrigger>
+            <Tabs value={activeView} onValueChange={(value) => updateParams({ tab: value, pedido: null, fecha: null })}>
+              <TabsList variant="segmented" aria-label="Vistas de asistencia de la comisión" className={TAB_LIST_CLASS}>
+                <TabsTrigger value="pasar-lista" className={TAB_TRIGGER_CLASS}>Pasar lista</TabsTrigger>
+                <TabsTrigger value="historial" className={TAB_TRIGGER_CLASS}>Historial</TabsTrigger>
+                <TabsTrigger value="reporte" aria-label="Reporte de asistencia" className={TAB_TRIGGER_CLASS}>Reporte</TabsTrigger>
               </TabsList>
-              <TabsContent value="asistencia"><TabAsistencia type={seccion.type} sectionId={seccion.id} /></TabsContent>
+              <TabsContent value="pasar-lista"><TabAsistencia type={seccion.type} sectionId={seccion.id} /></TabsContent>
               <TabsContent value="historial"><TabHistorial type={seccion.type} sectionId={seccion.id} returnRequest={returnRequest} /></TabsContent>
               <TabsContent value="reporte"><TabReporteDeAsistencia type={seccion.type} sectionId={seccion.id} /></TabsContent>
-              <TabsContent value="exportar"><TabExportar type={seccion.type} sectionId={seccion.id} /></TabsContent>
             </Tabs>
           )}
-        </TabsContent>
-        <TabsContent value="pedidos" className="pt-4">
-          <MisPedidosDeAsistencia expandedRequestId={requestIdParam} />
-        </TabsContent>
-      </Tabs>
+        </div>
+      )}
+
+      <ExportAttendanceDialog
+        scope={exportScope}
+        type={seccion?.type}
+        sectionId={seccion?.id}
+        classDates={classDates}
+        onClose={() => setExportScope(null)}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          exportRef.current?.focus();
+        }}
+      />
     </PageContainer>
   );
 }
