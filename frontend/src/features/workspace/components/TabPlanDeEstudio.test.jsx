@@ -255,7 +255,7 @@ describe('TabPlanDeEstudio map view', () => {
     renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
 
     const region = await screen.findByRole('region', { name: 'Mapa del plan por año' });
-    const headings = [...region.querySelectorAll('h2'), ...screen.getAllByRole('heading', { name: 'Electivas' })];
+    const headings = [...region.querySelectorAll('h3'), ...screen.getAllByRole('heading', { name: 'Electivas' })];
     expect(headings.map((heading) => heading.textContent)).toEqual(['1° año', '2° año', '3° año', 'Electivas']);
     expect(screen.queryByRole('table')).not.toBeInTheDocument();
     const approved = screen.getByRole('button', { name: 'Matemática I, Aprobada, nota 8,5' });
@@ -296,7 +296,7 @@ describe('TabPlanDeEstudio map view', () => {
     expect(await screen.findByRole('region', { name: 'Mapa del plan por año' })).toHaveAttribute('tabindex', '0');
   });
 
-  it('toggles card selection with aria-pressed', async () => {
+  it('selects a card with aria-pressed and opens its detail', async () => {
     useProgress(threeYearPlan());
     const user = userEvent.setup();
     renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
@@ -305,9 +305,9 @@ describe('TabPlanDeEstudio map view', () => {
     expect(card).toHaveAttribute('aria-pressed', 'false');
     expect(card).toHaveAttribute('aria-haspopup', 'dialog');
     await user.click(card);
-    expect(card).toHaveAttribute('aria-pressed', 'true');
-    await user.click(card);
-    expect(card).toHaveAttribute('aria-pressed', 'false');
+    expect(await screen.findByRole('dialog', { name: 'Matemática I' })).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    expect(await screen.findByRole('button', { name: 'Matemática I, Aprobada, nota 8,5' })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('shares the estado filter between map chips and the list select', async () => {
@@ -379,5 +379,131 @@ describe('TabPlanDeEstudio map view', () => {
     renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
 
     expect(await screen.findByText('No tenés acceso a esta pantalla')).toBeInTheDocument();
+  });
+});
+
+describe('TabPlanDeEstudio summary and mobile accordion', () => {
+  const plan = (summaryOverrides = {}) =>
+    progress(
+      [
+        subject({ programSubjectId: 1, subjectName: 'Matemática I' }),
+        subject({ programSubjectId: 2, subjectCode: 'ANA201', subjectName: 'Análisis', curricularYear: 2, state: 'IN_PROGRESS', finalScore: null }),
+        subject({ programSubjectId: 3, subjectCode: 'FIS301', subjectName: 'Física', curricularYear: 3, state: 'AVAILABLE', finalScore: null }),
+      ],
+      {
+        summary: {
+          ...progress([]).summary,
+          mandatoryTotal: 3,
+          mandatoryApproved: 1,
+          counts: { approved: 1, inProgress: 1, regularPendingFinal: 0, failed: 0, available: 1, blocked: 0 },
+          ...summaryOverrides,
+        },
+      },
+    );
+
+  function useCompactViewport() {
+    window.matchMedia = () => ({ matches: true, addEventListener() {}, removeEventListener() {} });
+  }
+
+  it('shows the summary counts from the server and applies and clears the estado filter on tap', async () => {
+    useProgress(plan());
+    const user = userEvent.setup();
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
+
+    const summary = await screen.findByRole('region', { name: 'Tu avance en el plan' });
+    expect(within(summary).getByRole('button', { name: 'Ver aprobadas: 1' })).toBeInTheDocument();
+    expect(within(summary).getByRole('button', { name: 'Ver en curso: 1' })).toBeInTheDocument();
+    expect(within(summary).getByRole('button', { name: 'Ver bloqueadas: 0' })).toBeInTheDocument();
+
+    await user.click(within(summary).getByRole('button', { name: 'Ver en curso: 1' }));
+    expect(within(summary).getByRole('button', { name: 'Ver en curso: 1' })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('button', { name: /^Matemática I/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Análisis/ })).toBeInTheDocument();
+
+    await user.click(within(summary).getByRole('button', { name: 'Ver en curso: 1' }));
+    expect(await screen.findByRole('button', { name: /^Matemática I/ })).toBeInTheDocument();
+  });
+
+  it('hides the credits bar when the plan defines no required credits and measures mandatory subjects', async () => {
+    useProgress(plan({ requiredCredits: 0, completionPercent: 0 }));
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
+
+    const summary = await screen.findByRole('region', { name: 'Tu avance en el plan' });
+    expect(within(summary).getAllByRole('progressbar')).toHaveLength(1);
+    expect(within(summary).getByRole('progressbar', { name: /Obligatorias aprobadas · 1 de 3/ })).toHaveAttribute('aria-valuenow', '33.33333333333333');
+    expect(within(summary).getByText('33 %')).toBeInTheDocument();
+    expect(within(summary).queryByText(/Créditos/)).not.toBeInTheDocument();
+  });
+
+  it('shows the credits bar when the plan defines required credits', async () => {
+    useProgress(plan());
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
+
+    const summary = await screen.findByRole('region', { name: 'Tu avance en el plan' });
+    expect(within(summary).getAllByRole('progressbar')).toHaveLength(2);
+    expect(within(summary).getByRole('progressbar', { name: 'Créditos · 3 de 6' })).toBeInTheDocument();
+  });
+
+  it('mentions subjects approved by equivalence only when there are some', async () => {
+    useProgress(plan({ approvedByEquivalence: 2 }));
+    const { unmount } = renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
+    const summary = await screen.findByRole('region', { name: 'Tu avance en el plan' });
+    expect(within(summary).getByText(/por equivalencia/)).toHaveTextContent('2 por equivalencia');
+    unmount();
+
+    useProgress(plan());
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
+    const plain = await screen.findByRole('region', { name: 'Tu avance en el plan' });
+    expect(within(plain).queryByText(/por equivalencia/)).not.toBeInTheDocument();
+  });
+
+  it('does not show the summary in the list view', async () => {
+    useProgress(plan());
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />);
+
+    await screen.findByRole('table');
+    expect(screen.queryByRole('region', { name: 'Tu avance en el plan' })).not.toBeInTheDocument();
+  });
+
+  it('opens only the first year with pending subjects on mobile and toggles years by keyboard-reachable buttons', async () => {
+    useCompactViewport();
+    useProgress(plan());
+    const user = userEvent.setup();
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
+
+    const first = await screen.findByRole('button', { name: '1° año' });
+    const second = screen.getByRole('button', { name: '2° año' });
+    expect(first).toHaveAttribute('aria-expanded', 'false');
+    expect(second).toHaveAttribute('aria-expanded', 'true');
+    expect(second).toHaveAttribute('aria-controls', document.getElementById(second.getAttribute('aria-controls')).id);
+    expect(second.closest('h3')).not.toBeNull();
+    expect(screen.getByRole('button', { name: /^Análisis/ })).toBeVisible();
+    expect(screen.queryByRole('button', { name: /^Matemática I/ })).not.toBeInTheDocument();
+
+    await user.click(first);
+    expect(first).toHaveAttribute('aria-expanded', 'true');
+    expect(await screen.findByRole('button', { name: /^Matemática I/ })).toBeVisible();
+    expect(first).toHaveClass('min-h-11');
+  });
+
+  it('renders plain year headings without buttons on desktop and keeps every year visible', async () => {
+    useProgress(plan());
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
+
+    await screen.findByRole('button', { name: /^Matemática I/ });
+    expect(screen.getByRole('heading', { level: 3, name: '1° año' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '1° año' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Análisis/ })).toBeVisible();
+  });
+
+  it('keeps the projection collapsed in the map view and opens it on demand', async () => {
+    useProgress(plan());
+    const user = userEvent.setup();
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
+
+    const trigger = await screen.findByRole('button', { name: 'Proyección de egreso' });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 });

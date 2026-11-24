@@ -2,10 +2,12 @@ package com.red_escuela.backend.notification.specialist;
 
 import com.red_escuela.backend.enrollment.events.SubjectEnrollmentWithdrawnEvent;
 import com.red_escuela.backend.enrollment.events.SubjectSectionChangedEvent;
+import com.red_escuela.backend.enrollment.events.WaitlistEntryPausedEvent;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.notification.domain.ClosureNotification;
 import com.red_escuela.backend.notification.domain.PersonRecipient;
 import com.red_escuela.backend.notification.entity.NotificationType;
+import com.red_escuela.backend.shared.event.DeduplicableDomainEvent;
 import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Test;
@@ -17,6 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -124,5 +127,72 @@ class EnrollmentChangeNotificationListenerTest {
         List<ClosureNotification> notifications = published(1);
         assertThat(notifications.get(0).type()).isEqualTo(NotificationType.WAITLIST_PROMOTED);
         assertThat(notifications.get(0).message()).contains("lista de espera", "Algebra", "Com A");
+    }
+
+    @Test
+    void waitlistRemovalNotifiesWithItsOwnTypeAndNeverExposesAnInternalReason() {
+        guardRunsEachEffectOnlyOnce();
+        personsExist(7L);
+
+        listener.notifyWaitlistEntryRemoved(com.red_escuela.backend.enrollment.events.WaitlistEntryRemovedEvent.of(5L, 7L, "Algebra"));
+
+        ClosureNotification notification = published(1).get(0);
+        assertThat(notification.type()).isEqualTo(NotificationType.WAITLIST_REMOVED_BY_STAFF);
+        assertThat(notification.message()).isEqualTo("Te quitamos de la lista de espera de Algebra. Consultá con la institución si tenés dudas.");
+        assertThat(notification.message()).doesNotContain("Motivo");
+    }
+
+    @Test
+    void waitlistExpiryNotifiesWithItsOwnType() {
+        guardRunsEachEffectOnlyOnce();
+        personsExist(7L);
+
+        listener.notifyWaitlistEntryExpired(com.red_escuela.backend.enrollment.events.WaitlistEntryExpiredEvent.of(5L, 7L, "Algebra"));
+
+        ClosureNotification notification = published(1).get(0);
+        assertThat(notification.type()).isEqualTo(NotificationType.WAITLIST_ENTRY_EXPIRED);
+        assertThat(notification.message()).isEqualTo("Venció tu lugar en la lista de espera de Algebra porque cerró la inscripción.");
+    }
+
+    @Test
+    void waitlistExpiryReminderNotifiesWithItsOwnType() {
+        guardRunsEachEffectOnlyOnce();
+        personsExist(7L);
+
+        listener.notifyWaitlistExpiryReminder(com.red_escuela.backend.enrollment.events.WaitlistExpiryReminderEvent.of(5L, 7L, "Algebra",
+                java.time.LocalDate.of(2047, 3, 1)));
+
+        ClosureNotification notification = published(1).get(0);
+        assertThat(notification.type()).isEqualTo(NotificationType.WAITLIST_EXPIRING_SOON);
+        assertThat(notification.message()).isEqualTo("Tu lugar en la lista de espera de Algebra vence el 2047-03-01 si no se libera un cupo.");
+    }
+
+    @Test
+    void pausedEntryNotifiesTheStudentWithTheConflictingSectionName() {
+        guardRunsEachEffectOnlyOnce();
+        personsExist(7L);
+
+        listener.notifyWaitlistEntryPaused(WaitlistEntryPausedEvent.of(5L, 7L, "Algebra", "Historia II"));
+
+        ClosureNotification notification = published(1).get(0);
+        assertThat(notification.type()).isEqualTo(NotificationType.WAITLIST_PAUSED_BY_SCHEDULE_OVERLAP);
+        assertThat(notification.message()).isEqualTo("Tu lugar en la lista de espera de Algebra está en pausa porque se superpone con Historia II. "
+                + "Conservás tu posición: cuando se resuelva el conflicto vas a poder ser promovido.");
+    }
+
+    @Test
+    void pausedEntryDeduplicationIdentityDependsOnlyOnTheEnrollmentAndTheConflictingSection() {
+        ArgumentCaptor<DeduplicableDomainEvent> captor = ArgumentCaptor.forClass(DeduplicableDomainEvent.class);
+
+        listener.notifyWaitlistEntryPaused(WaitlistEntryPausedEvent.of(5L, 7L, "Algebra", "Historia II"));
+        listener.notifyWaitlistEntryPaused(WaitlistEntryPausedEvent.of(5L, 7L, "Algebra", "Historia II"));
+        listener.notifyWaitlistEntryPaused(WaitlistEntryPausedEvent.of(5L, 7L, "Algebra", "Fisica"));
+        listener.notifyWaitlistEntryPaused(WaitlistEntryPausedEvent.of(6L, 8L, "Algebra", "Historia II"));
+
+        verify(effectGuard, times(4)).runEffectOnce(captor.capture(), eq(EnrollmentChangeNotificationListener.NOTIFY_ENTRY_PAUSED_HANDLER), any());
+        List<DeduplicableDomainEvent> identities = captor.getAllValues();
+        assertThat(identities.get(0).eventId()).isEqualTo(identities.get(1).eventId());
+        assertThat(identities.get(0).eventId()).isNotEqualTo(identities.get(2).eventId());
+        assertThat(identities.get(0).eventId()).isNotEqualTo(identities.get(3).eventId());
     }
 }

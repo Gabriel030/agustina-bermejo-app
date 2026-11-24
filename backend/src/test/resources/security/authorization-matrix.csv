@@ -631,6 +631,7 @@ GET,/me/procedures/approved,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/me/procedures/approved/{documentType}/{id}/pdf,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/me/approved-subjects-certificates,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,"{""enrollmentId"":1}"
 GET,/me/section-enrollments/{id}/change-section-candidates,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,section-enrollment,
+GET,/me/waitlist-positions,DENY,ALLOW,DENY,DENY,DENY,DENY,DENY,DENY,,
 POST,/approved-subjects-certificates/{id}/revoke,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
 GET,/exam-boards/{id}/exam-certificates/candidates,DENY,DENY,OWNER,DENY,ALLOW,ALLOW,ALLOW,DENY,exam-board-tribunal,
 POST,/exam-boards/{id}/exam-certificates/batch,DENY,DENY,OWNER,DENY,ALLOW,ALLOW,ALLOW,DENY,exam-board-tribunal,"{""registrationIds"":[1]}"
