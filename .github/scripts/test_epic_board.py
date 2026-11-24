@@ -119,7 +119,7 @@ class EpicBoardTest(unittest.TestCase):
     def test_unknown_epic_label_with_backticks_and_mentions_is_neutralised(self):
         out = self.render([pr(12, ['epic:x` @alguien'])])
         row = self.row(out, '| [#12]')
-        self.assertIn("| `epic:x' @alguien` |", row)
+        self.assertIn("| `epic:X' @ALGUIEN` |", row)
         self.assertEqual(row.count('`'), 4)
 
     def test_title_with_mentions_and_backticks_is_neutralised(self):
