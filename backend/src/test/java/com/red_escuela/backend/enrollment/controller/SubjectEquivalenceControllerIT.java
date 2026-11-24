@@ -46,6 +46,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -81,6 +82,8 @@ class SubjectEquivalenceControllerIT extends AbstractIntegrationTest {
     private Program program;
     private Subject subject;
     private ProgramEnrollment enrollment;
+    private static final AtomicLong DNI_SEQUENCE = new AtomicLong(63_000_000L);
+
     private int staffCounter;
 
     @BeforeEach
@@ -443,7 +446,7 @@ class SubjectEquivalenceControllerIT extends AbstractIntegrationTest {
         Person person = new Person();
         String username = "equiv-" + roleName.toLowerCase() + "-" + staffCounter + "-" + System.nanoTime();
         person.setUsername(username);
-        person.setDni(Long.toString(Math.abs((long) username.hashCode())));
+        person.setDni(Long.toString(DNI_SEQUENCE.incrementAndGet()));
         person.setName("Persona");
         person.setLastname("Prueba");
         person.setEmail(username + "@example.com");

@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -38,14 +39,18 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
 class SubjectEquivalenceConcurrencyIT extends AbstractIntegrationTest {
+
+    private static final AtomicLong SEED_SEQUENCE = new AtomicLong(64_000_000L);
 
     @Autowired
     private MockMvc mockMvc;
@@ -59,13 +64,15 @@ class SubjectEquivalenceConcurrencyIT extends AbstractIntegrationTest {
     private JwtService jwtService;
     @Autowired
     private SubjectEquivalenceRepository equivalenceRepository;
+    @Autowired
+    private JdbcTemplate jdbc;
 
     @Test
     void twoSimultaneousRecordsForTheSameSubjectLeaveExactlyOneActiveEquivalence() throws Exception {
-        long[] ids = transactionTemplate.execute(status -> seed("1"));
+        long[] ids = transactionTemplate.execute(status -> seed());
         long enrollmentId = ids[0];
         long subjectId = ids[1];
-        String token = ids[2] == 0 ? null : tokenOf(ids[2]);
+        String token = tokenOf(ids[2]);
         String body = "{\"subjectId\":" + subjectId + ",\"originInstitution\":\"Universidad de origen\","
                 + "\"originSubjectName\":\"Materia de origen\",\"recognizedOn\":\"" + LocalDate.now()
                 + "\",\"resolutionNumber\":\"RES-1\",\"reason\":\"Estudios previos reconocidos\"}";
@@ -85,7 +92,7 @@ class SubjectEquivalenceConcurrencyIT extends AbstractIntegrationTest {
                 return response.getStatus() == 201 ? "CREATED" : response.getStatus() + ":" + response.getContentAsString();
             }));
         }
-        ready.await(10, TimeUnit.SECONDS);
+        assertTrue(ready.await(10, TimeUnit.SECONDS));
         go.countDown();
         List<String> outcomes = new ArrayList<>();
         for (Future<String> result : results) {
@@ -102,7 +109,7 @@ class SubjectEquivalenceConcurrencyIT extends AbstractIntegrationTest {
 
     @Test
     void twoSimultaneousVoidsOfTheSameEquivalenceLeaveOneVoidedAndOneConflict() throws Exception {
-        long[] ids = transactionTemplate.execute(status -> seed("2"));
+        long[] ids = transactionTemplate.execute(status -> seed());
         long enrollmentId = ids[0];
         String token = tokenOf(ids[2]);
         String recordBody = "{\"subjectId\":" + ids[1] + ",\"originInstitution\":\"Universidad de origen\","
@@ -128,7 +135,7 @@ class SubjectEquivalenceConcurrencyIT extends AbstractIntegrationTest {
                 return response.getStatus() == 200 ? "VOIDED" : response.getStatus() + ":" + response.getContentAsString();
             }));
         }
-        ready.await(10, TimeUnit.SECONDS);
+        assertTrue(ready.await(10, TimeUnit.SECONDS));
         go.countDown();
         List<String> outcomes = new ArrayList<>();
         for (Future<String> result : results) {
@@ -139,6 +146,11 @@ class SubjectEquivalenceConcurrencyIT extends AbstractIntegrationTest {
         assertThat(outcomes).contains("VOIDED");
         assertThat(outcomes.stream().filter(outcome -> !outcome.equals("VOIDED")).toList())
                 .singleElement().asString().startsWith("409:").contains("EQUIVALENCE_ALREADY_VOIDED");
+        assertThat(jdbc.queryForList("select status from subject_equivalence where program_enrollment_id = ?", String.class, enrollmentId))
+                .containsExactly("VOIDED");
+        assertThat(jdbc.queryForObject(
+                "select count(*) from audit_log where action = 'SUBJECT_EQUIVALENCE_VOIDED' and entity_type = 'SUBJECT_EQUIVALENCE' and entity_id = ?",
+                Integer.class, equivalenceId)).isEqualTo(1);
     }
 
     private String tokenOf(long personId) {
@@ -150,7 +162,9 @@ class SubjectEquivalenceConcurrencyIT extends AbstractIntegrationTest {
         return jwtService.generateAccessToken(person);
     }
 
-    private long[] seed(String suffix) {
+    private long[] seed() {
+        long sequence = SEED_SEQUENCE.addAndGet(10);
+        String suffix = Long.toString(sequence);
         Institution institution = new Institution();
         institution.setName("Instituto concurrente " + suffix);
         entityManager.persist(institution);
@@ -159,9 +173,9 @@ class SubjectEquivalenceConcurrencyIT extends AbstractIntegrationTest {
         Person studentPerson = new Person();
         studentPerson.setName("Alumno");
         studentPerson.setLastname("Concurrente");
-        studentPerson.setDni("6200000" + suffix + "1");
-        studentPerson.setUsername("6200000" + suffix + "1");
-        studentPerson.setEmail("6200000" + suffix + "1@example.com");
+        studentPerson.setDni(sequence + "1");
+        studentPerson.setUsername(sequence + "1");
+        studentPerson.setEmail(sequence + "1@example.com");
         studentPerson.setAddress(studentAddress);
         studentPerson.setStatus(StatusType.ACTIVE);
         entityManager.persist(studentPerson);
@@ -197,7 +211,7 @@ class SubjectEquivalenceConcurrencyIT extends AbstractIntegrationTest {
         entityManager.persist(staffAddress);
         Person staff = new Person();
         staff.setUsername("equiv-concurrent-admin" + suffix);
-        staff.setDni("6200000" + suffix + "2");
+        staff.setDni(sequence + "2");
         staff.setName("Persona");
         staff.setLastname("Concurrente");
         staff.setEmail("equiv-concurrent-admin" + suffix + "@example.com");

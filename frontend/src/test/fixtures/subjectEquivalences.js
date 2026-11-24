@@ -13,7 +13,7 @@ export const subjectEquivalence = (overrides = {}) => ({
   resolutionNumber: 'RES-2026-114',
   recognizedOn: '2026-09-15',
   reason: 'Equivalencia por contenidos y carga horaria compatibles.',
-  document: { id: 51, name: 'Analítico UNCuyo.pdf' },
+  document: { id: 51, name: 'ANALITICO_SECUNDARIO' },
   status: 'ACTIVE',
   recordedBy: actor(),
   recordedAt: '2026-09-15T10:30:00',

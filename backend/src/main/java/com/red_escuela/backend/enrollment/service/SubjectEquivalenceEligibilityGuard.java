@@ -1,6 +1,7 @@
 package com.red_escuela.backend.enrollment.service;
 
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
+import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.exception.SubjectAlreadyApprovedException;
 import com.red_escuela.backend.enrollment.exception.SubjectInProgressException;
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
@@ -24,7 +25,7 @@ public class SubjectEquivalenceEligibilityGuard {
         List<EnrollmentStatus> blockingStatuses = subjectSectionEnrollmentRepository
                 .findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(programEnrollmentId, subjectId, BLOCKING_STATUSES)
                 .stream()
-                .map(enrollment -> enrollment.getStatus())
+                .map(SubjectSectionEnrollment::getStatus)
                 .toList();
         if (blockingStatuses.contains(EnrollmentStatus.APPROVED)) {
             throw new SubjectAlreadyApprovedException(programEnrollmentId, subjectId);

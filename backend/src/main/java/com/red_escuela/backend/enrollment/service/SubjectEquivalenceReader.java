@@ -23,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
@@ -136,7 +137,7 @@ public class SubjectEquivalenceReader {
 
     private Map<Long, StudentDocument> documentsOf(List<SubjectEquivalence> equivalences) {
         List<Long> documentIds = equivalences.stream().map(SubjectEquivalence::getStudentDocumentId)
-                .filter(java.util.Objects::nonNull).distinct().toList();
+                .filter(Objects::nonNull).distinct().toList();
         return studentDocumentRepository.findAllById(documentIds).stream()
                 .collect(Collectors.toMap(StudentDocument::getId, Function.identity()));
     }

@@ -75,6 +75,23 @@ describe('subject equivalence handlers', () => {
     expect(body.status).toBe('ACTIVE');
   });
 
+  it('recordAcceptsReasonWithinLimitAfterTrimming', async () => {
+    const { status } = await record({ reason: `  ${'a'.repeat(500)}  ` });
+    expect(status).toBe(201);
+  });
+
+  it('recordDocumentNameIsTheDocumentTypeCode', async () => {
+    const { body } = await record({ studentDocumentId: 51 });
+    expect(body.document).toEqual({ id: 51, name: 'ANALITICO_SECUNDARIO' });
+  });
+
+  it('recordAcceptsTodayInLocalTime', async () => {
+    const now = new Date();
+    const local = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    const { status } = await record({ recognizedOn: local });
+    expect(status).toBe(201);
+  });
+
   it('recordOutOfPlanSubjectReturnsNullCreditsAndNotInPlan', async () => {
     const { body } = await record({ subjectId: EQUIVALENCE_SUBJECT_IDS.outOfPlanRecognized, originScore: null });
     expect(body.credits).toBeNull();
@@ -85,6 +102,7 @@ describe('subject equivalence handlers', () => {
     ['outOfRangeScoreIsInvalidScore', { originScore: 11 }, 422, 'INVALID_SCORE'],
     ['shortReasonIsReasonInvalid', { reason: 'corto' }, 422, 'EQUIVALENCE_REASON_INVALID'],
     ['missingReasonIsReasonInvalid', { reason: undefined }, 422, 'EQUIVALENCE_REASON_INVALID'],
+    ['trimmedReasonOverLimitIsReasonInvalid', { reason: `  ${'a'.repeat(501)}  ` }, 422, 'EQUIVALENCE_REASON_INVALID'],
     ['futureDateIsFutureDate', { recognizedOn: '2999-01-01' }, 422, 'FUTURE_DATE'],
     ['foreignDocumentIsDocumentInvalid', { studentDocumentId: EQUIVALENCE_DOCUMENT_IDS.invalid }, 422, 'EQUIVALENCE_DOCUMENT_INVALID'],
     ['unknownSubjectIsNotInPlan', { subjectId: EQUIVALENCE_SUBJECT_IDS.notInPlan }, 422, 'SUBJECT_NOT_IN_PLAN'],

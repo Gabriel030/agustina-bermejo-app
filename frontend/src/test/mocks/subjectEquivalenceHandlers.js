@@ -40,9 +40,14 @@ const listFor = (enrollmentId) => {
   return activeSubjectEquivalences();
 };
 
-const todayIso = () => new Date().toISOString().slice(0, 10);
+const todayIso = () => {
+  const now = new Date();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${now.getFullYear()}-${month}-${day}`;
+};
 
-const reasonInvalid = (reason) => typeof reason !== 'string' || reason.trim().length < 10 || reason.length > 500;
+const reasonInvalid = (reason) => typeof reason !== 'string' || reason.trim().length < 10 || reason.trim().length > 500;
 
 export const recordEquivalenceError = (enrollmentId, body) => {
   if (enrollmentId === EQUIVALENCE_ENROLLMENT_IDS.notFound) return failure(404, 'PROGRAM_ENROLLMENT_NOT_FOUND');
@@ -99,7 +104,7 @@ export const subjectEquivalenceHandlers = [
         resolutionNumber: body.resolutionNumber,
         recognizedOn: body.recognizedOn,
         reason: body.reason,
-        document: body.studentDocumentId ? { id: body.studentDocumentId, name: 'Documento del legajo.pdf' } : null,
+        document: body.studentDocumentId ? { id: body.studentDocumentId, name: 'ANALITICO_SECUNDARIO' } : null,
         status: 'ACTIVE',
       },
       { status: 201 },
