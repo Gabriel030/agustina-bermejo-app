@@ -68,7 +68,7 @@ function StepButton({ label, reason, onClick, children }) {
         aria-disabled={reason ? 'true' : undefined}
         onClick={reason ? undefined : onClick}
         className={cn(
-          'flex h-10 w-11 items-center justify-center rounded-[10px] text-ink-soft transition-colors hover:bg-accent-soft hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
+          'flex h-10 w-11 max-md:h-11 items-center justify-center rounded-[10px] text-ink-soft transition-colors hover:bg-accent-soft hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           reason && 'cursor-not-allowed opacity-40 hover:bg-transparent hover:text-ink-soft',
         )}
       >
@@ -264,7 +264,7 @@ export function MonthPicker({ value, onChange, minMonth, maxMonth, currentMonth,
                     setView('years');
                     refocus.current = true;
                   }}
-                  className="inline-flex h-10 items-center gap-1.5 rounded-[10px] border-[1.5px] border-border px-3 font-heading text-base font-bold tabular-nums hover:bg-accent-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className="inline-flex h-10 max-md:h-11 items-center gap-1.5 rounded-[10px] border-[1.5px] border-border px-3 font-heading text-base font-bold tabular-nums hover:bg-accent-soft focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   {year}
                   <ChevronDown className="size-4 opacity-60" />

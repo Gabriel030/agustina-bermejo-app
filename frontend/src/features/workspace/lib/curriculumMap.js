@@ -1,4 +1,8 @@
-import { describeBlockingPrerequisite } from '@/features/workspace/lib/curriculumPlan';
+import {
+  CURRICULUM_STATE_TO_PLAN_STATUS,
+  STATUS_FILTER_TO_PLAN_STATUS,
+  describeBlockingPrerequisite,
+} from '@/features/workspace/lib/curriculumPlan';
 
 export const ELECTIVES_SECTION_KEY = 'electives';
 
@@ -126,4 +130,29 @@ export function getDefaultOpenYear(sections) {
   const firstPending = years.find((section) => section.subjects.some((subject) => subject.state !== 'APPROVED'));
   if (firstPending) return firstPending.year;
   return years.length > 0 ? years[0].year : null;
+}
+
+const TERM_LABEL = { FIRST: '1.er cuatrimestre', SECOND: '2.º cuatrimestre', ANNUAL: 'Anual' };
+
+export function describeCurricularTerm(term) {
+  return TERM_LABEL[term] ?? null;
+}
+
+export function isApprovedByEquivalence(subject) {
+  return subject?.approvalSource === 'EQUIVALENCE';
+}
+
+export function filterSubjectsByStatus(subjects, statusFilter) {
+  const status = STATUS_FILTER_TO_PLAN_STATUS[statusFilter];
+  if (!status) return subjects ?? [];
+  return (subjects ?? []).filter((subject) => CURRICULUM_STATE_TO_PLAN_STATUS[subject.state] === status);
+}
+
+export function countSubjectsByStatus(subjects) {
+  const counts = Object.fromEntries(Object.values(CURRICULUM_STATE_TO_PLAN_STATUS).map((status) => [status, 0]));
+  for (const subject of subjects ?? []) {
+    const status = CURRICULUM_STATE_TO_PLAN_STATUS[subject.state];
+    if (status) counts[status] += 1;
+  }
+  return counts;
 }

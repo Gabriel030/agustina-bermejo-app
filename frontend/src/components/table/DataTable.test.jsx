@@ -148,6 +148,15 @@ describe('DataTable', () => {
     expect(screen.getByText('Beta')).toBeInTheDocument();
   });
 
+  it('raises the sort select, the filter trigger and the expand toggle to a 44px touch target on mobile', () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation(() => ({ matches: true, addEventListener() {}, removeEventListener() {} }));
+    renderTable({ renderExpanded: () => <p>Detalle</p>, expandLabel: 'Ver partes' });
+
+    expect(screen.getByRole('combobox', { name: 'Ordenar por' })).toHaveClass('max-md:data-[size=default]:h-11');
+    expect(screen.getByRole('button', { name: 'Filtrar por estado' })).toHaveClass('max-md:after:-inset-2.5');
+    expect(screen.getAllByRole('button', { name: 'Ver partes' })[0]).toHaveClass('max-md:size-11');
+  });
+
   it('renders header-less columns as a full width footer of the card', () => {
     vi.spyOn(window, 'matchMedia').mockImplementation(() => ({ matches: true, addEventListener() {}, removeEventListener() {} }));
     const withAction = [...columns, { id: 'action', header: '', enableSorting: false, cell: () => <a href="/x">Abrir</a> }];

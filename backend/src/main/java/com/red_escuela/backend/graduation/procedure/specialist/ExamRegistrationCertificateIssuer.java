@@ -14,6 +14,7 @@ import com.red_escuela.backend.graduation.certificate.examregistration.repositor
 import com.red_escuela.backend.graduation.procedure.specialist.ExamRegistrationEligibilityEvaluator.ExamRegistrationSelection;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateDigest;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateDocumentAuditRecorder;
+import com.red_escuela.backend.graduation.certificate.specialist.VerifiableDocumentRegistry;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateVerificationUrl;
 import com.red_escuela.backend.graduation.procedure.dto.OwnDocumentResponse;
 import com.red_escuela.backend.graduation.procedure.dto.ProcedureEligibilityResponse;
@@ -51,6 +52,7 @@ public class ExamRegistrationCertificateIssuer {
     private final CertificateVerificationUrl verificationUrl;
     private final CertificateDigest digest;
     private final CertificateDocumentAuditRecorder auditRecorder;
+    private final VerifiableDocumentRegistry verifiableDocumentRegistry;
     private final DocumentIssuanceSettings issuanceSettings;
     private final CurrentActorFinder currentActorFinder;
     private final StudentFinder studentFinder;
@@ -63,7 +65,8 @@ public class ExamRegistrationCertificateIssuer {
                                              ExamRegistrationCertificateTemplate template, CertificatePdfRenderer renderer,
                                              CertificateFileStore fileStore, CertificateVerificationUrl verificationUrl,
                                              CertificateDigest digest, CertificateDocumentAuditRecorder auditRecorder,
-                                             DocumentIssuanceSettings issuanceSettings, CurrentActorFinder currentActorFinder, StudentFinder studentFinder,
+                                             VerifiableDocumentRegistry verifiableDocumentRegistry, DocumentIssuanceSettings issuanceSettings,
+                                             CurrentActorFinder currentActorFinder, StudentFinder studentFinder,
                                              MeterRegistry meterRegistry, Clock clock) {
         this.evaluator = evaluator;
         this.repository = repository;
@@ -73,6 +76,7 @@ public class ExamRegistrationCertificateIssuer {
         this.verificationUrl = verificationUrl;
         this.digest = digest;
         this.auditRecorder = auditRecorder;
+        this.verifiableDocumentRegistry = verifiableDocumentRegistry;
         this.issuanceSettings = issuanceSettings;
         this.currentActorFinder = currentActorFinder;
         this.studentFinder = studentFinder;
@@ -128,6 +132,7 @@ public class ExamRegistrationCertificateIssuer {
                     .pdfPath(path)
                     .renderEngineVersion(CertificatePdfRenderer.ENGINE_VERSION)
                     .build());
+            verifiableDocumentRegistry.register(EXAM_REGISTRATION_CERTIFICATE, saved.getId(), code);
             auditRecorder.generatedByStudent(EXAM_REGISTRATION_CERTIFICATE.name(), saved.getId(), saved.getPdfSha256(),
                     saved.getRenderEngineVersion());
             meterRegistry.counter("exam_registration_certificate_issued_total").increment();
