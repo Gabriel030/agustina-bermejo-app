@@ -252,16 +252,14 @@ function SettingsEditor({ settings }) {
           <ChangesTable rows={rows} />
         </GlassCard>
         <StickyActionBar
+          compact="menu"
+          aria-label="Confirmar los cambios"
           summary={`${changedCount} ${changedCount === 1 ? 'ajuste cambia' : 'ajustes cambian'}`}
           hint="Se aplica a toda la institución al guardar."
-        >
-          <Button variant="outline" className="h-11 px-4" onClick={backToChanges} disabled={save.isPending}>
-            Volver
-          </Button>
-          <Button variant="primary" className="h-11 px-5" onClick={confirm} loading={save.isPending}>
-            Confirmar y guardar
-          </Button>
-        </StickyActionBar>
+          compactHint="Para toda la institución"
+          primary={{ label: 'Confirmar y guardar', loading: save.isPending, loadingLabel: 'Confirmar y guardar', onClick: confirm }}
+          secondary={[{ key: 'back', label: 'Volver', disabled: save.isPending, onSelect: backToChanges }]}
+        />
         {guardDialog}
       </>
     );
