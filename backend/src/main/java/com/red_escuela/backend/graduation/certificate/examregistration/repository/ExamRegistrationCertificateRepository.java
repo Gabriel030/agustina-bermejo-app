@@ -12,6 +12,8 @@ public interface ExamRegistrationCertificateRepository extends JpaRepository<Exa
 
     List<ExamRegistrationCertificate> findByStudentIdOrderByIssuedAtDesc(Long studentId);
 
+    Optional<ExamRegistrationCertificate> findFirstByRegistrationIdAndIdGreaterThanOrderByIdAsc(Long registrationId, Long id);
+
     boolean existsByCode(String code);
 
     Optional<ExamRegistrationCertificate> findByCode(String code);
