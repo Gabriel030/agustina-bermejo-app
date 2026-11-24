@@ -51,6 +51,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import com.red_escuela.backend.graduation.certificate.engine.CertificatePdfRenderer;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateDigest;
+import com.red_escuela.backend.graduation.certificate.specialist.VerifiableDocumentRegistry;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import org.springframework.test.web.servlet.MvcResult;
@@ -164,13 +165,13 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
             studentToken = jwtService.generateAccessToken(studentPerson);
             strangerToken = jwtService.generateAccessToken(strangerPerson);
         });
-        jdbc.update("delete from exam_registration_certificate");
+        deleteCertificates();
         setBillingMode("OFF");
     }
 
     @AfterEach
     void restoreBillingMode() {
-        jdbc.update("delete from exam_registration_certificate");
+        deleteCertificates();
         setBillingMode("FULL");
     }
 
@@ -238,6 +239,8 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
     private CertificatePdfRenderer renderer;
     @MockitoSpyBean
     private CertificateDigest digest;
+    @MockitoSpyBean
+    private VerifiableDocumentRegistry verifiableDocumentRegistry;
     @Value("${app.frontend.base-url}")
     private String frontendBaseUrl;
     @Value("${app.certificates.directory}")
@@ -251,6 +254,16 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
     private ResultActions download(String token, Long id) throws Exception {
         return mockMvc.perform(get("/me/procedures/approved/EXAM_REGISTRATION_CERTIFICATE/{id}/pdf", id)
                 .header("Authorization", "Bearer " + token));
+    }
+
+    private void failRegistration() {
+        transactions.executeWithoutResult(status ->
+                doThrow(new IllegalStateException("registry down")).when(verifiableDocumentRegistry).register(any(), any(), any()));
+    }
+
+    private void deleteCertificates() {
+        jdbc.update("delete from verifiable_document where document_type = 'EXAM_REGISTRATION_CERTIFICATE'");
+        jdbc.update("delete from exam_registration_certificate");
     }
 
     private long certificateCount() {
@@ -670,7 +683,7 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
         ExecutorService executor = Executors.newFixedThreadPool(2);
         try {
             for (int round = 0; round < CONCURRENCY_ROUNDS; round++) {
-                jdbc.update("delete from exam_registration_certificate");
+                deleteCertificates();
                 CountDownLatch ready = new CountDownLatch(2);
                 CountDownLatch go = new CountDownLatch(1);
                 List<Future<Integer>> results = List.of(registrationId, other).stream().map(target -> executor.submit(() -> {
@@ -745,7 +758,7 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
         ExecutorService executor = Executors.newFixedThreadPool(2);
         try {
             for (int round = 0; round < CONCURRENCY_ROUNDS; round++) {
-                jdbc.update("delete from exam_registration_certificate");
+                deleteCertificates();
                 CountDownLatch ready = new CountDownLatch(2);
                 CountDownLatch go = new CountDownLatch(1);
                 List<Future<Integer>> results = List.of("Empresa A", "Empresa B").stream().map(text -> executor.submit(() -> {
@@ -840,16 +853,41 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
     @Test
     void failedRegistrationRollsBackTheIssuanceAndTheFile() throws Exception {
         List<String> filesBefore = storedFileNames();
-        jdbc.update("create unique index tmp_block_registry on verifiable_document (registered_at) where document_type = 'EXAM_REGISTRATION_CERTIFICATE' and source_id < 0");
-        try {
-            jdbc.update("alter table verifiable_document add constraint tmp_block_exam_registration check (document_type <> 'EXAM_REGISTRATION_CERTIFICATE') not valid");
-            generate(studentToken, "{}").andExpect(result -> assertThat(result.getResponse().getStatus()).isGreaterThanOrEqualTo(400));
-        } finally {
-            jdbc.update("alter table verifiable_document drop constraint if exists tmp_block_exam_registration");
-            jdbc.update("drop index if exists tmp_block_registry");
-        }
+        failRegistration();
+
+        generate(studentToken, "{}").andExpect(result -> assertThat(result.getResponse().getStatus()).isEqualTo(409));
 
         assertThat(certificateCount()).isZero();
         assertThat(storedFileNames()).isEqualTo(filesBefore);
+    }
+
+    @Test
+    void failedRegistrationWhileReplacingRevertsThePreviousDocumentToValid() throws Exception {
+        generateWithRecipient("EMPLOYER", "Empresa A");
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 11, 10, 0));
+        List<String> filesBefore = storedFileNames();
+        failRegistration();
+
+        generate(studentToken, "{\"recipientType\":\"HEALTH_INSURANCE\",\"recipientText\":\"Obra social B\"}")
+                .andExpect(result -> assertThat(result.getResponse().getStatus()).isEqualTo(409));
+
+        assertThat(statusesOfCertificates()).containsExactly("VALID");
+        assertThat(storedFileNames()).isEqualTo(filesBefore);
+    }
+
+    @Test
+    void publicVerificationIsValidOneSecondBeforeTheExpiryInstant() throws Exception {
+        String code = codeOf(issuedId(studentToken));
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 20, 23, 59, 59));
+
+        verifyPublicly(code).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("VALID"));
+    }
+
+    @Test
+    void publicVerificationIsExpiredExactlyAtTheExpiryInstant() throws Exception {
+        String code = codeOf(issuedId(studentToken));
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 21, 0, 0, 0));
+
+        verifyPublicly(code).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("EXPIRED"));
     }
 }
