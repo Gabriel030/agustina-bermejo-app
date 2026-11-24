@@ -15,7 +15,7 @@ function describeScore(subject, byEquivalence) {
 
 const RELATION_LABEL = { prerequisite: 'correlativa', dependent: 'desbloquea' };
 
-export function MapSubjectCard({ subject, creditsDefined = true, selected = false, relation = null, dimmed = false, onSelect, cardRef }) {
+export function MapSubjectCard({ subject, creditsDefined = true, selected = false, relation = null, dimmed = false, onSelect, cardRef, audience = 'student' }) {
   const status = CURRICULUM_STATE_TO_PLAN_STATUS[subject.state];
   const byEquivalence = isApprovedByEquivalence(subject);
   const score = describeScore(subject, byEquivalence);
@@ -53,7 +53,7 @@ export function MapSubjectCard({ subject, creditsDefined = true, selected = fals
         <PlanStatusPill status={status} />
         {byEquivalence && <EquivalenceChip />}
       </span>
-      {status === 'disponible' && (
+      {status === 'disponible' && audience !== 'staff' && (
         <span className="text-size-12 text-ink-faint">Podés inscribirte cuando abra la inscripción</span>
       )}
     </Button>

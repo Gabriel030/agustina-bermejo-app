@@ -21,7 +21,7 @@ import { PlanSubjectCard } from '@/features/workspace/components/PlanSubjectCard
 import { PlanBlockedHint } from '@/features/workspace/components/PlanBlockedHint';
 import { ElectiveGroupsSummary } from '@/features/workspace/components/ElectiveGroupsSummary';
 import { GraduationProjectionCard } from '@/features/workspace/components/GraduationProjectionCard';
-import { useCurriculumProgress } from '@/features/enrollment';
+import { useCurriculumProgressFor } from '@/features/enrollment';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import {
   buildPlanRows,
@@ -36,13 +36,27 @@ const COLUMN_COUNT = 5;
 
 const WARNING_MESSAGES = {
   PLAN_WITHOUT_CREDITS: 'El plan no define créditos: el avance se calcula por materias aprobadas.',
-  PLAN_CHANGED_AFTER_ENROLLMENT: 'El plan de estudios cambió desde tu inscripción.',
+  PLAN_CHANGED_AFTER_ENROLLMENT: {
+    student: 'El plan de estudios cambió desde tu inscripción.',
+    staff: 'El plan de estudios cambió desde la inscripción del alumno.',
+  },
 };
 
-function PlanWarnings({ warnings }) {
+const EMPTY_PLAN_DESCRIPTION = {
+  student: 'Cuando se carguen las vas a ver acá.',
+  staff: 'Cuando se carguen van a aparecer acá.',
+};
+
+function describeWarning(warning, audience) {
+  const message = WARNING_MESSAGES[warning.code];
+  if (message && typeof message === 'object') return message[audience];
+  return message ?? warning.message;
+}
+
+function PlanWarnings({ warnings, audience }) {
   return warnings.map((warning) => (
     <Notice key={warning.code} tone="warning">
-      {WARNING_MESSAGES[warning.code] ?? warning.message}
+      {describeWarning(warning, audience)}
     </Notice>
   ));
 }
@@ -88,12 +102,13 @@ function PlanRowCells({ row }) {
   );
 }
 
-export function TabPlanDeEstudio({ carreraId }) {
+export function TabPlanDeEstudio({ carreraId, audience = 'student', onViewEnrollment }) {
   const compact = useMediaQuery('(max-width: 767px)');
   const [searchParams, setSearchParams] = useSearchParams();
   const statusFilter = normalizeStatusFilter(searchParams.get('estado'));
   const view = searchParams.get('vista') === 'mapa' ? 'mapa' : 'lista';
-  const { data: progress, isLoading, isError, error, refetch } = useCurriculumProgress(carreraId);
+  const forbiddenDistinguished = view === 'mapa' || audience === 'staff';
+  const { data: progress, isLoading, isError, error, refetch } = useCurriculumProgressFor(audience, carreraId);
 
   const rows = useMemo(() => buildPlanRows(progress?.subjects, progress?.summary.requiredCredits > 0), [progress]);
   const visibleRows = useMemo(() => filterPlanRows(rows, statusFilter), [rows, statusFilter]);
@@ -127,10 +142,10 @@ export function TabPlanDeEstudio({ carreraId }) {
   return (
     <div className="flex flex-1 flex-col gap-5">
       {view === 'mapa' && progress && (
-        <CurriculumSummaryBar summary={progress.summary} statusFilter={statusFilter} onStatusFilterChange={changeStatusFilter} />
+        <CurriculumSummaryBar audience={audience} summary={progress.summary} statusFilter={statusFilter} onStatusFilterChange={changeStatusFilter} />
       )}
-      <GraduationProjectionCard carreraId={carreraId} collapsible={view === 'mapa'} />
-      {progress && <PlanWarnings warnings={progress.warnings} />}
+      <GraduationProjectionCard audience={audience} carreraId={carreraId} collapsible={view === 'mapa'} />
+      {progress && <PlanWarnings warnings={progress.warnings} audience={audience} />}
       <PlanViewSwitch value={view} onChange={changeView} />
       {view === 'lista' && (
         <ul aria-label="Referencia de estados" className="flex flex-wrap gap-1.5">
@@ -149,15 +164,17 @@ export function TabPlanDeEstudio({ carreraId }) {
             <Skeleton className="h-64" />
           </div>
         ) : isError ? (
-          <LoadErrorState error={error} onRetry={refetch} resource="el plan de estudio" bare distinguishForbidden />
+          <LoadErrorState error={error} onRetry={refetch} resource="el plan de estudio" bare distinguishForbidden={forbiddenDistinguished} />
         ) : rows.length === 0 ? (
-          <EmptyState title="El plan todavía no tiene materias" description="Cuando se carguen las vas a ver acá." />
+          <EmptyState title="El plan todavía no tiene materias" description={EMPTY_PLAN_DESCRIPTION[audience]} />
         ) : (
           <CurriculumMap
             subjects={progress.subjects}
             statusFilter={statusFilter}
             onStatusFilterChange={changeStatusFilter}
             creditsDefined={progress.summary.requiredCredits > 0}
+            audience={audience}
+            onViewEnrollment={onViewEnrollment}
           />
         )
       ) : compact ? (
@@ -169,9 +186,9 @@ export function TabPlanDeEstudio({ carreraId }) {
               <Skeleton className="h-24" />
             </>
           ) : isError ? (
-            <LoadErrorState error={error} onRetry={refetch} resource="el plan de estudio" bare />
+            <LoadErrorState error={error} onRetry={refetch} resource="el plan de estudio" bare distinguishForbidden={forbiddenDistinguished} />
           ) : rows.length === 0 ? (
-            <EmptyState title="El plan todavía no tiene materias" description="Cuando se carguen las vas a ver acá." />
+            <EmptyState title="El plan todavía no tiene materias" description={EMPTY_PLAN_DESCRIPTION[audience]} />
           ) : visibleRows.length === 0 ? (
             filterEmptyState
           ) : (
@@ -232,13 +249,13 @@ export function TabPlanDeEstudio({ carreraId }) {
                   ) : isError ? (
                     <TableRow>
                       <TableCell colSpan={COLUMN_COUNT}>
-                        <LoadErrorState error={error} onRetry={refetch} resource="el plan de estudio" bare />
+                        <LoadErrorState error={error} onRetry={refetch} resource="el plan de estudio" bare distinguishForbidden={forbiddenDistinguished} />
                       </TableCell>
                     </TableRow>
                   ) : rows.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={COLUMN_COUNT}>
-                        <EmptyState title="El plan todavía no tiene materias" description="Cuando se carguen las vas a ver acá." />
+                        <EmptyState title="El plan todavía no tiene materias" description={EMPTY_PLAN_DESCRIPTION[audience]} />
                       </TableCell>
                     </TableRow>
                   ) : visibleRows.length === 0 ? (
