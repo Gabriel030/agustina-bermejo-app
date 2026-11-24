@@ -44,7 +44,7 @@ function captureRegisterBody() {
   server.use(
     http.post(`${API}/auth/register`, async ({ request }) => {
       captured.body = await request.json();
-      return HttpResponse.json({ accessToken: 'access-1', refreshToken: 'refresh-1', expiresIn: 900 }, { status: 201 });
+      return HttpResponse.json({ accessToken: 'access-1', expiresIn: 900 }, { status: 201 });
     }),
   );
   return captured;
