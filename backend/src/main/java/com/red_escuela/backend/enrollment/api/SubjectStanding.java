@@ -3,8 +3,10 @@ package com.red_escuela.backend.enrollment.api;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.shared.domain.Grade;
 
+import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 public record SubjectStanding(List<CourseworkEntry> coursework, RecognizedEquivalence equivalence) {
 
@@ -35,6 +37,14 @@ public record SubjectStanding(List<CourseworkEntry> coursework, RecognizedEquiva
             return ApprovalSource.COURSEWORK;
         }
         return isApprovedByEquivalence() ? ApprovalSource.EQUIVALENCE : null;
+    }
+
+    public Grade bestApprovedScore() {
+        return Stream.concat(
+                        coursework.stream().filter(entry -> entry.status() == EnrollmentStatus.APPROVED)
+                                .map(CourseworkEntry::finalScore),
+                        Stream.ofNullable(equivalence).map(RecognizedEquivalence::originScore))
+                .filter(Objects::nonNull).max(Comparator.naturalOrder()).orElse(null);
     }
 
     public Grade approvedScore() {

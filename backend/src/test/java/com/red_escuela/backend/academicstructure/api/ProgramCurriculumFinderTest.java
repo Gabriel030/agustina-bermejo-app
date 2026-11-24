@@ -77,7 +77,19 @@ class ProgramCurriculumFinderTest {
         when(prerequisiteRepository.findByProgramSubjectId(1L)).thenReturn(List.of(link));
 
         assertThat(finder.findPrerequisites(1L))
-                .containsExactly(new PrerequisiteView(12L, "Analisis", RequirementType.values()[0], "AN12"));
+                .containsExactly(new PrerequisiteView(12L, "Analisis", RequirementType.values()[0], "AN12", null));
+    }
+
+    @Test
+    void prerequisitesCarryTheConfiguredMinimumGrade() {
+        var link = new ProgramSubjectPrerequisite();
+        link.setPrerequisiteProgramSubject(entry(3L, 12L, "Analisis", 8, null));
+        link.setRequirementType(RequirementType.APPROVED);
+        link.setMinGrade(com.red_escuela.backend.shared.domain.Grade.of(new java.math.BigDecimal("6")));
+        when(prerequisiteRepository.findByProgramSubjectId(1L)).thenReturn(List.of(link));
+
+        assertThat(finder.findPrerequisites(1L)).extracting(PrerequisiteView::minGrade)
+                .containsExactly(com.red_escuela.backend.shared.domain.Grade.of(new java.math.BigDecimal("6")));
     }
 
     @Test
