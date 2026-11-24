@@ -1,5 +1,6 @@
 package com.red_escuela.backend.notification.broadcast.audience;
 
+import com.red_escuela.backend.shared.time.MutableClock;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.NewsletterPreferenceRepository;
@@ -87,10 +88,10 @@ class RecipientEligibilityConsentIT extends AbstractIntegrationTest {
         recipients.put("granted", recipientOf(granted));
         recipients.put("noRecord", recipientOf(person(true, null)));
         Person newsletter = person(true, null);
-        newsletterPreferenceRepository.upsert(newsletter.getId(), true, LocalDateTime.now());
+        newsletterPreferenceRepository.upsert(newsletter.getId(), true, LocalDateTime.now(MutableClock.INSTANCE));
         recipients.put("newsletterOptIn", recipientOf(newsletter));
         Person newsletterOptedOut = person(true, null);
-        newsletterPreferenceRepository.upsert(newsletterOptedOut.getId(), false, LocalDateTime.now());
+        newsletterPreferenceRepository.upsert(newsletterOptedOut.getId(), false, LocalDateTime.now(MutableClock.INSTANCE));
         recipients.put("newsletterOptOut", recipientOf(newsletterOptedOut));
         entityManager.flush();
         return recipients;
@@ -139,7 +140,7 @@ class RecipientEligibilityConsentIT extends AbstractIntegrationTest {
         Person granted = person(true, VALID_PHONE);
         ledger.recordConsent(granted.getId(), ConsentChannel.WHATSAPP, BroadcastCategory.PROMOTIONAL, true, ConsentSource.PROFILE, null);
         Person newsletter = person(true, VALID_PHONE);
-        newsletterPreferenceRepository.upsert(newsletter.getId(), true, LocalDateTime.now());
+        newsletterPreferenceRepository.upsert(newsletter.getId(), true, LocalDateTime.now(MutableClock.INSTANCE));
         entityManager.flush();
         Map<String, AudienceRecipient> recipients = new LinkedHashMap<>();
         recipients.put("blankPhone", new AudienceRecipient(900002L, "Sin tel", "a@x.com", true, " "));

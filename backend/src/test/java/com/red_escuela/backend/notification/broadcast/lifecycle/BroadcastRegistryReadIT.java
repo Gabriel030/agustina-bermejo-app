@@ -74,7 +74,7 @@ class BroadcastRegistryReadIT extends AbstractIntegrationTest {
     private Broadcast draft(Person creator) {
         return broadcastRepository.saveAndFlush(Broadcast.builder().name("Aviso").category(BroadcastCategory.INSTITUTIONAL)
                 .channel(ChannelType.EMAIL).status(BroadcastStatus.DRAFT).segmentSpec(SPEC).subjectSnapshot("Asunto")
-                .bodySnapshot("Cuerpo").createdByPersonId(creator.getId()).createdAt(Instant.now()).build());
+                .bodySnapshot("Cuerpo").createdByPersonId(creator.getId()).createdAt(Instant.now(MutableClock.INSTANCE)).build());
     }
 
     private void confirm(Broadcast broadcast, Person actor) throws Exception {
