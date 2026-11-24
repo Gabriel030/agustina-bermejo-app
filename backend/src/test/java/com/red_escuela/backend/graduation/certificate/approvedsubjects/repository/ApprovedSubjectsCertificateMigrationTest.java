@@ -32,7 +32,7 @@ class ApprovedSubjectsCertificateMigrationTest {
 
     @Test
     void validRowWithAndWithoutRecipientIsAccepted() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("465")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("466")) {
             JdbcTemplate jdbc = migratedJdbc(dataSource);
 
             insert(jdbc, "CODE-A", "VALID", null, null);
@@ -44,7 +44,7 @@ class ApprovedSubjectsCertificateMigrationTest {
 
     @Test
     void statusAndRecipientTypeMustBeKnownValues() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("465")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("466")) {
             JdbcTemplate jdbc = migratedJdbc(dataSource);
 
             assertThatThrownBy(() -> insert(jdbc, "CODE-A", "BOGUS", null, null)).isInstanceOf(DataIntegrityViolationException.class);
@@ -54,7 +54,7 @@ class ApprovedSubjectsCertificateMigrationTest {
 
     @Test
     void recipientTypeAndTextMustComeTogether() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("465")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("466")) {
             JdbcTemplate jdbc = migratedJdbc(dataSource);
 
             assertThatThrownBy(() -> insert(jdbc, "CODE-A", "VALID", "EMPLOYER", null)).isInstanceOf(DataIntegrityViolationException.class);
@@ -64,7 +64,7 @@ class ApprovedSubjectsCertificateMigrationTest {
 
     @Test
     void recipientTextRejectsLineBreaksAndOverlongValues() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("465")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("466")) {
             JdbcTemplate jdbc = migratedJdbc(dataSource);
 
             assertThatThrownBy(() -> insert(jdbc, "CODE-A", "VALID", "OTHER", "linea1\nlinea2")).isInstanceOf(DataIntegrityViolationException.class);
@@ -75,7 +75,7 @@ class ApprovedSubjectsCertificateMigrationTest {
 
     @Test
     void codeIsUnique() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("465")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("466")) {
             JdbcTemplate jdbc = migratedJdbc(dataSource);
 
             insert(jdbc, "CODE-A", "VALID", null, null);
@@ -86,7 +86,7 @@ class ApprovedSubjectsCertificateMigrationTest {
 
     @Test
     void registryNumberIsUniqueWhenPresentAndRepeatableWhenNull() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("465")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("466")) {
             JdbcTemplate jdbc = migratedJdbc(dataSource);
 
             insert(jdbc, "CODE-A", "VALID", null, null);
