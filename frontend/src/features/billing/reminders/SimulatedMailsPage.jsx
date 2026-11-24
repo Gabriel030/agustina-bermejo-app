@@ -59,7 +59,7 @@ function StatusCell({ mail }) {
           variant="subtle"
           size="inline"
           aria-label={`${DELIVERY_STATUS_LABELS[mail.status] ?? mail.status}: ver el motivo`}
-          className="rounded-full text-current transition-none hover:text-current focus-visible:ring-2 focus-visible:ring-ring active:not-aria-[haspopup]:translate-y-0"
+          className="relative rounded-full text-current max-md:after:absolute max-md:after:-inset-y-2.5 max-md:after:inset-x-0 transition-none hover:text-current focus-visible:ring-2 focus-visible:ring-ring active:not-aria-[haspopup]:translate-y-0"
         >
           {pill}
         </Button>
@@ -97,7 +97,7 @@ function buildColumns(onOpen) {
       enableSorting: false,
       accessorFn: (mail) => mail.subject,
       cell: ({ row }) => (
-        <Button variant="link" size="inline" type="button" onClick={() => onOpen(row.original)} className="text-left font-semibold">
+        <Button variant="link" size="inline" type="button" onClick={() => onOpen(row.original)} className="relative text-left font-semibold max-md:after:absolute max-md:after:-inset-y-3 max-md:after:inset-x-0">
           {row.original.subject}
         </Button>
       ),
