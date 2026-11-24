@@ -49,7 +49,7 @@ Este protocolo aplica tanto para implementación como para mockups.
 1. Correr el protocolo de arriba (catálogo, pantallas similares, variantes, tokens).
 2. Armar el diseño **siempre como Artifact interactivo** (claro/oscuro, responsive) con la
    skill `vidrio-liquido-mockup`, para verlo dentro de Claude; nunca un `.html` suelto.
-3. **Pasarlo por el agente `ux-advisor`** (`~/.claude/agents/ux-advisor.md`) antes de
+3. **Pasarlo por el agente `ux-advisor`** (`.claude/agents/ux-advisor.md`) antes de
    mostrarlo, y de nuevo tras cada iteración importante. Revisa: componentes
    existentes, coherencia con pantallas hermanas y con los tokens, usabilidad y
    experiencia, redundancias, sobrecarga de la pantalla, responsive e intuitividad.
