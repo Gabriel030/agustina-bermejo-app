@@ -60,7 +60,7 @@ export function WaitlistEntryMenu({ queue, entry }) {
       <TooltipProvider>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label={`Acciones para ${name}`}>
+            <Button variant="ghost" size="icon" className="size-11 md:size-8" aria-label={`Acciones para ${name}`}>
               <MoreHorizontal aria-hidden="true" />
             </Button>
           </DropdownMenuTrigger>
