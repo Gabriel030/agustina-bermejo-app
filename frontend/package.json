@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:mock": "VITE_ENABLE_MSW=true vite",
     "build": "vite build",
     "build:check": "vite build && node scripts/check-bundle-size.mjs",
     "lint": "eslint .",
