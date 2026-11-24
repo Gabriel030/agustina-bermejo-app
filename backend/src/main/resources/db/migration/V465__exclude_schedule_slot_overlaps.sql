@@ -1,9 +1,37 @@
 create extension if not exists btree_gist;
 
+alter table section_schedule_slot add column active boolean not null default false;
+
+create function section_schedule_slot_active(p_subject_section_id bigint, p_course_section_id bigint)
+returns boolean
+language sql
+stable
+as $$
+    select coalesce(
+        (select ss.status = 'ACTIVE' from subject_section ss where ss.id = p_subject_section_id),
+        (select cs.status = 'ACTIVE' from course_section cs where cs.id = p_course_section_id),
+        false)
+$$;
+
+create or replace function maintain_section_schedule_slot_occupancy()
+returns trigger
+language plpgsql
+as $$
+begin
+    new.term_period := section_schedule_slot_term_period(new.subject_section_id, new.course_section_id);
+    new.occupies := section_schedule_slot_occupies(new.subject_section_id, new.course_section_id);
+    new.active := section_schedule_slot_active(new.subject_section_id, new.course_section_id);
+    new.time_span := section_schedule_slot_time_span(new.day_of_week, new.start_time, new.end_time);
+    return new;
+end
+$$;
+
+update section_schedule_slot set day_of_week = day_of_week;
+
 alter table section_schedule_slot
     add constraint ex_schedule_slot_classroom_overlap
     exclude using gist (classroom_id with =, time_span with &&, term_period with &&)
-    where (occupies);
+    where (active);
 
 create table section_schedule_slot_instructor (
     slot_id       bigint    not null references section_schedule_slot (id) on delete cascade,
@@ -29,7 +57,7 @@ begin
           select null::bigint, course_section_id, instructor_id from course_section_instructor) l
         on (l.section_id is not null and l.section_id = s.subject_section_id)
         or (l.course_id is not null and l.course_id = s.course_section_id)
-    where s.id = p_slot_id and s.occupies;
+    where s.id = p_slot_id and s.active;
 end
 $$;
 

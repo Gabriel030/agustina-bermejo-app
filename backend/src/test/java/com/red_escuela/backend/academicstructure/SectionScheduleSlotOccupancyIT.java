@@ -55,6 +55,7 @@ class SectionScheduleSlotOccupancyIT extends AbstractIntegrationTest {
     private Term termOverlappingA;
     private Classroom classroomOne;
     private Classroom classroomTwo;
+    private Classroom classroomThree;
     private AcademicOfferingCycle approvedCycle;
     private AcademicOfferingCycle draftCycle;
     private Long activeSectionSlotId;
@@ -84,6 +85,7 @@ class SectionScheduleSlotOccupancyIT extends AbstractIntegrationTest {
             draftCycle = fixtures.programCycle(fixtures.program(), termA, AcademicOfferingCycleStatus.DRAFT);
             classroomOne = fixtures.classroom(30);
             classroomTwo = fixtures.classroom(30);
+            classroomThree = fixtures.classroom(30);
             var subject = fixtures.subject();
 
             SubjectSection active = fixtures.section(subject, termA, StatusType.ACTIVE, approvedCycle);
@@ -99,7 +101,7 @@ class SectionScheduleSlotOccupancyIT extends AbstractIntegrationTest {
             reactivatedSectionSlotId = fixtures.slot(reactivated, classroomTwo, DayOfWeek.TUESDAY, LocalTime.of(8, 0), LocalTime.of(10, 0)).getId();
             inactiveSectionInDraftCycleSlotId = fixtures.slot(inactiveInDraft, classroomTwo, DayOfWeek.MONDAY, LocalTime.of(10, 0), LocalTime.of(12, 0)).getId();
             deletedSectionSlotId = fixtures.slot(deleted, classroomOne, DayOfWeek.WEDNESDAY, LocalTime.of(8, 0), LocalTime.of(10, 0)).getId();
-            otherTermSlotId = fixtures.slot(otherTerm, classroomOne, DayOfWeek.MONDAY, LocalTime.of(8, 0), LocalTime.of(10, 0)).getId();
+            otherTermSlotId = fixtures.slot(otherTerm, classroomThree, DayOfWeek.MONDAY, LocalTime.of(8, 0), LocalTime.of(10, 0)).getId();
             overlappingTermSlotId = fixtures.slot(overlapping, classroomTwo, DayOfWeek.MONDAY, LocalTime.of(8, 30), LocalTime.of(9, 30)).getId();
             activeSectionId = active.getId();
             reactivatedSectionId = reactivated.getId();
@@ -292,7 +294,7 @@ class SectionScheduleSlotOccupancyIT extends AbstractIntegrationTest {
         Long slotId = jdbc.queryForObject(
                 "insert into section_schedule_slot (subject_section_id, classroom_id, day_of_week, start_time, end_time) "
                         + "values (?, ?, 'MONDAY', '08:00:00.600', '10:00:00.600') returning id",
-                Long.class, activeSectionId, classroomOne.getId());
+                Long.class, activeSectionId, classroomThree.getId());
 
         assertThat(jdbc.queryForObject("select time_span::text from section_schedule_slot where id = ?", String.class, slotId))
                 .isEqualTo("[28800,36000)");
