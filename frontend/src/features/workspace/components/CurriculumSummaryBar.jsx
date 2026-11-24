@@ -60,10 +60,12 @@ export function CurriculumSummaryBar({ summary, statusFilter, onStatusFilterChan
       {summary.approvedByEquivalence > 0 && (
         <div className="flex items-center gap-1.5 text-size-13 text-ink-soft">
           <ArrowLeftRight className="h-3.5 w-3.5 shrink-0 text-brand" aria-hidden="true" />
-          <span className="tabular-nums">{summary.approvedByEquivalence}</span> por equivalencia
+          <span>
+            <span className="tabular-nums">{summary.approvedByEquivalence}</span> por equivalencia
+          </span>
         </div>
       )}
-      <ul aria-label="Materias por estado" className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-6">
+      <ul aria-label="Materias por estado" className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {SUMMARY_COUNTS.map(({ key, filterId, status, label }) => {
           const { Icon } = PLAN_STATUS_PILL[status];
           const selected = statusFilter === filterId;
