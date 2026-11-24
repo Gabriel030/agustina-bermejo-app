@@ -8,7 +8,7 @@ export function LoadErrorState({ error, onRetry, resource = 'los datos', backTo,
   const forbidden = distinguishForbidden && error?.status === 403;
   const action = (
     <div className="flex flex-wrap justify-center gap-2">
-      {!notFound && !forbidden && onRetry && <Button onClick={onRetry}>Reintentar</Button>}
+      {!notFound && !forbidden && onRetry && <Button className="min-h-11 md:min-h-0" onClick={onRetry}>Reintentar</Button>}
       {backTo && (
         <Button asChild variant="outline">
           <Link to={backTo}>{backLabel?.startsWith('el ') ? `Volver al ${backLabel.slice(3)}` : `Volver a ${backLabel}`}</Link>
