@@ -17,7 +17,7 @@ describe('Tabs', () => {
   it('segmented list renders the sliding indicator with token classes', () => {
     const { container } = renderSegmented();
     const indicator = container.querySelector('[aria-hidden="true"]');
-    expect(indicator).toHaveClass('bg-(image:--seg-indicator-bg)', 'rounded-(--r-seg-indicator)', 'shadow-(--seg-indicator-shadow)');
+    expect(indicator).toHaveClass('bg-(--seg-indicator-bg)', 'rounded-(--r-seg-indicator)', 'shadow-(--seg-indicator-shadow)');
   });
 
   it('active segmented trigger exposes role tab and selected state', () => {

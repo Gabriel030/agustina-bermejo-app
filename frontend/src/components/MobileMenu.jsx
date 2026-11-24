@@ -13,7 +13,7 @@ import { useTheme } from '@/context/ThemeContext';
 // Mismo tratamiento del ítem activo que Sidebar.jsx (degradé + blanco, no el
 // pill pálido de antes) — ver comentario ahí.
 const NAV_ITEM_ACTIVO =
-  "bg-(color:--nav-indicator-bg) text-(--nav-active-fg) relative font-bold before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:rounded-r-[3px] before:bg-(color:--accent) before:content-['']";
+  "bg-(--nav-indicator-bg) text-(--nav-active-fg) relative font-bold before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:rounded-r-[3px] before:bg-(color:--accent) before:content-['']";
 const NAV_ITEM_BASE =
   'flex min-h-11 shrink-0 items-center gap-2.5 rounded-control px-3 py-0 text-sm font-medium text-ink-soft transition-colors hover:bg-(--row-hover) hover:text-ink';
 
@@ -83,7 +83,7 @@ export function MobileMenu({ titulo, items, groups }) {
         <button
           type="button"
           aria-label={open ? 'Cerrar menú' : 'Abrir menú'}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-surface text-ink backdrop-blur-(--surface-blur) backdrop-saturate-(--surface-saturate) lg:hidden"
+          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-surface text-ink lg:hidden"
         >
           <HamburgerIcon open={open} />
         </button>
@@ -92,7 +92,7 @@ export function MobileMenu({ titulo, items, groups }) {
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-(--overlay-bg-menu) duration-150 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
         <DialogPrimitive.Content
           aria-describedby={undefined}
-          className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[80vw] flex-col gap-6 border-r border-border bg-surface p-5 shadow-overlay backdrop-blur-(--surface-blur) backdrop-saturate-(--surface-saturate) duration-200 data-open:animate-in data-open:slide-in-from-left data-closed:animate-out data-closed:slide-out-to-left"
+          className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[80vw] flex-col gap-6 border-r border-border bg-surface p-5 shadow-overlay duration-200 data-open:animate-in data-open:slide-in-from-left data-closed:animate-out data-closed:slide-out-to-left"
         >
           <div className="flex items-start justify-between">
             <DialogPrimitive.Title asChild>

@@ -656,6 +656,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SUBJECT_ALREADY_APPROVED` | no | `SubjectAlreadyApprovedException` | enrollment |
 | `SUBJECT_ALREADY_EXISTS` | no | `SubjectAlreadyExistsException` | academicstructure |
 | `SUBJECT_ALREADY_REGULAR` | no | `SubjectAlreadyRegularException` | enrollment |
+| `SUBJECT_APPROVED_BY_EQUIVALENCE` | no | `SubjectApprovedByEquivalenceException` | enrollment |
 | `SUBJECT_INVALID_TRANSITION` | no | `SubjectInvalidTransitionException` | academicstructure |
 | `SUBJECT_IN_PROGRESS` | no | `SubjectInProgressException` | enrollment |
 | `SUBJECT_NOT_ASSIGNABLE_TO_PLAN` | no | `SubjectNotAssignableToPlanException` | academicstructure |
@@ -922,6 +923,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/invitation-waves/{id}/cancel` | `InvitationWaveController#cancelInvitationWave` |
 | POST | `/invitation-waves/{id}/pause` | `InvitationWaveController#pauseInvitationWave` |
 | POST | `/invitation-waves/{id}/resume` | `InvitationWaveController#resumeInvitationWave` |
+| POST | `/invitation-waves/{id}/retry-failed` | `InvitationWaveController#retryFailedInvitations` |
 | POST | `/invitation-waves/{id}/start` | `InvitationWaveController#startInvitationWave` |
 | POST | `/invoices/{invoiceId}/cancellations` | `InvoiceCancellationController#cancelOrRequestInvoiceCancellation` |
 | POST | `/invoices/{invoiceId}/cancellations/preview` | `InvoiceCancellationController#previewInvoiceCancellation` |

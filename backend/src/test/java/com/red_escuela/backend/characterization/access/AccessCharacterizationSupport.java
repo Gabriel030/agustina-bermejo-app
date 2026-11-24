@@ -2,7 +2,6 @@ package com.red_escuela.backend.characterization.access;
 
 import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.identity.dto.AuthResponse;
 import com.red_escuela.backend.identity.dto.LoginRequest;
 import com.red_escuela.backend.identity.entity.AuthProvider;
 import com.red_escuela.backend.identity.entity.Person;
@@ -87,9 +86,9 @@ abstract class AccessCharacterizationSupport extends AbstractIntegrationTest {
         return postJson("/auth/login", new LoginRequest(username, password));
     }
 
-    protected AuthResponse loginSuccessfully(String username, String password) throws Exception {
-        String body = login(username, password).andReturn().getResponse().getContentAsString();
-        return objectMapper.readValue(body, AuthResponse.class);
+    protected String loginAndGetRefreshToken(String username, String password) throws Exception {
+        String header = login(username, password).andReturn().getResponse().getHeader("Set-Cookie");
+        return header.substring(header.indexOf('=') + 1, header.indexOf(';'));
     }
 
     protected long countRows(String entityName, String where) {

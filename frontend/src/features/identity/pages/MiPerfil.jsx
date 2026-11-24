@@ -115,7 +115,7 @@ function AvatarUpload() {
         {avatarUrl ? (
           <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
         ) : (
-          <div className="flex h-full w-full items-center justify-center bg-gradient-to-br from-primary to-brand font-heading text-xl font-bold text-on-accent">
+          <div className="flex h-full w-full items-center justify-center bg-brand font-heading text-xl font-bold text-on-accent">
             {iniciales(perfil?.nombre, perfil?.apellido)}
           </div>
         )}

@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -8,6 +8,7 @@ import { errorBody } from '@/test/fixtures/errors';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { AuthorizationRequestDetailPage } from './AuthorizationRequestDetailPage';
 import { API, detail } from './authorizationFixtures';
+import { restoreViewport, useCompactViewport } from '@/test/compactViewport';
 
 const auth = vi.hoisted(() => ({ user: null }));
 vi.mock('@/context/AuthContext', () => ({ useAuth: () => ({ usuario: auth.user }) }));
@@ -276,5 +277,26 @@ describe('AuthorizationRequestDetailPage as administrative', () => {
     renderDetail('administrativo');
 
     expect(await screen.findByText('No tenés acceso a este pedido.')).toBeInTheDocument();
+  });
+});
+
+describe('AuthorizationRequestDetailPage on a compact viewport', () => {
+  beforeEach(() => {
+    auth.user = { id: 1, roles: ['DIRECTOR'] };
+    useCompactViewport();
+  });
+  afterEach(restoreViewport);
+
+  it('keeps approve as the only visible action and rejects from the more-actions menu', async () => {
+    mockDetail(detail());
+    const user = userEvent.setup();
+    renderDetail();
+
+    expect(await screen.findByRole('button', { name: /Aprobar.*120\.000,00/ })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Rechazar' })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('button', { name: 'Más acciones' }));
+    await user.click(await screen.findByRole('menuitem', { name: 'Rechazar' }));
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
   });
 });

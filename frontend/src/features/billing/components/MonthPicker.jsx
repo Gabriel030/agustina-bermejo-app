@@ -94,7 +94,7 @@ function Cell({ label, name, reason, selected, current, focusable, cellRef, onSe
           'relative h-11 rounded-xl border-[1.5px] border-transparent text-sm font-bold lowercase tabular-nums transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
           !selected && !reason && 'hover:bg-accent-soft',
           current && !selected && 'border-primary',
-          selected && 'bg-gradient-to-br from-brand to-accent-2 text-on-accent',
+          selected && 'bg-brand text-on-accent',
           reason && 'cursor-not-allowed text-ink-faint opacity-50',
         )}
       >

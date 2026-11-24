@@ -1,6 +1,7 @@
 package com.red_escuela.backend.notification.invitation.specialist;
 
 import com.red_escuela.backend.dataimport.api.ImportedAccount;
+import com.red_escuela.backend.identity.api.GuardianEmailCollisionFinder;
 import com.red_escuela.backend.notification.invitation.domain.InvitationExclusionReason;
 import com.red_escuela.backend.notification.invitation.domain.InvitationRecipientStatus;
 import com.red_escuela.backend.notification.invitation.domain.InvitationWaveParameters;
@@ -31,14 +32,17 @@ public class CreateInvitationWaveTransaction {
     private final InvitationWaveRepository waveRepository;
     private final InvitationWaveRecipientRepository recipientRepository;
     private final InvitationWaveResponseFactory responseFactory;
+    private final GuardianEmailCollisionFinder guardianEmailCollisionFinder;
     private final Clock clock;
 
     public CreateInvitationWaveTransaction(InvitationWaveRepository waveRepository,
                                            InvitationWaveRecipientRepository recipientRepository,
-                                           InvitationWaveResponseFactory responseFactory, Clock clock) {
+                                           InvitationWaveResponseFactory responseFactory,
+                                           GuardianEmailCollisionFinder guardianEmailCollisionFinder, Clock clock) {
         this.waveRepository = waveRepository;
         this.recipientRepository = recipientRepository;
         this.responseFactory = responseFactory;
+        this.guardianEmailCollisionFinder = guardianEmailCollisionFinder;
         this.clock = clock;
     }
 
@@ -56,8 +60,9 @@ public class CreateInvitationWaveTransaction {
                 .createdAt(Instant.now(clock))
                 .build());
         Set<Long> invitedElsewhere = findPersonIdsInvitedElsewhere(candidates);
+        Set<Long> sharingGuardianEmail = findPersonIdsSharingGuardianEmail(candidates);
         List<InvitationWaveRecipient> recipients = candidates.stream()
-                .map(account -> toRecipient(wave.getId(), account, invitedElsewhere))
+                .map(account -> toRecipient(wave.getId(), account, invitedElsewhere, sharingGuardianEmail))
                 .toList();
         saveRecipients(recipients);
         return responseFactory.createWaveResponse(wave);
@@ -84,9 +89,17 @@ public class CreateInvitationWaveTransaction {
         return invited;
     }
 
-    private InvitationWaveRecipient toRecipient(Long waveId, ImportedAccount account, Set<Long> invitedElsewhere) {
+    private Set<Long> findPersonIdsSharingGuardianEmail(List<ImportedAccount> candidates) {
+        List<Long> personIds = candidates.stream().filter(account -> !account.withoutEmail()).map(ImportedAccount::personId).toList();
+        return guardianEmailCollisionFinder.findPersonIdsWithEmailSharedWithGuardian(personIds);
+    }
+
+    private InvitationWaveRecipient toRecipient(Long waveId, ImportedAccount account, Set<Long> invitedElsewhere, Set<Long> sharingGuardianEmail) {
         if (account.withoutEmail()) {
             return InvitationWaveRecipient.excluded(waveId, account.personId(), InvitationExclusionReason.NO_EMAIL);
+        }
+        if (sharingGuardianEmail.contains(account.personId())) {
+            return InvitationWaveRecipient.excluded(waveId, account.personId(), InvitationExclusionReason.SHARED_EMAIL);
         }
         if (invitedElsewhere.contains(account.personId())) {
             return InvitationWaveRecipient.excluded(waveId, account.personId(), InvitationExclusionReason.IN_OTHER_WAVE);

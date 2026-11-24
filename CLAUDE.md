@@ -41,8 +41,9 @@ y `~/.claude/instructions/workflow-git.md`):
   pasar. No se abre un PR que pueda romper el CI (GitHub Actions cobra minutos).
 - **PRs siempre contra `develop`** (`--base develop` explícito); rama propia por cambio;
   aprobación explícita antes de cada commit y de cada push; el merge lo hace el Líder Técnico de la célula (dominio delegado por Gabriel el 17-nov, release a master incluido).
-- **Migraciones Flyway**: mirar el último número en `origin/develop` y `origin/master`
-  antes de crear una.
+- **Migraciones Flyway**: `scripts/next-migration.sh` da el próximo número libre (máximo de
+  `origin/develop` y `origin/master` + 1); revalidarlo con `--check <n>` antes de mergear.
+- **Abrir o mergear un release**: skill `cell-release`.
 - **Todo diseño o mockup pasa por el agente `ux-advisor`** antes de mostrarse, y no se
   codifica sin aprobación del diseño. Ver `docs/context/frontend.md`.
 - **Releases y hotfixes**: Claude puede abrir PRs contra `master` (`release/*` desde
@@ -52,7 +53,7 @@ y `~/.claude/instructions/workflow-git.md`):
   para que develop y master no se alejen. Un push a `master` que no venga de `release/*`
   dispara un PR automático "Backport" (rama `backport/*`, cherry-pick) hacia `develop`, salvo que venga de una rama `release/*`. No existe un PR
   automático develop → master.
-- **Mockups: siempre como Artifact** (skill `vidrio-liquido-mockup`), nunca un `.html` suelto.
+- **Mockups: siempre como Artifact** (skill `mockup-direccion-b`), nunca un `.html` suelto.
 
 ## Qué leer según la tarea
 

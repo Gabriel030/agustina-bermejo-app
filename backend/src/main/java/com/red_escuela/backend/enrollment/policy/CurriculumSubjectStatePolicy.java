@@ -7,7 +7,12 @@ import java.util.Collection;
 public final class CurriculumSubjectStatePolicy {
 
     public CurriculumSubjectState stateOf(Collection<EnrollmentStatus> statuses, boolean prerequisitesMet) {
-        if (statuses.contains(EnrollmentStatus.APPROVED)) {
+        return stateOf(statuses, false, prerequisitesMet);
+    }
+
+    public CurriculumSubjectState stateOf(Collection<EnrollmentStatus> statuses, boolean approvedByEquivalence,
+            boolean prerequisitesMet) {
+        if (approvedByEquivalence || statuses.contains(EnrollmentStatus.APPROVED)) {
             return CurriculumSubjectState.APPROVED;
         }
         if (statuses.contains(EnrollmentStatus.ENROLLED) || statuses.contains(EnrollmentStatus.IN_PROGRESS)) {

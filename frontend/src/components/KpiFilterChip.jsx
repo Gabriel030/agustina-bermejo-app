@@ -24,7 +24,7 @@ const COUNT = {
   inline: 'font-heading text-xl font-bold tabular-nums text-ink',
 };
 
-export function KpiFilterChip({ label, count, pressed, onClick, variant = 'card', ariaLabel }) {
+export function KpiFilterChip({ label, count, pressed, onClick, variant = 'card', ariaLabel, tone }) {
   const isCard = variant === 'card';
   return (
     <button
@@ -34,7 +34,7 @@ export function KpiFilterChip({ label, count, pressed, onClick, variant = 'card'
       onClick={onClick}
       className={chip({ variant, pressed: !!pressed })}
     >
-      {isCard ? <b className={COUNT.card}>{count}</b> : <span className={COUNT.inline}>{count}</span>}
+      {isCard ? <b className={cn(COUNT.card, tone === 'danger' && 'text-danger')}>{count}</b> : <span className={cn(COUNT.inline, tone === 'danger' && 'text-danger')}>{count}</span>}
       {isCard && ' '}
       <span className={cn('text-sm text-ink-soft', isCard && pressed && 'font-semibold text-primary')}>{label}</span>
     </button>

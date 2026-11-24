@@ -1,7 +1,6 @@
 package com.red_escuela.backend.identity.controller;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
-import com.red_escuela.backend.identity.dto.AuthResponse;
 import com.red_escuela.backend.identity.dto.LoginRequest;
 import com.red_escuela.backend.identity.entity.AuthProvider;
 import com.red_escuela.backend.identity.entity.Person;
@@ -85,15 +84,15 @@ class AuthRefreshCookieControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void loginSetsTheRefreshCookieWithTheSameTokenAsTheBody() throws Exception {
+    void loginSetsTheRefreshCookieAndKeepsTheTokenOutOfTheBody() throws Exception {
         persistPerson("cookie1");
 
         MvcResult result = login("cookie1");
 
-        AuthResponse body = objectMapper.readValue(result.getResponse().getContentAsString(), AuthResponse.class);
         String header = result.getResponse().getHeader(HttpHeaders.SET_COOKIE);
         assertThat(header).contains("HttpOnly", "Secure", "SameSite=Strict", "Path=/api/auth", "Max-Age=604800");
-        assertThat(cookieValue(result)).isEqualTo(body.refreshToken());
+        assertThat(result.getResponse().getContentAsString()).doesNotContain("refreshToken");
+        assertThat(cookieValue(result)).isNotBlank();
     }
 
     @Test
@@ -167,7 +166,8 @@ class AuthRefreshCookieControllerTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"refreshToken\":\"" + original + "\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.refreshToken").isNotEmpty())
+                .andExpect(jsonPath("$.accessToken").isNotEmpty())
+                .andExpect(jsonPath("$.refreshToken").doesNotExist())
                 .andReturn();
 
         assertThat(result.getResponse().getHeader(HttpHeaders.SET_COOKIE)).contains("HttpOnly");

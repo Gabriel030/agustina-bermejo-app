@@ -21,8 +21,8 @@ lo ya construido en la Fase 1 (Fundación técnica y login) la sigue; lo que fal
    y cards exactamente, sin reinventarlos.
 3. **Verificar variantes de componentes existentes** antes de extender — si el
    componente admite `variant=`, revisar cuáles existen antes de agregar estilos
-   a mano. Ejemplo: `Button` tiene `default/outline/secondary/ghost/destructive/
-   gradient` (+ prop `loading`); `TabsList` usa `variant="segmented"` (pill deslizante VL2)
+   a mano. Ejemplo: `Button` tiene `primary/default/outline/secondary/ghost/destructive/
+   link` (+ prop `loading`); `TabsList` usa `variant="segmented"` (pill deslizante)
    como estándar en este proyecto.
 4. **Patrón de filas clickeables**: `rounded-2xl px-4 py-3 transition-colors
    hover:bg-neutral-bg/60` + `ChevronRight` al final, dentro de un contenedor
@@ -30,7 +30,7 @@ lo ya construido en la Fase 1 (Fundación técnica y login) la sigue; lo que fal
    de este patrón (ver DocenteMisComisiones, PadronAlumnos).
 5. **Campos de solo lectura**: usar `<Input value={...} readOnly className="cursor-default" />`
    en vez de `<span>`. Mantiene consistencia visual con formularios editables.
-6. **Botón de acción primaria**: `variant="gradient"`. Acción secundaria/cancelar:
+6. **Botón de acción primaria**: `variant="primary"`. Acción secundaria/cancelar:
    `variant="outline"`. Destructivo: `variant="destructive"`.
 7. **Componentes compartidos clave**: `StatusPill` (tono semántico, nunca spans
    con colores hardcodeados), `EmptyState` (estados vacíos consistentes),
@@ -38,7 +38,7 @@ lo ya construido en la Fase 1 (Fundación técnica y login) la sigue; lo que fal
    `StatCard` (KPI tiles en dashboards). Instalar nuevos via `npx shadcn add
    <componente>`, no a mano.
 
-7. **Colores solo por tokens** (ver "Sistema visual Vidrio Líquido 2.0" abajo). Nunca
+7. **Colores solo por tokens** (ver "Sistema visual (dirección B)" abajo). Nunca
    literales de Tailwind (`text-red-600`, `bg-green-50`) ni `oklch(...)`/hex a mano:
    rompen el modo oscuro.
 
@@ -48,8 +48,8 @@ Este protocolo aplica tanto para implementación como para mockups.
 
 1. Correr el protocolo de arriba (catálogo, pantallas similares, variantes, tokens).
 2. Armar el diseño **siempre como Artifact interactivo** (claro/oscuro, responsive) con la
-   skill `vidrio-liquido-mockup`, para verlo dentro de Claude; nunca un `.html` suelto.
-3. **Pasarlo por el agente `ux-advisor`** (`~/.claude/agents/ux-advisor.md`) antes de
+   skill `mockup-direccion-b`, para verlo dentro de Claude; nunca un `.html` suelto.
+3. **Pasarlo por el agente `ux-advisor`** (`.claude/agents/ux-advisor.md`) antes de
    mostrarlo, y de nuevo tras cada iteración importante. Revisa: componentes
    existentes, coherencia con pantallas hermanas y con los tokens, usabilidad y
    experiencia, redundancias, sobrecarga de la pantalla, responsive e intuitividad.
@@ -179,7 +179,7 @@ necesite de verdad.
 - **Componentes de shadcn/ui (`components/ui/`)**: los componentes nuevos se agregan
   con `npx shadcn add` (y se revisa el resultado, ver "Reglas prácticas"). Los ya
   adaptados (`button`, `tabs`, `table`, `sonner`) se editan solo para aplicar tokens
-  de Vidrio Líquido o sumar una variante/prop del sistema (`gradient`, `loading`,
+  de la dirección B o sumar una variante/prop del sistema (`primary`, `loading`,
   `segmented`); no se les mete lógica de una pantalla puntual. Para algo específico,
   se envuelve (`GlassCard` envuelve el patrón `.card`, no lo reimplementa).
 - **Composición sobre herencia / props gigantes**: para piezas con varios estados
@@ -283,13 +283,9 @@ filtro de una misma lista — visualmente es la misma interacción.
 Nota para tests: `TabsTrigger` renderiza `role="tab"`, no `role="button"` — usar
 `screen.getByRole('tab', { name: '...' })`.
 
-## Sistema visual Vidrio Líquido 2.0
+## Sistema visual (dirección B)
 
-Diseñado y aprobado en el Artifact "Vidrio Líquido 2.0" antes de codificar; esto es
-lo que quedó implementado. La fuente de verdad de tokens y reglas de interacción de
-fondo es el Documento maestro de Obsidian (`Roadmap frontend/Documento maestro - Stack y
-sistema de diseño.md`, ubicación en [specs.md](specs.md)); si difiere de este archivo o
-de `src/theme/tokens.css`, gana el código y se corrige la doc.
+Dirección B (plana), aprobada con mockup antes de codificar. La fuente de verdad de tokens es `src/theme/tokens.css`; las notas de producto y el documento de diseño viven en Obsidian (ubicación en [specs.md](specs.md)). Si difiere de este archivo, gana el código y se corrige la doc.
 
 ### Tokens y modo oscuro
 - Única fuente de color: `src/theme/tokens.css` (oklch), mapeada a utilidades
@@ -300,25 +296,25 @@ de `src/theme/tokens.css`, gana el código y se corrige la doc.
 - Modo oscuro real: atributo `data-theme` en `<html>` (la preferencia del sistema la resuelve el script de `index.html`). Lo maneja `context/ThemeContext.jsx` (`useTheme()` →
   `{ tema, alternarTema }`, persiste en `localStorage`); `index.html` tiene un script
   inline que evita el flash del tema equivocado; el switch es `ThemeToggle.jsx`.
-  Los tokens oscuros se definen solo bajo `[data-theme='dark']` (sin media query). Diseño default `b` (`tokens-b.css`) con `vl` de respaldo: ver [design-system.md](design-system.md).
+  Los tokens oscuros se definen solo bajo `[data-theme='dark']` (sin media query). Un solo archivo de tokens: ver [design-system.md](design-system.md).
 - Los tests que renderizan árboles completos necesitan `<ThemeProvider>`; `matchMedia`
   está polyfilleado en `src/test/setup.js`.
 
 ### Catálogo de componentes compartidos (resumen; inventario completo en [components.md](components.md))
 | Necesidad | Usar |
 |---|---|
-| Card / contenedor de vidrio | `GlassCard`; con `interactive` si es clickeable (elevación + borde de marca al hover) |
+| Card / contenedor de superficie | `GlassCard`; con `interactive` si es clickeable (elevación + borde de marca al hover) |
 | Entrada escalonada de listas/grillas de cards | `<Stagger>` envolviendo los hijos (`delayStep` en ms) |
 | KPI / métrica | `StatCard` (dentro de `Stagger` en grillas) |
 | Tablas | `components/ui/table.jsx` (`Table`, `TableHeader`, `TableRow`, `TableHead`, `TableCell`), dentro de un `GlassCard` — la tabla no trae borde propio. Header sticky, mayúsculas, hover `accent-soft`. Excepción: grillas con rowSpan/colSpan/sticky propias (ej. tomar asistencia) |
 | Encabezado ordenable | `features/evaluation/components/SortableColumnHeader.jsx` (ya con el estilo del header de tabla) |
 | Pestañas | `Tabs` con `variant="segmented"` |
-| Stepper / wizard | `components/Stepper.jsx` único (completados en verde con tilde, activo con gradiente y pulso; pasos visitados clickeables). No hay otro Stepper |
+| Stepper / wizard | `components/Stepper.jsx` único (completados en verde con tilde, activo en color de marca con pulso; pasos visitados clickeables). No hay otro Stepper |
 | Notificaciones/feedback de acciones | `toast` de `sonner` (`toast.error/success`), con `<Toaster />` ya montado en `App.jsx`. No mostrar errores de mutaciones como párrafos inline |
 | Botón con acción en curso | `<Button loading={mutation.isPending}>` (no combinar `loading` con `asChild`) |
 | Carga | `Skeleton` (usa `skeleton-shimmer`); `EmptyState` para vacíos |
 | Badges de estado | `StatusPill` / `EstadoSolicitudBadge` / `ui/badge` |
-| Menú lateral / drawer mobile | `Sidebar` y `MobileMenu`: ambos con fondo deslizante sobre el ítem activo (`useSlidingIndicator`, marcador `nav-item-activo`); el drawer lleva iconos y el ítem activo con gradiente completo |
+| Menú lateral / drawer mobile | `Sidebar`: fondo deslizante sobre el ítem activo (`useSlidingIndicator`, marcador `nav-item-activo`). `MobileMenu` (drawer): el ítem activo usa `--nav-indicator-bg` |
 
 ### Reglas prácticas
 - **`components/ui/` generado por CLI**: usar `npx shadcn add <x>` y revisar el
@@ -327,19 +323,14 @@ de `src/theme/tokens.css`, gana el código y se corrige la doc.
   reales son `--surface`, `--radius-lg`).
 - Estados de color semánticos siempre por token (`text-danger`, `bg-success-bg`,
   `border-success`), nunca literales.
-- Fondos "de vidrio" fijos: `bg-surface backdrop-blur-[20px] backdrop-saturate-[1.6]`,
-  no un `oklch(...)` hardcodeado (no se adapta al modo oscuro).
+- Superficies: `bg-surface` (o `GlassCard`); sin desenfoques de fondo ni degradés (los prohíbe `noLiteralBlur.test.js`), ni un `oklch(...)` a mano (no se adapta al modo oscuro).
 - Scroll con desvanecido en los bordes: utilidad `.scroll-fade-y`.
 - Un `MutationObserver` mide el ítem activo en `useSlidingIndicator(selector)`; para
   una lista nueva con indicador deslizante, reusar el hook, no reimplementarlo.
 
 ## Motion / animación
 
-Base: spring `cubic-bezier(0.22,1,0.36,1)`, hover `-translate-y-0.5` (2px) en el
-botón `gradient`, `translateX(3px)` en filas de nav. Con Vidrio Líquido 2.0 se
-sumaron, y solo estas: `skeleton-shimmer`, `stagger-in` (vía `<Stagger>`), `tab-in`
-(pestaña `segmented`), `pop-in` (tilde del Stepper), `pulse-ring` (paso activo) y
-`badge-pulse` (campana) — keyframes en `index.css` — más la hamburguesa animada
+Base: spring `cubic-bezier(0.22,1,0.36,1)`. Las cards interactivas y el botón primario se elevan al hover según `--card-lift-y` y `--btn-lift-y` (en B valen 0px). Las animaciones propias son solo estas: `skeleton-shimmer`, `stagger-in` (vía `<Stagger>`), `tab-in` (pestaña `segmented`), `pop-in` (tilde del Stepper) y `pulse-ring` (paso activo), keyframes en `index.css`; además, la hamburguesa animada
 (transforms en `MobileMenu.jsx`) y el stagger de ítems del drawer (`tw-animate-css`).
 `index.css` tiene una regla global `prefers-reduced-motion` que las desactiva. No
 agregar animación nueva "porque se puede".

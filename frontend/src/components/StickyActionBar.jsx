@@ -11,7 +11,7 @@ const COMPACT_VIEWPORT_QUERY = '(width < 48rem)';
 const BAR_CLASSES =
   'sticky bottom-[calc(14px+env(safe-area-inset-bottom,0px))] z-5 flex flex-wrap items-center gap-3.5 px-4 py-3.5 ' +
   'max-md:-bottom-5 sm:max-md:-bottom-6 max-md:-mx-4 max-md:flex-nowrap max-md:gap-1.5 max-md:rounded-none max-md:border-x-0 max-md:border-b-0 max-md:px-3 max-md:pt-2 ' +
-  'max-md:pb-[calc(8px+env(safe-area-inset-bottom,0px))] max-md:shadow-none max-md:backdrop-blur-none max-md:backdrop-saturate-100 sm:max-md:-mx-8';
+  'max-md:pb-[calc(8px+env(safe-area-inset-bottom,0px))] max-md:shadow-none sm:max-md:-mx-8';
 
 const ROW_BAR_CLASSES = 'max-md:flex-col max-md:items-stretch';
 const MENU_BAR_CLASSES = 'max-md:flex-row max-md:items-center max-md:gap-2 max-md:pt-1.5 max-md:pb-[calc(6px+env(safe-area-inset-bottom,0px))]';
