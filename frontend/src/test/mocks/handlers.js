@@ -123,6 +123,8 @@ const curriculumProgress = (programEnrollmentId) => ({
       finalScore: null,
       attempts: 0,
       blockedBy: [],
+      prerequisites: [],
+      currentEnrollmentId: null,
       corequisites: [],
       approvalSource: 'EQUIVALENCE',
       equivalence: {
