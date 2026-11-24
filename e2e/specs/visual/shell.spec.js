@@ -28,7 +28,11 @@ async function stubApi(page, roles) {
       });
     }
     if (pathname === '/me/modules') return route.fulfill({ json: { billing: { mode: 'ON' } } });
-    if (pathname === '/me/notifications') return route.fulfill({ json: NOTIFICATIONS });
+    if (pathname === '/me/notifications') {
+      return route.fulfill({ json: { items: NOTIFICATIONS, page: 0, size: 10, totalElements: NOTIFICATIONS.length } });
+    }
+    if (pathname === '/me/notifications/unread-count') return route.fulfill({ json: { count: 2 } });
+    if (pathname === '/me/legal-acceptances/pending') return route.fulfill({ json: { documents: [] } });
     return route.fulfill({ json: [] });
   });
 }
