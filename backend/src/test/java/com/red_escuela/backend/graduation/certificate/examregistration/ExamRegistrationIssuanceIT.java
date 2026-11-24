@@ -46,9 +46,12 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
+import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import com.red_escuela.backend.graduation.certificate.engine.CertificatePdfRenderer;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateDigest;
+import com.red_escuela.backend.graduation.certificate.specialist.VerifiableDocumentRegistry;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import org.springframework.test.web.servlet.MvcResult;
@@ -162,13 +165,13 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
             studentToken = jwtService.generateAccessToken(studentPerson);
             strangerToken = jwtService.generateAccessToken(strangerPerson);
         });
-        jdbc.update("delete from exam_registration_certificate");
+        deleteCertificates();
         setBillingMode("OFF");
     }
 
     @AfterEach
     void restoreBillingMode() {
-        jdbc.update("delete from exam_registration_certificate");
+        deleteCertificates();
         setBillingMode("FULL");
     }
 
@@ -236,6 +239,8 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
     private CertificatePdfRenderer renderer;
     @MockitoSpyBean
     private CertificateDigest digest;
+    @MockitoSpyBean
+    private VerifiableDocumentRegistry verifiableDocumentRegistry;
     @Value("${app.frontend.base-url}")
     private String frontendBaseUrl;
     @Value("${app.certificates.directory}")
@@ -249,6 +254,16 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
     private ResultActions download(String token, Long id) throws Exception {
         return mockMvc.perform(get("/me/procedures/approved/EXAM_REGISTRATION_CERTIFICATE/{id}/pdf", id)
                 .header("Authorization", "Bearer " + token));
+    }
+
+    private void failRegistration() {
+        transactions.executeWithoutResult(status ->
+                doThrow(new IllegalStateException("registry down")).when(verifiableDocumentRegistry).register(any(), any(), any()));
+    }
+
+    private void deleteCertificates() {
+        jdbc.update("delete from verifiable_document where document_type = 'EXAM_REGISTRATION_CERTIFICATE'");
+        jdbc.update("delete from exam_registration_certificate");
     }
 
     private long certificateCount() {
@@ -668,7 +683,7 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
         ExecutorService executor = Executors.newFixedThreadPool(2);
         try {
             for (int round = 0; round < CONCURRENCY_ROUNDS; round++) {
-                jdbc.update("delete from exam_registration_certificate");
+                deleteCertificates();
                 CountDownLatch ready = new CountDownLatch(2);
                 CountDownLatch go = new CountDownLatch(1);
                 List<Future<Integer>> results = List.of(registrationId, other).stream().map(target -> executor.submit(() -> {
@@ -743,7 +758,7 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
         ExecutorService executor = Executors.newFixedThreadPool(2);
         try {
             for (int round = 0; round < CONCURRENCY_ROUNDS; round++) {
-                jdbc.update("delete from exam_registration_certificate");
+                deleteCertificates();
                 CountDownLatch ready = new CountDownLatch(2);
                 CountDownLatch go = new CountDownLatch(1);
                 List<Future<Integer>> results = List.of("Empresa A", "Empresa B").stream().map(text -> executor.submit(() -> {
@@ -765,5 +780,114 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
         } finally {
             executor.shutdownNow();
         }
+    }
+
+    private static final AtomicInteger PUBLIC_CLIENTS = new AtomicInteger(1);
+
+    private ResultActions verifyPublicly(String code) throws Exception {
+        String address = "203.0.113." + PUBLIC_CLIENTS.incrementAndGet() % 250;
+        RequestPostProcessor client = request -> {
+            request.setRemoteAddr(address);
+            return request;
+        };
+        return mockMvc.perform(get("/public/documents/{code}", code).with(client));
+    }
+
+    private String codeOf(Long id) {
+        return jdbc.queryForObject("select code from exam_registration_certificate where id = ?", String.class, id);
+    }
+
+    @Test
+    void issuedDocumentIsRegisteredAndVerifiableWithMinimalData() throws Exception {
+        Long id = generateWithRecipient("EMPLOYER", "Empresa Secreta SA");
+        String code = codeOf(id);
+
+        assertThat(jdbc.queryForObject("select count(*) from verifiable_document where code = ? and document_type = 'EXAM_REGISTRATION_CERTIFICATE' and source_id = ?",
+                Long.class, code, id)).isEqualTo(1L);
+        MvcResult result = verifyPublicly(code).andExpect(status().isOk())
+                .andExpect(jsonPath("$.documentType").value("EXAM_REGISTRATION_CERTIFICATE"))
+                .andExpect(jsonPath("$.status").value("VALID"))
+                .andExpect(jsonPath("$.maskedDocument").value(Matchers.startsWith("*")))
+                .andExpect(jsonPath("$.expiresAt").value("2026-11-21T00:00:00"))
+                .andExpect(jsonPath("$.replacedAt").doesNotExist())
+                .andExpect(jsonPath("$.revokedAt").doesNotExist()).andReturn();
+        assertThat(result.getResponse().getContentAsString()).doesNotContain("Empresa Secreta", "EMPLOYER", "Materia", "recipient");
+    }
+
+    @Test
+    void publicVerificationReportsExpiredAfterTheExamDay() throws Exception {
+        String code = codeOf(issuedId(studentToken));
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 21, 8, 0));
+
+        verifyPublicly(code).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("EXPIRED"));
+    }
+
+    @Test
+    void publicVerificationReportsRevokedWithTheRevocationDate() throws Exception {
+        String code = codeOf(issuedId(studentToken));
+        jdbc.update("update exam_registration_certificate set status = 'REVOKED', revoked_at = ?, revoked_by_id = issued_by_id, revocation_reason = 'motivo interno'",
+                Timestamp.valueOf("2026-11-10 11:00:00"));
+
+        MvcResult result = verifyPublicly(code).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("REVOKED"))
+                .andExpect(jsonPath("$.revokedAt").value("2026-11-10T11:00:00")).andReturn();
+        assertThat(result.getResponse().getContentAsString()).doesNotContain("motivo interno");
+    }
+
+    @Test
+    void publicVerificationOfAReplacedDocumentReportsReplacedWithTheReplacementDate() throws Exception {
+        Long first = generateWithRecipient("EMPLOYER", "Empresa A");
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 11, 10, 0));
+        Long second = generateWithRecipient("HEALTH_INSURANCE", "Obra social B");
+
+        verifyPublicly(codeOf(first)).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("REPLACED"))
+                .andExpect(jsonPath("$.replacedAt").value("2026-11-11T10:00:00"));
+        verifyPublicly(codeOf(second)).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("VALID"))
+                .andExpect(jsonPath("$.replacedAt").doesNotExist());
+    }
+
+    @Test
+    void unregisteredCodeIsNotFound() throws Exception {
+        verifyPublicly("0".repeat(26)).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void failedRegistrationRollsBackTheIssuanceAndTheFile() throws Exception {
+        List<String> filesBefore = storedFileNames();
+        failRegistration();
+
+        generate(studentToken, "{}").andExpect(result -> assertThat(result.getResponse().getStatus()).isEqualTo(409));
+
+        assertThat(certificateCount()).isZero();
+        assertThat(storedFileNames()).isEqualTo(filesBefore);
+    }
+
+    @Test
+    void failedRegistrationWhileReplacingRevertsThePreviousDocumentToValid() throws Exception {
+        generateWithRecipient("EMPLOYER", "Empresa A");
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 11, 10, 0));
+        List<String> filesBefore = storedFileNames();
+        failRegistration();
+
+        generate(studentToken, "{\"recipientType\":\"HEALTH_INSURANCE\",\"recipientText\":\"Obra social B\"}")
+                .andExpect(result -> assertThat(result.getResponse().getStatus()).isEqualTo(409));
+
+        assertThat(statusesOfCertificates()).containsExactly("VALID");
+        assertThat(storedFileNames()).isEqualTo(filesBefore);
+    }
+
+    @Test
+    void publicVerificationIsValidOneSecondBeforeTheExpiryInstant() throws Exception {
+        String code = codeOf(issuedId(studentToken));
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 20, 23, 59, 59));
+
+        verifyPublicly(code).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("VALID"));
+    }
+
+    @Test
+    void publicVerificationIsExpiredExactlyAtTheExpiryInstant() throws Exception {
+        String code = codeOf(issuedId(studentToken));
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 21, 0, 0, 0));
+
+        verifyPublicly(code).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("EXPIRED"));
     }
 }
