@@ -25,7 +25,7 @@ export const invitationWave = (overrides = {}) => ({
   activatedTotal: 0,
   importBatchName: 'Alumnos 2026 - primer cuatrimestre',
   invitableCount: 118,
-  excludedByReason: { NO_EMAIL: 6, ALREADY_ACTIVE: 0, NOT_ELIGIBLE: 1, IN_OTHER_WAVE: 2, WAVE_CANCELLED: 0 },
+  excludedByReason: { NO_EMAIL: 6, ALREADY_ACTIVE: 0, NOT_ELIGIBLE: 1, IN_OTHER_WAVE: 2, WAVE_CANCELLED: 0, SHARED_EMAIL: 0 },
   nextRunAt: null,
   ...overrides,
 });

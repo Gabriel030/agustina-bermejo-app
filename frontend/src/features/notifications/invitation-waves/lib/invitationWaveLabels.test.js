@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { lacksPersonalData, recipientDetail } from './invitationWaveLabels';
+import { EXCLUSION_LABELS, lacksPersonalData, recipientDetail } from './invitationWaveLabels';
 import { buildRecipient, withoutPersonalData } from '../test/fixtures';
 
 const hidden = (personId, overrides) => withoutPersonalData(buildRecipient(personId, overrides));
@@ -35,5 +35,11 @@ describe('lacksPersonalData', () => {
 describe('recipientDetail', () => {
   it('saysTheSentRecipientIsWaitingForAccountActivation', () => {
     expect(recipientDetail(buildRecipient(1, { status: 'SENT' }))).toBe('Esperando que active su cuenta');
+  });
+});
+
+describe('EXCLUSION_LABELS', () => {
+  it('labelsSharedEmailExclusionInSpanish', () => {
+    expect(EXCLUSION_LABELS.SHARED_EMAIL).toBe('Mail compartido con un tutor');
   });
 });

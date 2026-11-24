@@ -25,6 +25,7 @@ export const EXCLUSION_LABELS = {
   NOT_ELIGIBLE: 'No elegible',
   IN_OTHER_WAVE: 'Ya está en otra oleada',
   WAVE_CANCELLED: 'Oleada cancelada',
+  SHARED_EMAIL: 'Mail compartido con un tutor',
 };
 
 export const DELIVERY_ERROR_LABELS = {

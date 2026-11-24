@@ -1,6 +1,7 @@
 package com.red_escuela.backend.notification.invitation.specialist;
 
 import com.red_escuela.backend.identity.api.IssuedActivationToken;
+import com.red_escuela.backend.identity.api.GuardianEmailCollisionFinder;
 import com.red_escuela.backend.identity.api.PersonContactFinder;
 import com.red_escuela.backend.identity.exception.PersonAlreadyActivatedException;
 import com.red_escuela.backend.identity.exception.PersonNotEligibleForActivationException;
@@ -30,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -41,6 +43,7 @@ public class InvitationRecipientSendTransaction {
     private final InvitationWaveRecipientRepository recipientRepository;
     private final NotificationDeliveryRepository deliveryRepository;
     private final PersonContactFinder personContactFinder;
+    private final GuardianEmailCollisionFinder guardianEmailCollisionFinder;
     private final InvitationActivationTokenRequester tokenRequester;
     private final ActivationInvitationEmailFactory emailFactory;
     private final InvitationMailSender mailSender;
@@ -50,6 +53,7 @@ public class InvitationRecipientSendTransaction {
 
     public InvitationRecipientSendTransaction(InvitationWaveRepository waveRepository, InvitationWaveRecipientRepository recipientRepository,
                                               NotificationDeliveryRepository deliveryRepository, PersonContactFinder personContactFinder,
+                                              GuardianEmailCollisionFinder guardianEmailCollisionFinder,
                                               InvitationActivationTokenRequester tokenRequester, ActivationInvitationEmailFactory emailFactory,
                                               InvitationMailSender mailSender, InvitationDeliveryRecorder deliveryRecorder,
                                               InvitationSendingCapacity capacity, Clock clock) {
@@ -57,6 +61,7 @@ public class InvitationRecipientSendTransaction {
         this.recipientRepository = recipientRepository;
         this.deliveryRepository = deliveryRepository;
         this.personContactFinder = personContactFinder;
+        this.guardianEmailCollisionFinder = guardianEmailCollisionFinder;
         this.tokenRequester = tokenRequester;
         this.emailFactory = emailFactory;
         this.mailSender = mailSender;
@@ -81,6 +86,9 @@ public class InvitationRecipientSendTransaction {
         }
         if (personContactFinder.findEmailRecipient(recipient.getPersonId()).isEmpty()) {
             return exclude(recipient, InvitationExclusionReason.NO_EMAIL);
+        }
+        if (!guardianEmailCollisionFinder.findPersonIdsWithEmailSharedWithGuardian(List.of(recipient.getPersonId())).isEmpty()) {
+            return exclude(recipient, InvitationExclusionReason.SHARED_EMAIL);
         }
         if (!capacity.hasCapacityToday(wave)) {
             return InvitationSendResult.NO_QUOTA;
