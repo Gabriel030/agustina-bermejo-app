@@ -1,5 +1,6 @@
 package com.red_escuela.backend.notification.broadcast.audience.usecase;
 
+import com.red_escuela.backend.enrollment.api.PersonCurrentCourseFinder;
 import com.red_escuela.backend.identity.api.PersonAudienceFinder;
 import com.red_escuela.backend.identity.api.PersonAudienceView;
 import com.red_escuela.backend.notification.broadcast.domain.ChannelType;
@@ -36,14 +37,17 @@ public class PreviewBroadcastAudienceService implements PreviewBroadcastAudience
     private final PersonAudienceFinder personAudienceFinder;
     private final RecipientEligibilityEvaluator eligibilityEvaluator;
     private final MessageTemplateRepository templateRepository;
+    private final PersonCurrentCourseFinder currentCourseFinder;
 
     public PreviewBroadcastAudienceService(SegmentResolver segmentResolver, PersonAudienceFinder personAudienceFinder,
                                            RecipientEligibilityEvaluator eligibilityEvaluator,
-                                           MessageTemplateRepository templateRepository) {
+                                           MessageTemplateRepository templateRepository,
+                                           PersonCurrentCourseFinder currentCourseFinder) {
         this.segmentResolver = segmentResolver;
         this.personAudienceFinder = personAudienceFinder;
         this.eligibilityEvaluator = eligibilityEvaluator;
         this.templateRepository = templateRepository;
+        this.currentCourseFinder = currentCourseFinder;
     }
 
     @Override
@@ -62,13 +66,16 @@ public class PreviewBroadcastAudienceService implements PreviewBroadcastAudience
         Set<TemplateVariable> referenced = referencedVariables(request);
         boolean institutionNameConfigured = referenced.contains(TemplateVariable.INSTITUTION)
                 && personAudienceFinder.institutionNameConfigured();
+        Set<Long> peopleWithCurrentCourse = MissingVariablePolicy.referencesCourseVariable(referenced)
+                ? currentCourseFinder.findMostRecentCurrentCourses(people.stream().map(PersonAudienceView::personId).toList()).keySet()
+                : Set.of();
         boolean excludeMissing = Boolean.TRUE.equals(request.excludeMissingVariables());
         List<AudienceSampleEntry> evaluated = new ArrayList<>();
         int excluded = 0;
         for (PersonAudienceView person : people) {
             Optional<ExclusionReason> reason = Optional.ofNullable(reasons.get(person.personId()));
             if (reason.isEmpty() && MissingVariablePolicy.isMissingAnyVariable(referenced, person.firstName(),
-                    person.lastName(), institutionNameConfigured)) {
+                    person.lastName(), institutionNameConfigured, peopleWithCurrentCourse.contains(person.personId()))) {
                 excludedByReason.merge(ExclusionReason.MISSING_TEMPLATE_VARIABLE, 1, Integer::sum);
                 if (excludeMissing) {
                     reason = Optional.of(ExclusionReason.MISSING_TEMPLATE_VARIABLE);

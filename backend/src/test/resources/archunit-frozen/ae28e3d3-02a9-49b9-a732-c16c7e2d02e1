@@ -1,5 +1,3 @@
-com.red_escuela.backend.billing.usecase.cohort.CreateProgramYearBillingTemplateService.create(java.lang.Long, java.lang.Long, java.lang.Integer, com.red_escuela.backend.billing.dto.YearBillingConfigurationRequest) declares @Transactional
-com.red_escuela.backend.billing.usecase.cohort.UpdateYearBillingConfigurationService.update(java.lang.Long, com.red_escuela.backend.billing.dto.YearBillingConfigurationRequest) declares @Transactional
 com.red_escuela.backend.billing.usecase.invoice.CreateAdHocInvoiceForCourseEnrollmentService.create(java.lang.Long, com.red_escuela.backend.billing.dto.CreateAdHocInvoiceRequest) declares @Transactional
 com.red_escuela.backend.billing.usecase.invoice.CreateAdHocInvoiceForCourseEnrollmentService.create(java.lang.Long, com.red_escuela.backend.billing.dto.CreateAdHocInvoiceRequest, java.lang.String) declares @Transactional
 com.red_escuela.backend.billing.usecase.invoice.CreateAdHocInvoiceForProgramEnrollmentService.create(java.lang.Long, com.red_escuela.backend.billing.dto.CreateAdHocInvoiceRequest) declares @Transactional
