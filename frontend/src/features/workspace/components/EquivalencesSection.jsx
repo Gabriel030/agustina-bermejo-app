@@ -205,7 +205,7 @@ export function EquivalencesSection({ programEnrollmentId, readOnlyNotice = fals
         {actions?.visible && !compact && <EquivalenceRecordButton actions={actions} />}
       </div>
       {isLoading ? (
-        <div className="flex flex-col gap-2" aria-busy="true" aria-label="Cargando equivalencias">
+        <div role="status" className="flex flex-col gap-2" aria-busy="true" aria-label="Cargando equivalencias">
           <Skeleton className="h-12" />
           <Skeleton className="h-12" />
         </div>
