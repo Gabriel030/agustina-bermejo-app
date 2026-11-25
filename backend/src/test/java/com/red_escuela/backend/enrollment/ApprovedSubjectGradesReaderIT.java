@@ -67,7 +67,7 @@ class ApprovedSubjectGradesReaderIT extends AbstractIntegrationTest {
         entityManager.persist(institution);
         program = fixtures.program();
         term = fixtures.term(2026);
-        cycle = fixtures.programCycle(program, term, AcademicOfferingCycleStatus.ACTIVE);
+        cycle = fixtures.programCycle(program, term, AcademicOfferingCycleStatus.APPROVED);
         enrollment = programEnrollment();
     }
 
