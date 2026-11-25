@@ -117,6 +117,16 @@ public class ExamCertificate {
         }
     }
 
+    public void markReplaced() {
+        if (status == DocumentValidityStatus.VALID) {
+            this.status = DocumentValidityStatus.REPLACED;
+        }
+    }
+
+    public boolean isValidAt(LocalDateTime now) {
+        return status == DocumentValidityStatus.VALID && !expiresAt.isBefore(now);
+    }
+
     public boolean isRevocable() {
         return status == DocumentValidityStatus.VALID;
     }

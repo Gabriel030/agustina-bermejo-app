@@ -14,6 +14,8 @@ import com.red_escuela.backend.graduation.certificate.exception.CertificatePdfIn
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateDigest;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateDocumentAuditRecorder;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateVerificationUrl;
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,12 +34,14 @@ public class ExamCertificatePdfProvider {
     private final CertificateDigest digest;
     private final CertificateDocumentAuditRecorder auditRecorder;
     private final CertificateTemplateRenderSource templateSource;
+    private final Clock clock;
 
     public ExamCertificatePdfProvider(ExamCertificateRepository repository, ExamBoardAttendanceReader boardReader,
                                       CertificateFileStore fileStore, CertificatePdfRenderer renderer,
                                       ExamCertificateTemplate template, CertificateVerificationUrl verificationUrl,
                                       CertificateDigest digest, CertificateDocumentAuditRecorder auditRecorder,
-                                      CertificateTemplateRenderSource templateSource) {
+                                      CertificateTemplateRenderSource templateSource, Clock clock) {
+        this.clock = clock;
         this.repository = repository;
         this.boardReader = boardReader;
         this.fileStore = fileStore;
@@ -53,6 +57,18 @@ public class ExamCertificatePdfProvider {
     public GraduationCertificatePdf pdfOf(Long id) {
         ExamCertificate certificate = repository.findById(id).orElseThrow(ExamCertificateNotFoundException::new);
         boardReader.requireAccess(certificate.getExamBoardId());
+        return pdfOf(certificate);
+    }
+
+    @Transactional
+    public GraduationCertificatePdf pdfOfOwn(Long id, Long studentId) {
+        ExamCertificate certificate = repository.findByIdAndStudentId(id, studentId)
+                .filter(found -> found.isValidAt(LocalDateTime.now(clock)))
+                .orElseThrow(ExamCertificateNotFoundException::new);
+        return pdfOf(certificate);
+    }
+
+    private GraduationCertificatePdf pdfOf(ExamCertificate certificate) {
         Optional<byte[]> stored = fileStore.load(certificate.getPdfPath())
                 .filter(content -> digest.sha256(content).equals(certificate.getPdfSha256()));
         if (stored.isPresent()) {

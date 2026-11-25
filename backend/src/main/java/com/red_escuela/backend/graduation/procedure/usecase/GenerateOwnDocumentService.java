@@ -10,6 +10,7 @@ import com.red_escuela.backend.graduation.procedure.dto.OwnDocumentResponse;
 import com.red_escuela.backend.graduation.procedure.dto.OwnDocumentType;
 import com.red_escuela.backend.graduation.procedure.specialist.ApprovedSubjectsOwnEnrollmentResolver;
 import com.red_escuela.backend.graduation.procedure.specialist.ExamRegistrationCertificateIssuer;
+import com.red_escuela.backend.graduation.procedure.specialist.OwnExamCertificateIssuer;
 import com.red_escuela.backend.graduation.procedure.specialist.OwnRegularDocumentIssuer;
 import com.red_escuela.backend.shared.UseCase;
 
@@ -18,15 +19,18 @@ public class GenerateOwnDocumentService implements GenerateOwnDocumentUseCase {
 
     private final OwnRegularDocumentIssuer regularIssuer;
     private final ExamRegistrationCertificateIssuer examRegistrationIssuer;
+    private final OwnExamCertificateIssuer examCertificateIssuer;
 
     private final ApprovedSubjectsOwnEnrollmentResolver approvedSubjectsEnrollmentResolver;
     private final ApprovedSubjectsCertificateRequests requestApprovedSubjectsCertificate;
 
     public GenerateOwnDocumentService(OwnRegularDocumentIssuer regularIssuer, ExamRegistrationCertificateIssuer examRegistrationIssuer,
+                                      OwnExamCertificateIssuer examCertificateIssuer,
                                       ApprovedSubjectsOwnEnrollmentResolver approvedSubjectsEnrollmentResolver,
                                       ApprovedSubjectsCertificateRequests requestApprovedSubjectsCertificate) {
         this.regularIssuer = regularIssuer;
         this.examRegistrationIssuer = examRegistrationIssuer;
+        this.examCertificateIssuer = examCertificateIssuer;
         this.approvedSubjectsEnrollmentResolver = approvedSubjectsEnrollmentResolver;
         this.requestApprovedSubjectsCertificate = requestApprovedSubjectsCertificate;
     }
@@ -38,6 +42,12 @@ public class GenerateOwnDocumentService implements GenerateOwnDocumentUseCase {
         }
         if (type == OwnDocumentType.EXAM_REGISTRATION_CERTIFICATE) {
             return examRegistrationIssuer.issueOrReuse(
+                    request == null ? null : request.registrationId(),
+                    request == null ? null : request.recipientType(),
+                    request == null ? null : request.recipientText());
+        }
+        if (type == OwnDocumentType.EXAM_CERTIFICATE) {
+            return examCertificateIssuer.issueOrReuse(
                     request == null ? null : request.registrationId(),
                     request == null ? null : request.recipientType(),
                     request == null ? null : request.recipientText());
