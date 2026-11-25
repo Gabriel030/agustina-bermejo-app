@@ -15894,6 +15894,10 @@
           "canSubmit" : {
             "type" : "boolean"
           },
+          "evaluationConfigDeadline" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
           "evaluationSchemeName" : {
             "type" : "string"
           },
@@ -16003,7 +16007,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "canEdit", "canSubmit", "evaluationSchemeName", "exam1Date", "exam2Date", "exam3Date", "exam4Date", "examCountExpected", "finalCall1Date", "finalCall2Date", "hasFinal", "id", "instructors", "minApprovalGrade", "minRegularGrade", "promotionMinGrade", "rejectionReason", "reviewedAt", "reviewedByName", "sectionName", "status", "subjectName", "subjectSectionId", "submittedAt", "termEndDate", "termEnrollmentStart", "termStartDate", "tp1DueDate", "tp2DueDate", "tp3DueDate", "tpCount" ],
+        "required" : [ "canEdit", "canSubmit", "evaluationConfigDeadline", "evaluationSchemeName", "exam1Date", "exam2Date", "exam3Date", "exam4Date", "examCountExpected", "finalCall1Date", "finalCall2Date", "hasFinal", "id", "instructors", "minApprovalGrade", "minRegularGrade", "promotionMinGrade", "rejectionReason", "reviewedAt", "reviewedByName", "sectionName", "status", "subjectName", "subjectSectionId", "submittedAt", "termEndDate", "termEnrollmentStart", "termStartDate", "tp1DueDate", "tp2DueDate", "tp3DueDate", "tpCount" ],
         "type" : "object"
       },
       "SectionInstructorResponse" : {
