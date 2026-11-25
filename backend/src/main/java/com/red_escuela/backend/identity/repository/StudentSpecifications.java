@@ -57,6 +57,26 @@ public final class StudentSpecifications {
         };
     }
 
+    public static Specification<Student> withProspectSearch(String q) {
+        return (root, query, cb) -> {
+            if (q == null || q.isBlank()) return cb.conjunction();
+            Join<Student, Person> person = root.join("person", JoinType.INNER);
+            Predicate[] everyTermMatches = Arrays.stream(q.trim().split("\\s+"))
+                    .map(term -> matchesNameOrEmail(cb, person, term))
+                    .toArray(Predicate[]::new);
+            return cb.and(everyTermMatches);
+        };
+    }
+
+    private static Predicate matchesNameOrEmail(CriteriaBuilder cb, Join<Student, Person> person, String term) {
+        String lowered = LikePatterns.contains(term.toLowerCase(Locale.ROOT));
+        Expression<String> pattern = cb.function("unaccent", String.class, cb.literal(lowered));
+        return cb.or(
+                cb.like(cb.function("unaccent", String.class, cb.lower(person.get("name"))), pattern, LikePatterns.ESCAPE_CHARACTER),
+                cb.like(cb.function("unaccent", String.class, cb.lower(person.get("lastname"))), pattern, LikePatterns.ESCAPE_CHARACTER),
+                cb.like(cb.function("unaccent", String.class, cb.lower(person.get("email").as(String.class))), pattern, LikePatterns.ESCAPE_CHARACTER));
+    }
+
     private static Predicate matchesAnyField(CriteriaBuilder cb, Join<Student, Person> person, String term) {
         String lowered = LikePatterns.contains(term.toLowerCase(Locale.ROOT));
         Expression<String> pattern = cb.function("unaccent", String.class, cb.literal(lowered));

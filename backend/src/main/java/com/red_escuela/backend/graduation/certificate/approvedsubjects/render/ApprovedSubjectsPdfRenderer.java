@@ -3,7 +3,11 @@ package com.red_escuela.backend.graduation.certificate.approvedsubjects.render;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.snapshot.ApprovedSubjectLine;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.snapshot.ApprovedSubjectsSnapshot;
 import com.red_escuela.backend.graduation.certificate.dto.RecipientType;
+import com.red_escuela.backend.graduation.certificate.engine.CertificateAssets;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateCode;
+import com.red_escuela.backend.graduation.certificate.engine.CertificateMarkers;
+import com.red_escuela.backend.graduation.certificate.engine.CertificateSnapshot;
+import com.red_escuela.backend.graduation.certificate.engine.CertificateTexts;
 import com.red_escuela.backend.graduation.certificate.engine.QrMatrixFactory;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateVerificationUrl;
 import com.red_escuela.backend.graduation.certificate.engine.SignatorySnapshot;
@@ -16,6 +20,7 @@ import org.apache.pdfbox.pdmodel.PDPageContentStream;
 import org.apache.pdfbox.pdmodel.common.PDRectangle;
 import org.apache.pdfbox.pdmodel.font.PDFont;
 import org.apache.pdfbox.pdmodel.font.PDType0Font;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
@@ -29,6 +34,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Component
 public class ApprovedSubjectsPdfRenderer {
@@ -58,11 +64,15 @@ public class ApprovedSubjectsPdfRenderer {
     }
 
     public byte[] render(ApprovedSubjectsSnapshot snapshot, CertificateCode code) {
+        return render(snapshot, code, CertificateAssets.NONE);
+    }
+
+    public byte[] render(ApprovedSubjectsSnapshot snapshot, CertificateCode code, CertificateAssets assets) {
         String verificationUrl = certificateVerificationUrl.of(code);
         try (PDDocument document = new PDDocument(); InputStream fontStream = ApprovedSubjectsPdfRenderer.class.getResourceAsStream(FONT_RESOURCE)) {
             PDFont font = PDType0Font.load(document, fontStream, true);
             PDRectangle size = PDRectangle.A4;
-            List<String> intro = wrap(font, 11, size.getWidth() - 2 * MARGIN, introText(snapshot));
+            List<String> intro = wrap(font, 11, size.getWidth() - 2 * MARGIN, introText(snapshot, assets));
             float firstTableTop = size.getHeight() - 130 - intro.size() * 16 - 24;
             float nextTableTop = size.getHeight() - 100;
             List<List<ApprovedSubjectLine>> pages = paginate(snapshot.subjects(), firstTableTop, nextTableTop);
@@ -73,13 +83,13 @@ public class ApprovedSubjectsPdfRenderer {
                 try (PDPageContentStream content = new PDPageContentStream(document, page)) {
                     float tableTop = index == 0 ? firstTableTop : nextTableTop;
                     if (index == 0) {
-                        drawFirstHeader(content, font, size, snapshot, intro);
+                        drawFirstHeader(document, content, font, size, snapshot, intro, assets);
                     } else {
                         drawContinuationHeader(content, font, size, snapshot);
                     }
                     float y = drawTable(content, font, size, tableTop, pages.get(index));
                     if (index == total - 1) {
-                        drawFooterBlock(content, font, size, snapshot, code, verificationUrl, y);
+                        drawFooterBlock(document, content, font, size, snapshot, code, verificationUrl, y, assets);
                     }
                     drawPageNumber(content, font, size, index + 1, total, code);
                 }
@@ -115,16 +125,42 @@ public class ApprovedSubjectsPdfRenderer {
         return pages;
     }
 
-    private String introText(ApprovedSubjectsSnapshot snapshot) {
+    private String introText(ApprovedSubjectsSnapshot snapshot, CertificateAssets assets) {
+        String custom = assets.texts().intro();
+        if (custom != null && !custom.isBlank()) {
+            return CertificateMarkers.expand(custom, markerSnapshotOf(snapshot), assets.registrationNumber());
+        }
         return "Se deja constancia de que " + snapshot.holderFullName() + ", " + snapshot.documentTypeLabel() + " "
                 + snapshot.documentNumber() + ", alumno/a de la carrera " + snapshot.programName()
                 + ", tiene aprobadas las siguientes materias:";
     }
 
-    private void drawFirstHeader(PDPageContentStream content, PDFont font, PDRectangle size, ApprovedSubjectsSnapshot snapshot,
-                                 List<String> intro) throws IOException {
+    private CertificateSnapshot markerSnapshotOf(ApprovedSubjectsSnapshot snapshot) {
+        return new CertificateSnapshot(snapshot.holderFullName(), snapshot.documentTypeLabel(), snapshot.documentNumber(),
+                "carrera", snapshot.programName(), null, null, snapshot.issuedOn(), snapshot.issuedOn(), snapshot.institutionName(),
+                snapshot.signatories(), snapshot.templateRef(), null,
+                Map.of("average", snapshot.averageGrade() == null ? "no disponible" : decimal(snapshot.averageGrade()),
+                        "completionPercent", decimal(snapshot.progressPercentage())));
+    }
+
+    private void drawImage(PDDocument document, PDPageContentStream content, byte[] image, float x, float y, float width, float height) {
+        if (image == null) {
+            return;
+        }
+        try {
+            content.drawImage(PDImageXObject.createFromByteArray(document, image, "template-image"), x, y, width, height);
+        } catch (IOException | IllegalArgumentException e) {
+            return;
+        }
+    }
+
+    private void drawFirstHeader(PDDocument document, PDPageContentStream content, PDFont font, PDRectangle size,
+                                 ApprovedSubjectsSnapshot snapshot, List<String> intro, CertificateAssets assets) throws IOException {
+        String title = assets.texts().title();
+        drawImage(document, content, assets.logo(), MARGIN, size.getHeight() - 90, 60, 60);
         centered(content, font, 12, snapshot.institutionName(), size.getWidth(), size.getHeight() - 60);
-        centered(content, font, 18, "CONSTANCIA DE MATERIAS APROBADAS", size.getWidth(), size.getHeight() - 92);
+        centered(content, font, 18, title == null || title.isBlank() ? "CONSTANCIA DE MATERIAS APROBADAS" : title,
+                size.getWidth(), size.getHeight() - 92);
         float y = size.getHeight() - 130;
         for (String line : intro) {
             text(content, font, 11, MARGIN, y, line);
@@ -158,8 +194,10 @@ public class ApprovedSubjectsPdfRenderer {
         return y;
     }
 
-    private void drawFooterBlock(PDPageContentStream content, PDFont font, PDRectangle size, ApprovedSubjectsSnapshot snapshot,
-                                 CertificateCode code, String verificationUrl, float tableEnd) throws IOException {
+    private void drawFooterBlock(PDDocument document, PDPageContentStream content, PDFont font, PDRectangle size,
+                                 ApprovedSubjectsSnapshot snapshot, CertificateCode code, String verificationUrl, float tableEnd,
+                                 CertificateAssets assets) throws IOException {
+        CertificateTexts texts = assets.texts();
         float y = tableEnd - 14;
         text(content, font, 11, MARGIN, y, "Materias aprobadas: " + snapshot.approvedCount() + " de " + snapshot.totalSubjects()
                 + " (" + decimal(snapshot.progressPercentage()) + " % de la carrera)");
@@ -180,18 +218,29 @@ public class ApprovedSubjectsPdfRenderer {
         float qrBottom = BOTTOM_LIMIT + 20;
         drawQr(content, MARGIN, qrBottom, QR_SIZE, verificationUrl);
         float textX = MARGIN + QR_SIZE + 16;
-        text(content, font, 8, textX, qrBottom + 80, "Código de verificación");
+        text(content, font, 8, textX, qrBottom + 80,
+                texts.qrLabel() == null || texts.qrLabel().isBlank() ? "Código de verificación"
+                        : CertificateMarkers.expand(texts.qrLabel(), markerSnapshotOf(snapshot), assets.registrationNumber()));
         text(content, font, 10, textX, qrBottom + 66, code.formatted());
         text(content, font, 7, textX, qrBottom + 52, "Verificar en: " + verificationUrl);
         float signatoryX = textX;
         float signatoryY = qrBottom + 24;
-        for (SignatorySnapshot signatory : snapshot.signatories()) {
+        List<SignatorySnapshot> signatories = snapshot.signatories();
+        for (int index = 0; index < signatories.size(); index++) {
+            SignatorySnapshot signatory = signatories.get(index);
+            if (index < assets.signatureImages().size()) {
+                drawImage(document, content, assets.signatureImages().get(index), signatoryX, signatoryY + 12, 100, 30);
+            }
             content.moveTo(signatoryX, signatoryY + 10);
             content.lineTo(signatoryX + 150, signatoryY + 10);
             content.stroke();
             text(content, font, 9, signatoryX, signatoryY, signatory.name());
             text(content, font, 7, signatoryX, signatoryY - 10, signatory.title());
             signatoryX += 170;
+        }
+        if (texts.legend() != null && !texts.legend().isBlank()) {
+            centered(content, font, 7, CertificateMarkers.expand(texts.legend(), markerSnapshotOf(snapshot), assets.registrationNumber()),
+                    size.getWidth(), 44);
         }
     }
 

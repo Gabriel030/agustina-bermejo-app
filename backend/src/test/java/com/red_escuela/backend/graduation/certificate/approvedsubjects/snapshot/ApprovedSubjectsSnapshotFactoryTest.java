@@ -2,7 +2,7 @@ package com.red_escuela.backend.graduation.certificate.approvedsubjects.snapshot
 
 import com.red_escuela.backend.graduation.certificate.dto.RecipientType;
 import com.red_escuela.backend.graduation.certificate.engine.SignatorySnapshot;
-import com.red_escuela.backend.shared.domain.InvalidGradeException;
+import com.red_escuela.backend.graduation.certificate.approvedsubjects.exception.ApprovedSubjectsGradeUnavailableException;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -17,8 +17,13 @@ class ApprovedSubjectsSnapshotFactoryTest {
     private final ApprovedSubjectsSnapshotFactory factory = new ApprovedSubjectsSnapshotFactory();
 
     private ApprovedSubjectsSnapshotFactory.Input input(List<ApprovedSubjectLine> approved, int total, ApprovedSubjectsRecipient recipient) {
+        return inputWithValidity(approved, total, recipient, 30);
+    }
+
+    private ApprovedSubjectsSnapshotFactory.Input inputWithValidity(List<ApprovedSubjectLine> approved, int total,
+                                                                    ApprovedSubjectsRecipient recipient, int validityDays) {
         return new ApprovedSubjectsSnapshotFactory.Input("PÉREZ, ANA", "DNI", "30123456", "Tecnicatura en Enfermería",
-                "Instituto de prueba", approved, total, recipient, LocalDate.of(2026, 11, 5),
+                "Instituto de prueba", approved, total, recipient, LocalDate.of(2026, 11, 5), validityDays,
                 List.of(new SignatorySnapshot("Dirección", "Dirección académica")));
     }
 
@@ -74,6 +79,21 @@ class ApprovedSubjectsSnapshotFactoryTest {
 
         assertThat(snapshot.validUntil()).isEqualTo(LocalDate.of(2026, 12, 5));
         assertThat(snapshot.templateRef()).isEqualTo(ApprovedSubjectsSnapshotFactory.TEMPLATE_REF);
+    }
+
+    @Test
+    void validUntilFollowsTheConfiguredValidityDays() {
+        assertThat(factory.create(inputWithValidity(List.of(), 1, null, 60)).validUntil()).isEqualTo(LocalDate.of(2027, 1, 4));
+        assertThat(factory.create(inputWithValidity(List.of(), 1, null, 1)).validUntil()).isEqualTo(LocalDate.of(2026, 11, 6));
+    }
+
+    @Test
+    void legacyGradeThatCannotBeRepresentedRejectsTheIssuanceNamingTheSubject() {
+        assertThatThrownBy(() -> factory.create(input(List.of(line("Anatomía", 1, "8"), line("Ética", 2, "11")), 2, null)))
+                .isInstanceOfSatisfying(ApprovedSubjectsGradeUnavailableException.class,
+                        e -> assertThat(e.details()).containsEntry("subjectName", "Ética"));
+        assertThatThrownBy(() -> factory.create(input(List.of(line("Anatomía", 1, "8.123")), 1, null)))
+                .isInstanceOf(ApprovedSubjectsGradeUnavailableException.class);
     }
 
     @Test
@@ -136,8 +156,8 @@ class ApprovedSubjectsSnapshotFactoryTest {
     @Test
     void gradesOutsideTheValidRangeAreRejected() {
         assertThatThrownBy(() -> factory.create(input(List.of(line("Anatomía", 1, "0.5")), 1, null)))
-                .isInstanceOf(InvalidGradeException.class);
+                .isInstanceOf(ApprovedSubjectsGradeUnavailableException.class);
         assertThatThrownBy(() -> factory.create(input(List.of(line("Anatomía", 1, "10.01")), 1, null)))
-                .isInstanceOf(InvalidGradeException.class);
+                .isInstanceOf(ApprovedSubjectsGradeUnavailableException.class);
     }
 }

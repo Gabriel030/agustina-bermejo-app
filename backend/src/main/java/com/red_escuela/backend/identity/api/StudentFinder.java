@@ -5,12 +5,14 @@ import com.red_escuela.backend.identity.exception.StudentNotFoundException;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.identity.repository.StudentSpecifications;
+import com.red_escuela.backend.shared.pagination.PageResponse;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Optional;
 
 @Component
@@ -37,12 +39,15 @@ public class StudentFinder {
     }
 
     @Transactional(readOnly = true)
-    public List<StudentOnboardingSummary> listProspects() {
-        return studentRepository
-                .findAll(StudentSpecifications.withOnboardingStatus(StudentOnboardingStatus.PROSPECTO),
-                        Sort.by(Sort.Direction.DESC, "registeredAt"))
-                .stream()
-                .map(StudentOnboardingSummary::of)
-                .toList();
+    public PageResponse<StudentOnboardingSummary> listProspectsPage(String search, int page, int size) {
+        int boundedPage = Math.max(page, 0);
+        int boundedSize = Math.min(Math.max(size, 1), PageResponse.MAX_SIZE);
+        Page<Student> students = studentRepository.findAll(
+                StudentSpecifications.withOnboardingStatus(StudentOnboardingStatus.PROSPECTO)
+                        .and(StudentSpecifications.withProspectSearch(search)),
+                PageRequest.of(boundedPage, boundedSize,
+                        Sort.by("person.lastname", "person.name").and(Sort.by("id"))));
+        return new PageResponse<>(students.getContent().stream().map(StudentOnboardingSummary::of).toList(),
+                boundedPage, boundedSize, students.getTotalElements());
     }
 }

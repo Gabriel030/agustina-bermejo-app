@@ -69,6 +69,9 @@ public class ExamRegistrationCertificate {
     @Column(name = "recipient_text", length = 80, updatable = false)
     private String recipientText;
 
+    @Column(name = "template_version_id", updatable = false)
+    private Long templateVersionId;
+
     @Column(name = "registry_number", length = 20)
     private String registryNumber;
 

@@ -5,6 +5,8 @@ import com.red_escuela.backend.graduation.certificate.dto.GraduationCertificateP
 import com.red_escuela.backend.graduation.certificate.engine.CertificateCode;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateFileStore;
 import com.red_escuela.backend.graduation.certificate.engine.CertificatePdfRenderer;
+import com.red_escuela.backend.graduation.certificate.engine.CertificateTemplateDefinition;
+import com.red_escuela.backend.graduation.certificate.template.specialist.CertificateTemplateRenderSource;
 import com.red_escuela.backend.graduation.certificate.exam.entity.ExamCertificate;
 import com.red_escuela.backend.graduation.certificate.exam.exception.ExamCertificateNotFoundException;
 import com.red_escuela.backend.graduation.certificate.exam.repository.ExamCertificateRepository;
@@ -29,11 +31,13 @@ public class ExamCertificatePdfProvider {
     private final CertificateVerificationUrl verificationUrl;
     private final CertificateDigest digest;
     private final CertificateDocumentAuditRecorder auditRecorder;
+    private final CertificateTemplateRenderSource templateSource;
 
     public ExamCertificatePdfProvider(ExamCertificateRepository repository, ExamBoardAttendanceReader boardReader,
                                       CertificateFileStore fileStore, CertificatePdfRenderer renderer,
                                       ExamCertificateTemplate template, CertificateVerificationUrl verificationUrl,
-                                      CertificateDigest digest, CertificateDocumentAuditRecorder auditRecorder) {
+                                      CertificateDigest digest, CertificateDocumentAuditRecorder auditRecorder,
+                                      CertificateTemplateRenderSource templateSource) {
         this.repository = repository;
         this.boardReader = boardReader;
         this.fileStore = fileStore;
@@ -42,6 +46,7 @@ public class ExamCertificatePdfProvider {
         this.verificationUrl = verificationUrl;
         this.digest = digest;
         this.auditRecorder = auditRecorder;
+        this.templateSource = templateSource;
     }
 
     @Transactional
@@ -55,8 +60,12 @@ public class ExamCertificatePdfProvider {
             return new GraduationCertificatePdf(certificate.getCode(), stored.get());
         }
         CertificateCode code = certificate.certificateCode();
-        byte[] regenerated = renderer.render(template.definitionFor(certificate.getSnapshot(), certificate.getExpiresAt().toLocalDate(),
-                certificate.getRecipientType(), certificate.getRecipientText()), certificate.getSnapshot(), code, verificationUrl.of(code));
+        CertificateTemplateDefinition definition = template.definitionFor(certificate.getSnapshot(), certificate.getExpiresAt().toLocalDate(),
+                certificate.getRecipientType(), certificate.getRecipientText());
+        byte[] regenerated = certificate.getTemplateVersionId() == null
+                ? renderer.render(definition, certificate.getSnapshot(), code, verificationUrl.of(code))
+                : renderer.render(definition, certificate.getSnapshot(), code, verificationUrl.of(code),
+                        templateSource.assetsOf(templateSource.byId(certificate.getTemplateVersionId()), certificate.getRegistryNumber()));
         String regeneratedSha256 = digest.sha256(regenerated);
         if (certificate.isPdfRegenerationVerifiable() && !regeneratedSha256.equals(certificate.getPdfSha256())) {
             auditRecorder.hashMismatch(DOCUMENT_TYPE, certificate.getId(), certificate.getPdfSha256(), regeneratedSha256,

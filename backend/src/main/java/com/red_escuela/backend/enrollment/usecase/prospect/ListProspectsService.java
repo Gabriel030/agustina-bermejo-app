@@ -3,8 +3,8 @@ package com.red_escuela.backend.enrollment.usecase.prospect;
 import com.red_escuela.backend.enrollment.dto.ProspectListItemResponse;
 import com.red_escuela.backend.enrollment.service.ProspectService;
 import com.red_escuela.backend.shared.UseCase;
+import com.red_escuela.backend.shared.pagination.PageResponse;
 
-import java.util.List;
 
 @UseCase
 public class ListProspectsService implements ListProspectsUseCase {
@@ -16,7 +16,7 @@ public class ListProspectsService implements ListProspectsUseCase {
     }
 
     @Override
-    public List<ProspectListItemResponse> list() {
-        return prospectService.listProspects();
+    public PageResponse<ProspectListItemResponse> list(String search, int page, int size) {
+        return prospectService.listProspects(search, page, size);
     }
 }

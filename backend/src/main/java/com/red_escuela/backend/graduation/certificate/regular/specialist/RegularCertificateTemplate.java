@@ -9,12 +9,14 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
 
 @Component
 public class RegularCertificateTemplate {
 
     public static final String REGULAR_BUILT_IN_V1 = "REGULAR_BUILT_IN_V1";
 
+    private static final String RECIPIENT_SEPARATOR = ": ";
     private static final DateTimeFormatter DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final GraduationSnapshotFactory snapshotFactory;
@@ -28,6 +30,14 @@ public class RegularCertificateTemplate {
         return new CertificateSnapshot(base.holderFullName(), base.documentTypeLabel(), base.documentNumber(), base.titleKind(),
                 base.titleName(), base.programLevel(), base.hours(), base.graduationDate(), base.issuedOn(),
                 base.institutionName(), base.signatories(), REGULAR_BUILT_IN_V1, null);
+    }
+
+    public Map<String, String> extraMarkersOf(String recipientLabel) {
+        if (recipientLabel == null) {
+            return Map.of();
+        }
+        int separator = recipientLabel.indexOf(RECIPIENT_SEPARATOR);
+        return Map.of("recipient", separator < 0 ? recipientLabel : recipientLabel.substring(separator + RECIPIENT_SEPARATOR.length()));
     }
 
     public CertificateTemplateDefinition definitionFor(CertificateSnapshot snapshot, LocalDate validUntil) {

@@ -15,6 +15,15 @@ import com.red_escuela.backend.graduation.certificate.verification.dto.PublicCer
 import com.red_escuela.backend.graduation.certificate.verification.dto.PublicCertificateView;
 import com.red_escuela.backend.graduation.certificate.verification.specialist.GraduationVerificationSource;
 import com.red_escuela.backend.graduation.certificate.verification.specialist.RegularVerificationSource;
+import com.red_escuela.backend.graduation.certificate.approvedsubjects.entity.ApprovedSubjectsCertificate;
+import com.red_escuela.backend.graduation.certificate.approvedsubjects.entity.ApprovedSubjectsCertificateStatus;
+import com.red_escuela.backend.graduation.certificate.approvedsubjects.repository.ApprovedSubjectsCertificateRepository;
+import com.red_escuela.backend.graduation.certificate.approvedsubjects.snapshot.ApprovedSubjectLine;
+import com.red_escuela.backend.graduation.certificate.approvedsubjects.snapshot.ApprovedSubjectsSnapshot;
+import com.red_escuela.backend.graduation.certificate.dto.DocumentValidityStatus;
+import com.red_escuela.backend.graduation.certificate.verification.dto.PublicDocumentVerificationResponse;
+import com.red_escuela.backend.graduation.certificate.verification.specialist.ApprovedSubjectsDocumentVerificationSource;
+import java.math.BigDecimal;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -120,5 +129,50 @@ class VerificationSourcesTest {
 
         assertThat(fields).containsExactlyInAnyOrder("documentKind", "status", "holderFullName", "maskedDocument", "titleKind",
                 "titleName", "graduationDate", "issuedAt", "expiresAt", "revokedAt", "registryNumber", "hours");
+    }
+
+    private PublicDocumentVerificationResponse approvedSubjectsAt(ApprovedSubjectsCertificateStatus status, LocalDateTime now) {
+        ApprovedSubjectsSnapshot approvedSnapshot = new ApprovedSubjectsSnapshot("PÉREZ, ANA", "DNI", "30123456", "Tecnicatura en Enfermería",
+                "Instituto", List.of(new ApprovedSubjectLine("Anatomía", 1, new BigDecimal("8.00"), LocalDate.of(2026, 5, 20))), 1, 4,
+                new BigDecimal("25.00"), new BigDecimal("8.00"), null, null, LocalDate.of(2026, 11, 5), LocalDate.of(2026, 12, 5), List.of(),
+                "APPROVED_SUBJECTS_BUILT_IN_V1");
+        ApprovedSubjectsCertificateRepository repository = mock(ApprovedSubjectsCertificateRepository.class);
+        ApprovedSubjectsCertificate certificate = ApprovedSubjectsCertificate.builder().id(5L).code(CODE.value()).status(status)
+                .snapshot(approvedSnapshot).issuedAt(LocalDateTime.of(2026, 11, 5, 10, 0)).expiresAt(EXPIRES_AT)
+                .revokedAt(LocalDateTime.of(2026, 11, 20, 9, 0)).revocationReason("error de carga").build();
+        when(repository.findById(5L)).thenReturn(Optional.of(certificate));
+        return new ApprovedSubjectsDocumentVerificationSource(repository).find(5L, now).orElseThrow();
+    }
+
+    @Test
+    void approvedSubjectsValidCertificateIsMaskedAndCarriesNoSubjectsOrGrades() {
+        PublicDocumentVerificationResponse response = approvedSubjectsAt(ApprovedSubjectsCertificateStatus.VALID, EXPIRES_AT.minusSeconds(1));
+
+        assertThat(response.status()).isEqualTo(DocumentValidityStatus.VALID);
+        assertThat(response.maskedDocument()).isEqualTo("*****456");
+        assertThat(response.revokedAt()).isNull();
+        assertThat(response.toString()).doesNotContain("Anatomía", "8.00", "Enfermería", "30123456");
+    }
+
+    @Test
+    void approvedSubjectsCertificateExpiresExactlyAtItsExpiryInstant() {
+        assertThat(approvedSubjectsAt(ApprovedSubjectsCertificateStatus.VALID, EXPIRES_AT.minusSeconds(1)).status())
+                .isEqualTo(DocumentValidityStatus.VALID);
+        assertThat(approvedSubjectsAt(ApprovedSubjectsCertificateStatus.VALID, EXPIRES_AT).status()).isEqualTo(DocumentValidityStatus.EXPIRED);
+    }
+
+    @Test
+    void approvedSubjectsRevokedBeatsExpiryAndExposesOnlyTheRevocationDate() {
+        PublicDocumentVerificationResponse response = approvedSubjectsAt(ApprovedSubjectsCertificateStatus.REVOKED, EXPIRES_AT.plusDays(5));
+
+        assertThat(response.status()).isEqualTo(DocumentValidityStatus.REVOKED);
+        assertThat(response.revokedAt()).isEqualTo(LocalDateTime.of(2026, 11, 20, 9, 0));
+        assertThat(response.toString()).doesNotContain("error de carga");
+    }
+
+    @Test
+    void approvedSubjectsExpiredFlagIsReportedAsExpired() {
+        assertThat(approvedSubjectsAt(ApprovedSubjectsCertificateStatus.EXPIRED, EXPIRES_AT.minusDays(3)).status())
+                .isEqualTo(DocumentValidityStatus.EXPIRED);
     }
 }
