@@ -1,3 +1,4 @@
+import { AlertTriangle, XCircle } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 // Pill de estado con color semántico — antes reescrito a mano en cada pantalla
@@ -21,7 +22,13 @@ const COLOR_DOT = {
   neutral: 'bg-neutral-ink',
 };
 
-export function StatusPill({ tone = 'neutral', dot = false, icon: Icon, className, children }) {
+const ICONO_POR_TONO = {
+  warning: AlertTriangle,
+  danger: XCircle,
+};
+
+export function StatusPill({ tone = 'neutral', dot = false, icon, className, children }) {
+  const Icon = icon === undefined ? (dot ? null : ICONO_POR_TONO[tone]) : icon;
   return (
     <span
       className={cn(
