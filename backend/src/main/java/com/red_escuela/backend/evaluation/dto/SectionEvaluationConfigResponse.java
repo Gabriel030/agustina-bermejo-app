@@ -54,7 +54,8 @@ public record SectionEvaluationConfigResponse(
                 instructors, canEdit, canSubmit);
     }
 
-    public SectionEvaluationConfigResponse withEvaluationConfigDeadline(LocalDate deadline) {
+    public SectionEvaluationConfigResponse withEvaluationConfigDueDays(int dueDays) {
+        LocalDate deadline = termStartDate == null ? null : termStartDate.toLocalDate().plusDays(dueDays);
         return new SectionEvaluationConfigResponse(
                 id, subjectSectionId, subjectName, sectionName, status,
                 tpCount, tp1DueDate, tp2DueDate, tp3DueDate,

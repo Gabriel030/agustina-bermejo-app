@@ -191,7 +191,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         SectionEvaluationConfig config = getMySectionEvaluationConfigUseCase.get(new GetMySectionEvaluationConfigCommand(section.getId(),
-                persistAssignedInstructor(section))).config();
+                persistAssignedInstructor(section)));
         assertThat(config.getStatus()).isEqualTo(SectionEvaluationConfigStatus.DRAFT);
     }
 
@@ -511,7 +511,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         Instructor leadInstructor = persistInstructor("90000020");
         SubjectSection section = sectionInPastTermWithLead("MateriaReenvioEnCurso", leadInstructor);
         SectionEvaluationConfig config = getMySectionEvaluationConfigUseCase.get(
-                new GetMySectionEvaluationConfigCommand(section.getId(), leadInstructor.getId())).config();
+                new GetMySectionEvaluationConfigCommand(section.getId(), leadInstructor.getId()));
         config.setStatus(SectionEvaluationConfigStatus.REJECTED);
         config.setRejectionReason("Corregí el 2do llamado");
         entityManager.flush();
@@ -534,7 +534,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         Instructor leadInstructor = persistInstructor("90000021");
         SubjectSection section = sectionInPastTermWithLead("MateriaVentanaCerrada", leadInstructor);
         SectionEvaluationConfig config = getMySectionEvaluationConfigUseCase.get(
-                new GetMySectionEvaluationConfigCommand(section.getId(), leadInstructor.getId())).config();
+                new GetMySectionEvaluationConfigCommand(section.getId(), leadInstructor.getId()));
         LocalDateTime now = LocalDateTime.of(2020, 6, 1, 10, 0);
 
         assertThat(config.canBeSubmitted(now)).isFalse();

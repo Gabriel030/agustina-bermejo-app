@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.usecase.sectionconfig;
 
+import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
 import com.red_escuela.backend.evaluation.specialist.SectionEvaluationConfigFinder;
 import com.red_escuela.backend.evaluation.specialist.SectionEvaluationConfigInstructorAccessChecker;
 import com.red_escuela.backend.identity.api.InstitutionAcademicSettingsReader;
@@ -22,9 +23,13 @@ public class GetMySectionEvaluationConfigService implements GetMySectionEvaluati
     }
 
     @Override
-    public SectionEvaluationConfigWithDeadline get(GetMySectionEvaluationConfigCommand command) {
+    public SectionEvaluationConfig get(GetMySectionEvaluationConfigCommand command) {
         instructorAccess.requireAssignedToSection(command.sectionId(), command.instructorId());
-        return SectionEvaluationConfigWithDeadline.of(configFinder.findOrThrow(command.sectionId()),
-                academicSettingsReader.read().evaluationConfigDueDays());
+        return configFinder.findOrThrow(command.sectionId());
+    }
+
+    @Override
+    public int evaluationConfigDueDays() {
+        return academicSettingsReader.read().evaluationConfigDueDays();
     }
 }

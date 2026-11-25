@@ -9,7 +9,6 @@ import com.red_escuela.backend.evaluation.usecase.sectionconfig.GetMySectionEval
 import com.red_escuela.backend.evaluation.usecase.sectionconfig.GetMySectionEvaluationConfigUseCase;
 import com.red_escuela.backend.evaluation.usecase.sectionconfig.ListMySectionEvaluationConfigsUseCase;
 import com.red_escuela.backend.evaluation.usecase.sectionconfig.SaveSectionEvaluationConfigDraftCommand;
-import com.red_escuela.backend.evaluation.usecase.sectionconfig.SectionEvaluationConfigWithDeadline;
 import com.red_escuela.backend.evaluation.usecase.sectionconfig.SaveSectionEvaluationConfigDraftUseCase;
 import com.red_escuela.backend.evaluation.usecase.sectionconfig.SubmitSectionEvaluationConfigForApprovalCommand;
 import com.red_escuela.backend.evaluation.usecase.sectionconfig.SubmitSectionEvaluationConfigForApprovalUseCase;
@@ -55,17 +54,18 @@ public class MeSectionEvaluationConfigController {
     @PreAuthorize("hasRole('DOCENTE')")
     public List<SectionEvaluationConfigResponse> mySections() {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
+        int dueDays = getMySectionEvaluationConfigUseCase.evaluationConfigDueDays();
         return listMySectionEvaluationConfigsUseCase.list(instructor.getId()).stream()
-                .map(item -> toResponse(item.config(), instructor.getId()).withEvaluationConfigDeadline(item.deadline())).toList();
+                .map(config -> toResponse(config, instructor.getId()).withEvaluationConfigDueDays(dueDays)).toList();
     }
 
     @GetMapping("/me/section-evaluation-configs/{sectionId}")
     @PreAuthorize("hasRole('DOCENTE')")
     public SectionEvaluationConfigResponse get(@PathVariable Long sectionId) {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
-        SectionEvaluationConfigWithDeadline item = getMySectionEvaluationConfigUseCase.get(
-                new GetMySectionEvaluationConfigCommand(sectionId, instructor.getId()));
-        return toResponse(item.config(), instructor.getId()).withEvaluationConfigDeadline(item.deadline());
+        return toResponse(getMySectionEvaluationConfigUseCase.get(
+                new GetMySectionEvaluationConfigCommand(sectionId, instructor.getId())), instructor.getId())
+                .withEvaluationConfigDueDays(getMySectionEvaluationConfigUseCase.evaluationConfigDueDays());
     }
 
     @PutMapping("/me/section-evaluation-configs/{sectionId}")

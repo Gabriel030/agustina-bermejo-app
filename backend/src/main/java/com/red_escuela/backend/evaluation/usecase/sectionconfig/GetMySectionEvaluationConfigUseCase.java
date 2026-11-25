@@ -1,5 +1,9 @@
 package com.red_escuela.backend.evaluation.usecase.sectionconfig;
 
+import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
+
 public interface GetMySectionEvaluationConfigUseCase {
-    SectionEvaluationConfigWithDeadline get(GetMySectionEvaluationConfigCommand command);
+    SectionEvaluationConfig get(GetMySectionEvaluationConfigCommand command);
+
+    int evaluationConfigDueDays();
 }
