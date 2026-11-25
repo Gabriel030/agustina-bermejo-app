@@ -13,7 +13,7 @@ export function PlanDeEstudioTab({ studentId, enrollmentKey, onEnrollmentChange,
 
   if (isLoading) {
     return (
-      <div className="flex flex-col gap-3" aria-busy="true" aria-label="Cargando">
+      <div role="status" className="flex flex-col gap-3" aria-busy="true" aria-label="Cargando">
         <Skeleton className="h-10 w-full max-w-md" />
         <Skeleton className="h-40 w-full" />
       </div>
