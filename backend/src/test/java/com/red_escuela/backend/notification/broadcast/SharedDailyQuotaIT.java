@@ -48,11 +48,13 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.CyclicBarrier;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -159,12 +161,21 @@ class SharedDailyQuotaIT extends AbstractBroadcastDispatchIT {
 
     private TransactionalEmailGateway gatewayThatWaitsForTheOtherSender(CyclicBarrier bothAreAboutToSend) {
         return email -> {
-            try {
-                bothAreAboutToSend.await(3, TimeUnit.SECONDS);
-            } catch (Exception otherSenderNeverArrived) {
-            }
+            waitForTheOtherSender(bothAreAboutToSend);
             return new EmailDeliveryReceipt("provider-" + UUID.randomUUID().toString().substring(0, 8), false);
         };
+    }
+
+    private boolean waitForTheOtherSender(CyclicBarrier bothAreAboutToSend) {
+        try {
+            bothAreAboutToSend.await(1, TimeUnit.SECONDS);
+            return true;
+        } catch (InterruptedException interrupted) {
+            Thread.currentThread().interrupt();
+            return false;
+        } catch (TimeoutException | BrokenBarrierException otherSenderNeverArrived) {
+            return false;
+        }
     }
 
     private InvitationRecipientSendTransaction invitationSenderWith(TransactionalEmailGateway gateway) {
@@ -220,6 +231,6 @@ class SharedDailyQuotaIT extends AbstractBroadcastDispatchIT {
             executor.shutdownNow();
         }
 
-        assertThat(sentToday(day)).isLessThanOrEqualTo(DAILY_LIMIT);
+        assertThat(sentToday(day)).isEqualTo(DAILY_LIMIT);
     }
 }
