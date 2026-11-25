@@ -46,7 +46,7 @@ const registrations = [
   {
     id: 55,
     enrollmentId: 5,
-    status: 'REGISTERED',
+    status: 'GRADED',
     score: 7,
     examBoard: examBoard({ id: 9 }),
   },

@@ -4,6 +4,7 @@ import com.red_escuela.backend.evaluation.api.ExamBoardAttendance;
 import com.red_escuela.backend.evaluation.api.ExamBoardAttendanceReader;
 import com.red_escuela.backend.evaluation.api.ExamBoardAttendanceView;
 import com.red_escuela.backend.evaluation.api.ExamBoardRegistrationFinder;
+import com.red_escuela.backend.evaluation.api.OwnExamRegistrationView;
 import com.red_escuela.backend.graduation.certificate.exam.exception.ExamCertificateBoardNotHeldException;
 import com.red_escuela.backend.graduation.certificate.exam.exception.ExamCertificateRegistrationNotEligibleException;
 import com.red_escuela.backend.graduation.documentsettings.specialist.DocumentIssuanceSettingsFinder;
@@ -113,6 +114,28 @@ public class ExamCertificateIssuer {
         }
         return issue(new ExamCertificateIssueCommand(registrationId, examBoardId, studentId, board.subjectName(), board.examDate(),
                 null, null, DocumentOrigin.ISSUED_BY_STAFF));
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<ExamCertificate> currentValidOf(Long registrationId) {
+        LocalDateTime now = LocalDateTime.now(clock);
+        return repository.findByRegistrationIdAndStatus(registrationId, DocumentValidityStatus.VALID)
+                .filter(current -> current.isValidAt(now));
+    }
+
+    @Transactional
+    public ExamCertificate issueToSelf(OwnExamRegistrationView registration, RecipientType recipientType, String recipientText) {
+        repository.findByRegistrationIdAndStatus(registration.registrationId(), DocumentValidityStatus.VALID).ifPresent(current -> {
+            if (current.isExpiredAt(LocalDateTime.now(clock))) {
+                current.expire();
+            } else {
+                current.markReplaced();
+            }
+            repository.saveAndFlush(current);
+        });
+        return issue(new ExamCertificateIssueCommand(registration.registrationId(), registration.examBoardId(), registration.studentId(),
+                registration.subjectName(), registration.examDateTime().toLocalDate(), recipientType, recipientText,
+                DocumentOrigin.SELF_SERVICE));
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
