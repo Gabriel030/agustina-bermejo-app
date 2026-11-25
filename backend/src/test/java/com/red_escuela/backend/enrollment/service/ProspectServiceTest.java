@@ -23,6 +23,7 @@ import org.mockito.ArgumentCaptor;
 
 import java.time.Clock;
 import java.time.LocalDateTime;
+import com.red_escuela.backend.shared.pagination.PageResponse;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -125,7 +126,8 @@ class ProspectServiceTest {
     void listProspectsReturnsMissingDocuments() {
         StudentOnboardingSummary withFront = prospect(1L);
         StudentOnboardingSummary withNothing = prospect(2L);
-        when(studentFinder.listProspects()).thenReturn(List.of(withFront, withNothing));
+        when(studentFinder.listProspectsPage("ana", 1, 2))
+                .thenReturn(new PageResponse<>(List.of(withFront, withNothing), 1, 2, 7));
         Student student = new Student();
         student.setId(1L);
         StudentDocument front = new StudentDocument();
@@ -133,12 +135,27 @@ class ProspectServiceTest {
         front.setType(DocumentType.DNI_FRENTE);
         when(studentDocumentRepository.findByStudentIdIn(List.of(1L, 2L))).thenReturn(List.of(front));
 
-        List<ProspectListItemResponse> items = service.listProspects();
+        PageResponse<ProspectListItemResponse> page = service.listProspects("ana", 1, 2);
+        List<ProspectListItemResponse> items = page.items();
 
+        assertThat(page.page()).isEqualTo(1);
+        assertThat(page.size()).isEqualTo(2);
+        assertThat(page.totalElements()).isEqualTo(7);
         assertThat(items).extracting(ProspectListItemResponse::id).containsExactly(1L, 2L);
         assertThat(items.get(0).missingDocuments())
                 .containsExactly(DocumentType.DNI_DORSO, DocumentType.ANALITICO_SECUNDARIO);
         assertThat(items.get(1).missingDocuments()).containsExactly(DocumentType.values());
+    }
+
+    @Test
+    void listProspectsOfEmptyPageDoesNotFailAndKeepsTotals() {
+        when(studentFinder.listProspectsPage(null, 0, 25)).thenReturn(new PageResponse<>(List.of(), 0, 25, 0));
+        when(studentDocumentRepository.findByStudentIdIn(List.of())).thenReturn(List.of());
+
+        PageResponse<ProspectListItemResponse> page = service.listProspects(null, 0, 25);
+
+        assertThat(page.items()).isEmpty();
+        assertThat(page.totalElements()).isZero();
     }
 
     private static StudentOnboardingSummary prospect(Long id) {

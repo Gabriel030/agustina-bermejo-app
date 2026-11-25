@@ -1,9 +1,8 @@
 package com.red_escuela.backend.enrollment.usecase.prospect;
 
 import com.red_escuela.backend.enrollment.dto.ProspectListItemResponse;
-
-import java.util.List;
+import com.red_escuela.backend.shared.pagination.PageResponse;
 
 public interface ListProspectsUseCase {
-    List<ProspectListItemResponse> list();
+    PageResponse<ProspectListItemResponse> list(String search, int page, int size);
 }

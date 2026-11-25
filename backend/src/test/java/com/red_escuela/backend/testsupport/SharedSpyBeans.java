@@ -2,10 +2,14 @@ package com.red_escuela.backend.testsupport;
 
 import com.red_escuela.backend.shared.module.OnlinePaymentDependencyPort;
 import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationService;
+import com.red_escuela.backend.billing.operation.CohortPromotionAcquirer;
+import com.red_escuela.backend.billing.configuration.service.ConfigurationVersionActivator;
 import com.red_escuela.backend.billing.configuration.service.DirectConfigurationPublisher;
 import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
 import com.red_escuela.backend.billing.operation.PaymentGatewayConfigChangeRecordingPort;
+import com.red_escuela.backend.billing.service.PaymentPlanSelectionInvoiceIssuingService;
 import com.red_escuela.backend.billing.collections.repository.LateFeeChargeRepository;
+import com.red_escuela.backend.billing.invoice.service.InvoiceViewLoader;
 import com.red_escuela.backend.billing.invoice.service.PendingInvoiceQueryService;
 import com.red_escuela.backend.billing.run.operation.MonthlyInvoiceIssuanceJob;
 import com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort;
@@ -32,6 +36,10 @@ import java.lang.annotation.Target;
         EnrollmentWithdrawalBillingPort.class,
         OnlinePaymentDependencyPort.class,
         PaymentGatewayConfigChangeRecordingPort.class,
+        CohortPromotionAcquirer.class,
+        PaymentPlanSelectionInvoiceIssuingService.class,
+        InvoiceViewLoader.class,
+        ConfigurationVersionActivator.class,
         DirectConfigurationPublisher.class,
         BillingOperationPipeline.class,
         WhatsAppProviderConfiguration.class

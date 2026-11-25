@@ -1,9 +1,1 @@
-com.red_escuela.backend.billing.usecase.cohort.CreateProgramYearBillingTemplateService.create(java.lang.Long, java.lang.Long, java.lang.Integer, com.red_escuela.backend.billing.dto.YearBillingConfigurationRequest) declares @Transactional
-com.red_escuela.backend.billing.usecase.cohort.UpdateYearBillingConfigurationService.update(java.lang.Long, com.red_escuela.backend.billing.dto.YearBillingConfigurationRequest) declares @Transactional
-com.red_escuela.backend.billing.usecase.invoice.CreateAdHocInvoiceForCourseEnrollmentService.create(java.lang.Long, com.red_escuela.backend.billing.dto.CreateAdHocInvoiceRequest) declares @Transactional
-com.red_escuela.backend.billing.usecase.invoice.CreateAdHocInvoiceForCourseEnrollmentService.create(java.lang.Long, com.red_escuela.backend.billing.dto.CreateAdHocInvoiceRequest, java.lang.String) declares @Transactional
-com.red_escuela.backend.billing.usecase.invoice.CreateAdHocInvoiceForProgramEnrollmentService.create(java.lang.Long, com.red_escuela.backend.billing.dto.CreateAdHocInvoiceRequest) declares @Transactional
-com.red_escuela.backend.billing.usecase.invoice.CreateAdHocInvoiceForProgramEnrollmentService.create(java.lang.Long, com.red_escuela.backend.billing.dto.CreateAdHocInvoiceRequest, java.lang.String) declares @Transactional
-com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForCourseService.select(java.lang.Long, com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest) declares @Transactional
-com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForProgramService.select(java.lang.Long, com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest) declares @Transactional
 com.red_escuela.backend.shared.event.ProcessedEffectGuard.runEffectOnce(com.red_escuela.backend.shared.event.DeduplicableDomainEvent, java.lang.String, java.lang.Runnable) declares @Transactional

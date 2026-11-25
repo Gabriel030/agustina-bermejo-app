@@ -7,21 +7,27 @@ import java.util.Set;
 
 public final class MissingVariablePolicy {
 
-    private static final Set<TemplateVariable> WITHOUT_PERSON_SOURCE =
+    private static final Set<TemplateVariable> COURSE_VARIABLES =
             EnumSet.of(TemplateVariable.PROGRAM, TemplateVariable.SUBJECT, TemplateVariable.SECTION);
 
     private MissingVariablePolicy() {
     }
 
+    public static boolean referencesCourseVariable(Set<TemplateVariable> referenced) {
+        return referenced.stream().anyMatch(COURSE_VARIABLES::contains);
+    }
+
     public static boolean isMissingAnyVariable(Set<TemplateVariable> referenced, String firstName, String lastName,
-                                               boolean institutionNameConfigured) {
-        return referenced.stream().anyMatch(variable -> isMissing(variable, firstName, lastName, institutionNameConfigured));
+                                               boolean institutionNameConfigured,
+                                               boolean hasCurrentCourse) {
+        return referenced.stream().anyMatch(variable -> isMissing(variable, firstName, lastName, institutionNameConfigured,
+                hasCurrentCourse));
     }
 
     private static boolean isMissing(TemplateVariable variable, String firstName, String lastName,
-                                     boolean institutionNameConfigured) {
-        if (WITHOUT_PERSON_SOURCE.contains(variable)) {
-            return true;
+                                     boolean institutionNameConfigured, boolean hasCurrentCourse) {
+        if (COURSE_VARIABLES.contains(variable)) {
+            return !hasCurrentCourse;
         }
         return switch (variable) {
             case FIRST_NAME -> isBlank(firstName);
