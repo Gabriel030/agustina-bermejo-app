@@ -1,5 +1,6 @@
-package com.red_escuela.backend.shared.event;
+package com.red_escuela.backend.shared.event.service;
 
+import com.red_escuela.backend.shared.event.DeduplicableDomainEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.jdbc.core.JdbcTemplate;

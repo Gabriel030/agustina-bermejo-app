@@ -7,7 +7,7 @@ import com.red_escuela.backend.billing.events.LateFeeAnnulledByPaymentDateEvent;
 import com.red_escuela.backend.billing.events.LateFeeCorrectionIssuedAfterFiscalWindowEvent;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.notification.entity.NotificationType;
-import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
+import com.red_escuela.backend.shared.event.service.ProcessedEffectGuard;
 import jakarta.persistence.EntityManager;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.modulith.events.ApplicationModuleListener;

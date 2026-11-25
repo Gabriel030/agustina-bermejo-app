@@ -2,7 +2,7 @@ package com.red_escuela.backend.academicstructure.service;
 
 import com.red_escuela.backend.academicstructure.events.HolidaysMissingForNextYearEvent;
 import com.red_escuela.backend.academicstructure.repository.HolidayRepository;
-import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
+import com.red_escuela.backend.shared.event.service.ProcessedEffectGuard;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
