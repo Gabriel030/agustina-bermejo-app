@@ -20,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @Transactional(readOnly = true)
@@ -51,6 +52,11 @@ public class CertificateTemplateRenderSource {
                 .orElseThrow(TemplateVersionNotFoundException::new);
     }
 
+    public Optional<CertificateTemplateVersion> findCurrentPublished(DocumentTemplateType type) {
+        CertificateTemplate template = templateFinder.find(type);
+        return versionRepository.findFirstByTemplateIdAndStatusOrderByVersionNumberDesc(template.getId(), TemplateVersionStatus.PUBLISHED);
+    }
+
     public CertificateTemplateVersion forPreview(DocumentTemplateType type, TemplatePreviewSource source) {
         if (source == TemplatePreviewSource.PUBLISHED) {
             return currentPublished(type);
@@ -80,7 +86,8 @@ public class CertificateTemplateRenderSource {
                 snapshot.titleKind(), snapshot.titleName(), snapshot.programLevel(), snapshot.hours(), snapshot.graduationDate(),
                 snapshot.issuedOn(),
                 content.instituteName() == null ? snapshot.institutionName() : content.instituteName(),
-                List.of(signatoryOf(content.firstSigner()), signatoryOf(content.secondSigner())), templateRef, null);
+                List.of(signatoryOf(content.firstSigner()), signatoryOf(content.secondSigner())), templateRef, null,
+                snapshot.extraMarkers());
     }
 
     public CertificateAssets assetsOf(CertificateTemplateVersion version, String registryNumber) {

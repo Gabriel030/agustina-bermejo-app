@@ -46,6 +46,15 @@ import java.time.YearMonth;
 import java.util.UUID;
 
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
+import com.red_escuela.backend.graduation.certificate.engine.CertificateCode;
+import com.red_escuela.backend.graduation.certificate.engine.CertificatePdfRenderer;
+import com.red_escuela.backend.graduation.certificate.engine.CertificateSnapshot;
+import com.red_escuela.backend.graduation.certificate.regular.entity.RegularStudentCertificate;
+import com.red_escuela.backend.graduation.certificate.regular.specialist.RegularCertificateTemplate;
+import com.red_escuela.backend.graduation.certificate.specialist.CertificateDigest;
+import com.red_escuela.backend.graduation.certificate.specialist.CertificateVerificationUrl;
+import com.red_escuela.backend.graduation.certificate.template.PublishedTemplateFixtures;
+import java.util.Map;
 import org.apache.pdfbox.Loader;
 import org.apache.pdfbox.text.PDFTextStripper;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -75,6 +84,14 @@ class OwnRegularDocumentIntegrationTest extends AbstractIntegrationTest {
     private FeatureSnapshotHolder snapshotHolder;
     @Autowired
     private RegularStudentCertificateRepository certificateRepository;
+    @Autowired
+    private RegularCertificateTemplate regularTemplate;
+    @Autowired
+    private CertificatePdfRenderer renderer;
+    @Autowired
+    private CertificateVerificationUrl verificationUrl;
+    @Autowired
+    private CertificateDigest digest;
 
     private Long enrollmentId;
     private Long studentId;
@@ -216,6 +233,11 @@ class OwnRegularDocumentIntegrationTest extends AbstractIntegrationTest {
                 .header("Authorization", "Bearer " + token));
     }
 
+    private byte[] pdfBytesOf(long certificateId) throws Exception {
+        return mockMvc.perform(get("/me/regular-certificates/" + certificateId + "/pdf")
+                .header("Authorization", "Bearer " + studentToken)).andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray();
+    }
+
     private String pdfTextOf(long certificateId) throws Exception {
         byte[] pdf = mockMvc.perform(get("/me/regular-certificates/" + certificateId + "/pdf")
                 .header("Authorization", "Bearer " + studentToken)).andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray();
@@ -242,6 +264,51 @@ class OwnRegularDocumentIntegrationTest extends AbstractIntegrationTest {
                 Integer.class, id)).isEqualTo(1);
         publicView(code).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("VALID"));
         assertThat(pdfTextOf(id)).contains("CONSTANCIA DE ALUMNO REGULAR");
+    }
+
+
+    @Test
+    void issuanceWithPublishedVersionStoresItsIdAndTemplateReference() throws Exception {
+        long id = idOf(generate(studentToken, "{}").andExpect(status().isCreated()), "$.id");
+
+        Map<String, Object> row = jdbc.queryForMap("select template_version_id, template_ref from regular_student_certificate where id = ?", id);
+        assertThat(((Number) row.get("template_version_id")).longValue())
+                .isEqualTo(PublishedTemplateFixtures.currentPublishedId(jdbc, "REGULAR_STUDENT_CERTIFICATE"));
+        assertThat(row.get("template_ref")).isEqualTo(PublishedTemplateFixtures.currentPublishedRef(jdbc, "REGULAR_STUDENT_CERTIFICATE"));
+    }
+
+    @Test
+    void republishingTheTemplateDoesNotChangeTheRegeneratedPdfNorItsHash() throws Exception {
+        long id = idOf(generate(studentToken, "{}").andExpect(status().isCreated()), "$.id");
+        String issuedSha = jdbc.queryForObject("select pdf_sha256 from regular_student_certificate where id = ?", String.class, id);
+        PublishedTemplateFixtures.publishRebrandedVersion(jdbc, "REGULAR_STUDENT_CERTIFICATE");
+        jdbc.update("update regular_student_certificate set pdf_path = 'missing/file.pdf' where id = ?", id);
+
+        byte[] regenerated = pdfBytesOf(id);
+
+        assertThat(digest.sha256(regenerated)).isEqualTo(issuedSha);
+        assertThat(jdbc.queryForObject("select pdf_sha256 from regular_student_certificate where id = ?", String.class, id)).isEqualTo(issuedSha);
+        try (var document = Loader.loadPDF(regenerated)) {
+            assertThat(new PDFTextStripper().getText(document)).doesNotContain("INSTITUTO REPUBLICADO");
+        }
+    }
+
+    @Test
+    void certificateWithoutTemplateVersionRegeneratesTheBuiltInDesignWithTheSameHash() throws Exception {
+        long id = idOf(generate(studentToken, "{}").andExpect(status().isCreated()), "$.id");
+        RegularStudentCertificate stored = certificateRepository.findById(id).orElseThrow();
+        CertificateSnapshot builtIn = PublishedTemplateFixtures.withBuiltInRef(stored.getSnapshot(), RegularCertificateTemplate.REGULAR_BUILT_IN_V1);
+        CertificateCode code = stored.certificateCode();
+        byte[] legacy = renderer.render(regularTemplate.definitionFor(builtIn, stored.getExpiresAt().toLocalDate()), builtIn, code,
+                verificationUrl.of(code));
+        jdbc.update("update regular_student_certificate set template_version_id = null, template_ref = ?, pdf_sha256 = ?, "
+                + "pdf_path = 'missing/file.pdf', snapshot = jsonb_set(snapshot - 'extraMarkers', '{templateRef}', to_jsonb(?::text)) where id = ?",
+                RegularCertificateTemplate.REGULAR_BUILT_IN_V1, digest.sha256(legacy), RegularCertificateTemplate.REGULAR_BUILT_IN_V1, id);
+
+        byte[] regenerated = pdfBytesOf(id);
+
+        assertThat(regenerated).isEqualTo(legacy);
+        assertThat(pdfTextOf(id)).contains("CONSTANCIA DE ALUMNO REGULAR", "es alumno/a regular de");
     }
 
     @Test
