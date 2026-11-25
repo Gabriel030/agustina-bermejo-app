@@ -43,11 +43,12 @@ Hay un único diseño: la dirección B (plana). No hay registro de diseños ni s
 
 - Catálogo: `/dev/catalog` (disponible en `npm run dev` o con `VITE_ENABLE_CATALOG=true`). Specs: `e2e/specs/visual/catalog.spec.js` y `shell.spec.js`.
 - Baselines en `e2e/specs/visual/__screenshots__/chromium/<spec>/b-<tema>-<viewport>/` (claro y oscuro, escritorio y móvil).
-- Actualizar desde `e2e/`: `npm run test:visual:update -- -g "b-"`. Verificar: `npm run test:visual -- -g "b-"`.
+- Verificar desde `e2e/`: `npm run test:visual -- -g "b-"` (ver abajo para actualizar).
 - Un cambio visual aprobado actualiza sus baselines en el mismo PR y el PR enumera cuáles cambiaron.
 - Pantallas piloto: `e2e/specs/visual/pilots.spec.js`. En total `npm run test:visual` compara 112 baselines.
 - Dónde corre: no corre en cada PR. El job `visual-regression` de `.github/workflows/nightly-tests.yml` lo ejecuta en el nightly (solo si develop cambió desde la última corrida verde) y a pedido con `workflow_dispatch` (en una rama, compara esa rama). Si hay una diferencia el job falla y sube el artefacto `visual-regression-report` (reporte HTML y, en `test-results/`, las imágenes `*-actual.png` y `*-diff.png`).
-- Actualizar baselines en CI: no hay job que las escriba. Las baselines se generan en local (`npm run test:visual:update`), se commitean en el PR del cambio visual y se verifican disparando a mano `Nightly tests` sobre la rama (Actions, `Run workflow`, o `gh workflow run nightly-tests.yml --ref <rama>`). Una diferencia solo en CI y no en local apunta a fuentes o renderizado del runner: se baja el artefacto, se revisa el diff y se decide si se regenera la baseline.
+- Actualizar baselines: solo por el dispatch `update_baselines` de `Nightly tests` (Actions, `Run workflow`, o `gh workflow run nightly-tests.yml --ref <rama> -f update_baselines=true`) y únicamente desde una rama de feature. El job corre en el contenedor `mcr.microsoft.com/playwright:v1.55.0-noble`, regenera, y commitea los PNG de `e2e/specs/visual/__screenshots__` a la rama disparada (push normal; se niega en `develop`, `master`, `release/*` y `hotfix/*`). Como ese push no dispara CI, después se dispara a mano la verificación (mismo workflow sin el input) hasta ver 112/112.
+- No se regeneran baselines en la VM ni en la Mac: su headless shell da otro antialiasing que el contenedor de CI. `npm run test:visual` local (con una config no commiteada para el headless shell) sirve de chequeo de humo, sin valor de baseline.
 - Causa de las diferencias tras retirar el blur (26-D T4): la hipótesis `blur(0px)` no se confirmó. Un diálogo del catálogo con y sin `backdrop-filter: blur(0px)` produce capturas idénticas byte a byte, en claro y oscuro.
 
 ## Qué NO se centraliza con tokens
