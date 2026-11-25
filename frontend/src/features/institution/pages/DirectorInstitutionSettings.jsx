@@ -116,10 +116,10 @@ function ChangesBar({ count, invalidCount, onDiscard, onReview }) {
       primary={{
         label: 'Guardar cambios',
         onClick: onReview,
-        className: 'px-5 aria-disabled:cursor-not-allowed aria-disabled:opacity-50',
+        className: 'px-5 aria-disabled:cursor-not-allowed aria-disabled:border-(--border) aria-disabled:bg-(--disabled-bg) aria-disabled:text-(--disabled-fg)',
         'aria-disabled': blocked ? 'true' : undefined,
       }}
-      secondary={[{ key: 'discard', label: 'Descartar', destructive: true, onSelect: onDiscard, className: 'px-4 aria-disabled:cursor-not-allowed aria-disabled:opacity-50', 'aria-disabled': count === 0 ? 'true' : undefined }]}
+      secondary={[{ key: 'discard', label: 'Descartar', destructive: true, onSelect: onDiscard, className: 'px-4 aria-disabled:cursor-not-allowed aria-disabled:bg-(--disabled-bg) aria-disabled:text-(--disabled-fg)', 'aria-disabled': count === 0 ? 'true' : undefined }]}
       summary={
         <span aria-live="polite" aria-atomic="true">
         {count === 0 ? (
