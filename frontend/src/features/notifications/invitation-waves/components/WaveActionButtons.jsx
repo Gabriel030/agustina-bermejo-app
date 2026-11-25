@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils';
 import { actionButtonProps } from '../lib/invitationWaveActions';
 
 const TOUCH_TARGET = 'min-h-11 md:min-h-8';
-const BLOCKED = 'aria-disabled:cursor-not-allowed aria-disabled:opacity-50';
+const BLOCKED = 'aria-disabled:cursor-not-allowed aria-disabled:border-(--border) aria-disabled:bg-(--disabled-bg) aria-disabled:text-(--disabled-fg)';
 
 function ActionButton({ item, controller, variant }) {
   const Icon = item.icon;

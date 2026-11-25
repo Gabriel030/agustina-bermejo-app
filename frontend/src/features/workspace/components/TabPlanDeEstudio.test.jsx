@@ -97,7 +97,7 @@ describe('TabPlanDeEstudio', () => {
           subjectName: 'Matemática II',
           state: 'BLOCKED',
           finalScore: null,
-          blockedBy: [{ subjectId: 12, subjectCode: 'MAT100', subjectName: 'Álgebra', requirementType: 'APPROVED', standing: 'NOT_TAKEN' }],
+          blockedBy: [{ subjectId: 12, subjectCode: 'MAT100', subjectName: 'Álgebra', requirementType: 'APPROVED', standing: 'NOT_TAKEN', minGrade: null, approvedScore: null }],
         }),
       ]),
     );
@@ -180,7 +180,7 @@ describe('TabPlanDeEstudio', () => {
           subjectName: 'Matemática II',
           state: 'BLOCKED',
           finalScore: null,
-          blockedBy: [{ subjectId: 12, subjectCode: 'MAT100', subjectName: 'Álgebra', requirementType: 'APPROVED', standing: 'REGULAR' }],
+          blockedBy: [{ subjectId: 12, subjectCode: 'MAT100', subjectName: 'Álgebra', requirementType: 'APPROVED', standing: 'REGULAR', minGrade: null, approvedScore: null }],
         }),
       ]),
     );
@@ -238,5 +238,276 @@ describe('TabPlanDeEstudio', () => {
 
     await screen.findByRole('alert');
     expect(calls).toBe(1);
+  });
+});
+
+describe('TabPlanDeEstudio map view', () => {
+  const threeYearPlan = () =>
+    progress([
+      subject({ programSubjectId: 1, subjectName: 'Matemática I', finalScore: 8.5 }),
+      subject({ programSubjectId: 2, subjectCode: 'ANA201', subjectName: 'Análisis', curricularYear: 2, state: 'IN_PROGRESS', finalScore: null }),
+      subject({ programSubjectId: 3, subjectCode: 'FIS301', subjectName: 'Física', curricularYear: 3, curricularTerm: 'ANNUAL', state: 'AVAILABLE', finalScore: null }),
+      subject({ programSubjectId: 4, subjectCode: 'ELE001', subjectName: 'Taller', curricularYear: null, category: 'ELECTIVE', state: 'BLOCKED', finalScore: null }),
+    ]);
+
+  it('renders one column per year with the state as text and electives at the end', async () => {
+    useProgress(threeYearPlan());
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
+
+    const region = await screen.findByRole('region', { name: 'Mapa del plan por año' });
+    const headings = [...region.querySelectorAll('h3'), ...screen.getAllByRole('heading', { name: 'Electivas' })];
+    expect(headings.map((heading) => heading.textContent)).toEqual(['1° año', '2° año', '3° año', 'Electivas']);
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+    const approved = screen.getByRole('button', { name: 'Matemática I, Aprobada, nota 8,5' });
+    expect(within(approved).getByText('Aprobada')).toBeInTheDocument();
+    expect(within(approved).getByText('8,5')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Física, Disponible' })).toHaveTextContent('Anual');
+    expect(screen.getByRole('button', { name: 'Física, Disponible' })).toHaveTextContent('Podés inscribirte cuando abra la inscripción');
+  });
+
+  it('marks equivalence approvals with the chip and Eq. instead of the score', async () => {
+    useProgress(
+      progress([
+        subject({ approvalSource: 'EQUIVALENCE', finalScore: null }),
+        subject({ programSubjectId: 2, subjectCode: 'ANA201', subjectName: 'Análisis' }),
+      ]),
+    );
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
+
+    const equivalent = await screen.findByRole('button', { name: 'Matemática I, Aprobada por equivalencia, sin nota' });
+    expect(within(equivalent).getByText('Equivalencia')).toBeInTheDocument();
+    expect(within(equivalent).getByText('Eq.')).toBeInTheDocument();
+    const regular = screen.getByRole('button', { name: 'Análisis, Aprobada, nota 8' });
+    expect(within(regular).queryByText('Equivalencia')).not.toBeInTheDocument();
+  });
+
+  it('scrolls horizontally inside the region only from four years', async () => {
+    useProgress(
+      progress([1, 2, 3].map((year) => subject({ programSubjectId: year, subjectCode: `M${year}`, subjectName: `Materia ${year}`, curricularYear: year }))),
+    );
+    const { unmount } = renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
+    expect(await screen.findByRole('region', { name: 'Mapa del plan por año' })).not.toHaveAttribute('tabindex');
+    unmount();
+
+    useProgress(
+      progress([1, 2, 3, 4].map((year) => subject({ programSubjectId: year, subjectCode: `M${year}`, subjectName: `Materia ${year}`, curricularYear: year }))),
+    );
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
+    expect(await screen.findByRole('region', { name: 'Mapa del plan por año' })).toHaveAttribute('tabindex', '0');
+  });
+
+  it('selects a card with aria-pressed and opens its detail', async () => {
+    useProgress(threeYearPlan());
+    const user = userEvent.setup();
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
+
+    const card = await screen.findByRole('button', { name: 'Matemática I, Aprobada, nota 8,5' });
+    expect(card).toHaveAttribute('aria-pressed', 'false');
+    expect(card).toHaveAttribute('aria-haspopup', 'dialog');
+    await user.click(card);
+    expect(await screen.findByRole('dialog', { name: 'Matemática I' })).toBeInTheDocument();
+    await user.keyboard('{Escape}');
+    expect(await screen.findByRole('button', { name: 'Matemática I, Aprobada, nota 8,5' })).toHaveAttribute('aria-pressed', 'true');
+  });
+
+  it('shares the estado filter between map chips and the list select', async () => {
+    useProgress(threeYearPlan());
+    const user = userEvent.setup();
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
+
+    await user.click(await screen.findByRole('button', { name: /Aprobadas/ }));
+    expect(screen.getByRole('button', { name: /Aprobadas/ })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('button', { name: /^Análisis/ })).not.toBeInTheDocument();
+
+    await user.click(screen.getByRole('radio', { name: 'Lista' }));
+    expect(await screen.findByRole('table')).toBeInTheDocument();
+    expect(screen.getByText('Matemática I')).toBeInTheDocument();
+    expect(screen.queryByText('Análisis')).not.toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Filtrar por estado' })).toHaveTextContent('Aprobadas');
+  });
+
+  it('switches back to the list and keeps the legend only there', async () => {
+    useProgress(threeYearPlan());
+    const user = userEvent.setup();
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
+
+    await screen.findByRole('button', { name: 'Matemática I, Aprobada, nota 8,5' });
+    expect(screen.queryByRole('list', { name: 'Referencia de estados' })).not.toBeInTheDocument();
+    await user.click(screen.getByRole('radio', { name: 'Lista' }));
+    expect(await screen.findByRole('table')).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Referencia de estados' })).toBeInTheDocument();
+  });
+
+  it('shows the empty filter state and clears it', async () => {
+    useProgress(threeYearPlan());
+    const user = userEvent.setup();
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa&estado=desaprobadas' });
+
+    expect(await screen.findByText('Ninguna materia coincide')).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: 'Quitar filtro' }));
+    expect(await screen.findByRole('button', { name: 'Matemática I, Aprobada, nota 8,5' })).toBeInTheDocument();
+  });
+
+  it('shows the empty plan message', async () => {
+    useProgress(progress([]));
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
+
+    expect(await screen.findByText('El plan todavía no tiene materias')).toBeInTheDocument();
+  });
+
+  it('shows a skeleton while loading', async () => {
+    server.use(http.get(`${API}/me/program-enrollments/5/progress/subjects`, () => new Promise(() => {})));
+    const { container } = renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
+
+    expect(container.querySelectorAll('.skeleton-shimmer').length).toBeGreaterThan(0);
+    expect(screen.queryByRole('region', { name: 'Mapa del plan por año' })).not.toBeInTheDocument();
+  });
+
+  it('offers retry on error and explains a forbidden response', async () => {
+    useProgress({ code: 'INTERNAL_ERROR', requestId: 'req-1', retryable: false, violations: [] }, 500);
+    const user = userEvent.setup();
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('No pudimos cargar el plan de estudio');
+    useProgress(threeYearPlan());
+    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+    expect(await screen.findByRole('button', { name: 'Matemática I, Aprobada, nota 8,5' })).toBeInTheDocument();
+  });
+
+  it('says there is no access on a forbidden response', async () => {
+    useProgress({ code: 'FORBIDDEN', requestId: 'req-2', retryable: false, violations: [] }, 403);
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
+
+    expect(await screen.findByText('No tenés acceso a esta pantalla')).toBeInTheDocument();
+  });
+});
+
+describe('TabPlanDeEstudio summary and mobile accordion', () => {
+  const plan = (summaryOverrides = {}) =>
+    progress(
+      [
+        subject({ programSubjectId: 1, subjectName: 'Matemática I' }),
+        subject({ programSubjectId: 2, subjectCode: 'ANA201', subjectName: 'Análisis', curricularYear: 2, state: 'IN_PROGRESS', finalScore: null }),
+        subject({ programSubjectId: 3, subjectCode: 'FIS301', subjectName: 'Física', curricularYear: 3, state: 'AVAILABLE', finalScore: null }),
+      ],
+      {
+        summary: {
+          ...progress([]).summary,
+          mandatoryTotal: 3,
+          mandatoryApproved: 1,
+          counts: { approved: 1, inProgress: 1, regularPendingFinal: 0, failed: 0, available: 1, blocked: 0 },
+          ...summaryOverrides,
+        },
+      },
+    );
+
+  function useCompactViewport() {
+    window.matchMedia = () => ({ matches: true, addEventListener() {}, removeEventListener() {} });
+  }
+
+  it('shows the summary counts from the server as read-only text and filters only through the status chips', async () => {
+    useProgress(plan());
+    const user = userEvent.setup();
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
+
+    const summary = await screen.findByRole('region', { name: 'Tu avance en el plan' });
+    const counts = within(within(summary).getByRole('list', { name: 'Materias por estado' }));
+    expect(counts.getByText('Aprobadas').closest('li')).toHaveTextContent('1');
+    expect(counts.getByText('En curso').closest('li')).toHaveTextContent('1');
+    expect(counts.getByText('Bloqueadas').closest('li')).toHaveTextContent('0');
+    expect(within(summary).queryByRole('button')).not.toBeInTheDocument();
+    expect(summary.querySelector('[aria-pressed]')).toBeNull();
+
+    const chips = within(screen.getByRole('group', { name: 'Filtrar por estado' }));
+    await user.click(chips.getByRole('button', { name: /En curso/ }));
+    expect(chips.getByRole('button', { name: /En curso/ })).toHaveAttribute('aria-pressed', 'true');
+    expect(screen.queryByRole('button', { name: /^Matemática I/ })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Análisis/ })).toBeInTheDocument();
+
+    await user.click(chips.getByRole('button', { name: /Todas/ }));
+    expect(await screen.findByRole('button', { name: /^Matemática I/ })).toBeInTheDocument();
+  });
+
+  it('hides the credits bar when the plan defines no required credits and measures mandatory subjects', async () => {
+    useProgress(plan({ requiredCredits: 0, completionPercent: 0 }));
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
+
+    const summary = await screen.findByRole('region', { name: 'Tu avance en el plan' });
+    expect(within(summary).getAllByRole('progressbar')).toHaveLength(1);
+    expect(within(summary).getByRole('progressbar', { name: /Obligatorias aprobadas · 1 de 3/ })).toHaveAttribute('aria-valuenow', '33.33333333333333');
+    expect(within(summary).getByText('33 %')).toBeInTheDocument();
+    expect(within(summary).queryByText(/Créditos/)).not.toBeInTheDocument();
+  });
+
+  it('shows the credits bar when the plan defines required credits', async () => {
+    useProgress(plan());
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
+
+    const summary = await screen.findByRole('region', { name: 'Tu avance en el plan' });
+    expect(within(summary).getAllByRole('progressbar')).toHaveLength(2);
+    expect(within(summary).getByRole('progressbar', { name: 'Créditos · 3 de 6' })).toBeInTheDocument();
+  });
+
+  it('mentions subjects approved by equivalence only when there are some', async () => {
+    useProgress(plan({ approvedByEquivalence: 2 }));
+    const { unmount } = renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
+    const summary = await screen.findByRole('region', { name: 'Tu avance en el plan' });
+    expect(within(summary).getByText(/por equivalencia/)).toHaveTextContent('2 por equivalencia');
+    unmount();
+
+    useProgress(plan());
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
+    const plain = await screen.findByRole('region', { name: 'Tu avance en el plan' });
+    expect(within(plain).queryByText(/por equivalencia/)).not.toBeInTheDocument();
+  });
+
+  it('does not show the summary in the list view', async () => {
+    useProgress(plan());
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />);
+
+    await screen.findByRole('table');
+    expect(screen.queryByRole('region', { name: 'Tu avance en el plan' })).not.toBeInTheDocument();
+  });
+
+  it('opens only the first year with pending subjects on mobile and toggles years by keyboard-reachable buttons', async () => {
+    useCompactViewport();
+    useProgress(plan());
+    const user = userEvent.setup();
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
+
+    const first = await screen.findByRole('button', { name: '1° año' });
+    const second = screen.getByRole('button', { name: '2° año' });
+    expect(first).toHaveAttribute('aria-expanded', 'false');
+    expect(second).toHaveAttribute('aria-expanded', 'true');
+    expect(second).toHaveAttribute('aria-controls', document.getElementById(second.getAttribute('aria-controls')).id);
+    expect(second.closest('h3')).not.toBeNull();
+    expect(screen.getByRole('button', { name: /^Análisis/ })).toBeVisible();
+    expect(screen.queryByRole('button', { name: /^Matemática I/ })).not.toBeInTheDocument();
+
+    await user.click(first);
+    expect(first).toHaveAttribute('aria-expanded', 'true');
+    expect(await screen.findByRole('button', { name: /^Matemática I/ })).toBeVisible();
+    expect(first).toHaveClass('min-h-11');
+  });
+
+  it('renders plain year headings without buttons on desktop and keeps every year visible', async () => {
+    useProgress(plan());
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
+
+    await screen.findByRole('button', { name: /^Matemática I/ });
+    expect(screen.getByRole('heading', { level: 3, name: '1° año' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '1° año' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Análisis/ })).toBeVisible();
+  });
+
+  it('keeps the projection collapsed in the map view and opens it on demand', async () => {
+    useProgress(plan());
+    const user = userEvent.setup();
+    renderWithProviders(<TabPlanDeEstudio carreraId={5} />, { route: '/?vista=mapa' });
+
+    const trigger = await screen.findByRole('button', { name: 'Proyección de egreso' });
+    expect(trigger).toHaveAttribute('aria-expanded', 'false');
+    await user.click(trigger);
+    expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
 });

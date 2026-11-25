@@ -2,7 +2,10 @@ package com.red_escuela.backend.enrollment.policy;
 
 import com.red_escuela.backend.academicstructure.domain.RequirementType;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
+import com.red_escuela.backend.shared.domain.Grade;
 import org.junit.jupiter.api.Test;
+
+import java.math.BigDecimal;
 
 import java.util.List;
 import java.util.Set;
@@ -48,5 +51,59 @@ class PrerequisiteRequirementPolicyTest {
     @Test
     void relevantStatusesAreRegularAndApproved() {
         assertThat(policy.relevantStatuses()).containsExactlyInAnyOrder(EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVED);
+    }
+
+    private static Grade grade(String value) {
+        return Grade.of(new BigDecimal(value));
+    }
+
+    @Test
+    void scoreEqualToMinimumIsMet() {
+        assertThat(policy.isMet(RequirementType.APPROVED, PrerequisiteStanding.APPROVED, grade("6"), grade("6"))).isTrue();
+    }
+
+    @Test
+    void scoreOneCentBelowMinimumIsNotMet() {
+        assertThat(policy.isMet(RequirementType.APPROVED, PrerequisiteStanding.APPROVED, grade("6"), grade("5.99"))).isFalse();
+    }
+
+    @Test
+    void scoreAboveMinimumIsMet() {
+        assertThat(policy.isMet(RequirementType.APPROVED, PrerequisiteStanding.APPROVED, grade("6"), grade("10"))).isTrue();
+    }
+
+    @Test
+    void missingMinimumIsAlwaysMet() {
+        assertThat(policy.isMet(RequirementType.APPROVED, PrerequisiteStanding.APPROVED, null, grade("1"))).isTrue();
+    }
+
+    @Test
+    void missingScoreWithMinimumIsMet() {
+        assertThat(policy.isMet(RequirementType.APPROVED, PrerequisiteStanding.APPROVED, grade("6"), null)).isTrue();
+    }
+
+    @Test
+    void waivedIsMetEvenWithLowScore() {
+        assertThat(policy.isMet(RequirementType.APPROVED, PrerequisiteStanding.WAIVED, grade("6"), grade("2"))).isTrue();
+    }
+
+    @Test
+    void passedCourseworkWithRegularIgnoresMinimum() {
+        assertThat(policy.isMet(RequirementType.PASSED_COURSEWORK, PrerequisiteStanding.REGULAR, grade("6"), null)).isTrue();
+    }
+
+    @Test
+    void passedCourseworkWithApprovedIgnoresMinimum() {
+        assertThat(policy.isMet(RequirementType.PASSED_COURSEWORK, PrerequisiteStanding.APPROVED, grade("6"), grade("2"))).isTrue();
+    }
+
+    @Test
+    void notTakenIsNotMetRegardlessOfMinimum() {
+        assertThat(policy.isMet(RequirementType.APPROVED, PrerequisiteStanding.NOT_TAKEN, null, null)).isFalse();
+    }
+
+    @Test
+    void regularIsNotMetForApprovedRequirementEvenWithoutMinimum() {
+        assertThat(policy.isMet(RequirementType.APPROVED, PrerequisiteStanding.REGULAR, null, null)).isFalse();
     }
 }

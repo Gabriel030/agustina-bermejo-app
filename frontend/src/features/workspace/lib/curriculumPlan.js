@@ -122,7 +122,15 @@ export const PROJECTION_CONFIDENCE = {
   LOW: { label: 'Confianza baja', tone: 'warning' },
 };
 
-export function describeProjectionReason(code) {
+const STAFF_PROJECTION_REASON_MESSAGE = {
+  ENROLLMENT_WITHDRAWN: 'La matrícula está dada de baja.',
+  ENROLLMENT_PAUSED: 'La matrícula está pausada.',
+};
+
+export function describeProjectionReason(code, audience = 'student') {
+  if (audience === 'staff') {
+    return STAFF_PROJECTION_REASON_MESSAGE[code] ?? PROJECTION_REASON_MESSAGE[code] ?? 'No se pudo estimar el egreso con los datos actuales.';
+  }
   return PROJECTION_REASON_MESSAGE[code] ?? 'No pudimos estimar tu egreso con los datos actuales.';
 }
 

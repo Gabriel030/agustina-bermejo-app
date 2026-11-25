@@ -71,6 +71,7 @@ class CourseEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
     @Autowired private RegisterCashPaymentUseCase registerCashPaymentUseCase;
     @Autowired private EntityManager entityManager;
     @Autowired private LegacyCourseRequestSeeder legacySeeder;
+    @Autowired private org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
 
     private Person persistPerson(String dni) {
         Address address = new Address();
@@ -161,6 +162,23 @@ class CourseEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
         awaitEnrollments(student, 1);
         assertThat(invoiceRepository.findById(invoiceId).orElseThrow().getPaymentStatus()).isEqualTo(InvoicePaymentStatus.PAID);
         assertThat(applicationRepository.findByStudentIdOrderByIdDesc(student.getId()).get(0).getCourseEnrollment()).isNotNull();
+    }
+
+    @Test
+    @Tag("D-153")
+    void approvingTheReceiptOfACourseAdmissionInvoiceLinksItsLinesToTheCreatedEnrollment() {
+        Student student = persistStudent();
+        Course course = persistPricedCourse();
+        Person admin = persistAdministrative();
+        CourseEnrollmentApplication application = request(student, course);
+        Long invoiceId = application.getInvoiceId();
+
+        approvePaymentReceiptUseCase.approve(application.getPaymentReceipt().getId(), admin, PaymentVerification.none());
+
+        awaitEnrollments(student, 1);
+        Long enrollmentId = courseEnrollmentRepository.findByStudentId(student.getId()).get(0).getId();
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(jdbcTemplate.queryForList(
+                "select course_enrollment_id from invoice_line where invoice_id = ?", Long.class, invoiceId)).isNotEmpty().containsOnly(enrollmentId));
     }
 
     @Test

@@ -3,6 +3,8 @@ package com.red_escuela.backend.enrollment.policy;
 import com.red_escuela.backend.academicstructure.domain.RequirementType;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 
+import com.red_escuela.backend.shared.domain.Grade;
+
 import java.util.Collection;
 import java.util.List;
 
@@ -31,6 +33,22 @@ public final class PrerequisiteRequirementPolicy {
     }
 
     public boolean isMet(RequirementType requirementType, PrerequisiteStanding standing) {
+        return isMet(requirementType, standing, null, null);
+    }
+
+    public boolean isMet(RequirementType requirementType, PrerequisiteStanding standing, Grade minGrade,
+            Grade bestApprovedScore) {
+        if (!isMetIgnoringGrade(requirementType, standing)) {
+            return false;
+        }
+        boolean gradeApplies = requirementType == RequirementType.APPROVED && standing == PrerequisiteStanding.APPROVED;
+        if (!gradeApplies || minGrade == null || bestApprovedScore == null) {
+            return true;
+        }
+        return bestApprovedScore.meets(minGrade);
+    }
+
+    private boolean isMetIgnoringGrade(RequirementType requirementType, PrerequisiteStanding standing) {
         return switch (standing) {
             case WAIVED, APPROVED -> true;
             case REGULAR -> requirementType != RequirementType.APPROVED;

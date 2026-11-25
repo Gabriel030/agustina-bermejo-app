@@ -44,6 +44,10 @@ public interface ImportEntityDefinition {
         return false;
     }
 
+    default boolean validatesAcrossRows() {
+        return false;
+    }
+
     default Map<Integer, List<ImportRowError>> validateAcrossRows(List<Map<String, String>> payloads) {
         return Map.of();
     }

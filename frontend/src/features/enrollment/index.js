@@ -9,7 +9,16 @@ export {
   useDarmeDeBajaDeMateria,
   useChangeMySection,
 } from './hooks/useStudentEnrollment';
-export { useCurriculumProgress, useGraduationProjection } from './hooks/useCurriculumProgress';
+export {
+  useCurriculumProgress,
+  useGraduationProjection,
+  useStaffCurriculumProgress,
+  useStaffGraduationProjection,
+  useCurriculumProgressFor,
+  useGraduationProjectionFor,
+} from './hooks/useCurriculumProgress';
+export { useSubjectEquivalences } from './hooks/useSubjectEquivalences';
+export { useEquivalenceAccess, useRecordSubjectEquivalence, useVoidSubjectEquivalence } from './hooks/useSubjectEquivalenceActions';
 export { useProgresoStaff } from './hooks/useProgramProgress';
 export { useExcepcionesPendientes } from './hooks/useExceptionApprovals';
 export { useMisSolicitudesCarrera } from './hooks/useCatalogo';

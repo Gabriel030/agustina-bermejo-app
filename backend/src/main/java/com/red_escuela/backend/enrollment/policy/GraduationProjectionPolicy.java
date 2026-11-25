@@ -78,7 +78,7 @@ public final class GraduationProjectionPolicy {
         int criticalPath = plan.criticalPathPeriods();
         int simulated = plan.simulate(pace, firstPeriodTermOf(input.today()));
         if (simulated < 0) {
-            return notProjectable(input, ProjectionBlockReason.CREDITS_UNREACHABLE);
+            return notProjectable(input, ProjectionBlockReason.PROJECTION_HORIZON_EXCEEDED);
         }
         int estimated = Math.max(simulated, criticalPath);
         int floor = criticalPath;
@@ -106,9 +106,8 @@ public final class GraduationProjectionPolicy {
         if (closedPeriods >= HIGH_MIN_CLOSED_PERIODS && approvedSubjects >= HIGH_MIN_APPROVED_SUBJECTS) {
             return ProjectionConfidence.HIGH;
         }
-        boolean mediumByPeriods = closedPeriods >= MEDIUM_MIN_CLOSED_PERIODS && closedPeriods < HIGH_MIN_CLOSED_PERIODS;
-        boolean mediumBySubjects = approvedSubjects >= MEDIUM_MIN_APPROVED_SUBJECTS
-                && approvedSubjects < HIGH_MIN_APPROVED_SUBJECTS;
+        boolean mediumByPeriods = closedPeriods >= MEDIUM_MIN_CLOSED_PERIODS;
+        boolean mediumBySubjects = approvedSubjects >= MEDIUM_MIN_APPROVED_SUBJECTS;
         return mediumByPeriods || mediumBySubjects ? ProjectionConfidence.MEDIUM : ProjectionConfidence.LOW;
     }
 

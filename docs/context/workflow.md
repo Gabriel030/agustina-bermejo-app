@@ -104,3 +104,25 @@ Claude puede abrir PRs contra `master`. Cadencia obligatoria de releases: con 15
 - `ci.yml` suma `secret-scan-pr`: gitleaks sobre los commits de cada PR. La configuración es `.gitleaks.toml` (permite solo la contraseña demo `Test1234`).
 - Local: `cd backend && ./mvnw -B -ntp -Pdependency-check verify -DskipTests` (lento sin `NVD_API_KEY`), `cd frontend && npm run audit:prod`, `docker run --rm -v "$PWD:/repo" zricethezav/gitleaks:latest detect --source /repo --config /repo/.gitleaks.toml --no-banner`.
 - `ProductionProfileHardeningIT` verifica que sin perfil `local`/`demo` no hay seeds, Swagger ni `simulated-emails`, y que el actuator no expone `env`/`heapdump`.
+
+## 8. Permisos de la célula
+
+Las reglas viven en `.claude/settings.json` (`permissions.allow` y `permissions.deny`). Un `deny` siempre gana sobre un `allow`.
+
+**Permitido (`allow`):**
+- `gh pr merge * --squash --auto` (en cualquier orden de flags): activar el auto-merge squash del PR propio. Es el único merge que la célula hace sola, y lo frena la protección de rama.
+- `git push origin <prefijo>/*` con `feat`, `fix`, `feature`, `docs`, `refactor`, `perf`, `chore` y `contract`: subir ramas de trabajo, nunca `develop` ni `master`.
+- `git merge origin/develop`: traer `develop` a la rama propia (regla de actualización de ramas).
+
+**Prohibido (`deny`):**
+- `git push --force*`, `git push * --force*`, `git push -f *`, `git push * -f`: nada de reescribir historia remota.
+- `git push origin develop` y `git push origin master`: esas ramas solo se mueven por PR.
+- `gh pr merge * --admin*`: no se saltea la protección de rama.
+- `git reset --hard origin/*`: descarta trabajo local sin aviso.
+- `rm -rf *` y `rm -fr *`: la sintaxis de permisos no puede expresar «salvo en el scratchpad», así que se prohíbe entero; para limpiar el scratchpad usar `rm` de archivos puntuales o la herramienta de archivos.
+
+**Sin regla posible:** «`gh pr merge` sin `--squash --auto` a `master`» no se puede expresar (una regla no sabe la rama destino ni admite negación). Lo cubre la protección de rama de `master` y que el merge a `master` lo hace solo el Líder Técnico.
+
+**Edición de la baseline congelada de ArchUnit:** no tiene regla de permiso. Se hace solo en PRs de refactor y lo valida la revisión.
+
+**Agregar una excepción:** abrir un PR `chore/*` que sume la regla más acotada posible a `allow` (nunca un comodín sobre el comando entero) explicando el caso. Si choca con un `deny`, no se afloja el `deny` sin aprobación de Gabriel. Las reglas de `settings.json` no sustituyen la aprobación previa de commits y pushes de la sección 2.

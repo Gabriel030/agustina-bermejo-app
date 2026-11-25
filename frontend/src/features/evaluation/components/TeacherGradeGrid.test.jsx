@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { errorBody } from '@/test/fixtures/errors';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -50,10 +50,19 @@ function useGrid(body = grid, kind = 'program') {
   server.use(http.get(`${API}/${kind}-sections/7/grade-grid`, () => HttpResponse.json(body)));
 }
 
+function stubElementWidths({ scrollWidth, clientWidth }) {
+  vi.spyOn(Element.prototype, 'scrollWidth', 'get').mockReturnValue(scrollWidth);
+  vi.spyOn(Element.prototype, 'clientWidth', 'get').mockReturnValue(clientWidth);
+}
+
 describe('TeacherGradeGrid', () => {
   beforeEach(() => {
     toastMock.success.mockClear();
     toastMock.error.mockClear();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('builds one column per scheme item, orders students and disables the final column for every student', async () => {
@@ -69,6 +78,24 @@ describe('TeacherGradeGrid', () => {
     expect(screen.getAllByLabelText('Se carga desde la mesa de examen')).toHaveLength(2);
     const rows = screen.getAllByRole('row');
     expect(within(rows[1]).getByText('Acosta, Joaquín')).toBeInTheDocument();
+  });
+
+  it('shows the overflow indicator on the right only while the grid is wider than its container', async () => {
+    stubElementWidths({ scrollWidth: 900, clientWidth: 400 });
+    useGrid();
+    renderWithProviders(<TeacherGradeGrid sectionId="7" kind="PROGRAM" />);
+
+    await screen.findByLabelText('Parcial 1 de Benítez, Lucía');
+    expect(screen.getByTestId('overflow-indicator')).toHaveClass('opacity-100');
+  });
+
+  it('hides the overflow indicator when the grid fits its container', async () => {
+    stubElementWidths({ scrollWidth: 400, clientWidth: 400 });
+    useGrid();
+    renderWithProviders(<TeacherGradeGrid sectionId="7" kind="PROGRAM" />);
+
+    await screen.findByLabelText('Parcial 1 de Benítez, Lucía');
+    expect(screen.getByTestId('overflow-indicator')).toHaveClass('opacity-0');
   });
 
   it('links the final column to the exam boards screen of the docente', async () => {

@@ -35,6 +35,7 @@ function ExpandToggle({ row, label }) {
       type="button"
       variant="ghost"
       size="icon"
+      className="max-md:size-11"
       aria-label={label}
       aria-expanded={row.getIsExpanded()}
       onClick={row.getToggleExpandedHandler()}
@@ -161,7 +162,7 @@ function CardToolbar({ table }) {
             table.setSorting([{ id, desc: direction === 'desc' }]);
           }}
         >
-          <SelectTrigger aria-label="Ordenar por" className="h-8 w-auto gap-2 text-xs">
+          <SelectTrigger aria-label="Ordenar por" className="h-8 w-auto gap-2 text-xs max-md:data-[size=default]:h-11">
             <SelectValue placeholder="Ordenar por" />
           </SelectTrigger>
           <SelectContent>
@@ -465,7 +466,7 @@ export function DataTable({
         aria-hidden="true"
         data-testid="overflow-indicator"
         className={cn(
-          'pointer-events-none absolute inset-y-0 right-0 flex w-9 items-center justify-end rounded-r-xl bg-gradient-to-r from-transparent to-dialog-bg pr-1.5 text-ink-soft transition-opacity motion-reduce:transition-none',
+          'pointer-events-none absolute inset-y-0 right-0 flex w-9 items-center justify-end rounded-r-xl bg-dialog-bg pr-1.5 text-ink-soft shadow-(--sh-sticky-right) transition-opacity motion-reduce:transition-none',
           overflow.hasMoreToRight ? 'opacity-100' : 'opacity-0',
         )}
       >
