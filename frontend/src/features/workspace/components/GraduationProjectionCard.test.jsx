@@ -1,9 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
+import { axe } from '@/test/axe';
 import { GraduationProjectionCard } from './GraduationProjectionCard';
 
 const API = 'http://localhost:8080';
@@ -121,5 +122,82 @@ describe('GraduationProjectionCard', () => {
 
     expect(await screen.findByText('No pudimos estimar tu egreso con los datos actuales.')).toBeInTheDocument();
     expect(screen.queryByText(/cuatrimestres/)).not.toBeInTheDocument();
+  });
+
+  describe('call to action', () => {
+    const notProjectable = (reasons) =>
+      projection({ status: 'NOT_PROJECTABLE', estimatedPeriods: null, range: null, confidence: null, estimatedGraduationYear: null, reasons });
+
+    it.each([['MEDIUM'], ['LOW']])('offers to see available subjects when the projection has %s confidence', async (confidence) => {
+      useProjection(projection({ confidence, estimatedGraduationYear: null }));
+      const onViewAvailableSubjects = vi.fn();
+      const user = userEvent.setup();
+      renderWithProviders(<GraduationProjectionCard carreraId={5} onViewAvailableSubjects={onViewAvailableSubjects} />);
+
+      await user.click(await screen.findByRole('button', { name: 'Ver qué puedo cursar' }));
+
+      expect(onViewAvailableSubjects).toHaveBeenCalledTimes(1);
+      expect(screen.getByRole('button', { name: 'Ver qué puedo cursar' })).toHaveClass('min-h-11');
+    });
+
+    it('offers to see available subjects when only the horizon was exceeded', async () => {
+      useProjection(notProjectable(['PROJECTION_HORIZON_EXCEEDED']));
+      renderWithProviders(<GraduationProjectionCard carreraId={5} onViewAvailableSubjects={() => {}} />);
+
+      expect(await screen.findByRole('button', { name: 'Ver qué puedo cursar' })).toBeInTheDocument();
+    });
+
+    it('has no call to action when there are no available subjects', async () => {
+      useProjection(projection());
+      renderWithProviders(<GraduationProjectionCard carreraId={5} />);
+
+      await screen.findByText('cuatrimestres estimados');
+      expect(screen.queryByRole('button', { name: 'Ver qué puedo cursar' })).not.toBeInTheDocument();
+    });
+
+    it.each([['ENROLLMENT_PAUSED'], ['CREDITS_UNREACHABLE'], ['PREREQUISITE_CYCLE']])('has no call to action for the administrative reason %s', async (reason) => {
+      useProjection(notProjectable([reason]));
+      renderWithProviders(<GraduationProjectionCard carreraId={5} onViewAvailableSubjects={() => {}} />);
+
+      await screen.findByRole('heading', { name: 'Proyección de egreso' });
+      await waitFor(() => expect(screen.queryByRole('status')).not.toBeInTheDocument());
+      expect(screen.queryByRole('button', { name: 'Ver qué puedo cursar' })).not.toBeInTheDocument();
+      expect(screen.queryByRole('link', { name: 'Ir a Trámites' })).not.toBeInTheDocument();
+    });
+
+    it('sends the student to Trámites when the requirements are met, without the estimate disclaimer', async () => {
+      useProjection(projection({ status: 'REQUIREMENTS_MET', estimatedPeriods: null, range: null, confidence: null }));
+      renderWithProviders(<GraduationProjectionCard carreraId={5} onViewAvailableSubjects={() => {}} />);
+
+      const link = await screen.findByRole('link', { name: 'Ir a Trámites' });
+      expect(link).toHaveAttribute('href', '/?tab=tramites');
+      expect(link).toHaveClass('min-h-11');
+      expect(screen.queryByText('Estimación, no un compromiso.')).not.toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Ver qué puedo cursar' })).not.toBeInTheDocument();
+    });
+
+    it('shows no call to action for staff', async () => {
+      server.use(http.get(`${API}/program-enrollments/5/progress/projection`, () => HttpResponse.json(projection({ status: 'REQUIREMENTS_MET' }))));
+      renderWithProviders(<GraduationProjectionCard audience="staff" carreraId={5} onViewAvailableSubjects={() => {}} />);
+
+      await screen.findByText('Ya cumple los requisitos del plan para egresar.');
+      expect(screen.queryByRole('link', { name: 'Ir a Trámites' })).not.toBeInTheDocument();
+    });
+
+    it('has no call to action on a server error and keeps the retry', async () => {
+      useProjection({ code: 'INTERNAL_ERROR', requestId: 'req-1', retryable: false, violations: [] }, 500);
+      renderWithProviders(<GraduationProjectionCard carreraId={5} onViewAvailableSubjects={() => {}} />);
+
+      expect(await screen.findByRole('alert')).toBeInTheDocument();
+      expect(screen.queryByRole('button', { name: 'Ver qué puedo cursar' })).not.toBeInTheDocument();
+    });
+
+    it('has no accessibility violations with the call to action', async () => {
+      useProjection(projection());
+      const { container } = renderWithProviders(<GraduationProjectionCard carreraId={5} onViewAvailableSubjects={() => {}} />);
+
+      await screen.findByRole('button', { name: 'Ver qué puedo cursar' });
+      expect(await axe(container)).toHaveNoViolations();
+    });
   });
 });

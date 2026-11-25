@@ -1,4 +1,4 @@
-import { Fragment, useMemo } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ListFilter } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
@@ -23,6 +23,7 @@ import { ElectiveGroupsSummary } from '@/features/workspace/components/ElectiveG
 import { GraduationProjectionCard } from '@/features/workspace/components/GraduationProjectionCard';
 import { useCurriculumProgressFor } from '@/features/enrollment';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { smoothScrollBehavior } from '@/lib/scrollBehavior';
 import {
   buildPlanRows,
   describeCorequisite,
@@ -113,6 +114,23 @@ export function TabPlanDeEstudio({ carreraId, audience = 'student', onViewEnroll
   const rows = useMemo(() => buildPlanRows(progress?.subjects, progress?.summary.requiredCredits > 0), [progress]);
   const visibleRows = useMemo(() => filterPlanRows(rows, statusFilter), [rows, statusFilter]);
 
+  const listHeadingRef = useRef(null);
+  const [listFocusRequest, setListFocusRequest] = useState(0);
+  const hasAvailableSubjects = rows.some((row) => row.estado === 'disponible');
+
+  useEffect(() => {
+    if (listFocusRequest === 0 || !listHeadingRef.current) return;
+    listHeadingRef.current.scrollIntoView({ behavior: smoothScrollBehavior(), block: 'start' });
+    listHeadingRef.current.focus({ preventScroll: true });
+  }, [listFocusRequest]);
+
+  function viewAvailableSubjects() {
+    searchParams.set('estado', 'disponibles');
+    searchParams.set('vista', 'lista');
+    setSearchParams(searchParams, { replace: true });
+    setListFocusRequest((request) => request + 1);
+  }
+
   function changeStatusFilter(next) {
     if (next === 'todas') searchParams.delete('estado');
     else searchParams.set('estado', next);
@@ -144,9 +162,15 @@ export function TabPlanDeEstudio({ carreraId, audience = 'student', onViewEnroll
       {view === 'mapa' && progress && (
         <CurriculumSummaryBar audience={audience} summary={progress.summary} equivalencesAnchorId={equivalencesAnchorId} />
       )}
-      <GraduationProjectionCard audience={audience} carreraId={carreraId} collapsible={view === 'mapa'} />
+      <GraduationProjectionCard
+        audience={audience} carreraId={carreraId} collapsible={view === 'mapa'}
+        onViewAvailableSubjects={hasAvailableSubjects ? viewAvailableSubjects : undefined}
+      />
       {progress && <PlanWarnings warnings={progress.warnings} audience={audience} />}
       <PlanViewSwitch value={view} onChange={changeView} />
+      <h2 ref={listHeadingRef} tabIndex={-1} className="sr-only">
+        Materias del plan
+      </h2>
       {view === 'lista' && (
         <ul aria-label="Referencia de estados" className="flex flex-wrap gap-1.5">
           {Object.keys(PLAN_STATUS_PILL).map((status) => (

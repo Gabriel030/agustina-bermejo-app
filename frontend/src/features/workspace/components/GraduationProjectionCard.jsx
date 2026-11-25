@@ -1,9 +1,11 @@
+import { Link } from 'react-router-dom';
 import { CalendarClock, ChevronDown } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
 import { StatusPill } from '@/components/StatusPill';
 import { Notice } from '@/components/Notice';
 import { LoadErrorState } from '@/components/LoadErrorState';
+import { Button } from '@/components/ui/button';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useGraduationProjectionFor } from '@/features/enrollment';
 import {
@@ -14,6 +16,28 @@ import {
 } from '@/features/workspace/lib/curriculumPlan';
 
 const HIDDEN_STATUSES = [403, 404];
+
+function ProjectionCallToAction({ projection, audience, onViewAvailableSubjects }) {
+  if (audience !== 'student') return null;
+  if (projection.status === 'REQUIREMENTS_MET') {
+    return (
+      <Button asChild variant="primary" className="min-h-11 w-full @min-[640px]:w-fit">
+        <Link to="?tab=tramites">Ir a Trámites</Link>
+      </Button>
+    );
+  }
+  const projectable = projection.status !== 'NOT_PROJECTABLE';
+  const horizonOnly =
+    projection.status === 'NOT_PROJECTABLE' &&
+    projection.reasons.includes('PROJECTION_HORIZON_EXCEEDED') &&
+    !projection.reasons.some((reason) => reason !== 'PROJECTION_HORIZON_EXCEEDED');
+  if (!(projectable || horizonOnly) || !onViewAvailableSubjects) return null;
+  return (
+    <Button type="button" variant="outline" className="min-h-11 w-full @min-[640px]:w-fit" onClick={onViewAvailableSubjects}>
+      Ver qué puedo cursar
+    </Button>
+  );
+}
 
 function ProjectionBody({ projection, audience }) {
   if (projection.status === 'REQUIREMENTS_MET') {
@@ -83,8 +107,15 @@ function ProjectionAssumptions({ assumptions }) {
   );
 }
 
-function ProjectionContent({ projection, audience, isLoading, isError, error, refetch }) {
-  if (isLoading) return <Skeleton className="h-16" />;
+function ProjectionContent({ projection, audience, isLoading, isError, error, refetch, onViewAvailableSubjects }) {
+  if (isLoading) {
+    return (
+      <>
+        <Skeleton className="h-16" />
+        {audience === 'student' && <Skeleton className="h-11" />}
+      </>
+    );
+  }
   if (isError) return <LoadErrorState error={error} onRetry={refetch} resource="la proyección de egreso" bare />;
   return (
     <>
@@ -94,22 +125,23 @@ function ProjectionContent({ projection, audience, isLoading, isError, error, re
           {warning.message}
         </Notice>
       ))}
+      <ProjectionCallToAction projection={projection} audience={audience} onViewAvailableSubjects={onViewAvailableSubjects} />
       <ProjectionAssumptions assumptions={projection.assumptions} />
-      <div className="text-size-12 text-ink-faint">Estimación, no un compromiso.</div>
+      {projection.status !== 'REQUIREMENTS_MET' && <div className="text-size-12 text-ink-faint">Estimación, no un compromiso.</div>}
     </>
   );
 }
 
-export function GraduationProjectionCard({ carreraId, collapsible = false, audience = 'student' }) {
+export function GraduationProjectionCard({ carreraId, collapsible = false, audience = 'student', onViewAvailableSubjects }) {
   const { data: projection, isLoading, isError, error, refetch } = useGraduationProjectionFor(audience, carreraId);
 
   if (isError && HIDDEN_STATUSES.includes(error?.status)) return null;
 
-  const content = <ProjectionContent projection={projection} audience={audience} isLoading={isLoading} isError={isError} error={error} refetch={refetch} />;
+  const content = <ProjectionContent projection={projection} audience={audience} isLoading={isLoading} isError={isError} error={error} refetch={refetch} onViewAvailableSubjects={onViewAvailableSubjects} />;
 
   if (collapsible) {
     return (
-      <GlassCard role="region" className="p-4" aria-labelledby="graduation-projection-title">
+      <GlassCard role="region" className="@container p-4" aria-labelledby="graduation-projection-title">
         <Collapsible>
           <h2 id="graduation-projection-title" className="font-heading text-base font-bold text-ink">
             <CollapsibleTrigger className="group flex min-h-11 w-full items-center justify-between gap-2 text-left">
@@ -127,7 +159,7 @@ export function GraduationProjectionCard({ carreraId, collapsible = false, audie
   }
 
   return (
-    <GlassCard role="region" className="flex flex-col gap-2 p-4" aria-labelledby="graduation-projection-title">
+    <GlassCard role="region" className="@container flex flex-col gap-2 p-4" aria-labelledby="graduation-projection-title">
       <h2 id="graduation-projection-title" className="flex items-center gap-1.5 font-heading text-base font-bold text-ink">
         <CalendarClock className="h-4 w-4 text-ink-faint" aria-hidden="true" />
         Proyección de egreso
