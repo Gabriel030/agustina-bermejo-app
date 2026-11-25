@@ -117,7 +117,7 @@ export function examOptionsOf(registrations, carreraId, now) {
     .filter(
       (registration) =>
         registration.enrollmentId === carreraId &&
-        registration.status !== 'WITHDRAWN' &&
+        registration.status === 'GRADED' &&
         registration.examBoard?.status !== 'CANCELED' &&
         new Date(registration.examBoard.examDate) <= now,
     )

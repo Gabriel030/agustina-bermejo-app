@@ -54,8 +54,9 @@ public class MeSectionEvaluationConfigController {
     @PreAuthorize("hasRole('DOCENTE')")
     public List<SectionEvaluationConfigResponse> mySections() {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
+        int dueDays = getMySectionEvaluationConfigUseCase.evaluationConfigDueDays();
         return listMySectionEvaluationConfigsUseCase.list(instructor.getId()).stream()
-                .map(config -> toResponse(config, instructor.getId())).toList();
+                .map(config -> toResponse(config, instructor.getId()).withEvaluationConfigDueDays(dueDays)).toList();
     }
 
     @GetMapping("/me/section-evaluation-configs/{sectionId}")
@@ -63,7 +64,8 @@ public class MeSectionEvaluationConfigController {
     public SectionEvaluationConfigResponse get(@PathVariable Long sectionId) {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
         return toResponse(getMySectionEvaluationConfigUseCase.get(
-                new GetMySectionEvaluationConfigCommand(sectionId, instructor.getId())), instructor.getId());
+                new GetMySectionEvaluationConfigCommand(sectionId, instructor.getId())), instructor.getId())
+                .withEvaluationConfigDueDays(getMySectionEvaluationConfigUseCase.evaluationConfigDueDays());
     }
 
     @PutMapping("/me/section-evaluation-configs/{sectionId}")

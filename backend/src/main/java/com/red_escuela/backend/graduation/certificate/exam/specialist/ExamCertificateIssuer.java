@@ -4,9 +4,11 @@ import com.red_escuela.backend.evaluation.api.ExamBoardAttendance;
 import com.red_escuela.backend.evaluation.api.ExamBoardAttendanceReader;
 import com.red_escuela.backend.evaluation.api.ExamBoardAttendanceView;
 import com.red_escuela.backend.evaluation.api.ExamBoardRegistrationFinder;
+import com.red_escuela.backend.evaluation.api.OwnExamRegistrationView;
 import com.red_escuela.backend.graduation.certificate.exam.exception.ExamCertificateBoardNotHeldException;
 import com.red_escuela.backend.graduation.certificate.exam.exception.ExamCertificateRegistrationNotEligibleException;
 import com.red_escuela.backend.graduation.documentsettings.specialist.DocumentIssuanceSettingsFinder;
+import com.red_escuela.backend.graduation.certificate.dto.CertificateDocumentType;
 import com.red_escuela.backend.graduation.certificate.dto.DocumentOrigin;
 import com.red_escuela.backend.graduation.certificate.dto.DocumentValidityStatus;
 import com.red_escuela.backend.graduation.certificate.dto.RecipientType;
@@ -22,6 +24,7 @@ import com.red_escuela.backend.graduation.certificate.exam.entity.ExamCertificat
 import com.red_escuela.backend.graduation.certificate.exam.repository.ExamCertificateRepository;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateDigest;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateVerificationUrl;
+import com.red_escuela.backend.graduation.certificate.specialist.VerifiableDocumentRegistry;
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
 import com.red_escuela.backend.identity.api.StudentFinder;
 import com.red_escuela.backend.shared.audit.AuditAction;
@@ -60,6 +63,7 @@ public class ExamCertificateIssuer {
     private final CertificateTemplateRenderSource templateSource;
     private final ExamBoardRegistrationFinder registrationFinder;
     private final ExamBoardAttendanceReader boardReader;
+    private final VerifiableDocumentRegistry verifiableDocumentRegistry;
     private final SecureRandom random = new SecureRandom();
 
     public ExamCertificateIssuer(ExamCertificateRepository repository, ExamCertificateTemplate template,
@@ -68,7 +72,8 @@ public class ExamCertificateIssuer {
                                  StudentFinder studentFinder, CurrentActorFinder currentActorFinder,
                                  DocumentIssuanceSettingsFinder settings, AuditTrail auditTrail, Clock clock,
                                  CertificateTemplateRenderSource templateSource, ExamBoardRegistrationFinder registrationFinder,
-                                 ExamBoardAttendanceReader boardReader) {
+                                 ExamBoardAttendanceReader boardReader,
+                                 VerifiableDocumentRegistry verifiableDocumentRegistry) {
         this.repository = repository;
         this.template = template;
         this.renderer = renderer;
@@ -83,6 +88,7 @@ public class ExamCertificateIssuer {
         this.templateSource = templateSource;
         this.registrationFinder = registrationFinder;
         this.boardReader = boardReader;
+        this.verifiableDocumentRegistry = verifiableDocumentRegistry;
     }
 
     @Transactional
@@ -108,6 +114,28 @@ public class ExamCertificateIssuer {
         }
         return issue(new ExamCertificateIssueCommand(registrationId, examBoardId, studentId, board.subjectName(), board.examDate(),
                 null, null, DocumentOrigin.ISSUED_BY_STAFF));
+    }
+
+    @Transactional(readOnly = true)
+    public Optional<ExamCertificate> currentValidOf(Long registrationId) {
+        LocalDateTime now = LocalDateTime.now(clock);
+        return repository.findByRegistrationIdAndStatus(registrationId, DocumentValidityStatus.VALID)
+                .filter(current -> current.isValidAt(now));
+    }
+
+    @Transactional
+    public ExamCertificate issueToSelf(OwnExamRegistrationView registration, RecipientType recipientType, String recipientText) {
+        repository.findByRegistrationIdAndStatus(registration.registrationId(), DocumentValidityStatus.VALID).ifPresent(current -> {
+            if (current.isExpiredAt(LocalDateTime.now(clock))) {
+                current.expire();
+            } else {
+                current.markReplaced();
+            }
+            repository.saveAndFlush(current);
+        });
+        return issue(new ExamCertificateIssueCommand(registration.registrationId(), registration.examBoardId(), registration.studentId(),
+                registration.subjectName(), registration.examDateTime().toLocalDate(), recipientType, recipientText,
+                DocumentOrigin.SELF_SERVICE));
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
@@ -150,6 +178,7 @@ public class ExamCertificateIssuer {
                     .renderEngineVersion(CertificatePdfRenderer.ENGINE_VERSION)
                     .pdfPath(path)
                     .build());
+            verifiableDocumentRegistry.register(CertificateDocumentType.EXAM_CERTIFICATE, saved.getId(), code);
             auditTrail.record(new AuditRecord(AuditAction.EXAM_CERTIFICATE_ISSUED, AuditEntityType.EXAM_CERTIFICATE, saved.getId(),
                     null, saved.getPdfSha256(), "examBoardId=" + saved.getExamBoardId() + ";registrationId=" + saved.getRegistrationId()));
             return saved;

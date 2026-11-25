@@ -224,7 +224,7 @@ class DebtExceptionIssuanceIT extends AbstractIntegrationTest {
         assertThat(first.getResponse().getContentAsByteArray()).startsWith("%PDF".getBytes());
         assertThat(documentCount(documentType)).isEqualTo(1);
         assertThat(jdbc.queryForObject("select count(*) from verifiable_document where document_type = ?", Integer.class, documentType))
-                .isEqualTo("EXAM_CERTIFICATE".equals(documentType) ? 0 : 1);
+                .isEqualTo(1);
         assertThat(jdbc.queryForObject("select status from document_debt_exception where id = ?", String.class, exceptionId))
                 .isEqualTo("USED");
         assertThat(auditCount("DOCUMENT_DEBT_EXC_USED", exceptionId)).isEqualTo(1);

@@ -47,8 +47,7 @@ class PublicDocumentVerificationIT extends AbstractIntegrationTest {
             + "\"documentNumber\":\"30123456\",\"titleKind\":\"la carrera\",\"titleName\":\"Tecnicatura en Enfermería\","
             + "\"programLevel\":\"UNDERGRADUATE\",\"hours\":1860,\"graduationDate\":\"2026-07-15\",\"issuedOn\":\"2026-11-05\","
             + "\"institutionName\":\"Instituto\",\"signatories\":[],\"templateRef\":\"BUILT_IN_V1\"}";
-    private static final Set<CertificateDocumentType> TYPES_WITHOUT_ISSUER_YET = EnumSet.of(
-            CertificateDocumentType.EXAM_CERTIFICATE);
+    private static final Set<CertificateDocumentType> TYPES_WITHOUT_ISSUER_YET = EnumSet.noneOf(CertificateDocumentType.class);
     private static final AtomicInteger CLIENTS = new AtomicInteger(100);
 
     @Autowired
@@ -63,6 +62,7 @@ class PublicDocumentVerificationIT extends AbstractIntegrationTest {
     private final List<Long> graduationIds = new ArrayList<>();
     private final List<Long> regularIds = new ArrayList<>();
     private final List<Long> approvedSubjectsIds = new ArrayList<>();
+    private final List<Long> examCertificateIds = new ArrayList<>();
 
     @AfterEach
     void cleanUp() {
@@ -75,6 +75,10 @@ class PublicDocumentVerificationIT extends AbstractIntegrationTest {
         approvedSubjectsIds.forEach(id -> {
             jdbc.update("delete from verifiable_document where document_type = 'APPROVED_SUBJECTS_CERTIFICATE' and source_id = ?", id);
             jdbc.update("delete from approved_subjects_certificate where id = ?", id);
+        });
+        examCertificateIds.forEach(id -> {
+            jdbc.update("delete from verifiable_document where document_type = 'EXAM_CERTIFICATE' and source_id = ?", id);
+            jdbc.update("delete from exam_certificate where id = ?", id);
         });
         regularIds.forEach(id -> {
             jdbc.update("delete from verifiable_document where document_type = 'REGULAR_STUDENT_CERTIFICATE' and source_id = ?", id);
@@ -177,6 +181,31 @@ class PublicDocumentVerificationIT extends AbstractIntegrationTest {
             }
         });
         approvedSubjectsIds.add(id[0]);
+        return code;
+    }
+
+    private static final String EXAM_SNAPSHOT = "{\"holderFullName\":\"PÉREZ, ANA\",\"documentTypeLabel\":\"DNI\","
+            + "\"documentNumber\":\"30123456\",\"institutionName\":\"Instituto\",\"extraMarkers\":{\"subjectName\":\"Anatomía\","
+            + "\"examDate\":\"05/11/2026\"},\"issuedOn\":\"2026-11-05\",\"signatories\":[],\"templateRef\":\"EXAM_CERTIFICATE_BUILT_IN_V1\"}";
+
+    private String insertExamCertificate(String status, LocalDateTime expiresAt, boolean registered) {
+        String code = CertificateCode.generate(new SecureRandom()).value();
+        long[] id = new long[1];
+        transactions.executeWithoutResult(tx -> {
+            jdbc.execute("SET LOCAL session_replication_role = replica");
+            id[0] = jdbc.queryForObject("insert into exam_certificate (code, registration_id, exam_board_id, student_id, status, origin, issued_at, "
+                    + "expires_at, validity_days, issued_by_id, snapshot, template_ref, render_engine_version, pdf_sha256, pdf_path, revoked_at, "
+                    + "revoked_by_id, revocation_reason) values (?, ?, 987654, 987654, ?, 'ISSUED_BY_STAFF', '2026-11-05 10:00:00', ?, 30, 1, "
+                    + "?::jsonb, 'EXAM_CERTIFICATE_BUILT_IN_V1', '1', repeat('a', 64), 'exam.pdf', ?, ?, ?) returning id", Long.class, code,
+                    ThreadLocalRandom.current().nextLong(1_000_000, 9_000_000), status, Timestamp.valueOf(expiresAt), EXAM_SNAPSHOT,
+                    "REVOKED".equals(status) ? Timestamp.valueOf("2026-11-09 08:00:00") : null,
+                    "REVOKED".equals(status) ? 1L : null, "REVOKED".equals(status) ? "motivo interno" : null);
+            if (registered) {
+                jdbc.update("insert into verifiable_document (code, document_type, source_id, registered_at) values (?, 'EXAM_CERTIFICATE', ?, now())",
+                        code, id[0]);
+            }
+        });
+        examCertificateIds.add(id[0]);
         return code;
     }
 
@@ -293,6 +322,52 @@ class PublicDocumentVerificationIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void validExamCertificateResolvesWithMaskedDataAndNoSubjectOrResult() throws Exception {
+        String code = insertExamCertificate("VALID", LocalDateTime.of(2026, 12, 5, 10, 0), true);
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 20, 9, 0));
+
+        MvcResult result = verify(code);
+
+        assertThat(result.getResponse().getStatus()).isEqualTo(200);
+        assertThat(result.getResponse().getContentAsString()).contains("\"documentType\":\"EXAM_CERTIFICATE\"", "\"status\":\"VALID\"",
+                        "*****456", "PÉREZ, ANA")
+                .doesNotContain("30123456", "Anatomía", "motivo interno", "revokedAt\":\"2026");
+    }
+
+    @Test
+    void examCertificateExpiresAtTheExactInstantOfItsExpiry() throws Exception {
+        String code = insertExamCertificate("VALID", LocalDateTime.of(2026, 12, 5, 10, 0), true);
+
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 12, 5, 9, 59));
+        assertThat(verify(code).getResponse().getContentAsString()).contains("\"status\":\"VALID\"");
+
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 12, 5, 10, 0));
+        assertThat(verify(code).getResponse().getContentAsString()).contains("\"status\":\"EXPIRED\"");
+    }
+
+    @Test
+    void expiredExamCertificateReportsExpired() throws Exception {
+        String code = insertExamCertificate("EXPIRED", LocalDateTime.of(2026, 11, 20, 10, 0), true);
+
+        assertThat(verify(code).getResponse().getContentAsString()).contains("\"status\":\"EXPIRED\"").doesNotContain("Anatomía");
+    }
+
+    @Test
+    void revokedExamCertificateReportsRevokedWithoutReason() throws Exception {
+        String code = insertExamCertificate("REVOKED", LocalDateTime.of(2027, 1, 5, 10, 0), true);
+
+        assertThat(verify(code).getResponse().getContentAsString()).contains("\"status\":\"REVOKED\"", "\"revokedAt\"")
+                .doesNotContain("motivo interno", "Anatomía");
+    }
+
+    @Test
+    void unregisteredExamCertificateAnswersTheGeneric404() throws Exception {
+        String code = insertExamCertificate("VALID", LocalDateTime.of(2026, 12, 5, 10, 0), false);
+
+        assertThat(verify(code).getResponse().getStatus()).isEqualTo(404);
+    }
+
+    @Test
     void unknownMalformedAndOversizedCodesAnswerTheSameGeneric404() throws Exception {
         String unknown = CertificateCode.generate(new SecureRandom()).value();
 
@@ -306,9 +381,9 @@ class PublicDocumentVerificationIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void registeredDocumentOfATypeWithoutSourceAnswersTheSameGeneric404() throws Exception {
+    void registeredDocumentWhoseSourceRowIsMissingAnswersTheSameGeneric404() throws Exception {
         String code = CertificateCode.generate(new SecureRandom()).value();
-        jdbc.update("insert into verifiable_document (code, document_type, source_id, registered_at) values (?, 'EXAM_CERTIFICATE', 1, now())", code);
+        jdbc.update("insert into verifiable_document (code, document_type, source_id, registered_at) values (?, 'EXAM_CERTIFICATE', 9223372036854775807, now())", code);
         try {
             MvcResult withoutSource = verify(code);
             MvcResult unknown = verify(CertificateCode.generate(new SecureRandom()).value());

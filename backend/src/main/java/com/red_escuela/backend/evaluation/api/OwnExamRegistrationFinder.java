@@ -40,6 +40,24 @@ public class OwnExamRegistrationFinder {
                 .findFirst();
     }
 
+    public List<OwnExamRegistrationView> attendedRegistrationsOf(Long studentId) {
+        List<OwnExamRegistrationView> views = new ArrayList<>();
+        registrationRepository.findAttendedProgramRegistrationsOfStudent(studentId)
+                .forEach(registration -> views.add(programViewOf(registration, studentId)));
+        registrationRepository.findAttendedCourseRegistrationsOfStudent(studentId)
+                .forEach(registration -> views.add(courseViewOf(registration, studentId)));
+        return views.stream()
+                .sorted(Comparator.comparing(OwnExamRegistrationView::examDateTime).reversed()
+                        .thenComparing(OwnExamRegistrationView::registrationId))
+                .toList();
+    }
+
+    public Optional<OwnExamRegistrationView> findAttendedOwned(Long studentId, Long registrationId) {
+        return attendedRegistrationsOf(studentId).stream()
+                .filter(view -> view.registrationId().equals(registrationId))
+                .findFirst();
+    }
+
     private OwnExamRegistrationView programViewOf(ExamBoardRegistration registration, Long studentId) {
         ExamBoard board = registration.getExamBoard();
         return new OwnExamRegistrationView(registration.getId(), board.getId(), studentId,

@@ -26,6 +26,7 @@ import com.red_escuela.backend.graduation.procedure.exception.ProcedureNotEligib
 import com.red_escuela.backend.graduation.procedure.specialist.ApprovedSubjectsOwnEnrollmentResolver;
 import com.red_escuela.backend.graduation.procedure.specialist.ApprovedSubjectsProcedureEligibility;
 import com.red_escuela.backend.graduation.procedure.specialist.ExamRegistrationCertificateIssuer;
+import com.red_escuela.backend.graduation.procedure.specialist.OwnExamCertificateIssuer;
 import com.red_escuela.backend.graduation.procedure.specialist.OwnProgramEnrollmentResolver;
 import com.red_escuela.backend.graduation.procedure.specialist.OwnRegularDocumentIssuer;
 import com.red_escuela.backend.graduation.procedure.usecase.GenerateOwnDocumentService;
@@ -81,7 +82,7 @@ class ApprovedSubjectsProcedureWiringTest {
         when(resolver.resolve(STUDENT_ID, null)).thenReturn(new OwnProgramEnrollmentResolver.Resolution(Optional.of(ENROLLMENT_ID), false));
         when(requestUseCase.request(new RequestApprovedSubjectsCertificateRequest(ENROLLMENT_ID))).thenReturn(issued());
         GenerateOwnDocumentService service = new GenerateOwnDocumentService(mock(OwnRegularDocumentIssuer.class),
-                mock(ExamRegistrationCertificateIssuer.class), enrollmentResolver, requestUseCase);
+                mock(ExamRegistrationCertificateIssuer.class), mock(OwnExamCertificateIssuer.class), enrollmentResolver, requestUseCase);
 
         OwnDocumentResponse response = service.generate(OwnDocumentType.APPROVED_SUBJECTS_CERTIFICATE, null);
 
@@ -96,7 +97,7 @@ class ApprovedSubjectsProcedureWiringTest {
     void generateWithoutAResolvableEnrollmentIsNotEligibleAndNothingIsRequested() {
         when(resolver.resolve(STUDENT_ID, null)).thenReturn(new OwnProgramEnrollmentResolver.Resolution(Optional.empty(), true));
         GenerateOwnDocumentService service = new GenerateOwnDocumentService(mock(OwnRegularDocumentIssuer.class),
-                mock(ExamRegistrationCertificateIssuer.class), new ApprovedSubjectsOwnEnrollmentResolver(actor, resolver), requestUseCase);
+                mock(ExamRegistrationCertificateIssuer.class), mock(OwnExamCertificateIssuer.class), new ApprovedSubjectsOwnEnrollmentResolver(actor, resolver), requestUseCase);
 
         assertThatThrownBy(() -> service.generate(OwnDocumentType.APPROVED_SUBJECTS_CERTIFICATE, null))
                 .isInstanceOf(ProcedureNotEligibleException.class);
@@ -107,7 +108,7 @@ class ApprovedSubjectsProcedureWiringTest {
     void generateWithAnotherStudentsEnrollmentIsNotFoundAndNothingIsRequested() {
         when(resolver.resolve(STUDENT_ID, 99L)).thenThrow(new ProcedureDocumentNotFoundException());
         GenerateOwnDocumentService service = new GenerateOwnDocumentService(mock(OwnRegularDocumentIssuer.class),
-                mock(ExamRegistrationCertificateIssuer.class), new ApprovedSubjectsOwnEnrollmentResolver(actor, resolver), requestUseCase);
+                mock(ExamRegistrationCertificateIssuer.class), mock(OwnExamCertificateIssuer.class), new ApprovedSubjectsOwnEnrollmentResolver(actor, resolver), requestUseCase);
 
         assertThatThrownBy(() -> service.generate(OwnDocumentType.APPROVED_SUBJECTS_CERTIFICATE,
                 new GenerateOwnDocumentRequest(99L, null, null, null))).isInstanceOf(ProcedureDocumentNotFoundException.class);
