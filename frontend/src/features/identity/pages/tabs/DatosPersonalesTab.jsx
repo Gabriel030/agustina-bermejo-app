@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { useDocumentosAlumno } from '@/features/identity/hooks/useLegajoAlumno';
 import { Skeleton } from '@/components/Skeleton';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { EditStudentPersonalDataForm } from '@/features/identity/components/EditStudentPersonalDataForm';
 import { SEX_LABEL } from '@/features/identity/lib/person';
 
 const TIPO_DOCUMENTO = {
@@ -40,10 +42,13 @@ function Campo({ label, value }) {
   );
 }
 
-function Seccion({ titulo, children }) {
+function Seccion({ titulo, accion, children }) {
   return (
     <div className="flex flex-col gap-4">
-      <h3 className="text-size-11 font-semibold uppercase tracking-wider text-ink-faint">{titulo}</h3>
+      <div className="flex items-center justify-between gap-3">
+        <h3 className="text-size-11 font-semibold uppercase tracking-wider text-ink-faint">{titulo}</h3>
+        {accion}
+      </div>
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">{children}</div>
     </div>
   );
@@ -81,7 +86,8 @@ function DocumentosSection({ studentId }) {
   );
 }
 
-export function DatosPersonalesTab({ legajo, puedeAccionar, puedeDarDeBaja, puedeReactivar, onReset, onBaja, onReactivar }) {
+export function DatosPersonalesTab({ legajo, puedeAccionar, puedeDarDeBaja, puedeReactivar, puedeEditar = false, onReset, onBaja, onReactivar }) {
+  const [editando, setEditando] = useState(false);
   if (!legajo) return <Skeleton className="h-64 w-full" />;
 
   const domicilio = legajo.domicilio;
@@ -90,7 +96,23 @@ export function DatosPersonalesTab({ legajo, puedeAccionar, puedeDarDeBaja, pued
 
   return (
     <div className="flex flex-col gap-8">
-      <Seccion titulo="Información personal">
+      {editando ? (
+        <EditStudentPersonalDataForm
+          legajo={legajo}
+          readOnlyFields={{
+            legajo: legajo.legajo ? `#${legajo.legajo}` : null,
+            username: legajo.username,
+            status: ESTADO_STATUS[legajo.status] ?? legajo.status,
+            onboarding: ESTADO_ONBOARDING[legajo.onboardingStatus] ?? legajo.onboardingStatus,
+          }}
+          onClose={() => setEditando(false)}
+        />
+      ) : (
+      <Seccion titulo="Información personal" accion={puedeEditar && (
+        <Button variant="outline" size="sm" onClick={() => setEditando(true)}>
+          Editar datos
+        </Button>
+      )}>
         <Campo label="Nombre" value={`${legajo.nombre} ${legajo.apellido}`} />
         <Campo label="Legajo" value={legajo.legajo ? `#${legajo.legajo}` : null} />
         <Campo label="DNI" value={legajo.dni} />
@@ -104,6 +126,7 @@ export function DatosPersonalesTab({ legajo, puedeAccionar, puedeDarDeBaja, pued
         <Campo label="Estado" value={ESTADO_STATUS[legajo.status] ?? legajo.status} />
         <Campo label="Onboarding" value={ESTADO_ONBOARDING[legajo.onboardingStatus] ?? legajo.onboardingStatus} />
       </Seccion>
+      )}
 
       {legajo.guardian && (
         <Seccion titulo="Tutor">

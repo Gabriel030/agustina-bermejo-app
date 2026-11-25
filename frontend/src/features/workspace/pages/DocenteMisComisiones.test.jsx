@@ -9,8 +9,8 @@ const API = 'http://localhost:8080';
 
 const CICLO_2026 = { termStartDate: '2026-03-02T00:00:00', termEndDate: '2026-12-11T00:00:00' };
 
-function config(id, status) {
-  return { id, subjectSectionId: id, subjectName: `Materia ${id}`, sectionName: 'Comisión A', status, instructors: [], ...CICLO_2026 };
+function config(id, status, evaluationConfigDeadline = null) {
+  return { id, subjectSectionId: id, subjectName: `Materia ${id}`, sectionName: 'Comisión A', status, instructors: [], evaluationConfigDeadline, ...CICLO_2026 };
 }
 
 function tarjeta(label) {
@@ -75,5 +75,50 @@ describe('DocenteMisComisiones', () => {
 
     expect(await screen.findByText('Todavía no tenés comisiones para mostrar')).toBeInTheDocument();
     expect(screen.getByText(/el ciclo se aprueba/)).toBeInTheDocument();
+  });
+
+  describe('evaluation config deadline alert', () => {
+    function renderWith(configs, dictadas = []) {
+      server.use(
+        http.get(`${API}/me/section-evaluation-configs`, () => HttpResponse.json(configs)),
+        http.get(`${API}/me/teaching-sections`, () => HttpResponse.json(dictadas)),
+      );
+      renderWithProviders(<DocenteMisComisiones />);
+    }
+
+    it('shows a warning with the deadline and a link to configure when the deadline has not passed', async () => {
+      renderWith([config(50, 'DRAFT', '2026-10-15')]);
+
+      expect(await screen.findByText('Completá la configuración antes del 15/10')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Configurar evaluación' })).toHaveAttribute('href', '/docente/mis-comisiones/50');
+    });
+
+    it('still shows the warning on the deadline day itself', async () => {
+      renderWith([config(50, 'DRAFT', '2026-10-03')]);
+
+      expect(await screen.findByText('Completá la configuración antes del 03/10')).toBeInTheDocument();
+    });
+
+    it('shows a danger alert when the deadline already passed', async () => {
+      renderWith([config(50, 'DRAFT', '2026-10-02')]);
+
+      expect(await screen.findByText('Configuración vencida el 02/10')).toBeInTheDocument();
+      expect(screen.queryByText(/Completá la configuración/)).not.toBeInTheDocument();
+      expect(screen.getByRole('link', { name: 'Configurar evaluación' })).toBeInTheDocument();
+    });
+
+    it('shows no alert for a configuration already sent', async () => {
+      renderWith([config(50, 'PENDING_APPROVAL', '2026-10-15'), config(51, 'APPROVED', '2026-09-01')]);
+
+      expect(await screen.findByText(/Materia 50/)).toBeInTheDocument();
+      expect(screen.queryByTestId('evaluation-config-deadline-alert')).not.toBeInTheDocument();
+    });
+
+    it('shows no alert when the deadline is null', async () => {
+      renderWith([config(50, 'DRAFT', null)]);
+
+      expect(await screen.findByText(/Materia 50/)).toBeInTheDocument();
+      expect(screen.queryByTestId('evaluation-config-deadline-alert')).not.toBeInTheDocument();
+    });
   });
 });
