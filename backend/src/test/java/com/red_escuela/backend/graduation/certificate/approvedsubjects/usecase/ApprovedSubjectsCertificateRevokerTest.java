@@ -28,7 +28,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-class RevokeApprovedSubjectsCertificateServiceTest {
+class ApprovedSubjectsCertificateRevokerTest {
 
     private static final Long PERSON_ID = 77L;
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-11-25T15:00:00Z"), ZoneOffset.UTC);
@@ -36,7 +36,7 @@ class RevokeApprovedSubjectsCertificateServiceTest {
     private final Map<Long, ApprovedSubjectsCertificate> stored = new HashMap<>();
     private final List<String> audited = new ArrayList<>();
     private final List<ApprovedSubjectsCertificate> saved = new ArrayList<>();
-    private RevokeApprovedSubjectsCertificateService service;
+    private ApprovedSubjectsCertificateRevoker service;
 
     @BeforeEach
     void setUp() {
@@ -60,7 +60,7 @@ class RevokeApprovedSubjectsCertificateServiceTest {
             }
         };
         ApprovedSubjectsAuditLog auditLog = (certificateId, reason) -> audited.add(certificateId + ":" + reason);
-        service = new RevokeApprovedSubjectsCertificateService(store, certificate -> response(), actor, auditLog, CLOCK);
+        service = new ApprovedSubjectsCertificateRevoker(store, certificate -> response(), actor, auditLog, CLOCK);
     }
 
     @Test

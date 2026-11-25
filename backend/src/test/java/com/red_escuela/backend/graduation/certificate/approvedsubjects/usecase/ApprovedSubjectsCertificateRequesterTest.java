@@ -29,7 +29,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-class RequestApprovedSubjectsCertificateServiceTest {
+class ApprovedSubjectsCertificateRequesterTest {
 
     private static final Long STUDENT_ID = 10L;
     private static final Long PERSON_ID = 77L;
@@ -40,7 +40,7 @@ class RequestApprovedSubjectsCertificateServiceTest {
     private final Map<Long, OwnedEnrollment> ownedByStudent = Map.of(OWN_ENROLLMENT, new OwnedEnrollment(OWN_ENROLLMENT, true));
     private ApprovedSubjectsEligibilityInput input;
     private final List<String> issued = new ArrayList<>();
-    private RequestApprovedSubjectsCertificateService service;
+    private ApprovedSubjectsCertificateRequester service;
 
     @BeforeEach
     void setUp() {
@@ -74,7 +74,7 @@ class RequestApprovedSubjectsCertificateServiceTest {
                 return new IssuanceLimitReachedException();
             }
         };
-        service = new RequestApprovedSubjectsCertificateService(actor, enrollments, facts,
+        service = new ApprovedSubjectsCertificateRequester(actor, enrollments, facts,
                 new ApprovedSubjectsEligibilityPolicy(), issuing, refusals, CLOCK);
     }
 
