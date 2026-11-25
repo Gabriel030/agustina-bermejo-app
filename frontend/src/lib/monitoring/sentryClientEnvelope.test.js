@@ -40,7 +40,7 @@ describe('real Sentry client with the privacy options', () => {
     const serialized = JSON.stringify(event);
 
     expect(event).toBeDefined();
-    expect(event.message ?? event.exception.values[0].value).toContain('[email]');
+    expect(event.message ?? event.exception.values[0].value).toBe('[mensaje omitido]');
     expect(serialized).not.toContain('ana.perez@example.com');
     expect(serialized).not.toContain('35.123.456');
     expect(serialized).not.toContain('Pérez');
@@ -52,5 +52,34 @@ describe('real Sentry client with the privacy options', () => {
     expect(event).not.toHaveProperty('breadcrumbs');
     expect(event).not.toHaveProperty('extra');
     expect(event.tags).toEqual({ scope: 'screen' });
+  });
+
+  it('neverSendsStudentNamesEmailsOrDocumentsInEnvelopeMessages', async () => {
+    Sentry.init({
+      ...buildClientMonitoringOptions({ dsn: DUMMY_DSN, environment: 'production', release: 'sha-1' }),
+      transport: () => ({
+        send: async (envelope) => {
+          envelopes.push(envelope);
+          return { statusCode: 200 };
+        },
+        flush: async () => true,
+      }),
+    });
+
+    Sentry.captureException(new Error('No se pudo guardar a Benítez, Joaquín'));
+    Sentry.captureException(new Error('Contacto ana.perez@example.com rechazado'));
+    Sentry.captureException(new Error('Alumno con DNI 35123456 inexistente'));
+    Sentry.captureMessage('Benítez, Joaquín 35123456 ana.perez@example.com');
+    await Sentry.flush(2000);
+
+    const events = eventsFromEnvelopes(envelopes);
+    const serialized = JSON.stringify(events);
+
+    expect(events.length).toBeGreaterThan(0);
+    expect(serialized).not.toContain('Benítez');
+    expect(serialized).not.toContain('Joaquín');
+    expect(serialized).not.toContain('ana.perez');
+    expect(serialized).not.toContain('35123456');
+    expect(serialized).toContain('[mensaje omitido]');
   });
 });
