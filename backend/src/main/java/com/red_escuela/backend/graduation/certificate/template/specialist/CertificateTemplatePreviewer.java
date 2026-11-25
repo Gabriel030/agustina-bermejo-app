@@ -17,12 +17,15 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @Transactional(readOnly = true)
 public class CertificateTemplatePreviewer {
 
+    private static final DateTimeFormatter EXAM_DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final String DEFAULT_INSTITUTION = "INSTITUTO AGUSTINA BERMEJO";
 
     private final CertificateTemplateRenderSource renderSource;
@@ -78,7 +81,16 @@ public class CertificateTemplatePreviewer {
                 today,
                 DEFAULT_INSTITUTION,
                 List.of(),
-                BuiltInCertificateTemplate.BUILT_IN_V1, null);
+                BuiltInCertificateTemplate.BUILT_IN_V1, null, sampleExtraMarkers(type));
+    }
+
+    private Map<String, String> sampleExtraMarkers(DocumentTemplateType type) {
+        return switch (type) {
+            case REGULAR_STUDENT_CERTIFICATE -> Map.of("recipient", "A quien corresponda");
+            case APPROVED_SUBJECTS_CERTIFICATE -> Map.of("average", "8,50", "completionPercent", "75");
+            case EXAM_REGISTRATION_CERTIFICATE, EXAM_CERTIFICATE -> Map.of("recipient", "A quien corresponda",
+                    "subjectName", "Nombre de la materia de ejemplo", "examDate", LocalDate.now(clock).format(EXAM_DATE_FORMAT));
+        };
     }
 
     private String sampleRegistryNumber() {
