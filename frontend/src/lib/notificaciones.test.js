@@ -67,6 +67,13 @@ describe('notificaciones', () => {
   expect(TONO_NOTIFICACION.CLOSURE_EXCEPTION_GRANTED_TEACHER).toBe('warning');
   });
 
+  it('labels and tones the subject equivalence recorded and voided notifications', () => {
+    expect(TIPO_NOTIFICACION_LABEL.SUBJECT_EQUIVALENCE_RECORDED).toBe('Equivalencia reconocida');
+    expect(TONO_NOTIFICACION.SUBJECT_EQUIVALENCE_RECORDED).toBe('success');
+    expect(TIPO_NOTIFICACION_LABEL.SUBJECT_EQUIVALENCE_VOIDED).toBe('Equivalencia anulada');
+    expect(TONO_NOTIFICACION.SUBJECT_EQUIVALENCE_VOIDED).toBe('warning');
+  });
+
   it('etiqueta y da tono al aviso de feriados faltantes', () => {
     expect(TIPO_NOTIFICACION_LABEL.HOLIDAYS_MISSING_FOR_NEXT_YEAR).toBe('Faltan los feriados del año que viene');
     expect(TONO_NOTIFICACION.HOLIDAYS_MISSING_FOR_NEXT_YEAR).toBe('warning');

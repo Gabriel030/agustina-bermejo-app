@@ -54,6 +54,8 @@ describe('notificationDestination', () => {
     ['PAYMENT_CHARGED_BACK', 'ADMINISTRATIVO', '/administrativo/facturacion'],
     ['CLOSURE_REOPENED', 'DIRECTOR', '/director/cierres-de-comision'],
     ['EXAM_BOARD_CANCELED', 'DOCENTE', '/docente/mesas-de-examen'],
+    ['SUBJECT_EQUIVALENCE_RECORDED', 'ALUMNO', '/alumno/mis-carreras?tab=plan-de-estudio'],
+    ['SUBJECT_EQUIVALENCE_VOIDED', 'ALUMNO', '/alumno/mis-carreras?tab=plan-de-estudio'],
   ])('sends %s to the right screen for %s', (type, role, expected) => {
     expect(notificationDestination({ type, relatedEntityId: null }, role)).toBe(expected);
   });
