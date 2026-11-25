@@ -24,7 +24,6 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -57,7 +56,7 @@ public class MeSectionEvaluationConfigController {
     public List<SectionEvaluationConfigResponse> mySections() {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
         return listMySectionEvaluationConfigsUseCase.list(instructor.getId()).stream()
-                .map(item -> toResponse(item.config(), instructor.getId(), item.deadline())).toList();
+                .map(item -> toResponse(item.config(), instructor.getId()).withEvaluationConfigDeadline(item.deadline())).toList();
     }
 
     @GetMapping("/me/section-evaluation-configs/{sectionId}")
@@ -66,7 +65,7 @@ public class MeSectionEvaluationConfigController {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
         SectionEvaluationConfigWithDeadline item = getMySectionEvaluationConfigUseCase.get(
                 new GetMySectionEvaluationConfigCommand(sectionId, instructor.getId()));
-        return toResponse(item.config(), instructor.getId(), item.deadline());
+        return toResponse(item.config(), instructor.getId()).withEvaluationConfigDeadline(item.deadline());
     }
 
     @PutMapping("/me/section-evaluation-configs/{sectionId}")
@@ -87,14 +86,10 @@ public class MeSectionEvaluationConfigController {
     }
 
     private SectionEvaluationConfigResponse toResponse(SectionEvaluationConfig config, Long instructorId) {
-        return toResponse(config, instructorId, null);
-    }
-
-    private SectionEvaluationConfigResponse toResponse(SectionEvaluationConfig config, Long instructorId, LocalDate deadline) {
         Long sectionId = config.getSubjectSection().getId();
         boolean isLead = instructorAccess.isLeadInstructor(sectionId, instructorId);
         return SectionEvaluationConfigResponse.from(
                 config, instructorAccess.listInstructors(sectionId),
-                isLead && config.isEditable(), isLead && config.canBeSubmitted(ApplicationTime.now()), deadline);
+                isLead && config.isEditable(), isLead && config.canBeSubmitted(ApplicationTime.now()));
     }
 }

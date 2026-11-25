@@ -25,11 +25,11 @@ public record SectionEvaluationConfigResponse(
         List<SectionInstructorSummary> instructors, boolean canEdit, boolean canSubmit) {
 
     public static SectionEvaluationConfigResponse from(SectionEvaluationConfig config, List<SectionInstructorSummary> instructors) {
-        return from(config, instructors, false, false, null);
+        return from(config, instructors, false, false);
     }
 
     public static SectionEvaluationConfigResponse from(SectionEvaluationConfig config, List<SectionInstructorSummary> instructors,
-                                                       boolean canEdit, boolean canSubmit, LocalDate evaluationConfigDeadline) {
+                                                       boolean canEdit, boolean canSubmit) {
         var section = config.getSubjectSection();
         var term = section.getTerm();
         var scheme = section.getEvaluationScheme();
@@ -44,13 +44,25 @@ public record SectionEvaluationConfigResponse(
                 config.getReviewedBy() == null ? null : config.getReviewedBy().getName() + " " + config.getReviewedBy().getLastname(),
                 config.getReviewedAt(),
                 term.getStartDate(), term.getEndDate(), term.getEnrollmentStart(),
-                evaluationConfigDeadline,
+                null,
                 scheme == null ? null : scheme.getName(),
                 scheme == null ? null : scheme.getExamCountExpected(),
                 scheme == null ? null : scheme.getHasFinal(),
                 scheme == null ? null : Grade.valueOrNull(scheme.getMinRegularGrade()),
                 scheme == null ? null : Grade.valueOrNull(scheme.getMinApprovalGrade()),
                 scheme == null ? null : Grade.valueOrNull(scheme.getPromotionMinGrade()),
+                instructors, canEdit, canSubmit);
+    }
+
+    public SectionEvaluationConfigResponse withEvaluationConfigDeadline(LocalDate deadline) {
+        return new SectionEvaluationConfigResponse(
+                id, subjectSectionId, subjectName, sectionName, status,
+                tpCount, tp1DueDate, tp2DueDate, tp3DueDate,
+                exam1Date, exam2Date, exam3Date, exam4Date, finalCall1Date, finalCall2Date,
+                rejectionReason, submittedAt, reviewedByName, reviewedAt,
+                termStartDate, termEndDate, termEnrollmentStart, deadline,
+                evaluationSchemeName, examCountExpected, hasFinal,
+                minRegularGrade, minApprovalGrade, promotionMinGrade,
                 instructors, canEdit, canSubmit);
     }
 }
