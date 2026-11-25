@@ -72,11 +72,11 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
     static class FakeIssuerConfig {
 
         @Bean
-        DebtExceptionDocumentIssuer fakeExamIssuer() {
+        DebtExceptionDocumentIssuer fakeGraduationIssuer() {
             return new DebtExceptionDocumentIssuer() {
                 @Override
                 public boolean supports(CertificateDocumentType type) {
-                    return type == CertificateDocumentType.EXAM_CERTIFICATE;
+                    return type == CertificateDocumentType.GRADUATION_CERTIFICATE;
                 }
 
                 @Override
@@ -171,7 +171,7 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
 
     @Test
     void directorCanIssueAnException() throws Exception {
-        issue(directorToken, studentId, "EXAM_CERTIFICATE", REASON, 90).andExpect(status().isCreated());
+        issue(directorToken, studentId, "GRADUATION_CERTIFICATE", REASON, 90).andExpect(status().isCreated());
     }
 
     @Test
@@ -235,7 +235,7 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
     @Test
     void listFiltersByStudentAndStatus() throws Exception {
         issue(administrativeToken, studentId, "GRADUATION_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
-        issue(administrativeToken, otherStudentId, "EXAM_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
+        issue(administrativeToken, otherStudentId, "GRADUATION_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
 
         mockMvc.perform(get("/document-debt-exceptions").param("studentId", studentId.toString()).param("status", "ACTIVE")
                         .header("Authorization", "Bearer " + administrativeToken))
@@ -263,7 +263,7 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
         issue(administrativeToken, studentId, "GRADUATION_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
 
         assertThat(consume(otherStudentId, CertificateDocumentType.GRADUATION_CERTIFICATE, null)).isEmpty();
-        assertThat(consume(studentId, CertificateDocumentType.EXAM_CERTIFICATE, null)).isEmpty();
+        assertThat(consume(studentId, CertificateDocumentType.REGULAR_STUDENT_CERTIFICATE, null)).isEmpty();
         assertThat(consume(studentId, CertificateDocumentType.GRADUATION_CERTIFICATE, null)).isPresent();
     }
 
@@ -292,7 +292,7 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
 
     @Test
     void firstDownloadConsumesTheExceptionAndSecondIsRejected() throws Exception {
-        issue(administrativeToken, studentId, "EXAM_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
+        issue(administrativeToken, studentId, "GRADUATION_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
         Long id = jdbc.queryForObject("select id from document_debt_exception", Long.class);
 
         actAs(administrative);
@@ -312,7 +312,7 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
 
     @Test
     void downloadingAnExpiredExceptionIsRejected() throws Exception {
-        issue(administrativeToken, studentId, "EXAM_CERTIFICATE", REASON, 1).andExpect(status().isCreated());
+        issue(administrativeToken, studentId, "GRADUATION_CERTIFICATE", REASON, 1).andExpect(status().isCreated());
         Long id = jdbc.queryForObject("select id from document_debt_exception", Long.class);
         MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 11, 10, 0));
         actAs(administrative);
@@ -331,19 +331,8 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void typeWithoutIssuerIsUnprocessableAndTheExceptionStaysActive() throws Exception {
-        issue(administrativeToken, studentId, "GRADUATION_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
-        Long id = jdbc.queryForObject("select id from document_debt_exception", Long.class);
-
-        actAs(administrative);
-        mockMvc.perform(get("/document-debt-exceptions/" + id + "/pdf").header("Authorization", "Bearer " + administrativeToken))
-                .andExpect(status().isUnprocessableEntity());
-        assertThat(jdbc.queryForObject("select status from document_debt_exception where id = ?", String.class, id)).isEqualTo("ACTIVE");
-    }
-
-    @Test
     void failedRenderRollsBackAndTheExceptionStaysActive() throws Exception {
-        issue(administrativeToken, studentId, "EXAM_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
+        issue(administrativeToken, studentId, "GRADUATION_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
         Long id = jdbc.queryForObject("select id from document_debt_exception", Long.class);
         FAIL_RENDER.set(true);
         try {
@@ -364,7 +353,7 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
     void issuerRejectsAScopeThatDoesNotBelongToTheStudent() throws Exception {
         mockMvc.perform(post("/document-debt-exceptions").header("Authorization", "Bearer " + administrativeToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"studentId\":" + studentId + ",\"documentType\":\"EXAM_CERTIFICATE\",\"registrationId\":404,"
+                        .content("{\"studentId\":" + studentId + ",\"documentType\":\"GRADUATION_CERTIFICATE\",\"registrationId\":404,"
                                 + "\"reason\":\"" + REASON + "\",\"validityDays\":5}"))
                 .andExpect(status().isNotFound());
         assertThat(jdbc.queryForObject("select count(*) from document_debt_exception", Integer.class)).isZero();
@@ -372,7 +361,7 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
 
     @Test
     void twoSimultaneousDownloadsGiveOneDocumentAndOneAlreadyUsed() throws Exception {
-        issue(administrativeToken, studentId, "EXAM_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
+        issue(administrativeToken, studentId, "GRADUATION_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
         Long id = jdbc.queryForObject("select id from document_debt_exception", Long.class);
         ExecutorService executor = Executors.newFixedThreadPool(2);
         CountDownLatch ready = new CountDownLatch(2);
@@ -399,7 +388,7 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
 
     @Test
     void downloadAndIssuerGateRaceHasExactlyOneWinner() throws Exception {
-        issue(administrativeToken, studentId, "EXAM_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
+        issue(administrativeToken, studentId, "GRADUATION_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
         Long id = jdbc.queryForObject("select id from document_debt_exception", Long.class);
         ExecutorService executor = Executors.newFixedThreadPool(2);
         CountDownLatch ready = new CountDownLatch(2);
@@ -415,7 +404,7 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
             ready.countDown();
             go.await();
             try {
-                return gate.consumeActiveException(studentId, CertificateDocumentType.EXAM_CERTIFICATE, null).isPresent();
+                return gate.consumeActiveException(studentId, CertificateDocumentType.GRADUATION_CERTIFICATE, null).isPresent();
             } finally {
                 SecurityContextHolder.clearContext();
             }
@@ -434,7 +423,7 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
 
     @Test
     void issuerAuditDetailWithAFreeTextValueFailsTheDownloadAndRollsBack() throws Exception {
-        issue(administrativeToken, studentId, "EXAM_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
+        issue(administrativeToken, studentId, "GRADUATION_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
         Long id = jdbc.queryForObject("select id from document_debt_exception", Long.class);
         AUDIT_DETAIL.set("reason=" + REASON);
         try {
@@ -468,7 +457,7 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
     }
 
     private Long issueAndGetId() throws Exception {
-        issue(administrativeToken, studentId, "EXAM_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
+        issue(administrativeToken, studentId, "GRADUATION_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
         actAs(administrative);
         return jdbc.queryForObject("select max(id) from document_debt_exception", Long.class);
     }

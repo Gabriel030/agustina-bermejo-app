@@ -1,5 +1,11 @@
 package com.red_escuela.backend.graduation.certificate.exam.specialist;
 
+import com.red_escuela.backend.evaluation.api.ExamBoardAttendance;
+import com.red_escuela.backend.evaluation.api.ExamBoardAttendanceReader;
+import com.red_escuela.backend.evaluation.api.ExamBoardAttendanceView;
+import com.red_escuela.backend.evaluation.api.ExamBoardRegistrationFinder;
+import com.red_escuela.backend.graduation.certificate.exam.exception.ExamCertificateBoardNotHeldException;
+import com.red_escuela.backend.graduation.certificate.exam.exception.ExamCertificateRegistrationNotEligibleException;
 import com.red_escuela.backend.graduation.documentsettings.specialist.DocumentIssuanceSettingsFinder;
 import com.red_escuela.backend.graduation.certificate.dto.DocumentOrigin;
 import com.red_escuela.backend.graduation.certificate.dto.DocumentValidityStatus;
@@ -52,6 +58,8 @@ public class ExamCertificateIssuer {
     private final AuditTrail auditTrail;
     private final Clock clock;
     private final CertificateTemplateRenderSource templateSource;
+    private final ExamBoardRegistrationFinder registrationFinder;
+    private final ExamBoardAttendanceReader boardReader;
     private final SecureRandom random = new SecureRandom();
 
     public ExamCertificateIssuer(ExamCertificateRepository repository, ExamCertificateTemplate template,
@@ -59,7 +67,8 @@ public class ExamCertificateIssuer {
                                  CertificateVerificationUrl verificationUrl, CertificateDigest digest,
                                  StudentFinder studentFinder, CurrentActorFinder currentActorFinder,
                                  DocumentIssuanceSettingsFinder settings, AuditTrail auditTrail, Clock clock,
-                                 CertificateTemplateRenderSource templateSource) {
+                                 CertificateTemplateRenderSource templateSource, ExamBoardRegistrationFinder registrationFinder,
+                                 ExamBoardAttendanceReader boardReader) {
         this.repository = repository;
         this.template = template;
         this.renderer = renderer;
@@ -72,6 +81,33 @@ public class ExamCertificateIssuer {
         this.auditTrail = auditTrail;
         this.clock = clock;
         this.templateSource = templateSource;
+        this.registrationFinder = registrationFinder;
+        this.boardReader = boardReader;
+    }
+
+    @Transactional
+    public ExamCertificate issueUnderDebtException(Long studentId, Long registrationId) {
+        Long examBoardId = registrationFinder.requireById(registrationId).examBoardId();
+        ExamBoardAttendanceView board = boardReader.attendanceForUpdateOf(examBoardId);
+        if (!board.held()) {
+            throw new ExamCertificateBoardNotHeldException();
+        }
+        boolean present = board.attendees().stream().anyMatch(attendee -> attendee.registrationId().equals(registrationId)
+                && attendee.studentId().equals(studentId) && attendee.attendance() == ExamBoardAttendance.PRESENT);
+        if (!present) {
+            throw new ExamCertificateRegistrationNotEligibleException();
+        }
+        LocalDateTime now = LocalDateTime.now(clock);
+        Optional<ExamCertificate> current = repository.findByRegistrationIdAndStatus(registrationId, DocumentValidityStatus.VALID);
+        if (current.isPresent() && !current.get().isExpiredAt(now)) {
+            return current.get();
+        }
+        if (current.isPresent()) {
+            current.get().expire();
+            repository.saveAndFlush(current.get());
+        }
+        return issue(new ExamCertificateIssueCommand(registrationId, examBoardId, studentId, board.subjectName(), board.examDate(),
+                null, null, DocumentOrigin.ISSUED_BY_STAFF));
     }
 
     @Transactional(propagation = Propagation.MANDATORY)
