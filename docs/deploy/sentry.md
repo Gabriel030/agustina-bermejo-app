@@ -2,11 +2,11 @@
 
 Apagado por defecto. Con `SENTRY_DSN` vacío el SDK no se inicializa y no abre ninguna conexión.
 
-**No activar el DSN en ningún entorno real hasta que Gabriel resuelva tres cosas**: SaaS de Sentry o GlitchTip autoalojado, tunnel o ajuste de CSP para el front, y privacidad con datos de menores de edad.
+Proveedor decidido (25-nov-2026, #1462): **GlitchTip autoalojado**, overlay y runbook en [glitchtip.md](glitchtip.md). **No activar el DSN en ningún entorno real hasta que exista el servidor** (y estén resueltos el túnel del front, ya hecho, y la privacidad con datos de menores de edad).
 
 ## Activar (cuando esté resuelto lo anterior)
 
-1. Crear un proyecto Java en Sentry (o GlitchTip) y copiar el DSN.
+1. Crear un proyecto Java en GlitchTip (ver [glitchtip.md](glitchtip.md)) y copiar el DSN **interno** (`http://<clave>@glitchtip:8000/<id>`, red `internal`).
 2. Definir `SENTRY_DSN` en `deploy/.env`. `APP_ENV` (entorno) y `APP_VERSION` (release) se reutilizan.
 3. Reiniciar el backend. Probar con un 5xx controlado en staging y revisar en Sentry que el evento llegó depurado.
 
@@ -49,4 +49,5 @@ El front puede enviar sus eventos al backend en lugar de hablar directo con Glit
 - Al cablear `main.jsx`, el DSN del front (`VITE_SENTRY_DSN`) debe ser idéntico al `SENTRY_DSN` del backend, o el túnel responde 400.
 - Cableado hecho: `main.jsx` pasa `tunnel` = `<VITE_API_BASE_URL>/public/monitoring/tunnel` (en producción `/api/public/monitoring/tunnel`, mismo origen; Caddy quita `/api`). No hay variable de build nueva: solo `VITE_SENTRY_DSN` (ARG en `frontend/Dockerfile` y `docker-compose.prod.yml`). Sin DSN no se inicializa nada.
 - CSP: no se tocó. `connect-src` queda en `'self'` y Google; no se agrega el host del proveedor. `caddyHeaders.test.js` lo fija.
-- Pendiente: NO cargar un DSN real hasta que Gabriel resuelva proveedor y privacidad de menores. Si el proveedor es GlitchTip, exigir sin almacenamiento de IP y sin data scrubbing avanzado.
+- Pendiente: NO cargar un DSN real hasta que exista el servidor de GlitchTip (rebanada S6 de #1462). No depender del servidor para depurar (el scrub vive en el SDK) y no guardar IP: por el túnel el servidor solo ve la IP del backend.
+- Topes pendientes de #1462 (se integran acá cuando mergeen sus PRs): tope global del túnel (S1), tope de eventos del backend (S2) y del front (S3), y política de mensajes del front para nombres de menores (S4).
