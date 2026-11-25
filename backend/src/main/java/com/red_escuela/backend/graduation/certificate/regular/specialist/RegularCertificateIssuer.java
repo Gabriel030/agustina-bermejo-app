@@ -12,6 +12,7 @@ import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertifi
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertificateSubmissionResponse;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularityReason;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularityVerdict;
+import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateChannel;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateRequest;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateStatus;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularRequestOutcome;
@@ -137,6 +138,27 @@ public class RegularCertificateIssuer {
         IssuanceContext context = prepare(command);
         StandingResolution standing = resolveSelfIssueStanding(command, context.studentId(), context.actorId(), context.now());
         return create(command, context.facts(), standing, context.actorId(), context.now());
+    }
+
+    @Transactional(noRollbackFor = {NotRegularException.class, RegularCertificateAlreadyIssuedException.class,
+            NoDebtToExceptException.class})
+    public RegularCertificateResponse issueUnderDebtException(Long studentId, Long enrollmentId) {
+        IssueRegularCertificateCommand command = new IssueRegularCertificateCommand(RegularityKind.PROGRAM, enrollmentId, false, null,
+                RegularCertificateChannel.STAFF, null, null);
+        factsFinder.findOwnedBy(RegularityKind.PROGRAM, enrollmentId, studentId);
+        IssuanceContext context = prepare(command);
+        StandingResolution standing = resolveDebtExceptionStanding(command, context);
+        return create(command, context.facts(), standing, context.actorId(), context.now());
+    }
+
+    private StandingResolution resolveDebtExceptionStanding(IssueRegularCertificateCommand command, IssuanceContext context) {
+        try {
+            return standingGate.resolveByException(context.studentId(), command.kind(), command.enrollmentId());
+        } catch (NoDebtToExceptException e) {
+            recordRequest(command, context.studentId(), context.actorId(), context.now(), RegularRequestOutcome.REJECTED,
+                    List.of(reasonCodeOf(e)));
+            throw e;
+        }
     }
 
     private IssuanceContext prepare(IssueRegularCertificateCommand command) {
