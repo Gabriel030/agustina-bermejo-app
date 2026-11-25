@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: '30 6 * * *'
   workflow_dispatch:
+    inputs:
+      update_baselines:
+        description: Regenerate the visual baselines and upload them as an artifact
+        type: boolean
+        default: false
 
 concurrency:
   group: nightly-tests
@@ -189,37 +194,45 @@ jobs:
 
   visual-regression:
     runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.55.0-noble
+      options: --user root
     needs: decide
     if: needs.decide.outputs.run == 'true'
     timeout-minutes: 30
+    env:
+      HOME: /root
     steps:
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || needs.decide.outputs.sha }}
-
-      - name: Set up Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: |
-            frontend/package-lock.json
-            e2e/package-lock.json
 
       - name: Install the frontend and e2e dependencies
         run: |
           npm ci --prefix frontend
           npm ci --prefix e2e
 
-      - name: Install Chromium
-        working-directory: e2e
-        run: npx playwright install --with-deps chromium
-
       - name: Compare the screenshots against the baselines
+        if: inputs.update_baselines != true
         working-directory: e2e
         run: npm run test:visual
         env:
           CI: "true"
+
+      - name: Regenerate the baselines
+        if: inputs.update_baselines == true
+        working-directory: e2e
+        run: npm run test:visual:update
+        env:
+          CI: "true"
+
+      - name: Upload the regenerated baselines
+        if: inputs.update_baselines == true
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-baselines
+          path: e2e/specs/visual/__screenshots__
+          retention-days: 7
 
       - name: Upload the visual report and the diffs
         if: failure()
