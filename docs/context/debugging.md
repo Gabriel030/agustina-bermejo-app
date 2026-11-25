@@ -103,6 +103,43 @@ borrarlos — no son parte del código, no se commitean nunca:
 find . -iname "* 2.*" -not -path "*/node_modules/*" -not -path "*/target/*" -not -path "*/.git/*"
 ```
 
+## Síntomas típicos de correo masivo (Brevo)
+
+Procedimiento completo del ensayo en `docs/deploy/README.md`, «Prueba de envío masivo con Brevo».
+Los logs se miran con `sc logs backend` (staging) o `dc logs backend` (producción).
+
+- **El backend no arranca con `TRANSACTIONAL_MAIL_PROVIDER=brevo`:** falta `BREVO_API_KEY`. Es a
+  propósito: el gateway de Brevo exige la clave al crearse (`BrevoTransactionalEmailGateway`).
+- **El backend no arranca en prod o en staging (perfil `prod`):** falta `BROADCAST_UNSUBSCRIBE_SECRET`
+  o es igual a `JWT_SECRET`. Es a propósito: los enlaces de baja no se firman con el secreto del JWT.
+  Cargarla con un valor nuevo (`openssl rand -base64 48 | tr -d '\n'`).
+- **El masivo quedó confirmado pero no sale ningún mail:** fuera de la franja `BROADCAST_DISPATCH_WINDOW_START`
+  – `_END` (hora de `APP_TIMEZONE`) los mails quedan en cola. Esperar a la franja; no es un error.
+  El job corre cada minuto y envía como máximo `BROADCAST_DISPATCH_MAX_PER_RUN` por corrida.
+- **Los mails no salen y en la base aparecen `SENT_SIMULATED`:** el proveedor es `mock`
+  (`TRANSACTIONAL_MAIL_PROVIDER=mock`, el valor de staging). Es el comportamiento esperado fuera del ensayo.
+- **Un destinatario queda SKIPPED con `MISSING_TEMPLATE_VARIABLE`:** la plantilla usa `{{carrera}}`,
+  `{{materia}}` o `{{comision}}`, que hoy no tienen fuente por persona, o un dato vacío. Quitar la variable
+  de la plantilla o esperar a que se implemente la fuente.
+- **Un destinatario queda SKIPPED con `NO_VERIFIED_EMAIL`:** su mail no está verificado. El filtro
+  funciona bien; hay que verificar la casilla de la persona.
+- **Un destinatario queda SKIPPED con `OPTED_OUT` o `NO_CONSENT`:** la persona se dio de baja o no
+  consintió. Si la baja fue una prueba, restablecer el consentimiento antes de seguir probando con esa casilla.
+- **Mail con `{{linkBaja}}` que lleva a `localhost`:** `FRONTEND_BASE_URL` quedó con el valor por defecto.
+  Setearla con la URL pública del entorno y reenviar.
+- **Log `Brevo rechazo el mail para ... status=4xx`:** Brevo rechazó el envío (`TransactionalEmailRejectedException`,
+  no se reintenta). Con 401 o 403 revisar `BREVO_API_KEY`; con otros 4xx mirar el panel de Brevo
+  (el remitente de `MAIL_FROM_ADDRESS` tiene que estar verificado; el texto exacto de Brevo: sin verificar).
+- **Log `Brevo fallo con status 5xx` o `Brevo no respondio a tiempo`:** error reintentable. El envío vuelve
+  a la cola y se reintenta; no hace falta tocar nada si no se repite.
+- **Log `Mail enviado por Brevo a ...` no aparece aunque el masivo esté confirmado:** revisar primero la
+  franja horaria y el cupo restante (`límite − máximo(transaccionales, reserva) − masivos` del día). Con el
+  cupo en 0 los mails quedan en cola hasta el día siguiente.
+- **El mail llega a spam:** el dominio no está autenticado en Brevo (SPF o DKIM sin verificar). Con SPF y DKIM
+  en `pass` y aun así en spam, es un tema de contenido de la plantilla, no de configuración del backend.
+- **El mail no trae la cabecera `List-Unsubscribe`:** Brevo la está quitando o no la reenvía. Procedimiento
+  de comprobación en la misma sección de `docs/deploy/README.md`.
+
 ## Ver también
 
 [docs/context/testing.md](testing.md) para cómo correr los tests una vez que todo
