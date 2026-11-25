@@ -33,7 +33,7 @@ class RecipientEligibilityQueryCountIT extends AbstractIntegrationTest {
 
     private static final int FEW = 50;
     private static final int MANY = 500;
-    private static final int CONSENT_AND_NEWSLETTER_QUERIES = 2;
+    private static final int CONSENT_NEWSLETTER_AND_MINOR_QUERIES = 3;
 
     @Autowired
     private RecipientEligibilityEvaluator evaluator;
@@ -67,7 +67,7 @@ class RecipientEligibilityQueryCountIT extends AbstractIntegrationTest {
     }
 
     private Map<Long, ExclusionReason> evaluateCounting(List<AudienceRecipient> recipients) {
-        return QueryCountAssertions.assertAtMostQueries(entityManagerFactory, CONSENT_AND_NEWSLETTER_QUERIES,
+        return QueryCountAssertions.assertAtMostQueries(entityManagerFactory, CONSENT_NEWSLETTER_AND_MINOR_QUERIES,
                 () -> evaluator.findExclusionReasons(recipients, ChannelType.EMAIL, BroadcastCategory.PROMOTIONAL));
     }
 

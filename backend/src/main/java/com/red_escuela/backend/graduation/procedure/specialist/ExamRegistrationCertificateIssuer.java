@@ -1,5 +1,6 @@
 package com.red_escuela.backend.graduation.procedure.specialist;
 
+import com.red_escuela.backend.evaluation.api.OwnExamRegistrationFinder;
 import com.red_escuela.backend.evaluation.api.OwnExamRegistrationView;
 import com.red_escuela.backend.graduation.api.DocumentIssuanceSettings;
 import com.red_escuela.backend.graduation.certificate.dto.DocumentValidityStatus;
@@ -24,6 +25,7 @@ import com.red_escuela.backend.graduation.procedure.dto.OwnDocumentResponse;
 import com.red_escuela.backend.graduation.procedure.dto.ProcedureEligibilityResponse;
 import com.red_escuela.backend.graduation.procedure.dto.ProcedureIneligibilityCode;
 import com.red_escuela.backend.graduation.procedure.exception.IssuanceLimitReachedException;
+import com.red_escuela.backend.graduation.procedure.exception.ProcedureDocumentNotFoundException;
 import com.red_escuela.backend.graduation.procedure.exception.ProcedureNotEligibleException;
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
 import com.red_escuela.backend.identity.api.StudentFinder;
@@ -53,6 +55,7 @@ public class ExamRegistrationCertificateIssuer {
     private static final DateTimeFormatter EXAM_DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final ExamRegistrationEligibilityEvaluator evaluator;
+    private final OwnExamRegistrationFinder registrationFinder;
     private final ExamRegistrationCertificateRepository repository;
     private final ExamRegistrationCertificateTemplate template;
     private final CertificatePdfRenderer renderer;
@@ -69,7 +72,7 @@ public class ExamRegistrationCertificateIssuer {
     private final CertificateTemplateRenderSource templateSource;
     private final SecureRandom random = new SecureRandom();
 
-    public ExamRegistrationCertificateIssuer(ExamRegistrationEligibilityEvaluator evaluator,
+    public ExamRegistrationCertificateIssuer(ExamRegistrationEligibilityEvaluator evaluator, OwnExamRegistrationFinder registrationFinder,
                                              ExamRegistrationCertificateRepository repository,
                                              ExamRegistrationCertificateTemplate template, CertificatePdfRenderer renderer,
                                              CertificateFileStore fileStore, CertificateVerificationUrl verificationUrl,
@@ -79,6 +82,7 @@ public class ExamRegistrationCertificateIssuer {
                                              MeterRegistry meterRegistry, Clock clock,
                                              CertificateTemplateRenderSource templateSource) {
         this.evaluator = evaluator;
+        this.registrationFinder = registrationFinder;
         this.repository = repository;
         this.template = template;
         this.renderer = renderer;
@@ -115,11 +119,38 @@ public class ExamRegistrationCertificateIssuer {
             current.get().markReplaced();
             repository.saveAndFlush(current.get());
         }
-        return responseOf(issue(student, registration, recipientType, recipientText, now));
+        return responseOf(issue(student, registration, recipientType, recipientText, now, true));
+    }
+
+    @Transactional
+    public ExamRegistrationCertificate issueUnderDebtException(Long studentId, Long registrationId) {
+        Student student = studentFinder.requireByIdForUpdate(studentId);
+        LocalDateTime now = LocalDateTime.now(clock);
+        OwnExamRegistrationView registration = registrationFinder.findActiveOwned(studentId, registrationId, now.toLocalDate().atStartOfDay())
+                .orElseThrow(ProcedureDocumentNotFoundException::new);
+        requireWindowOpen(registration, now);
+        Optional<ExamRegistrationCertificate> current = repository.findFirstByStudentIdAndRegistrationIdAndStatusOrderByIssuedAtDesc(
+                studentId, registration.registrationId(), DocumentValidityStatus.VALID).filter(valid -> valid.isValidAt(now));
+        if (current.isPresent() && sameRecipient(current.get(), null, null)) {
+            return current.get();
+        }
+        requireDailyAllowance(studentId, now);
+        if (current.isPresent()) {
+            current.get().markReplaced();
+            repository.saveAndFlush(current.get());
+        }
+        return issue(student, registration, null, null, now, false);
+    }
+
+    private void requireWindowOpen(OwnExamRegistrationView registration, LocalDateTime now) {
+        int advanceDays = issuanceSettings.current().examRegistrationAdvanceDays();
+        if (now.toLocalDate().isBefore(registration.examDateTime().toLocalDate().minusDays(advanceDays))) {
+            throw new ProcedureNotEligibleException();
+        }
     }
 
     private ExamRegistrationCertificate issue(Student student, OwnExamRegistrationView registration, RecipientType recipientType,
-                                              String recipientText, LocalDateTime now) {
+                                              String recipientText, LocalDateTime now, boolean generatedByStudent) {
         CertificateCode code = newUniqueCode();
         CertificateSnapshot builtInSnapshot = template.snapshotOf(student, registration);
         Optional<CertificateTemplateVersion> publishedVersion = templateSource.findCurrentPublished(DocumentTemplateType.EXAM_REGISTRATION_CERTIFICATE);
@@ -152,8 +183,10 @@ public class ExamRegistrationCertificateIssuer {
                     .renderEngineVersion(CertificatePdfRenderer.ENGINE_VERSION)
                     .build());
             verifiableDocumentRegistry.register(EXAM_REGISTRATION_CERTIFICATE, saved.getId(), code);
-            auditRecorder.generatedByStudent(EXAM_REGISTRATION_CERTIFICATE.name(), saved.getId(), saved.getPdfSha256(),
-                    saved.getRenderEngineVersion());
+            if (generatedByStudent) {
+                auditRecorder.generatedByStudent(EXAM_REGISTRATION_CERTIFICATE.name(), saved.getId(), saved.getPdfSha256(),
+                        saved.getRenderEngineVersion());
+            }
             meterRegistry.counter("exam_registration_certificate_issued_total").increment();
             log.info("Constancia de inscripción a examen emitida: certificateId={}, registrationId={}", saved.getId(),
                     registration.registrationId());
