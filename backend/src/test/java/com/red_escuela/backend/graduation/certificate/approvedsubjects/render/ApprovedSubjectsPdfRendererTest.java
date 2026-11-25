@@ -39,7 +39,7 @@ class ApprovedSubjectsPdfRendererTest {
             lines.add(new ApprovedSubjectLine("Materia número " + i, 1 + i / 10, new BigDecimal("8.00"), LocalDate.of(2026, 7, 1)));
         }
         return factory.create(new ApprovedSubjectsSnapshotFactory.Input("PÉREZ, ANA", "DNI", "30123456", "Tecnicatura en Enfermería",
-                "Instituto de prueba", lines, Math.max(subjects, 1), recipient, LocalDate.of(2026, 11, 5),
+                "Instituto de prueba", lines, Math.max(subjects, 1), recipient, LocalDate.of(2026, 11, 5), 30,
                 List.of(new SignatorySnapshot("Dirección", "Dirección académica"))));
     }
 
@@ -122,7 +122,7 @@ class ApprovedSubjectsPdfRendererTest {
             lines.add(new ApprovedSubjectLine(name, 1, new BigDecimal("8.00"), LocalDate.of(2026, 7, 1)));
         }
         return factory.create(new ApprovedSubjectsSnapshotFactory.Input("PÉREZ, ANA", "DNI", "30123456", "Tecnicatura en Enfermería",
-                "Instituto de prueba", lines, Math.max(names.size(), 1), recipient, LocalDate.of(2026, 11, 5),
+                "Instituto de prueba", lines, Math.max(names.size(), 1), recipient, LocalDate.of(2026, 11, 5), 30,
                 List.of(new SignatorySnapshot("Dirección", "Dirección académica"))));
     }
 

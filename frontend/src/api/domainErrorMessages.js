@@ -410,6 +410,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   PROCEDURE_DOCUMENT_NOT_FOUND: 'No encontramos el documento.',
   APPROVED_SUBJECTS_CERTIFICATE_NOT_FOUND: 'No encontramos la constancia de materias aprobadas.',
   APPROVED_SUBJECTS_CERTIFICATE_NOT_AVAILABLE: 'La constancia de materias aprobadas ya no está vigente.',
+  APPROVED_SUBJECTS_GRADE_UNAVAILABLE: 'No pudimos emitir la constancia: la nota de una materia no se puede informar. Comunicate con Administración.',
   EXAM_CERTIFICATE_NOT_FOUND: 'No encontramos la constancia de examen.',
   EXAM_REGISTRATION_CERTIFICATE_NOT_FOUND: 'No encontramos la constancia de inscripción a examen.',
   INVALID_EXAM_REGISTRATION_RECIPIENT: 'El destinatario no es válido: indicá un texto de hasta 80 caracteres, sin saltos de línea ni llaves.',
