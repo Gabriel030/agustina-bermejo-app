@@ -150,7 +150,7 @@ jobs:
         run: python3 .github/scripts/verify-tests-ran.py backend/target/surefire-reports DemoSeedIT DemoEducationalSeedIT DemoFullSeedIT
 
   pwa-offline-e2e:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: decide
     if: needs.decide.outputs.run == 'true'
     timeout-minutes: 20
