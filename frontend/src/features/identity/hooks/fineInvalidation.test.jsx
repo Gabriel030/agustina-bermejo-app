@@ -35,7 +35,7 @@ const ME_KEYS = [
 
 describe('legajo and prospect mutations', () => {
   it('withdrawStudentInvalidatesOwnRecordAndMarksListStale', async () => {
-    const keys = [['alumno', 7], ['alumno', 7, 'program-enrollments'], ['alumno', 8], ['alumnos', {}], ['prospects']];
+    const keys = [['alumno', 7], ['alumno', 7, 'program-enrollments'], ['alumno', 8], ['alumnos', {}], ['prospects', 'list', {}]];
     const invalidated = await run(() => useWithdrawStudent(7), { reason: 'x' }, keys);
     expect(invalidated).toEqual(expect.arrayContaining([['alumno', 7], ['alumnos', {}]]));
     expect(invalidated).toHaveLength(2);
@@ -48,12 +48,12 @@ describe('legajo and prospect mutations', () => {
       ['alumno', 7],
       ['alumno', 8],
       ['alumnos', {}],
-      ['prospects'],
+      ['prospects', 'list', {}],
       ['prospects', 7, 'documents'],
     ];
     const invalidated = await run(() => useConfirmarAlta(), { studentId: 7, datos: {} }, keys);
     expect(invalidated).toEqual(
-      expect.arrayContaining([['students', 7, 'billing-overview'], ['alumno', 7], ['alumnos', {}], ['prospects']]),
+      expect.arrayContaining([['students', 7, 'billing-overview'], ['alumno', 7], ['alumnos', {}], ['prospects', 'list', {}]]),
     );
     expect(invalidated).toHaveLength(4);
     expect(invalidated).not.toContainEqual(['students', 8, 'billing-overview']);

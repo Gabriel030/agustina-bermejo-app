@@ -14,6 +14,10 @@ vi.mock('@/context/AuthContext', () => ({
 
 const API = 'http://localhost:8080';
 
+function prospectsPage(items, overrides = {}) {
+  return { items, page: 0, size: 25, totalElements: items.length, ...overrides };
+}
+
 function prospect(overrides = {}) {
   return {
     id: 5,
@@ -38,7 +42,7 @@ describe('PadronAlumnos prospects tab', () => {
     server.use(
       http.get(`${API}/students`, () => HttpResponse.json({ items: [], page: 0, size: 25, totalElements: 0 })),
       http.get(`${API}/prospects`, () =>
-        HttpResponse.json([prospect(), prospect({ id: 6, nombre: 'Beto', apellido: 'Gil', email: 'beto@demo.test', missingDocuments: [] })]),
+        HttpResponse.json(prospectsPage([prospect(), prospect({ id: 6, nombre: 'Beto', apellido: 'Gil', email: 'beto@demo.test', missingDocuments: [] })])),
       ),
     );
     const user = userEvent.setup();
@@ -50,26 +54,51 @@ describe('PadronAlumnos prospects tab', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
-  it('filters the prospects by the search text', async () => {
+  it('sends the search text and the page to the server and shows the results', async () => {
+    const requests = [];
     server.use(
       http.get(`${API}/students`, () => HttpResponse.json({ items: [], page: 0, size: 25, totalElements: 0 })),
-      http.get(`${API}/prospects`, () => HttpResponse.json([prospect(), prospect({ id: 6, nombre: 'Beto', apellido: 'Gil', email: 'beto@demo.test' })])),
+      http.get(`${API}/prospects`, ({ request }) => {
+        const params = new URL(request.url).searchParams;
+        requests.push({ search: params.get('search'), page: params.get('page'), size: params.get('size') });
+        return params.get('search') === 'gil'
+          ? HttpResponse.json(prospectsPage([prospect({ id: 6, nombre: 'Beto', apellido: 'Gil', email: 'beto@demo.test' })]))
+          : HttpResponse.json(prospectsPage([prospect()], { totalElements: 60 }));
+      }),
     );
     const user = userEvent.setup();
     renderWithProviders(<PadronAlumnos />);
     await openProspectsTab(user);
     await screen.findByText('Paz, Ana');
+    expect(requests[0]).toEqual({ search: null, page: '0', size: '25' });
+
+    await user.click(await screen.findByRole('button', { name: /siguiente/i }));
+    await waitFor(() => expect(requests).toContainEqual({ search: null, page: '1', size: '25' }));
 
     await user.type(screen.getByPlaceholderText(/Buscar/), 'gil');
 
-    await waitFor(() => expect(screen.queryByText('Paz, Ana')).not.toBeInTheDocument());
-    expect(screen.getByText('Gil, Beto')).toBeInTheDocument();
+    expect(await screen.findByText('Gil, Beto')).toBeInTheDocument();
+    expect(screen.queryByText('Paz, Ana')).not.toBeInTheDocument();
+    expect(requests).toContainEqual({ search: 'gil', page: '0', size: '25' });
+  });
+
+  it('shows the search empty state when no prospect matches', async () => {
+    server.use(
+      http.get(`${API}/students`, () => HttpResponse.json({ items: [], page: 0, size: 25, totalElements: 0 })),
+      http.get(`${API}/prospects`, () => HttpResponse.json(prospectsPage([]))),
+    );
+    const user = userEvent.setup();
+    renderWithProviders(<PadronAlumnos />);
+    await openProspectsTab(user);
+    await user.type(screen.getByPlaceholderText(/Buscar/), 'zzz');
+
+    expect(await screen.findByText('Ningún prospecto coincide con la búsqueda')).toBeInTheDocument();
   });
 
   it('shows the empty state when there are no prospects', async () => {
     server.use(
       http.get(`${API}/students`, () => HttpResponse.json({ items: [], page: 0, size: 25, totalElements: 0 })),
-      http.get(`${API}/prospects`, () => HttpResponse.json([])),
+      http.get(`${API}/prospects`, () => HttpResponse.json(prospectsPage([]))),
     );
     const user = userEvent.setup();
     renderWithProviders(<PadronAlumnos />);
@@ -84,7 +113,7 @@ describe('PadronAlumnos prospects tab', () => {
       http.get(`${API}/students`, () => HttpResponse.json({ items: [], page: 0, size: 25, totalElements: 0 })),
       http.get(`${API}/prospects`, () => {
         attempts += 1;
-        return attempts === 1 ? new HttpResponse(null, { status: 500 }) : HttpResponse.json([prospect()]);
+        return attempts === 1 ? new HttpResponse(null, { status: 500 }) : HttpResponse.json(prospectsPage([prospect()]));
       }),
     );
     const user = userEvent.setup();
