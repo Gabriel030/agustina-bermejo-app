@@ -4,6 +4,7 @@ import com.red_escuela.backend.graduation.certificate.exception.DocumentOperatio
 import com.red_escuela.backend.graduation.procedure.dto.GenerateOwnDocumentRequest;
 import com.red_escuela.backend.graduation.procedure.dto.OwnDocumentResponse;
 import com.red_escuela.backend.graduation.procedure.dto.OwnDocumentType;
+import com.red_escuela.backend.graduation.procedure.specialist.ApprovedSubjectsOwnDocumentIssuer;
 import com.red_escuela.backend.graduation.procedure.specialist.ExamRegistrationCertificateIssuer;
 import com.red_escuela.backend.graduation.procedure.specialist.OwnRegularDocumentIssuer;
 import com.red_escuela.backend.shared.UseCase;
@@ -14,9 +15,13 @@ public class GenerateOwnDocumentService implements GenerateOwnDocumentUseCase {
     private final OwnRegularDocumentIssuer regularIssuer;
     private final ExamRegistrationCertificateIssuer examRegistrationIssuer;
 
-    public GenerateOwnDocumentService(OwnRegularDocumentIssuer regularIssuer, ExamRegistrationCertificateIssuer examRegistrationIssuer) {
+    private final ApprovedSubjectsOwnDocumentIssuer approvedSubjectsIssuer;
+
+    public GenerateOwnDocumentService(OwnRegularDocumentIssuer regularIssuer, ExamRegistrationCertificateIssuer examRegistrationIssuer,
+                                      ApprovedSubjectsOwnDocumentIssuer approvedSubjectsIssuer) {
         this.regularIssuer = regularIssuer;
         this.examRegistrationIssuer = examRegistrationIssuer;
+        this.approvedSubjectsIssuer = approvedSubjectsIssuer;
     }
 
     @Override
@@ -29,6 +34,9 @@ public class GenerateOwnDocumentService implements GenerateOwnDocumentUseCase {
                     request == null ? null : request.registrationId(),
                     request == null ? null : request.recipientType(),
                     request == null ? null : request.recipientText());
+        }
+        if (type == OwnDocumentType.APPROVED_SUBJECTS_CERTIFICATE) {
+            return approvedSubjectsIssuer.issue(request);
         }
         throw new DocumentOperationPendingException();
     }

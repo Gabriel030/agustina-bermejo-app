@@ -272,7 +272,7 @@ class ApprovedProceduresIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void eligibilityOfATypeWithoutRegisteredStrategyAnswersUnavailable() throws Exception {
-        mockMvc.perform(get("/me/procedures/APPROVED_SUBJECTS_CERTIFICATE/eligibility").header("Authorization", bearer(studentToken)))
+        mockMvc.perform(get("/me/procedures/SECTION_CHANGE/eligibility").header("Authorization", bearer(studentToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.eligible").value(false))
                 .andExpect(jsonPath("$.summary").value("Este trámite todavía no está disponible"))
