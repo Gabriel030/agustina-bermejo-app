@@ -19,6 +19,7 @@ const billingStaff = (slug) => staff(STAFF_BILLING, slug);
 const withId = (build, fallback) => ({ id, base }) => (id ? build({ id, base }) : fallback({ base }));
 
 const SUBJECTS_TAB = alumno('/alumno/mis-carreras?tab=materias');
+const STUDY_PLAN_TAB = alumno('/alumno/mis-carreras?tab=plan-de-estudio');
 const PAYMENTS = alumno('/alumno/pagos');
 const TEACHER_SECTIONS = docente('/docente/mis-comisiones');
 const CLOSURES = staff(STAFF_BILLING, 'cierres-de-comision');
@@ -92,6 +93,8 @@ export const NOTIFICATION_DESTINATIONS = {
   GRADES_PUBLISHED: [STUDENT_GRADES],
   GRADE_CORRECTED: [STUDENT_GRADES],
   SUBJECT_APPROVAL_REVERTED: [SUBJECTS_TAB],
+  SUBJECT_EQUIVALENCE_RECORDED: [STUDY_PLAN_TAB],
+  SUBJECT_EQUIVALENCE_VOIDED: [STUDY_PLAN_TAB],
   ENROLLMENT_FEE_EXEMPTION_GRANTED: [PAYMENTS],
   ENROLLMENT_FEE_EXEMPTION_REVOKED: [PAYMENTS],
   LATE_PAYMENT_SETTINGS_CREATED: [PAYMENT_PROOF_BILLING],
