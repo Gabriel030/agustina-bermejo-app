@@ -508,7 +508,7 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
     void anAdministrativeActorLeavesAPersistedProposalInsteadOfRollingBack() {
         Year year = yearWithFirstFeeIssued();
         authenticateAs("ADMINISTRATIVO");
-        var service = new com.red_escuela.backend.billing.usecase.cohort.UpdateYearBillingConfigurationService(templateRepository, configurationReader, termsOverlay, pipeline,
+        var service = new com.red_escuela.backend.billing.configuration.service.UpdateYearBillingConfigurationTransaction(templateRepository, configurationReader, termsOverlay, pipeline,
                 changeOperation, actorResolver, eventPublisher, clock);
 
         Object outcome = transactionTemplate.execute(status -> {
