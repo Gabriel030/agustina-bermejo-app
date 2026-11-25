@@ -498,14 +498,16 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
         Long id = jdbc.queryForObject("select id from document_debt_exception", Long.class);
 
         actAs(administrative);
-        mockMvc.perform(get("/document-debt-exceptions/" + id + "/pdf").header("Authorization", "Bearer " + administrativeToken))
-                .andExpect(status().isUnprocessableEntity());
-        actAs(administrative);
-        mockMvc.perform(get("/document-debt-exceptions/" + id + "/pdf").header("Authorization", "Bearer " + directorToken))
-                .andExpect(status().isUnprocessableEntity());
-        actAs(administrative);
         mockMvc.perform(get("/document-debt-exceptions/" + id + "/pdf").header("Authorization", "Bearer " + subdirectorToken))
                 .andExpect(status().isForbidden());
+        actAs(administrative);
+        mockMvc.perform(get("/document-debt-exceptions/" + id + "/pdf").header("Authorization", "Bearer " + administrativeToken))
+                .andExpect(status().isOk());
+        issue(administrativeToken, studentId, "GRADUATION_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
+        Long secondId = jdbc.queryForObject("select max(id) from document_debt_exception", Long.class);
+        actAs(administrative);
+        mockMvc.perform(get("/document-debt-exceptions/" + secondId + "/pdf").header("Authorization", "Bearer " + directorToken))
+                .andExpect(status().isOk());
         actAs(administrative);
         mockMvc.perform(get("/document-debt-exceptions/" + id + "/pdf").header("Authorization", "Bearer " + studentToken))
                 .andExpect(status().isForbidden());
