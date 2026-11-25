@@ -12,6 +12,7 @@ import com.red_escuela.backend.identity.api.GuardianContact;
 import com.red_escuela.backend.enrollment.dto.SaveProspectDraftRequest;
 import com.red_escuela.backend.enrollment.entity.DocumentType;
 import com.red_escuela.backend.enrollment.dto.ProspectListItemResponse;
+import com.red_escuela.backend.shared.pagination.PageResponse;
 import com.red_escuela.backend.identity.api.ConfirmedProspect;
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
 import com.red_escuela.backend.identity.api.EmailVerificationSender;
@@ -104,17 +105,18 @@ public class ProspectService {
     }
 
     @Transactional(readOnly = true)
-    public List<ProspectListItemResponse> listProspects() {
-        List<StudentOnboardingSummary> prospects = studentFinder.listProspects();
+    public PageResponse<ProspectListItemResponse> listProspects(String search, int page, int size) {
+        PageResponse<StudentOnboardingSummary> prospects = studentFinder.listProspectsPage(search, page, size);
         Map<Long, Set<DocumentType>> uploadedByStudent = studentDocumentRepository
-                .findByStudentIdIn(prospects.stream().map(StudentOnboardingSummary::studentId).toList())
+                .findByStudentIdIn(prospects.items().stream().map(StudentOnboardingSummary::studentId).toList())
                 .stream()
                 .collect(Collectors.groupingBy(document -> document.getStudent().getId(),
                         Collectors.mapping(StudentDocument::getType, Collectors.toCollection(() -> EnumSet.noneOf(DocumentType.class)))));
-        return prospects.stream()
+        List<ProspectListItemResponse> items = prospects.items().stream()
                 .map(prospect -> ProspectListItemResponse.of(prospect,
                         missingDocuments(uploadedByStudent.getOrDefault(prospect.studentId(), Set.of()))))
                 .toList();
+        return new PageResponse<>(items, prospects.page(), prospects.size(), prospects.totalElements());
     }
 
     private static List<DocumentType> missingDocuments(Set<DocumentType> uploaded) {

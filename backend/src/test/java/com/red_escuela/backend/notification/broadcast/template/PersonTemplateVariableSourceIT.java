@@ -86,4 +86,35 @@ class PersonTemplateVariableSourceIT extends AbstractIntegrationTest {
         assertThat(variableSource.valuesForAll(List.of(ids.get(0), -1L))).containsOnlyKeys(ids.get(0));
         assertThat(variableSource.valuesForAll(List.of())).isEmpty();
     }
+
+    @Test
+    void courseVariablesAreLoadedInBatchWithoutExtraQueriesPerPerson() {
+        List<Long> ids = persistPeople(PEOPLE);
+        transactionTemplate.executeWithoutResult(status -> {
+            PersonEnrollmentTestFixtures enrollments = new PersonEnrollmentTestFixtures(entityManager);
+            for (Long id : ids) {
+                var student = enrollments.studentOf(entityManager.find(Person.class, id));
+                enrollments.enroll(student, "Carrera " + id, "Materia " + id, "Comisión " + id,
+                        java.time.LocalDateTime.of(2041, 3, 1, 10, 0), com.red_escuela.backend.enrollment.entity.EnrollmentStatus.IN_PROGRESS);
+            }
+        });
+
+        Map<Long, Map<TemplateVariable, String>> values = QueryCountAssertions.assertAtMostQueries(entityManagerFactory,
+                MAX_QUERIES_FOR_ANY_BATCH_SIZE, () -> variableSource.valuesForAll(ids));
+
+        ids.forEach(id -> {
+            assertThat(values.get(id).get(TemplateVariable.PROGRAM)).isEqualTo("Carrera " + id);
+            assertThat(values.get(id).get(TemplateVariable.SUBJECT)).isEqualTo("Materia " + id);
+            assertThat(values.get(id).get(TemplateVariable.SECTION)).isEqualTo("Comisión " + id);
+        });
+    }
+
+    @Test
+    void peopleWithoutEnrollmentGetNoCourseValues() {
+        List<Long> ids = persistPeople(1);
+
+        Map<TemplateVariable, String> values = variableSource.valuesFor(ids.get(0));
+
+        assertThat(values).doesNotContainKeys(TemplateVariable.PROGRAM, TemplateVariable.SUBJECT, TemplateVariable.SECTION);
+    }
 }

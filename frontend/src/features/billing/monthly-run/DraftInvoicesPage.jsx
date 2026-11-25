@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { ArrowLeft, TriangleAlert } from 'lucide-react';
 import { toast } from 'sonner';
@@ -65,7 +65,7 @@ export function DraftInvoicesPage() {
   const groups = groupsQuery.data ?? [];
   const run = runs.data?.items?.find((candidate) => String(candidate.id) === String(runId));
   const canAct = modules.billingMode === 'FULL';
-  const summary = summarizeDraftSelection(groups, selected);
+  const summary = useMemo(() => summarizeDraftSelection(groups, selected), [groups, selected]);
   const allSelected = groups.length > 0 && groups.every((group) => selected.has(groupKey(group)));
 
   function toggleGroup(group) {

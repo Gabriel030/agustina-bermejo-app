@@ -98,10 +98,15 @@ class ProspectByStaffIT extends AbstractIntegrationTest {
     }
 
     private Long createByStaff(String email) throws Exception {
+        return createByStaff("Ana", "Paz", email);
+    }
+
+    private Long createByStaff(String firstName, String lastName, String email) throws Exception {
         String response = mockMvc.perform(post("/prospects/by-staff")
                         .header("Authorization", "Bearer " + directorToken)
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(createBody(email)))
+                        .content(objectMapper.writeValueAsString(
+                                new CreateProspectRequest(firstName, lastName, email, "1155550000", institutionId))))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         return objectMapper.readTree(response).get("id").asLong();
@@ -252,11 +257,12 @@ class ProspectByStaffIT extends AbstractIntegrationTest {
             entityManager.persist(document);
         });
 
-        String json = mockMvc.perform(get("/prospects").header("Authorization", "Bearer " + directorToken))
+        String json = mockMvc.perform(get("/prospects").param("search", email)
+                        .header("Authorization", "Bearer " + directorToken))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
-        var items = objectMapper.readTree(json);
+        var items = objectMapper.readTree(json).get("items");
         var listed = java.util.stream.StreamSupport.stream(items.spliterator(), false)
                 .filter(item -> item.get("id").asLong() == withDocument)
                 .findFirst().orElseThrow();
@@ -267,6 +273,77 @@ class ProspectByStaffIT extends AbstractIntegrationTest {
                 .containsExactlyInAnyOrder("DNI_DORSO", "ANALITICO_SECUNDARIO");
         assertThat(java.util.stream.StreamSupport.stream(items.spliterator(), false)
                 .anyMatch(item -> item.get("id").asLong() == confirmedId)).isFalse();
+    }
+
+    private tools.jackson.databind.JsonNode listProspects(String search, String page, String size) throws Exception {
+        var request = get("/prospects").header("Authorization", "Bearer " + directorToken);
+        if (search != null) request = request.param("search", search);
+        if (page != null) request = request.param("page", page);
+        if (size != null) request = request.param("size", size);
+        return objectMapper.readTree(mockMvc.perform(request).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString());
+    }
+
+    private static java.util.List<String> lastNames(tools.jackson.databind.JsonNode page) {
+        return java.util.stream.StreamSupport.stream(page.get("items").spliterator(), false)
+                .map(item -> item.get("apellido").asString("")).toList();
+    }
+
+    @Test
+    void listProspectsPaginatesWithStableOrderByLastNameFirstNameAndId() throws Exception {
+        String tag = "Zq" + UUID.randomUUID().toString().substring(0, 6);
+        createByStaff("Bruno", tag + "B", "p1-" + UUID.randomUUID() + "@example.com");
+        createByStaff("Ana", tag + "B", "p2-" + UUID.randomUUID() + "@example.com");
+        createByStaff("Ana", tag + "A", "p3-" + UUID.randomUUID() + "@example.com");
+        createByStaff("Ana", tag + "B", "p4-" + UUID.randomUUID() + "@example.com");
+
+        var first = listProspects(tag, "0", "3");
+        var second = listProspects(tag, "1", "3");
+
+        assertThat(first.get("totalElements").asLong()).isEqualTo(4);
+        assertThat(first.get("page").asInt()).isZero();
+        assertThat(first.get("size").asInt()).isEqualTo(3);
+        assertThat(lastNames(first)).containsExactly(tag + "A", tag + "B", tag + "B");
+        assertThat(lastNames(second)).containsExactly(tag + "B");
+        var ids = java.util.stream.Stream.concat(
+                        java.util.stream.StreamSupport.stream(first.get("items").spliterator(), false),
+                        java.util.stream.StreamSupport.stream(second.get("items").spliterator(), false))
+                .map(item -> item.get("id").asLong()).toList();
+        assertThat(ids).doesNotHaveDuplicates();
+        var firstNames = java.util.stream.StreamSupport.stream(first.get("items").spliterator(), false)
+                .map(item -> item.get("nombre").asString("")).toList();
+        assertThat(firstNames).containsExactly("Ana", "Ana", "Ana");
+        assertThat(ids.get(1)).isLessThan(ids.get(2));
+    }
+
+    @Test
+    void listProspectsSearchIgnoresCaseAndAccentsOverNameLastNameAndEmail() throws Exception {
+        String tag = "Qx" + UUID.randomUUID().toString().substring(0, 6).toLowerCase();
+        Long byName = createByStaff("Ángela" + tag, "Gómez", "n-" + UUID.randomUUID() + "@example.com");
+        Long byLastName = createByStaff("Luis", "Muñoz" + tag, "l-" + UUID.randomUUID() + "@example.com");
+        Long byEmail = createByStaff("Rita", "Sosa", "mail-" + tag + "@example.com");
+
+        assertThat(ids(listProspects("angela" + tag.toUpperCase(), null, null))).containsExactly(byName);
+        assertThat(ids(listProspects("MUNOZ" + tag, null, null))).containsExactly(byLastName);
+        assertThat(ids(listProspects("MAIL-" + tag.toUpperCase(), null, null))).containsExactly(byEmail);
+        assertThat(ids(listProspects("gomez ángela" + tag, null, null))).containsExactly(byName);
+        assertThat(listProspects("nadie-" + tag + "-zz", null, null).get("totalElements").asLong()).isZero();
+    }
+
+    @Test
+    void listProspectsCapsSizeAtOneHundredAndDefaultsToTwentyFive() throws Exception {
+        var capped = listProspects(null, null, "500");
+        var defaults = listProspects(null, null, null);
+
+        assertThat(capped.get("size").asInt()).isEqualTo(100);
+        assertThat(capped.get("items").size()).isLessThanOrEqualTo(100);
+        assertThat(defaults.get("size").asInt()).isEqualTo(25);
+        assertThat(defaults.get("page").asInt()).isZero();
+    }
+
+    private static java.util.List<Long> ids(tools.jackson.databind.JsonNode page) {
+        return java.util.stream.StreamSupport.stream(page.get("items").spliterator(), false)
+                .map(item -> item.get("id").asLong()).toList();
     }
 
     @Test
