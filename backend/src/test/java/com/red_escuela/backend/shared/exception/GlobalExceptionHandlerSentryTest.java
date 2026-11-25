@@ -1,7 +1,9 @@
 package com.red_escuela.backend.shared.exception;
 
 import com.red_escuela.backend.shared.errortracking.SentryEventScrubber;
+import com.red_escuela.backend.shared.errortracking.SentryEventThrottle;
 import com.red_escuela.backend.shared.errortracking.SentryServerErrorReporter;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import io.sentry.JsonSerializer;
 import io.sentry.Sentry;
 import io.sentry.SentryOptions;
@@ -110,7 +112,7 @@ class GlobalExceptionHandlerSentryTest {
         Sentry.setUser(user);
         Sentry.setExtra("student", "Juan Pérez");
         GlobalExceptionHandler handler = new GlobalExceptionHandler();
-        handler.setServerErrorReporter(new SentryServerErrorReporter());
+        handler.setServerErrorReporter(new SentryServerErrorReporter(new SentryEventThrottle(1000, 0, new SimpleMeterRegistry())));
         mockMvc = MockMvcBuilders.standaloneSetup(new ThrowingController()).setControllerAdvice(handler).build();
         MDC.put("requestId", REQUEST_ID);
     }
