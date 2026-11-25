@@ -1,5 +1,7 @@
 package com.red_escuela.backend.config;
 
+import com.red_escuela.backend.platform.infrastructure.FeatureSnapshotHolder;
+import com.red_escuela.backend.platform.infrastructure.InstituteSettingsSnapshotHolder;
 import org.flywaydb.core.Flyway;
 import org.junit.jupiter.api.extension.AfterAllCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -78,8 +80,20 @@ public final class TestDatabaseIsolation implements AfterAllCallback {
         long start = System.nanoTime();
         drainAsyncExecutors(context);
         restoreSeededState();
+        refreshPlatformSnapshots(context);
         resets.incrementAndGet();
         totalNanos.addAndGet(System.nanoTime() - start);
+    }
+
+    private void refreshPlatformSnapshots(ExtensionContext context) {
+        ApplicationContext applicationContext;
+        try {
+            applicationContext = SpringExtension.getApplicationContext(context);
+        } catch (RuntimeException exception) {
+            return;
+        }
+        applicationContext.getBeansOfType(FeatureSnapshotHolder.class).values().forEach(FeatureSnapshotHolder::refresh);
+        applicationContext.getBeansOfType(InstituteSettingsSnapshotHolder.class).values().forEach(InstituteSettingsSnapshotHolder::refresh);
     }
 
     private void drainAsyncExecutors(ExtensionContext context) {
