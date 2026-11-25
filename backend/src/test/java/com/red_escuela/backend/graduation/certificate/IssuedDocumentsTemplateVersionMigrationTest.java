@@ -22,7 +22,7 @@ class IssuedDocumentsTemplateVersionMigrationTest {
             "regular_student_certificate",
             "insert into regular_student_certificate (code, kind, program_enrollment_id, student_id, status, issued_at, expires_at, validity_days, issued_by_id, "
                     + "issue_channel, request_id, billing_mode_at_issue, standing_basis, snapshot, template_ref, pdf_sha256, pdf_path) "
-                    + "values ('CODE-REGULAR', 'PROGRAM', 1, 1, 'VALID', now(), now() + interval '30 days', 30, 1, 'STUDENT_PORTAL', 1, 'OFF', "
+                    + "values ('00000000000000000000000000', 'PROGRAM', 1, 1, 'VALID', now(), now() + interval '30 days', 30, 1, 'STUDENT_PORTAL', 1, 'OFF', "
                     + "'BILLING_VERIFIED', '{}'::jsonb, 'REGULAR_BUILT_IN_V1', '" + SHA + "', 'p.pdf')",
             "exam_registration_certificate",
             "insert into exam_registration_certificate (code, student_id, registration_id, exam_board_id, status, issued_at, expires_at, "
@@ -55,8 +55,8 @@ class IssuedDocumentsTemplateVersionMigrationTest {
 
     private long insertTemplateVersion(JdbcTemplate jdbc) {
         Long templateId = jdbc.queryForObject("select id from certificate_template where document_type = 'REGULAR_STUDENT_CERTIFICATE'", Long.class);
-        return jdbc.queryForObject("insert into certificate_template_version (template_id, version_number, status, updated_at) "
-                + "values (?, 999, 'PUBLISHED', now()) returning id", Long.class, templateId);
+        return jdbc.queryForObject("insert into certificate_template_version (template_id, version_number, status, updated_at, published_at, published_by_name) "
+                + "values (?, 999, 'PUBLISHED', now(), now(), 'Test') returning id", Long.class, templateId);
     }
 
     @Test
