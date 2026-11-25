@@ -9,7 +9,7 @@ import com.red_escuela.backend.attendance.api.AttendanceStandingReader;
 import com.red_escuela.backend.enrollment.api.EnrollmentDebtGuardPort;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
-import com.red_escuela.backend.billing.exception.CohortAdmissionWindowClosedException;
+import com.red_escuela.backend.enrollment.exception.CohortAdmissionWindowClosedException;
 import com.red_escuela.backend.billing.exception.ProgramCohortNotFoundException;
 import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateMismatchException;
 import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateNotFoundException;

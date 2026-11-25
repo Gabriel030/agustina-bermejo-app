@@ -23,7 +23,7 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
-import com.red_escuela.backend.billing.exception.CohortAdmissionWindowClosedException;
+import com.red_escuela.backend.enrollment.exception.CohortAdmissionWindowClosedException;
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInProgramException;
 import com.red_escuela.backend.enrollment.exception.CannotWithdrawException;
 import com.red_escuela.backend.enrollment.exception.InvalidWindowConfigurationException;

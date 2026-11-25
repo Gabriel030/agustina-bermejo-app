@@ -2,7 +2,7 @@ package com.red_escuela.backend.characterization.enrollment;
 
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
-import com.red_escuela.backend.billing.exception.CohortAdmissionWindowClosedException;
+import com.red_escuela.backend.enrollment.exception.CohortAdmissionWindowClosedException;
 import com.red_escuela.backend.billing.exception.ProgramCohortNotFoundException;
 import com.red_escuela.backend.enrollment.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;

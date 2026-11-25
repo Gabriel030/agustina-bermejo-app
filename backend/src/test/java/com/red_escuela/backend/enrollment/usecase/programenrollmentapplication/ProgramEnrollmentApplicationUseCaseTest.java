@@ -29,7 +29,7 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.billing.exception.CohortAdmissionWindowClosedException;
+import com.red_escuela.backend.enrollment.exception.CohortAdmissionWindowClosedException;
 import com.red_escuela.backend.enrollment.exception.AlreadyHasPendingApplicationException;
 import com.red_escuela.backend.enrollment.exception.InvalidProgramEnrollmentApplicationStateException;
 import com.red_escuela.backend.enrollment.exception.DniRequiredException;
