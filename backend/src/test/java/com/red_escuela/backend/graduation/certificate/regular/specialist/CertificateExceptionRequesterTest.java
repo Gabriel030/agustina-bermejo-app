@@ -1,5 +1,6 @@
 package com.red_escuela.backend.graduation.certificate.regular.specialist;
 
+import com.red_escuela.backend.enrollment.api.EnrollmentNameFinder;
 import com.red_escuela.backend.graduation.certificate.regular.entity.CertificateExceptionApproval;
 import com.red_escuela.backend.graduation.certificate.regular.entity.OrganismKind;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularityKind;
@@ -10,6 +11,7 @@ import com.red_escuela.backend.graduation.events.CertificateExceptionRequestedEv
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateSettings;
 import com.red_escuela.backend.graduation.events.CertificateExceptionCreatedByDirectorEvent;
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
+import com.red_escuela.backend.identity.api.PersonNameFinder;
 import com.red_escuela.backend.shared.audit.AuditAction;
 import com.red_escuela.backend.shared.audit.AuditRecord;
 import com.red_escuela.backend.shared.audit.service.AuditTrail;
@@ -53,7 +55,8 @@ class CertificateExceptionRequesterTest {
     private final RegularDebtFactsReader debtFactsReader = mock(RegularDebtFactsReader.class);
     private final Clock clock = Clock.fixed(Instant.parse("2026-11-05T12:00:00Z"), ZoneOffset.UTC);
     private final CertificateExceptionRequester requester = new CertificateExceptionRequester(repository, factsFinder, standingGate,
-            currentActorFinder, eventPublisher, settingsFinder, auditTrail, clock, debtFactsReader);
+            currentActorFinder, eventPublisher, settingsFinder, auditTrail, clock, debtFactsReader,
+            new CertificateExceptionResponses(mock(PersonNameFinder.class), mock(EnrollmentNameFinder.class)));
     private final RequestCertificateExceptionCommand command = new RequestCertificateExceptionCommand(RegularityKind.PROGRAM, ENROLLMENT_ID,
             OrganismKind.COURT, "Causa 1/2026", REASON);
 

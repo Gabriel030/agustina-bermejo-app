@@ -5,7 +5,7 @@ import { StatusPill } from '@/components/StatusPill';
 import { Notice } from '@/components/Notice';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { useGraduationProjection } from '@/features/enrollment';
+import { useGraduationProjectionFor } from '@/features/enrollment';
 import {
   PROJECTION_CONFIDENCE,
   describePeriodRange,
@@ -15,25 +15,29 @@ import {
 
 const HIDDEN_STATUSES = [403, 404];
 
-function ProjectionBody({ projection }) {
+function ProjectionBody({ projection, audience }) {
   if (projection.status === 'REQUIREMENTS_MET') {
-    return <p className="text-sm text-ink">Ya cumplís los requisitos del plan para egresar.</p>;
+    return (
+      <p className="text-sm text-ink">
+        {audience === 'staff' ? 'Ya cumple los requisitos del plan para egresar.' : 'Ya cumplís los requisitos del plan para egresar.'}
+      </p>
+    );
   }
 
   if (projection.status === 'NOT_PROJECTABLE') {
     return (
       <ul className="flex flex-col gap-1 text-sm text-ink-soft">
         {projection.reasons.map((reason) => (
-          <li key={reason}>{describeProjectionReason(reason)}</li>
+          <li key={reason}>{describeProjectionReason(reason, audience)}</li>
         ))}
-        {projection.reasons.length === 0 && <li>{describeProjectionReason(null)}</li>}
+        {projection.reasons.length === 0 && <li>{describeProjectionReason(null, audience)}</li>}
       </ul>
     );
   }
 
   const periodsLabel = describePeriodUnit(projection.periodUnit, projection.estimatedPeriods);
   if (projection.estimatedPeriods == null || !periodsLabel) {
-    return <p className="text-sm text-ink-soft">{describeProjectionReason(null)}</p>;
+    return <p className="text-sm text-ink-soft">{describeProjectionReason(null, audience)}</p>;
   }
 
   const confidence = PROJECTION_CONFIDENCE[projection.confidence];
@@ -79,10 +83,48 @@ function ProjectionAssumptions({ assumptions }) {
   );
 }
 
-export function GraduationProjectionCard({ carreraId }) {
-  const { data: projection, isLoading, isError, error, refetch } = useGraduationProjection(carreraId);
+function ProjectionContent({ projection, audience, isLoading, isError, error, refetch }) {
+  if (isLoading) return <Skeleton className="h-16" />;
+  if (isError) return <LoadErrorState error={error} onRetry={refetch} resource="la proyección de egreso" bare />;
+  return (
+    <>
+      <ProjectionBody projection={projection} audience={audience} />
+      {projection.warnings.map((warning) => (
+        <Notice key={warning.code} tone="warning">
+          {warning.message}
+        </Notice>
+      ))}
+      <ProjectionAssumptions assumptions={projection.assumptions} />
+      <div className="text-size-12 text-ink-faint">Estimación, no un compromiso.</div>
+    </>
+  );
+}
+
+export function GraduationProjectionCard({ carreraId, collapsible = false, audience = 'student' }) {
+  const { data: projection, isLoading, isError, error, refetch } = useGraduationProjectionFor(audience, carreraId);
 
   if (isError && HIDDEN_STATUSES.includes(error?.status)) return null;
+
+  const content = <ProjectionContent projection={projection} audience={audience} isLoading={isLoading} isError={isError} error={error} refetch={refetch} />;
+
+  if (collapsible) {
+    return (
+      <GlassCard role="region" className="p-4" aria-labelledby="graduation-projection-title">
+        <Collapsible>
+          <h2 id="graduation-projection-title" className="font-heading text-base font-bold text-ink">
+            <CollapsibleTrigger className="group flex min-h-11 w-full items-center justify-between gap-2 text-left">
+              <span className="flex items-center gap-1.5">
+                <CalendarClock className="h-4 w-4 text-ink-faint" aria-hidden="true" />
+                Proyección de egreso
+              </span>
+              <ChevronDown className="h-4 w-4 shrink-0 transition-transform group-data-[state=open]:rotate-180 motion-reduce:transition-none" aria-hidden="true" />
+            </CollapsibleTrigger>
+          </h2>
+          <CollapsibleContent className="flex flex-col gap-2 pt-2">{content}</CollapsibleContent>
+        </Collapsible>
+      </GlassCard>
+    );
+  }
 
   return (
     <GlassCard role="region" className="flex flex-col gap-2 p-4" aria-labelledby="graduation-projection-title">
@@ -90,22 +132,7 @@ export function GraduationProjectionCard({ carreraId }) {
         <CalendarClock className="h-4 w-4 text-ink-faint" aria-hidden="true" />
         Proyección de egreso
       </h2>
-      {isLoading ? (
-        <Skeleton className="h-16" />
-      ) : isError ? (
-        <LoadErrorState error={error} onRetry={refetch} resource="la proyección de egreso" bare />
-      ) : (
-        <>
-          <ProjectionBody projection={projection} />
-          {projection.warnings.map((warning) => (
-            <Notice key={warning.code} tone="warning">
-              {warning.message}
-            </Notice>
-          ))}
-          <ProjectionAssumptions assumptions={projection.assumptions} />
-          <div className="text-size-12 text-ink-faint">Estimación, no un compromiso.</div>
-        </>
-      )}
+      {content}
     </GlassCard>
   );
 }

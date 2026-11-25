@@ -77,6 +77,11 @@ public class PrerequisiteImportDefinition implements ImportEntityDefinition {
     }
 
     @Override
+    public boolean validatesAcrossRows() {
+        return true;
+    }
+
+    @Override
     public Map<Integer, List<ImportRowError>> validateAcrossRows(List<Map<String, String>> payloads) {
         Map<String, Map<String, Set<String>>> graphByProgram = new HashMap<>();
         for (Map<String, String> payload : payloads) {

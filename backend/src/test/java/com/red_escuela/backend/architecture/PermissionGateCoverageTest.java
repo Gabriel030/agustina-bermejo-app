@@ -78,6 +78,9 @@ class PermissionGateCoverageTest {
             "ProgramEnrollmentApplicationController#myDocuments", "ProspectController#createProspect",
             "SubjectEquivalenceController#listOwn");
 
+    private static final Set<String> ENROLLMENT_ENDPOINTS_FIXED_TO_STUDENT = Set.of(
+            "MeWaitlistController#listOwnPositions");
+
     private static final Set<String> ENROLLMENT_ENDPOINTS_FIXED_TO_DIRECTOR = Set.of(
             "DirectorApprovalRequestController#list", "DirectorApprovalRequestController#get",
             "DirectorApprovalRequestController#approve", "DirectorApprovalRequestController#reject");
@@ -295,7 +298,7 @@ class PermissionGateCoverageTest {
                     continue;
                 }
                 String endpoint = controller.getSimpleName() + "#" + method.getName();
-                if (ENROLLMENT_ENDPOINTS_WITHOUT_ROLE_RULE.contains(endpoint) || ENROLLMENT_ENDPOINTS_FIXED_TO_DIRECTOR.contains(endpoint) || ACADEMICSTRUCTURE_ENDPOINTS_WITHOUT_GRID_RULE.contains(endpoint) || BILLING_ENDPOINTS_WITHOUT_GRID_RULE.contains(endpoint)) {
+                if (ENROLLMENT_ENDPOINTS_WITHOUT_ROLE_RULE.contains(endpoint) || ENROLLMENT_ENDPOINTS_FIXED_TO_DIRECTOR.contains(endpoint) || ENROLLMENT_ENDPOINTS_FIXED_TO_STUDENT.contains(endpoint) || ACADEMICSTRUCTURE_ENDPOINTS_WITHOUT_GRID_RULE.contains(endpoint) || BILLING_ENDPOINTS_WITHOUT_GRID_RULE.contains(endpoint)) {
                     continue;
                 }
                 if (!usesGate(method, controller)) {
@@ -354,6 +357,10 @@ class PermissionGateCoverageTest {
                 if (ENROLLMENT_ENDPOINTS_WITHOUT_ROLE_RULE.contains(endpoint) && preAuthorize != null) {
                     violations.add(endpoint + " must not carry a role rule");
                 }
+                if (ENROLLMENT_ENDPOINTS_FIXED_TO_STUDENT.contains(endpoint)
+                        && (preAuthorize == null || !preAuthorize.value().equals("hasRole('ALUMNO')"))) {
+                    violations.add(endpoint + " must stay fixed to the Student role");
+                }
                 if (ENROLLMENT_ENDPOINTS_FIXED_TO_DIRECTOR.contains(endpoint)
                         && (preAuthorize == null || !preAuthorize.value().equals("hasRole('DIRECTOR')"))) {
                     violations.add(endpoint + " must stay fixed to the Director role");
@@ -367,7 +374,8 @@ class PermissionGateCoverageTest {
                 declared.add(controller.getSimpleName() + "#" + method.getName());
             }
         }
-        assertThat(declared).containsAll(ENROLLMENT_ENDPOINTS_WITHOUT_ROLE_RULE).containsAll(ENROLLMENT_ENDPOINTS_FIXED_TO_DIRECTOR);
+        assertThat(declared).containsAll(ENROLLMENT_ENDPOINTS_WITHOUT_ROLE_RULE).containsAll(ENROLLMENT_ENDPOINTS_FIXED_TO_DIRECTOR)
+                .containsAll(ENROLLMENT_ENDPOINTS_FIXED_TO_STUDENT);
     }
 
     @Test

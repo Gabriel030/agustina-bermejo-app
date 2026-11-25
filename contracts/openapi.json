@@ -2768,6 +2768,9 @@
             "format" : "int64",
             "type" : [ "integer", "null" ]
           },
+          "decidedByName" : {
+            "type" : [ "string", "null" ]
+          },
           "decisionReason" : {
             "type" : [ "string", "null" ]
           },
@@ -2795,6 +2798,9 @@
             "format" : "int32",
             "type" : [ "integer", "null" ]
           },
+          "programName" : {
+            "type" : [ "string", "null" ]
+          },
           "reason" : {
             "type" : "string"
           },
@@ -2806,6 +2812,9 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "requestedByName" : {
+            "type" : [ "string", "null" ]
+          },
           "status" : {
             "enum" : [ "PENDING", "APPROVED", "REJECTED", "WITHDRAWN", "CONSUMED", "EXPIRED" ],
             "type" : "string"
@@ -2814,12 +2823,15 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "studentName" : {
+            "type" : [ "string", "null" ]
+          },
           "validUntil" : {
             "format" : "date-time",
             "type" : [ "string", "null" ]
           }
         },
-        "required" : [ "createdByDirector", "debtTotalAtRequest", "decidedAt", "decidedById", "decisionReason", "enrollmentId", "id", "kind", "organismKind", "organismReference", "overdueInstallmentsAtRequest", "reason", "requestedAt", "requestedById", "status", "studentId", "validUntil" ],
+        "required" : [ "createdByDirector", "debtTotalAtRequest", "decidedAt", "decidedById", "decidedByName", "decisionReason", "enrollmentId", "id", "kind", "organismKind", "organismReference", "overdueInstallmentsAtRequest", "programName", "reason", "requestedAt", "requestedById", "requestedByName", "status", "studentId", "studentName", "validUntil" ],
         "type" : "object"
       },
       "CertificateExceptionSummaryResponse" : {
@@ -5831,6 +5843,12 @@
       },
       "CurriculumBlockingPrerequisiteResponse" : {
         "properties" : {
+          "approvedScore" : {
+            "type" : [ "number", "null" ]
+          },
+          "minGrade" : {
+            "type" : [ "number", "null" ]
+          },
           "requirementType" : {
             "enum" : [ "APPROVED", "PASSED_COURSEWORK" ],
             "type" : "string"
@@ -5850,7 +5868,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "requirementType", "standing", "subjectCode", "subjectId", "subjectName" ],
+        "required" : [ "approvedScore", "minGrade", "requirementType", "standing", "subjectCode", "subjectId", "subjectName" ],
         "type" : "object"
       },
       "CurriculumCorequisiteResponse" : {
@@ -11493,6 +11511,39 @@
           }
         },
         "required" : [ "credits", "document", "id", "inCurrentPlan", "originInstitution", "originScore", "originSubjectName", "recognizedOn", "resolutionNumber", "status", "subjectCode", "subjectId", "subjectName" ],
+        "type" : "object"
+      },
+      "OwnWaitlistPositionResponse" : {
+        "properties" : {
+          "enrollmentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "expiresOn" : {
+            "format" : "date",
+            "type" : [ "string", "null" ]
+          },
+          "kind" : {
+            "enum" : [ "PROGRAM_SECTION", "COURSE_SECTION", "COURSE" ],
+            "type" : "string"
+          },
+          "position" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "queueId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "queueName" : {
+            "type" : "string"
+          },
+          "totalWaiting" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "enrollmentId", "kind", "position", "queueId", "queueName", "totalWaiting" ],
         "type" : "object"
       },
       "PageCertificateSignatorySummaryResponse" : {
@@ -73017,6 +73068,127 @@
           }
         },
         "tags" : [ "me-teaching-section-controller" ]
+      }
+    },
+    "/me/waitlist-positions" : {
+      "get" : {
+        "operationId" : "MeWaitlist_listOwnPositions",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/OwnWaitlistPositionResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "me-waitlist-controller" ]
       }
     },
     "/message-templates" : {

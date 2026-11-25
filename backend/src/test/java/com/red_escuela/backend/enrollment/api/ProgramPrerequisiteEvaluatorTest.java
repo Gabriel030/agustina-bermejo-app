@@ -378,4 +378,65 @@ class ProgramPrerequisiteEvaluatorTest {
             assertThat(assessment.approvedScore()).isEqualTo(Grade.of(new BigDecimal("7")));
         });
     }
+
+    @Test
+    void finalExamListsAnApprovedPrerequisiteBelowTheMinimumWithItsScore() {
+        prerequisites(prerequisiteWithMinimum(RequirementType.APPROVED, "6"));
+        studentApprovedWithScore(10L, "5");
+
+        assertThat(evaluator.findUnmetForFinalExamOrEmptyOutsidePlan(ENROLLMENT_ID, SUBJECT_ID)).singleElement()
+                .satisfies(assessment -> {
+                    assertThat(assessment.standing()).isEqualTo(PrerequisiteStanding.APPROVED);
+                    assertThat(assessment.minGrade()).isEqualTo(Grade.of(new BigDecimal("6")));
+                    assertThat(assessment.approvedScore()).isEqualTo(Grade.of(new BigDecimal("5")));
+                });
+    }
+
+    @Test
+    void finalExamDoesNotListAnApprovedPrerequisiteWithScoreEqualToTheMinimum() {
+        prerequisites(prerequisiteWithMinimum(RequirementType.APPROVED, "6"));
+        studentApprovedWithScore(10L, "6");
+
+        assertThat(evaluator.findUnmetForFinalExamOrEmptyOutsidePlan(ENROLLMENT_ID, SUBJECT_ID)).isEmpty();
+    }
+
+    @Test
+    void finalExamDoesNotListAnApprovedPrerequisiteWithoutScore() {
+        prerequisites(prerequisiteWithMinimum(RequirementType.APPROVED, "6"));
+        studentApprovedWithScore(10L, (String) null);
+
+        assertThat(evaluator.findUnmetForFinalExamOrEmptyOutsidePlan(ENROLLMENT_ID, SUBJECT_ID)).isEmpty();
+    }
+
+    @Test
+    void finalExamStillListsARegularPrerequisiteOfPassedCourseworkType() {
+        prerequisites(prerequisiteWithMinimum(RequirementType.PASSED_COURSEWORK, "6"));
+        studentHas(10L, EnrollmentStatus.REGULAR);
+
+        assertThat(evaluator.findUnmetForFinalExamOrEmptyOutsidePlan(ENROLLMENT_ID, SUBJECT_ID)).hasSize(1);
+    }
+
+    @Test
+    void finalExamIsEmptyWhenAWaiverCoversTheMinimum() {
+        prerequisites(prerequisiteWithMinimum(RequirementType.APPROVED, "6"));
+        studentApprovedWithScore(10L, "2");
+        when(approvalRepository.hasApproved(ENROLLMENT_ID, SUBJECT_ID, ExceptionType.PREREQUISITE_WAIVER)).thenReturn(true);
+
+        assertThat(evaluator.findUnmetForFinalExamOrEmptyOutsidePlan(ENROLLMENT_ID, SUBJECT_ID)).isEmpty();
+    }
+
+    @Test
+    void approvalControlListStaysIndependentOfTheMinimum() {
+        prerequisites(prerequisiteWithMinimum(RequirementType.APPROVED, "6"));
+        studentApprovedWithScore(10L, "2");
+
+        assertThat(evaluator.findUnmetForApprovalOrEmptyOutsidePlan(ENROLLMENT_ID, SUBJECT_ID)).isEmpty();
+    }
+
+    @Test
+    void finalExamIsEmptyWhenTheSubjectIsOutsideThePlan() {
+        when(curriculumFinder.findProgramSubject(PROGRAM_ID, 99L)).thenReturn(Optional.empty());
+
+        assertThat(evaluator.findUnmetForFinalExamOrEmptyOutsidePlan(ENROLLMENT_ID, 99L)).isEmpty();
+    }
 }

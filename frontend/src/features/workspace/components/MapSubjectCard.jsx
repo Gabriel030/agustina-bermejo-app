@@ -13,19 +13,22 @@ function describeScore(subject, byEquivalence) {
   return null;
 }
 
-export function MapSubjectCard({ subject, creditsDefined = true, selected = false, onSelect }) {
+const RELATION_LABEL = { prerequisite: 'correlativa', dependent: 'desbloquea' };
+
+export function MapSubjectCard({ subject, creditsDefined = true, selected = false, relation = null, dimmed = false, onSelect, cardRef, audience = 'student' }) {
   const status = CURRICULUM_STATE_TO_PLAN_STATUS[subject.state];
   const byEquivalence = isApprovedByEquivalence(subject);
   const score = describeScore(subject, byEquivalence);
   const term = describeCurricularTerm(subject.curricularTerm);
   const statusLabel = byEquivalence ? 'Aprobada por equivalencia' : PLAN_STATUS_PILL[status].label;
-  const accessibleName = [subject.subjectName, statusLabel, score?.spoken].filter(Boolean).join(', ');
+  const accessibleName = [subject.subjectName, statusLabel, score?.spoken, RELATION_LABEL[relation]].filter(Boolean).join(', ');
 
   return (
     <Button
       type="button"
       variant="row-card"
       size="row"
+      ref={cardRef}
       aria-pressed={selected}
       aria-haspopup="dialog"
       aria-label={accessibleName}
@@ -33,6 +36,8 @@ export function MapSubjectCard({ subject, creditsDefined = true, selected = fals
       className={cn(
         'min-h-11 flex-col items-stretch justify-start gap-2 px-3 font-normal',
         selected && 'border-primary bg-accent-soft ring-1 ring-primary hover:bg-accent-soft',
+        relation && 'border-2 border-primary',
+        dimmed && 'bg-background hover:bg-background',
       )}
     >
       <span className="flex items-start justify-between gap-2">
@@ -48,7 +53,7 @@ export function MapSubjectCard({ subject, creditsDefined = true, selected = fals
         <PlanStatusPill status={status} />
         {byEquivalence && <EquivalenceChip />}
       </span>
-      {status === 'disponible' && (
+      {status === 'disponible' && audience !== 'staff' && (
         <span className="text-size-12 text-ink-faint">Podés inscribirte cuando abra la inscripción</span>
       )}
     </Button>
