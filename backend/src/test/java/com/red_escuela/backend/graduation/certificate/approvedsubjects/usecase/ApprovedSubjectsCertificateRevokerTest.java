@@ -8,6 +8,7 @@ import com.red_escuela.backend.graduation.certificate.approvedsubjects.exception
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.ApprovedSubjectsActor;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.ApprovedSubjectsAuditLog;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.ApprovedSubjectsCertificateStore;
+import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.ApprovedSubjectsTransaction;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.snapshot.ApprovedSubjectsSnapshot;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.snapshot.ApprovedSubjectsSnapshotFactory;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateCode;
@@ -60,7 +61,12 @@ class ApprovedSubjectsCertificateRevokerTest {
             }
         };
         ApprovedSubjectsAuditLog auditLog = (certificateId, reason) -> audited.add(certificateId + ":" + reason);
-        service = new ApprovedSubjectsCertificateRevoker(store, certificate -> response(), actor, auditLog, CLOCK);
+        service = new ApprovedSubjectsCertificateRevoker(store, certificate -> response(), actor, auditLog,
+                new ApprovedSubjectsTransaction() {
+                    public <T> T run(java.util.function.Supplier<T> work) {
+                        return work.get();
+                    }
+                }, CLOCK);
     }
 
     @Test

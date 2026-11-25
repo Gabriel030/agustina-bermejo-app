@@ -6,16 +6,20 @@ import com.red_escuela.backend.graduation.certificate.approvedsubjects.policy.Ap
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.policy.ApprovedSubjectsEligibilityPolicy;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.ApprovedSubjectsActor;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.ApprovedSubjectsCertificateIssuing;
+import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.ApprovedSubjectsCertificateRequests;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.ApprovedSubjectsEligibilityFacts;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.ApprovedSubjectsRefusals;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.OwnApprovedSubjectsEnrollments;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.OwnedEnrollment;
 
+import com.red_escuela.backend.shared.UseCase;
+
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public class ApprovedSubjectsCertificateRequester {
+@UseCase
+public class ApprovedSubjectsCertificateRequester implements RequestApprovedSubjectsCertificateUseCase, ApprovedSubjectsCertificateRequests {
 
     private final ApprovedSubjectsActor actor;
     private final OwnApprovedSubjectsEnrollments enrollments;
@@ -39,6 +43,7 @@ public class ApprovedSubjectsCertificateRequester {
         this.clock = clock;
     }
 
+    @Override
     public ApprovedSubjectsCertificateResponse request(RequestApprovedSubjectsCertificateRequest request) {
         Long studentId = actor.currentStudentId();
         OwnedEnrollment enrollment = enrollments.findOwnedBy(studentId, request.enrollmentId())

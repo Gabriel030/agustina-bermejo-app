@@ -9,6 +9,7 @@ import com.red_escuela.backend.graduation.certificate.dto.CertificateDocumentTyp
 import com.red_escuela.backend.graduation.certificate.exception.CertificatePdfIntegrityMismatchException;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateDigest;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateDocumentAuditRecorder;
+import com.red_escuela.backend.graduation.certificate.template.specialist.CertificateTemplateRenderSource;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,14 +28,17 @@ public class ApprovedSubjectsCertificatePdfProvider {
     private final CertificateDigest digest;
     private final CertificateDocumentAuditRecorder auditRecorder;
     private final Clock clock;
+    private final CertificateTemplateRenderSource templateSource;
 
     public ApprovedSubjectsCertificatePdfProvider(ApprovedSubjectsCertificateRepository repository, ApprovedSubjectsPdfRenderer renderer,
-                                                  CertificateDigest digest, CertificateDocumentAuditRecorder auditRecorder, Clock clock) {
+                                                  CertificateDigest digest, CertificateDocumentAuditRecorder auditRecorder, Clock clock,
+                                                  CertificateTemplateRenderSource templateSource) {
         this.repository = repository;
         this.renderer = renderer;
         this.digest = digest;
         this.auditRecorder = auditRecorder;
         this.clock = clock;
+        this.templateSource = templateSource;
     }
 
     @Transactional
@@ -42,7 +46,10 @@ public class ApprovedSubjectsCertificatePdfProvider {
         ApprovedSubjectsCertificate certificate = repository.findByIdAndStudentId(id, studentId)
                 .filter(found -> found.isRevocable() && !found.isExpiredAt(LocalDateTime.now(clock)))
                 .orElseThrow(ApprovedSubjectsCertificateNotFoundException::new);
-        byte[] regenerated = renderer.render(certificate.getSnapshot(), certificate.certificateCode());
+        byte[] regenerated = certificate.getTemplateVersionId() == null
+                ? renderer.render(certificate.getSnapshot(), certificate.certificateCode())
+                : renderer.render(certificate.getSnapshot(), certificate.certificateCode(),
+                        templateSource.assetsOf(templateSource.byId(certificate.getTemplateVersionId()), null));
         String regeneratedSha256 = digest.sha256(regenerated);
         if (!regeneratedSha256.equals(certificate.getPdfSha256())) {
             log.error("El PDF regenerado de la constancia de materias aprobadas {} no coincide con el hash registrado", certificate.getId());

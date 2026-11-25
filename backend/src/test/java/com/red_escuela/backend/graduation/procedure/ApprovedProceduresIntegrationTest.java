@@ -272,7 +272,7 @@ class ApprovedProceduresIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void eligibilityOfATypeWithoutRegisteredStrategyAnswersUnavailable() throws Exception {
-        mockMvc.perform(get("/me/procedures/APPROVED_SUBJECTS_CERTIFICATE/eligibility").header("Authorization", bearer(studentToken)))
+        mockMvc.perform(get("/me/procedures/SECTION_CHANGE/eligibility").header("Authorization", bearer(studentToken)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.eligible").value(false))
                 .andExpect(jsonPath("$.summary").value("Este trámite todavía no está disponible"))
@@ -296,6 +296,7 @@ class ApprovedProceduresIntegrationTest extends AbstractIntegrationTest {
     void everyIssuedDocumentTypeThatExistsTodayIsRegisteredAsASource() {
         assertThat(approvedSources.forType(CertificateDocumentType.REGULAR_STUDENT_CERTIFICATE)).isPresent();
         assertThat(approvedSources.forType(CertificateDocumentType.GRADUATION_CERTIFICATE)).isPresent();
+        assertThat(approvedSources.forType(CertificateDocumentType.APPROVED_SUBJECTS_CERTIFICATE)).isPresent();
     }
 
     @Test
