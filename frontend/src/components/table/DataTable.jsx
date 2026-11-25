@@ -466,7 +466,7 @@ export function DataTable({
         aria-hidden="true"
         data-testid="overflow-indicator"
         className={cn(
-          'pointer-events-none absolute inset-y-0 right-0 flex w-9 items-center justify-end rounded-r-xl bg-gradient-to-r from-transparent to-dialog-bg pr-1.5 text-ink-soft transition-opacity motion-reduce:transition-none',
+          'pointer-events-none absolute inset-y-0 right-0 flex w-9 items-center justify-end rounded-r-xl bg-dialog-bg pr-1.5 text-ink-soft shadow-(--sh-sticky-right) transition-opacity motion-reduce:transition-none',
           overflow.hasMoreToRight ? 'opacity-100' : 'opacity-0',
         )}
       >

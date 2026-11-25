@@ -25,6 +25,11 @@ function bodyNames() {
   return screen.getAllByRole('row').slice(1).map((row) => within(row).getAllByRole('cell')[0].textContent);
 }
 
+function stubElementWidths({ scrollWidth, clientWidth }) {
+  vi.spyOn(Element.prototype, 'scrollWidth', 'get').mockReturnValue(scrollWidth);
+  vi.spyOn(Element.prototype, 'clientWidth', 'get').mockReturnValue(clientWidth);
+}
+
 function renderTable(props = {}) {
   return render(<DataTable columns={columns} data={data} getRowId={(row) => String(row.id)} {...props} />);
 }
@@ -211,6 +216,20 @@ describe('DataTable', () => {
     });
 
     it('renders the overflow indicator hidden while nothing overflows', () => {
+      renderTable({ compact: true, columns: stickyColumns });
+
+      expect(screen.getByTestId('overflow-indicator')).toHaveClass('opacity-0');
+    });
+
+    it('shows the overflow indicator while the rows are wider than the table container', () => {
+      stubElementWidths({ scrollWidth: 640, clientWidth: 320 });
+      renderTable({ compact: true, columns: stickyColumns });
+
+      expect(screen.getByTestId('overflow-indicator')).toHaveClass('opacity-100');
+    });
+
+    it('hides the overflow indicator when the rows fit the table container', () => {
+      stubElementWidths({ scrollWidth: 320, clientWidth: 320 });
       renderTable({ compact: true, columns: stickyColumns });
 
       expect(screen.getByTestId('overflow-indicator')).toHaveClass('opacity-0');
