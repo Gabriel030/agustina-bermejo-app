@@ -10,6 +10,9 @@ import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.persistence.EntityManager;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -451,6 +454,44 @@ class DocumentCertificateTemplateHttpIT extends AbstractIntegrationTest {
         for (String type : DOCUMENT_TYPES) {
             send(post("/certificate-templates/documents/" + type + "/preview").contentType(MediaType.APPLICATION_JSON)
                     .content(PUBLISHED_PREVIEW), administrative).andExpect(status().isOk());
+        }
+    }
+
+    @Test
+    void versionNumberThatExistsOnlyInAnotherDocumentTypeIsNotFound() throws Exception {
+        uploadSignature(firstSignatoryId);
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk());
+        send(post(REGULAR + "/publish"), director).andExpect(status().isOk());
+        send(get(REGULAR + "/versions/2"), administrative).andExpect(status().isOk());
+        send(get("/certificate-templates/documents/APPROVED_SUBJECTS_CERTIFICATE/versions/2"), administrative)
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_VERSION_NOT_FOUND"));
+    }
+
+    @Test
+    void imageOfAnotherDocumentTypeIsNotFoundInBothDirections() throws Exception {
+        MvcResult uploaded = mockMvc.perform(multipart("/certificate-templates/documents/EXAM_CERTIFICATE/images")
+                .file(new MockMultipartFile("file", "logo.png", "image/png", png()))
+                .param("purpose", "LOGO").header("Authorization", "Bearer " + director)).andExpect(status().isCreated()).andReturn();
+        int examImageId = JsonPath.read(uploaded.getResponse().getContentAsString(), "$.id");
+        send(get("/certificate-templates/documents/EXAM_CERTIFICATE/images/" + examImageId), administrative).andExpect(status().isOk());
+        send(get(REGULAR + "/images/" + examImageId), administrative)
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_IMAGE_NOT_FOUND"));
+    }
+
+    @Test
+    void previewUsesFixedSampleDataAndNoRealHolderData() throws Exception {
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk());
+        for (String source : new String[] {DRAFT_PREVIEW, PUBLISHED_PREVIEW}) {
+            MvcResult result = send(post(REGULAR + "/preview").contentType(MediaType.APPLICATION_JSON).content(source), director)
+                    .andExpect(status().isOk()).andReturn();
+            String text;
+            try (PDDocument document = Loader.loadPDF(result.getResponse().getContentAsByteArray())) {
+                text = new PDFTextStripper().getText(document);
+            }
+            assertThat(text).contains("APELLIDO, NOMBRE DE EJEMPLO").contains("Nombre de la carrera de ejemplo")
+                    .doesNotContain("PlantillaDoc").doesNotContain("DIRECTOR");
         }
     }
 }
