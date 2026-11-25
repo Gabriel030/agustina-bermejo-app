@@ -9,7 +9,7 @@ import com.red_escuela.backend.notification.delivery.domain.DeliveryEnvelope;
 import com.red_escuela.backend.notification.delivery.specialist.DeliveryRequest;
 import com.red_escuela.backend.notification.delivery.specialist.NotificationDeliveryEnqueuer;
 import com.red_escuela.backend.notification.entity.NotificationType;
-import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
+import com.red_escuela.backend.shared.event.service.ProcessedEffectGuard;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 

@@ -7,7 +7,7 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.notification.domain.SectionModificationApprovedNotification;
 import com.red_escuela.backend.notification.domain.SectionModificationRejectedNotification;
 import com.red_escuela.backend.notification.domain.SectionModificationRequestedNotification;
-import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
+import com.red_escuela.backend.shared.event.service.ProcessedEffectGuard;
 import jakarta.persistence.EntityManager;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.modulith.events.ApplicationModuleListener;

@@ -21,7 +21,7 @@ import com.red_escuela.backend.billing.run.service.NightlyBillingRunner;
 import com.red_escuela.backend.billing.run.usecase.BillingRunQueryUseCase;
 import com.red_escuela.backend.billing.invoice.operation.IssuingScenarioFactory;
 import com.red_escuela.backend.shared.domain.policy.PolicySet;
-import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
+import com.red_escuela.backend.shared.event.service.ProcessedEffectGuard;
 import com.red_escuela.backend.shared.time.MutableClock;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;

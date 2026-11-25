@@ -3,7 +3,7 @@ package com.red_escuela.backend.billing.collections.service;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentClosedWhileSuspendedEvent;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentKind;
 import com.red_escuela.backend.shared.event.DeduplicableDomainEvent;
-import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
+import com.red_escuela.backend.shared.event.service.ProcessedEffectGuard;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.springframework.modulith.events.ApplicationModuleListener;

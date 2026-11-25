@@ -7,7 +7,7 @@ import com.red_escuela.backend.identity.api.PersonRecipientFinder;
 import com.red_escuela.backend.identity.entity.NotificationEvent;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.notification.entity.NotificationType;
-import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
+import com.red_escuela.backend.shared.event.service.ProcessedEffectGuard;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEventPublisher;

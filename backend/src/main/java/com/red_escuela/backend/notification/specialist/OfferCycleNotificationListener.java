@@ -7,7 +7,7 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.notification.domain.OfferCycleApprovedNotification;
 import com.red_escuela.backend.notification.domain.OfferCycleRejectedNotification;
 import com.red_escuela.backend.notification.domain.OfferCycleSubmittedNotification;
-import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
+import com.red_escuela.backend.shared.event.service.ProcessedEffectGuard;
 import jakarta.persistence.EntityManager;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.modulith.events.ApplicationModuleListener;
