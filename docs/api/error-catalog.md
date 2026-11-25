@@ -648,6 +648,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `STALE_INSTITUTE_SETTING_VERSION` | no | `StaleInstituteSettingVersionException` | platform |
 | `STUDENT_DISCOUNT_OVERLAP` | no | `StudentDiscountOverlapException` | billing |
 | `STUDENT_DISCOUNT_PROPOSAL_EXPIRED` | no | `StudentDiscountProposalExpiredException` | billing |
+| `STUDENT_DOCUMENT_ALREADY_EXISTS` | no | `StudentDocumentAlreadyExistsException` | identity |
 | `STUDENT_DOCUMENT_MISSING` | no | `StudentDocumentMissingException` | graduation |
 | `STUDENT_FREE_BY_ABSENCES` | no | `StudentFreeByAbsencesException` | evaluation |
 | `STUDENT_HAS_ACTIVE_ENROLLMENTS` | no | `StudentHasActiveEnrollmentsException` | identity |
@@ -700,6 +701,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SIGNATORY_DUPLICATED_IN_TEMPLATE` | no | `SignatoryDuplicatedInTemplateException` | graduation |
 | `SIGNATORY_ROLE_INVALID` | no | `SignatoryRoleInvalidException` | graduation |
 | `SIGNATORY_SIGNATURE_INVALID` | no | `SignatorySignatureInvalidException` | graduation |
+| `STUDENT_EMAIL_CHANGE_NOT_AVAILABLE` | no | `StudentEmailChangeNotAvailableException` | identity |
 | `SUBJECT_NOT_IN_PLAN` | no | `SubjectNotInPlanException` | enrollment |
 | `TEMPLATE_IMAGE_INVALID` | no | `TemplateImageInvalidException` | graduation |
 | `TEMPLATE_INCOMPLETE` | no | `TemplateIncompleteException` | graduation |
