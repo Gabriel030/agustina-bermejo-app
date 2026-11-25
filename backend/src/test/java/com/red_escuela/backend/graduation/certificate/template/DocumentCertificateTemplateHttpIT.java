@@ -304,4 +304,153 @@ class DocumentCertificateTemplateHttpIT extends AbstractIntegrationTest {
         send(get("/certificate-templates/documents/EXAM_CERTIFICATE/images/" + imageId), administrative)
                 .andExpect(status().isNotFound());
     }
+
+    private static final String PUBLISHED_PREVIEW = "{\"source\":\"PUBLISHED\"}";
+    private static final String DRAFT_PREVIEW = "{\"source\":\"DRAFT\"}";
+
+    @Test
+    void directorPublishesDraftWithSignatureAsNextVersionAndDraftDisappears() throws Exception {
+        uploadSignature(firstSignatoryId);
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk());
+        send(post(REGULAR + "/publish"), director)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.versionNumber").value(2))
+                .andExpect(jsonPath("$.status").value("PUBLISHED"))
+                .andExpect(jsonPath("$.content.title").value("CONSTANCIA NUEVA"))
+                .andExpect(jsonPath("$.content.firstSigner.name").value("Ana Gómez"));
+        send(get(REGULAR), administrative)
+                .andExpect(jsonPath("$.published.versionNumber").value(2))
+                .andExpect(jsonPath("$.draft").doesNotExist())
+                .andExpect(jsonPath("$.hasUnpublishedChanges").value(false));
+        send(get("/certificate-templates/documents/EXAM_CERTIFICATE"), administrative)
+                .andExpect(jsonPath("$.published.versionNumber").value(1));
+    }
+
+    @Test
+    void publishWithoutAnySignatureIsRejected() throws Exception {
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk());
+        send(post(REGULAR + "/publish"), director)
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_SIGNATURE_MISSING"));
+        send(get(REGULAR), administrative)
+                .andExpect(jsonPath("$.published.versionNumber").value(1))
+                .andExpect(jsonPath("$.hasUnpublishedChanges").value(true));
+    }
+
+    @Test
+    void publishWithOnlyOneSignatoryWithSignatureIsAccepted() throws Exception {
+        uploadSignature(secondSignatoryId);
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk());
+        send(post(REGULAR + "/publish"), director).andExpect(status().isOk()).andExpect(jsonPath("$.versionNumber").value(2));
+    }
+
+    @Test
+    void publishPicksUpSignatureUploadedAfterTheDraftWasSaved() throws Exception {
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk());
+        uploadSignature(firstSignatoryId);
+        String published = send(post(REGULAR + "/publish"), director).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertThat(JsonPath.<Object>read(published, "$.content.firstSigner.signatureImageId")).isNotNull();
+    }
+
+    @Test
+    void publishWithoutDraftIsConflict() throws Exception {
+        send(post(REGULAR + "/publish"), director)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_NOTHING_TO_PUBLISH"));
+    }
+
+    @Test
+    void publishingTwiceTheSameDraftIsConflictTheSecondTime() throws Exception {
+        uploadSignature(firstSignatoryId);
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk());
+        send(post(REGULAR + "/publish"), director).andExpect(status().isOk());
+        send(post(REGULAR + "/publish"), director)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_NOTHING_TO_PUBLISH"));
+    }
+
+    @Test
+    void administrativeCannotPublish() throws Exception {
+        uploadSignature(firstSignatoryId);
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk());
+        send(post(REGULAR + "/publish"), administrative).andExpect(status().isForbidden());
+        send(post(REGULAR + "/publish"), student).andExpect(status().isForbidden());
+        send(get(REGULAR), administrative).andExpect(jsonPath("$.published.versionNumber").value(1));
+    }
+
+    @Test
+    void versionsListPublishedVersionsNewestFirstAndAdministrativeReadsThem() throws Exception {
+        uploadSignature(firstSignatoryId);
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk());
+        send(post(REGULAR + "/publish"), director).andExpect(status().isOk());
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId).replace("CONSTANCIA NUEVA", "CONSTANCIA OTRA"))
+                .andExpect(status().isOk());
+        send(get(REGULAR + "/versions"), administrative)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].versionNumber").value(2))
+                .andExpect(jsonPath("$[1].versionNumber").value(1));
+        send(get(REGULAR + "/versions/1"), administrative)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.versionNumber").value(1))
+                .andExpect(jsonPath("$.content.title").value("CONSTANCIA DE ALUMNO REGULAR"));
+        send(get(REGULAR + "/versions/2"), administrative)
+                .andExpect(jsonPath("$.content.title").value("CONSTANCIA NUEVA"));
+        send(get(REGULAR + "/versions"), student).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void versionsAreIsolatedByDocumentType() throws Exception {
+        uploadSignature(firstSignatoryId);
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk());
+        send(post(REGULAR + "/publish"), director).andExpect(status().isOk());
+        send(get("/certificate-templates/documents/EXAM_CERTIFICATE/versions"), administrative)
+                .andExpect(jsonPath("$.length()").value(1));
+        send(get("/certificate-templates/documents/EXAM_CERTIFICATE/versions/2"), administrative)
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void unknownVersionIsNotFound() throws Exception {
+        send(get(REGULAR + "/versions/99"), administrative)
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_VERSION_NOT_FOUND"));
+    }
+
+    @Test
+    void draftIsNotReadableAsAPublishedVersion() throws Exception {
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk());
+        send(get(REGULAR + "/versions"), administrative).andExpect(jsonPath("$.length()").value(1));
+    }
+
+    @Test
+    void previewOfPublishedVersionReturnsPdfForAdministrativeAndDirector() throws Exception {
+        for (String token : new String[] {administrative, director}) {
+            MvcResult result = send(post(REGULAR + "/preview").contentType(MediaType.APPLICATION_JSON).content(PUBLISHED_PREVIEW), token)
+                    .andExpect(status().isOk()).andReturn();
+            assertThat(result.getResponse().getContentType()).isEqualTo("application/pdf");
+            assertThat(new String(result.getResponse().getContentAsByteArray(), 0, 4)).isEqualTo("%PDF");
+        }
+    }
+
+    @Test
+    void previewOfDraftIsDirectorOnlyAndRequiresADraft() throws Exception {
+        send(post(REGULAR + "/preview").contentType(MediaType.APPLICATION_JSON).content(DRAFT_PREVIEW), director)
+                .andExpect(status().isNotFound());
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk());
+        MvcResult result = send(post(REGULAR + "/preview").contentType(MediaType.APPLICATION_JSON).content(DRAFT_PREVIEW), director)
+                .andExpect(status().isOk()).andReturn();
+        assertThat(new String(result.getResponse().getContentAsByteArray(), 0, 4)).isEqualTo("%PDF");
+        send(post(REGULAR + "/preview").contentType(MediaType.APPLICATION_JSON).content(DRAFT_PREVIEW), administrative)
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void previewWorksForEveryDocumentType() throws Exception {
+        for (String type : DOCUMENT_TYPES) {
+            send(post("/certificate-templates/documents/" + type + "/preview").contentType(MediaType.APPLICATION_JSON)
+                    .content(PUBLISHED_PREVIEW), administrative).andExpect(status().isOk());
+        }
+    }
 }
