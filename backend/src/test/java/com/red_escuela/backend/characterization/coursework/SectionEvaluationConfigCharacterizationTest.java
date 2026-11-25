@@ -185,6 +185,20 @@ class SectionEvaluationConfigCharacterizationTest extends CourseworkCharacteriza
     }
 
     @Test
+    void teacherListExposesDeadlineAsTermStartPlusInstitutionDueDays() throws Exception {
+        Classroom classroom = classroomWithDraftConfig("cfg9", "7800010");
+        entityManager.createQuery("update Institution i set i.evaluationConfigDueDays = 40").executeUpdate();
+        entityManager.clear();
+
+        getAs(classroom.teacher(), "/me/section-evaluation-configs")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].evaluationConfigDeadline").value(TERM_START.plusDays(40).toString()));
+        getAs(classroom.teacher(), configPath(classroom))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.evaluationConfigDeadline").value(TERM_START.plusDays(40).toString()));
+    }
+
+    @Test
     void teachersCannotApproveOrRejectAndStaffListsConfigsByStatus() throws Exception {
         Classroom classroom = classroomWithDraftConfig("cfg8", "7800009");
         Person director = persistPerson("cfg8.director", "78000097", "DIRECTOR");

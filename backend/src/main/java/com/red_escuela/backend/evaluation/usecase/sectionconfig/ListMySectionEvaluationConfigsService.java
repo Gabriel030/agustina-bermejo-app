@@ -1,6 +1,6 @@
 package com.red_escuela.backend.evaluation.usecase.sectionconfig;
 
-import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
+import com.red_escuela.backend.identity.api.InstitutionAcademicSettingsReader;
 import com.red_escuela.backend.evaluation.repository.SectionEvaluationConfigRepository;
 import com.red_escuela.backend.shared.UseCase;
 
@@ -11,12 +11,18 @@ public class ListMySectionEvaluationConfigsService implements ListMySectionEvalu
 
     private final SectionEvaluationConfigRepository configRepository;
 
-    public ListMySectionEvaluationConfigsService(SectionEvaluationConfigRepository configRepository) {
+    private final InstitutionAcademicSettingsReader academicSettingsReader;
+
+    public ListMySectionEvaluationConfigsService(SectionEvaluationConfigRepository configRepository,
+                                                  InstitutionAcademicSettingsReader academicSettingsReader) {
         this.configRepository = configRepository;
+        this.academicSettingsReader = academicSettingsReader;
     }
 
     @Override
-    public List<SectionEvaluationConfig> list(Long instructorId) {
-        return configRepository.findBySubjectSection_Instructors_InstructorId(instructorId);
+    public List<SectionEvaluationConfigWithDeadline> list(Long instructorId) {
+        int dueDays = academicSettingsReader.read().evaluationConfigDueDays();
+        return configRepository.findBySubjectSection_Instructors_InstructorId(instructorId).stream()
+                .map(config -> SectionEvaluationConfigWithDeadline.of(config, dueDays)).toList();
     }
 }

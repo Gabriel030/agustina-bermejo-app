@@ -19,16 +19,17 @@ public record SectionEvaluationConfigResponse(
         @Schema(nullable = true) String rejectionReason, LocalDateTime submittedAt,
         String reviewedByName, LocalDateTime reviewedAt,
         LocalDateTime termStartDate, LocalDateTime termEndDate, LocalDateTime termEnrollmentStart,
+        @Schema(nullable = true) LocalDate evaluationConfigDeadline,
         String evaluationSchemeName, Integer examCountExpected, Boolean hasFinal,
         BigDecimal minRegularGrade, BigDecimal minApprovalGrade, BigDecimal promotionMinGrade,
         List<SectionInstructorSummary> instructors, boolean canEdit, boolean canSubmit) {
 
     public static SectionEvaluationConfigResponse from(SectionEvaluationConfig config, List<SectionInstructorSummary> instructors) {
-        return from(config, instructors, false, false);
+        return from(config, instructors, false, false, null);
     }
 
     public static SectionEvaluationConfigResponse from(SectionEvaluationConfig config, List<SectionInstructorSummary> instructors,
-                                                       boolean canEdit, boolean canSubmit) {
+                                                       boolean canEdit, boolean canSubmit, LocalDate evaluationConfigDeadline) {
         var section = config.getSubjectSection();
         var term = section.getTerm();
         var scheme = section.getEvaluationScheme();
@@ -43,6 +44,7 @@ public record SectionEvaluationConfigResponse(
                 config.getReviewedBy() == null ? null : config.getReviewedBy().getName() + " " + config.getReviewedBy().getLastname(),
                 config.getReviewedAt(),
                 term.getStartDate(), term.getEndDate(), term.getEnrollmentStart(),
+                evaluationConfigDeadline,
                 scheme == null ? null : scheme.getName(),
                 scheme == null ? null : scheme.getExamCountExpected(),
                 scheme == null ? null : scheme.getHasFinal(),
