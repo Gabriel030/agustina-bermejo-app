@@ -682,6 +682,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 
 | Código | Reintentable | Excepción | Módulo |
 |---|---|---|---|
+| `APPROVED_SUBJECTS_GRADE_UNAVAILABLE` | no | `ApprovedSubjectsGradeUnavailableException` | graduation |
 | `DIRECTOR_PERMISSIONS_NOT_EDITABLE` | no | `DirectorPermissionsNotEditableException` | identity |
 | `DOCUMENT_OPERATION_PENDING` | no | `DocumentOperationPendingException` | graduation |
 | `DUPLICATE_PERMISSION_GRID_CHANGE` | no | `DuplicatePermissionGridChangeException` | identity |

@@ -21,7 +21,7 @@ class ApprovedSubjectsSnapshotJsonTest {
                 "PÉREZ, ANA", "DNI", "30123456", "Tecnicatura en Enfermería", "Instituto de prueba",
                 List.of(new ApprovedSubjectLine("Ética", 2, new BigDecimal("7.50"), LocalDate.of(2026, 7, 1)),
                         new ApprovedSubjectLine("Anatomía", 1, new BigDecimal("8.00"), LocalDate.of(2026, 6, 1))),
-                8, new ApprovedSubjectsRecipient(RecipientType.EMPLOYER, "Acme SA"), LocalDate.of(2026, 11, 5),
+                8, new ApprovedSubjectsRecipient(RecipientType.EMPLOYER, "Acme SA"), LocalDate.of(2026, 11, 5), 30,
                 List.of(new SignatorySnapshot("Dirección", "Dirección académica"))));
 
         ApprovedSubjectsSnapshot restored = objectMapper.readValue(objectMapper.writeValueAsString(snapshot), ApprovedSubjectsSnapshot.class);

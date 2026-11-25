@@ -1,7 +1,9 @@
 package com.red_escuela.backend.graduation.certificate.approvedsubjects.snapshot;
 
 import com.red_escuela.backend.graduation.certificate.engine.SignatorySnapshot;
+import com.red_escuela.backend.graduation.certificate.approvedsubjects.exception.ApprovedSubjectsGradeUnavailableException;
 import com.red_escuela.backend.shared.domain.Grade;
+import com.red_escuela.backend.shared.domain.InvalidGradeException;
 import com.red_escuela.backend.shared.domain.Percentage;
 import org.springframework.stereotype.Component;
 
@@ -9,13 +11,11 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Objects;
 
 @Component
 public class ApprovedSubjectsSnapshotFactory {
 
     public static final String TEMPLATE_REF = "APPROVED_SUBJECTS_BUILT_IN_V1";
-    public static final int VALIDITY_DAYS = 30;
 
     public record Input(
             String holderFullName,
@@ -27,6 +27,7 @@ public class ApprovedSubjectsSnapshotFactory {
             int totalSubjects,
             ApprovedSubjectsRecipient recipient,
             LocalDate issuedOn,
+            int validityDays,
             List<SignatorySnapshot> signatories) {
     }
 
@@ -36,9 +37,8 @@ public class ApprovedSubjectsSnapshotFactory {
                         .thenComparing(ApprovedSubjectLine::name, String.CASE_INSENSITIVE_ORDER))
                 .toList();
         List<Grade> grades = ordered.stream()
-                .map(ApprovedSubjectLine::grade)
-                .filter(Objects::nonNull)
-                .map(Grade::of)
+                .filter(line -> line.grade() != null)
+                .map(this::gradeOf)
                 .toList();
         BigDecimal average = Grade.average(grades).map(Grade::value).orElse(null);
         BigDecimal progress = Percentage.ratio(ordered.size(), input.totalSubjects())
@@ -58,8 +58,16 @@ public class ApprovedSubjectsSnapshotFactory {
                 input.recipient() == null ? null : input.recipient().type(),
                 input.recipient() == null ? null : input.recipient().text(),
                 input.issuedOn(),
-                input.issuedOn().plusDays(VALIDITY_DAYS),
+                input.issuedOn().plusDays(input.validityDays()),
                 input.signatories(),
                 TEMPLATE_REF);
+    }
+
+    private Grade gradeOf(ApprovedSubjectLine line) {
+        try {
+            return Grade.of(line.grade());
+        } catch (InvalidGradeException e) {
+            throw new ApprovedSubjectsGradeUnavailableException(line.name());
+        }
     }
 }
