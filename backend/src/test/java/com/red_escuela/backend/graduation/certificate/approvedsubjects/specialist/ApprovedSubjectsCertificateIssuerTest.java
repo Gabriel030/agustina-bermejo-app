@@ -11,6 +11,7 @@ import com.red_escuela.backend.graduation.certificate.approvedsubjects.render.Ap
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.repository.ApprovedSubjectsCertificateRepository;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.snapshot.ApprovedSubjectsSnapshotFactory;
 import com.red_escuela.backend.graduation.certificate.source.GraduationSnapshotFactory;
+import com.red_escuela.backend.graduation.certificate.template.specialist.CertificateTemplateRenderSource;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateDigest;
 import com.red_escuela.backend.graduation.certificate.specialist.VerifiableDocumentRegistry;
 import com.red_escuela.backend.graduation.documentsettings.dto.DocumentIssuanceSettingsResponse;
@@ -55,7 +56,7 @@ class ApprovedSubjectsCertificateIssuerTest {
                 mock(ProgramCurriculumFinder.class), mock(ApprovedSubjectGradesReader.class), settingsFinder,
                 holderFactory, mock(ApprovedSubjectsSnapshotFactory.class), renderer,
                 mock(CertificateDigest.class), repository, registry, mock(AuditTrail.class),
-                mock(ApprovedSubjectsCertificateResponseAssembler.class), refusals, new SimpleMeterRegistry());
+                mock(ApprovedSubjectsCertificateResponseAssembler.class), refusals, new SimpleMeterRegistry(), mock(CertificateTemplateRenderSource.class));
         when(studentFinder.requireByIdForUpdate(1L)).thenReturn(mock(Student.class));
         when(settingsFinder.current()).thenReturn(new DocumentIssuanceSettingsResponse(5, 1, 30, 1, 1L));
     }
