@@ -4,6 +4,7 @@ import com.red_escuela.backend.graduation.certificate.engine.CertificateFileStor
 import com.red_escuela.backend.graduation.certificate.engine.CertificatePdfRenderer;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateSnapshot;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateTemplateDefinition;
+import com.red_escuela.backend.graduation.certificate.template.specialist.CertificateTemplateRenderSource;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertificateResponse;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularityReason;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularityVerdict;
@@ -99,7 +100,7 @@ class RegularCertificateIssuerTest {
         return new RegularCertificateIssuer(certificateRepository, requestRepository, regularityEvaluator, standingGate,
                 factsFinder, template, renderer, fileStore, verificationUrl, new CertificateDigest(), currentActorFinder,
                 eventPublisher, new SimpleMeterRegistry(), clock, settingsFinderOf(validityDays), exceptionConsumer,
-                mock(VerifiableDocumentRegistry.class));
+                mock(VerifiableDocumentRegistry.class), mock(CertificateTemplateRenderSource.class));
     }
 
     @BeforeEach
