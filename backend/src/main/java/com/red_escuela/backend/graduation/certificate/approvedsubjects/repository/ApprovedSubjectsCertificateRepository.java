@@ -5,6 +5,7 @@ import com.red_escuela.backend.graduation.certificate.approvedsubjects.entity.Ap
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -18,6 +19,8 @@ public interface ApprovedSubjectsCertificateRepository extends JpaRepository<App
 
     List<ApprovedSubjectsCertificate> findByStudentIdOrderByIssuedAtDesc(Long studentId);
 
+    Optional<ApprovedSubjectsCertificate> findByIdAndStudentId(Long id, Long studentId);
+
     boolean existsByCode(String code);
 
     long countByStudentIdAndIssuedAtGreaterThanEqualAndIssuedAtLessThan(Long studentId, LocalDateTime from, LocalDateTime until);
@@ -28,4 +31,9 @@ public interface ApprovedSubjectsCertificateRepository extends JpaRepository<App
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select c from ApprovedSubjectsCertificate c where c.id = :id")
     Optional<ApprovedSubjectsCertificate> findByIdForUpdate(@Param("id") Long id);
+
+    @Modifying
+    @Query("update ApprovedSubjectsCertificate c set c.status = com.red_escuela.backend.graduation.certificate.approvedsubjects.entity.ApprovedSubjectsCertificateStatus.EXPIRED"
+            + " where c.status = com.red_escuela.backend.graduation.certificate.approvedsubjects.entity.ApprovedSubjectsCertificateStatus.VALID and c.expiresAt <= :now")
+    int expireAllUntil(@Param("now") LocalDateTime now);
 }
