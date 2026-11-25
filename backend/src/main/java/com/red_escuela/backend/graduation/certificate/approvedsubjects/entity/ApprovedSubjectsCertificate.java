@@ -75,6 +75,9 @@ public class ApprovedSubjectsCertificate {
     @Column(name = "template_ref", nullable = false, length = 40, updatable = false)
     private String templateRef;
 
+    @Column(name = "template_version_id", updatable = false)
+    private Long templateVersionId;
+
     @Column(name = "render_engine_version", nullable = false, length = 20, updatable = false)
     private String renderEngineVersion;
 
@@ -97,6 +100,15 @@ public class ApprovedSubjectsCertificate {
                                                        ApprovedSubjectsSnapshot snapshot, String pdfSha256,
                                                        String renderEngineVersion, String registryNumber,
                                                        LocalDateTime issuedAt, int validityDays, Long issuedById) {
+        return createValid(programEnrollmentId, studentId, code, snapshot, pdfSha256, renderEngineVersion, registryNumber, issuedAt,
+                validityDays, issuedById, null);
+    }
+
+    public static ApprovedSubjectsCertificate createValid(Long programEnrollmentId, Long studentId, CertificateCode code,
+                                                       ApprovedSubjectsSnapshot snapshot, String pdfSha256,
+                                                       String renderEngineVersion, String registryNumber,
+                                                       LocalDateTime issuedAt, int validityDays, Long issuedById,
+                                                       Long templateVersionId) {
         return ApprovedSubjectsCertificate.builder()
                 .code(code.value())
                 .programEnrollmentId(programEnrollmentId)
@@ -110,6 +122,7 @@ public class ApprovedSubjectsCertificate {
                 .recipientText(snapshot.recipientText())
                 .snapshot(snapshot)
                 .templateRef(snapshot.templateRef())
+                .templateVersionId(templateVersionId)
                 .renderEngineVersion(renderEngineVersion)
                 .registryNumber(registryNumber)
                 .pdfSha256(pdfSha256)
