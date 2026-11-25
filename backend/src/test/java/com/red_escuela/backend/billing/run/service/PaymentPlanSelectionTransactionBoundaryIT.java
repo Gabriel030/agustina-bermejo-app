@@ -1,4 +1,4 @@
-package com.red_escuela.backend.billing.planning.service;
+package com.red_escuela.backend.billing.run.service;
 
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.Program;

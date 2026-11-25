@@ -2,7 +2,7 @@ package com.red_escuela.backend.billing.usecase.paymentplan;
 
 import com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
-import com.red_escuela.backend.billing.planning.service.SelectPaymentPlanForCourseTransaction;
+import com.red_escuela.backend.billing.run.service.SelectPaymentPlanForCourseTransaction;
 import com.red_escuela.backend.shared.UseCase;
 
 @UseCase

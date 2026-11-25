@@ -1,4 +1,4 @@
-package com.red_escuela.backend.billing.planning.service;
+package com.red_escuela.backend.billing.run.service;
 
 import java.time.LocalDate;
 import com.red_escuela.backend.billing.service.PaymentPlanSelectionInvoiceIssuingService;
