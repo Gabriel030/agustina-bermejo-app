@@ -7,6 +7,7 @@ import { LoadErrorState } from '@/components/LoadErrorState';
 import { PageContainer } from '@/components/PageContainer';
 import { Skeleton } from '@/components/Skeleton';
 import { StatusPill } from '@/components/StatusPill';
+import { OwnWaitlistPosition } from '@/features/enrollment/components/WaitlistPositionCard';
 import { CourseSubjectPanel } from '@/features/enrollment/components/CourseSubjectPanel';
 import { useMyCourseEnrollment } from '@/features/enrollment/hooks/useStudentEnrollment';
 import { describeCourseEnrollmentStatus } from '@/features/enrollment/lib/courseEnrollmentStatus';
@@ -25,13 +26,16 @@ function CourseBody({ enrollment }) {
 
   if (enrollment.status === 'WAITLISTED') {
     return (
-      <GlassCard className="flex flex-col p-10">
-        <EmptyState
-          icon="⏳"
-          title="Estás en lista de espera"
-          description="Cuando se libere un lugar te inscribimos y te avisamos. Hasta entonces no hay asistencia ni notas."
-        />
-      </GlassCard>
+      <>
+        <OwnWaitlistPosition kind="COURSE" enrollmentId={enrollment.id} showName={false} />
+        <GlassCard className="flex flex-col p-10">
+          <EmptyState
+            icon="⏳"
+            title="Estás en lista de espera"
+            description="Cuando se libere un lugar te inscribimos y te avisamos. Hasta entonces no hay asistencia ni notas."
+          />
+        </GlassCard>
+      </>
     );
   }
 
