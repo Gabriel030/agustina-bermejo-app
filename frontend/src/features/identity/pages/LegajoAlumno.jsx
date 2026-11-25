@@ -137,6 +137,7 @@ export function LegajoAlumno() {
                 puedeAccionar={puedeAccionar}
                 puedeDarDeBaja={puededarDeBaja}
                 puedeReactivar={puedeReactivar}
+                puedeEditar={puededarDeBaja}
                 onReactivar={() => setReactivarOpen(true)}
                 onReset={() => setResetOpen(true)}
                 onBaja={() => setBajaOpen(true)}

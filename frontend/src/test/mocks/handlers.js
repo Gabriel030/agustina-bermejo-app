@@ -1,4 +1,5 @@
 import { http, HttpResponse } from 'msw';
+import { studentFixture } from '@/test/fixtures/students';
 import { annualTerms, auditedAnnualTerms } from '@/test/fixtures/annualTerms';
 import { backupStatusForPlatformAdmin } from '@/test/fixtures/backupStatus';
 import {
@@ -477,6 +478,18 @@ export const handlers = [
   http.get(`${API}/academic-offering-cycles`, () => HttpResponse.json([])),
   http.get(`${API}/academic-offering-cycles/:id/occupancy`, ({ params }) => HttpResponse.json({ cycleId: Number(params.id), sections: [] })),
   http.get(`${API}/course-subjects/:id/sections`, () => HttpResponse.json([])),
+  http.put(`${API}/students/:id`, async ({ params, request }) => {
+    const body = await request.json().catch(() => ({}));
+    return HttpResponse.json(
+      studentFixture({
+        id: Number(params.id),
+        ...(body.firstName && { nombre: body.firstName }),
+        ...(body.lastName && { apellido: body.lastName }),
+        ...(body.documentNumber && { dni: body.documentNumber }),
+        ...(body.email && { email: body.email }),
+      }),
+    );
+  }),
   http.post(`${API}/students/:id/program-enrollments`, ({ params }) =>
     HttpResponse.json(
       { id: 1, studentId: Number(params.id), programId: 1, programName: 'Carrera de prueba', status: 'ACTIVE', enrollmentDate: '2026-11-05T12:00:00', completionDate: null },
