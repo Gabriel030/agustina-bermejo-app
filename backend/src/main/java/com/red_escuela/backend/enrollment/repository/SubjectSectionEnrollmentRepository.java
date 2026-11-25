@@ -177,7 +177,7 @@ public interface SubjectSectionEnrollmentRepository extends JpaRepository<Subjec
                    s.id as sectionId, s.term.id as termId
             from SubjectSectionEnrollment e join e.student st join st.person p join e.subjectSection s
             where s.id = :sectionId and e.status = :waiting
-            order by e.waitlistPrioritizedAt desc nulls last, e.enrolledAt asc, e.id asc
+            order by e.waitlistPrioritizedAt desc nulls last, e.enrolledAt desc nulls last, e.id desc
             """)
     List<ProgramWaitlistEntryRow> findWaitlistEntryRows(@Param("sectionId") Long sectionId, @Param("waiting") EnrollmentStatus waiting);
 
@@ -186,6 +186,16 @@ public interface SubjectSectionEnrollmentRepository extends JpaRepository<Subjec
 
     @Query("select new com.red_escuela.backend.enrollment.repository.SectionEnrollmentPairRow(e.student.id, e.subjectSection.id) from SubjectSectionEnrollment e where e.student.id in :studentIds and e.subjectSection.id in :sectionIds")
     List<SectionEnrollmentPairRow> findPairRowsByStudentIdInAndSubjectSectionIdIn(@Param("studentIds") java.util.Collection<Long> studentIds, @Param("sectionIds") java.util.Collection<Long> sectionIds);
+
+    @Query("""
+            select new com.red_escuela.backend.enrollment.repository.PersonCurrentCourseRow(
+                e.student.person.id, pe.program.name, e.subjectSection.subject.name, e.subjectSection.name)
+            from SubjectSectionEnrollment e join e.programEnrollment pe
+            where e.student.person.id in :personIds and e.status in :statuses
+            order by e.student.person.id, e.enrolledAt desc nulls last, e.id desc
+            """)
+    List<PersonCurrentCourseRow> findCurrentCourseRowsByPersonIdIn(@Param("personIds") Collection<Long> personIds,
+                                                                   @Param("statuses") Collection<EnrollmentStatus> statuses);
 
     @Query("select distinct e.student.person.id from SubjectSectionEnrollment e where e.subjectSection.subject.id = :subjectId and e.status in :statuses and e.student.person.status = com.red_escuela.backend.shared.domain.StatusType.ACTIVE")
     java.util.List<Long> findStudentPersonIdsBySubjectAndStatusIn(Long subjectId, java.util.Collection<EnrollmentStatus> statuses);
