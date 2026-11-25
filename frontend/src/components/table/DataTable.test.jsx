@@ -228,6 +228,13 @@ describe('DataTable', () => {
       expect(screen.getByTestId('overflow-indicator')).toHaveClass('opacity-100');
     });
 
+    it('shows the overflow chevron without an opaque block over the last column', () => {
+      stubElementWidths({ scrollWidth: 640, clientWidth: 320 });
+      renderTable({ compact: true, columns: stickyColumns });
+
+      expect(screen.getByTestId('overflow-indicator')).not.toHaveClass('bg-dialog-bg');
+    });
+
     it('hides the overflow indicator when the rows fit the table container', () => {
       stubElementWidths({ scrollWidth: 320, clientWidth: 320 });
       renderTable({ compact: true, columns: stickyColumns });
