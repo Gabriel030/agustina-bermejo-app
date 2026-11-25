@@ -61,6 +61,7 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [legal/derechos-de-las-personas.md](legal/derechos-de-las-personas.md) | Procedimiento para pedidos de acceso, rectificación y supresión de datos personales (Épica 29, C5): inventario de datos, qué no se puede borrar, plantillas y paquetes futuros; pendiente de abogado | borrador |
 | [deploy/backup-and-restore.md](deploy/backup-and-restore.md) | Backups de Postgres, runbook de restauración, prueba automática de restauración, RPO/RTO y variables | vigente |
 | [deploy/monitoring.md](deploy/monitoring.md) | Alerta de caída (uptime-check), perfil Prometheus/Alertmanager/Grafana y qué hacer ante una caída | vigente |
+| [deploy/glitchtip.md](deploy/glitchtip.md) | Overlay de GlitchTip autoalojado: versión y fuente de los nombres, acceso solo por loopback, primer arranque, retención, actualización, privacidad y recursos (no medidos) | vigente |
 | [deploy/sentry.md](deploy/sentry.md) | Reporte de errores 5xx del backend a Sentry: cómo activarlo, qué se depura y advertencia de privacidad | vigente |
 | [deploy/backup-status.schema.json](deploy/backup-status.schema.json) | JSON Schema (draft 2020-12, `schemaVersion` 1) del archivo de estado que escriben los scripts de backup y lee `GET /backups/status` | vigente |
 | [deploy/backup-and-restore.md](deploy/backup-and-restore.md) | Backups de Postgres, runbook de restauración, prueba automática de restauración, RPO/RTO y variables | vigente |
