@@ -8,6 +8,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
+import java.sql.Statement;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -56,8 +57,15 @@ class PerfSeedIT extends AbstractFullDemoSeedIT {
         String sql = Files.readAllLines(seed, StandardCharsets.UTF_8).stream()
                 .filter(line -> !line.startsWith("\\") && !line.startsWith("create extension"))
                 .collect(Collectors.joining("\n"));
+        jdbcTemplate.update("insert into institution (id, name) values (1, 'Perf institution') on conflict (id) do nothing");
         try (Connection connection = jdbcTemplate.getDataSource().getConnection()) {
-            ScriptUtils.executeSqlScript(connection, new ByteArrayResource(sql.getBytes(StandardCharsets.UTF_8)));
+            try {
+                ScriptUtils.executeSqlScript(connection, new ByteArrayResource(sql.getBytes(StandardCharsets.UTF_8)));
+            } finally {
+                try (Statement statement = connection.createStatement()) {
+                    statement.execute("rollback");
+                }
+            }
         }
     }
 }
