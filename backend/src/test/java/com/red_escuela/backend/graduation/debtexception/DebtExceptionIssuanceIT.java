@@ -224,7 +224,7 @@ class DebtExceptionIssuanceIT extends AbstractIntegrationTest {
         assertThat(first.getResponse().getContentAsByteArray()).startsWith("%PDF".getBytes());
         assertThat(documentCount(documentType)).isEqualTo(1);
         assertThat(jdbc.queryForObject("select count(*) from verifiable_document where document_type = ?", Integer.class, documentType))
-                .isEqualTo(1);
+                .isEqualTo("EXAM_CERTIFICATE".equals(documentType) ? 0 : 1);
         assertThat(jdbc.queryForObject("select status from document_debt_exception where id = ?", String.class, exceptionId))
                 .isEqualTo("USED");
         assertThat(auditCount("DOCUMENT_DEBT_EXC_USED", exceptionId)).isEqualTo(1);
@@ -267,6 +267,7 @@ class DebtExceptionIssuanceIT extends AbstractIntegrationTest {
     private void deleteDocuments() {
         jdbc.update("delete from verifiable_document where document_type in ('REGULAR_STUDENT_CERTIFICATE', "
                 + "'EXAM_REGISTRATION_CERTIFICATE', 'EXAM_CERTIFICATE', 'APPROVED_SUBJECTS_CERTIFICATE')");
+        jdbc.update("delete from regular_certificate_request");
         DOCUMENT_TABLES.values().forEach(table -> jdbc.update("delete from " + table));
     }
 
