@@ -2,7 +2,7 @@ package com.red_escuela.backend.graduation.procedure.usecase;
 
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.dto.ApprovedSubjectsCertificateResponse;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.dto.RequestApprovedSubjectsCertificateRequest;
-import com.red_escuela.backend.graduation.certificate.approvedsubjects.usecase.RequestApprovedSubjectsCertificateUseCase;
+import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.ApprovedSubjectsCertificateRequests;
 import com.red_escuela.backend.graduation.certificate.dto.CertificateDocumentType;
 import com.red_escuela.backend.graduation.certificate.exception.DocumentOperationPendingException;
 import com.red_escuela.backend.graduation.procedure.dto.GenerateOwnDocumentRequest;
@@ -20,11 +20,11 @@ public class GenerateOwnDocumentService implements GenerateOwnDocumentUseCase {
     private final ExamRegistrationCertificateIssuer examRegistrationIssuer;
 
     private final ApprovedSubjectsOwnEnrollmentResolver approvedSubjectsEnrollmentResolver;
-    private final RequestApprovedSubjectsCertificateUseCase requestApprovedSubjectsCertificate;
+    private final ApprovedSubjectsCertificateRequests requestApprovedSubjectsCertificate;
 
     public GenerateOwnDocumentService(OwnRegularDocumentIssuer regularIssuer, ExamRegistrationCertificateIssuer examRegistrationIssuer,
                                       ApprovedSubjectsOwnEnrollmentResolver approvedSubjectsEnrollmentResolver,
-                                      RequestApprovedSubjectsCertificateUseCase requestApprovedSubjectsCertificate) {
+                                      ApprovedSubjectsCertificateRequests requestApprovedSubjectsCertificate) {
         this.regularIssuer = regularIssuer;
         this.examRegistrationIssuer = examRegistrationIssuer;
         this.approvedSubjectsEnrollmentResolver = approvedSubjectsEnrollmentResolver;

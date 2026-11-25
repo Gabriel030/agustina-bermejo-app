@@ -6,6 +6,7 @@ import com.red_escuela.backend.graduation.certificate.approvedsubjects.policy.Ap
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.policy.ApprovedSubjectsEligibilityPolicy;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.ApprovedSubjectsActor;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.ApprovedSubjectsCertificateIssuing;
+import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.ApprovedSubjectsCertificateRequests;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.ApprovedSubjectsEligibilityFacts;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.ApprovedSubjectsRefusals;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.OwnApprovedSubjectsEnrollments;
@@ -18,7 +19,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 @UseCase
-public class ApprovedSubjectsCertificateRequester implements RequestApprovedSubjectsCertificateUseCase {
+public class ApprovedSubjectsCertificateRequester implements RequestApprovedSubjectsCertificateUseCase, ApprovedSubjectsCertificateRequests {
 
     private final ApprovedSubjectsActor actor;
     private final OwnApprovedSubjectsEnrollments enrollments;

@@ -12,7 +12,7 @@ import com.red_escuela.backend.graduation.certificate.approvedsubjects.dto.Appro
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.dto.RequestApprovedSubjectsCertificateRequest;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.policy.ApprovedSubjectsEligibilityInput;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.ApprovedSubjectsEligibilityFacts;
-import com.red_escuela.backend.graduation.certificate.approvedsubjects.usecase.RequestApprovedSubjectsCertificateUseCase;
+import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.ApprovedSubjectsCertificateRequests;
 import com.red_escuela.backend.graduation.certificate.dto.CertificateDocumentType;
 import com.red_escuela.backend.graduation.certificate.dto.DocumentValidityStatus;
 import com.red_escuela.backend.graduation.procedure.dto.GenerateOwnDocumentRequest;
@@ -46,7 +46,7 @@ class ApprovedSubjectsProcedureWiringTest {
 
     private CurrentActorFinder actor;
     private OwnProgramEnrollmentResolver resolver;
-    private RequestApprovedSubjectsCertificateUseCase requestUseCase;
+    private ApprovedSubjectsCertificateRequests requestUseCase;
     private ApprovedSubjectsEligibilityFacts facts;
     private Clock clock;
 
@@ -55,7 +55,7 @@ class ApprovedSubjectsProcedureWiringTest {
         actor = mock(CurrentActorFinder.class);
         when(actor.currentStudentId()).thenReturn(STUDENT_ID);
         resolver = mock(OwnProgramEnrollmentResolver.class);
-        requestUseCase = mock(RequestApprovedSubjectsCertificateUseCase.class);
+        requestUseCase = mock(ApprovedSubjectsCertificateRequests.class);
         facts = mock(ApprovedSubjectsEligibilityFacts.class);
         clock = Clock.fixed(NOW.toInstant(ZoneOffset.UTC), ZoneOffset.UTC);
     }
