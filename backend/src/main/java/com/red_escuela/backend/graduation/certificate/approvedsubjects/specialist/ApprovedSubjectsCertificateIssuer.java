@@ -8,6 +8,9 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.graduation.certificate.dto.CertificateDocumentType;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateCode;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateSnapshot;
+import com.red_escuela.backend.graduation.certificate.template.dto.DocumentTemplateType;
+import com.red_escuela.backend.graduation.certificate.template.entity.CertificateTemplateVersion;
+import com.red_escuela.backend.graduation.certificate.template.specialist.CertificateTemplateRenderSource;
 import com.red_escuela.backend.graduation.certificate.source.GraduationSnapshotFactory;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateDigest;
 import com.red_escuela.backend.graduation.certificate.specialist.VerifiableDocumentRegistry;
@@ -36,6 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @Service
@@ -59,6 +63,7 @@ public class ApprovedSubjectsCertificateIssuer implements ApprovedSubjectsCertif
     private final ApprovedSubjectsCertificateResponseAssembler responses;
     private final ApprovedSubjectsRefusals refusals;
     private final MeterRegistry meterRegistry;
+    private final CertificateTemplateRenderSource templateSource;
     private final SecureRandom random = new SecureRandom();
 
     public ApprovedSubjectsCertificateIssuer(StudentFinder studentFinder, ProgramEnrollmentFinder programEnrollmentFinder,
@@ -68,7 +73,8 @@ public class ApprovedSubjectsCertificateIssuer implements ApprovedSubjectsCertif
                                              CertificateDigest digest, ApprovedSubjectsCertificateRepository repository,
                                              VerifiableDocumentRegistry verifiableDocumentRegistry, AuditTrail auditTrail,
                                              ApprovedSubjectsCertificateResponseAssembler responses, ApprovedSubjectsRefusals refusals,
-                                             MeterRegistry meterRegistry) {
+                                             MeterRegistry meterRegistry,
+                                             CertificateTemplateRenderSource templateSource) {
         this.studentFinder = studentFinder;
         this.programEnrollmentFinder = programEnrollmentFinder;
         this.programCurriculumFinder = programCurriculumFinder;
@@ -84,6 +90,7 @@ public class ApprovedSubjectsCertificateIssuer implements ApprovedSubjectsCertif
         this.responses = responses;
         this.refusals = refusals;
         this.meterRegistry = meterRegistry;
+        this.templateSource = templateSource;
     }
 
     @Override
@@ -93,17 +100,30 @@ public class ApprovedSubjectsCertificateIssuer implements ApprovedSubjectsCertif
         int validityDays = settingsFinder.current().approvedSubjectsValidityDays();
         requireDailyAllowance(studentId, now);
         ProgramEnrollment enrollment = programEnrollmentFinder.requireOwnedBy(enrollmentId, studentId);
-        ApprovedSubjectsSnapshot snapshot = snapshotOf(student, enrollment, now, validityDays);
+        ApprovedSubjectsSnapshot builtInSnapshot = snapshotOf(student, enrollment, now, validityDays);
+        Optional<CertificateTemplateVersion> publishedVersion = templateSource.findCurrentPublished(DocumentTemplateType.APPROVED_SUBJECTS_CERTIFICATE);
+        ApprovedSubjectsSnapshot snapshot = publishedVersion.map(version -> withPublishedTemplate(builtInSnapshot, version)).orElse(builtInSnapshot);
         CertificateCode code = newUniqueCode();
-        byte[] pdf = renderer.render(snapshot, code);
+        byte[] pdf = publishedVersion
+                .map(version -> renderer.render(snapshot, code, templateSource.assetsOf(version, null)))
+                .orElseGet(() -> renderer.render(snapshot, code));
         ApprovedSubjectsCertificate saved = repository.saveAndFlush(ApprovedSubjectsCertificate.createValid(enrollmentId, studentId,
-                code, snapshot, digest.sha256(pdf), ApprovedSubjectsPdfRenderer.ENGINE_VERSION, null, now, validityDays, issuedById));
+                code, snapshot, digest.sha256(pdf), ApprovedSubjectsPdfRenderer.ENGINE_VERSION, null, now, validityDays, issuedById,
+                publishedVersion.map(CertificateTemplateVersion::getId).orElse(null)));
         verifiableDocumentRegistry.register(CertificateDocumentType.APPROVED_SUBJECTS_CERTIFICATE, saved.getId(), code);
         auditTrail.record(new AuditRecord(AuditAction.APPROVED_SUBJECTS_CERT_ISSUED, AuditEntityType.CERTIFICATE_DOCUMENT, saved.getId(),
                 null, saved.getPdfSha256(), "enrollmentId=" + enrollmentId + ";engineVersion=" + saved.getRenderEngineVersion()));
         meterRegistry.counter(ISSUED_COUNTER).increment();
         log.info("Constancia de materias aprobadas emitida: certificateId={}, enrollmentId={}", saved.getId(), enrollmentId);
         return responses.of(saved);
+    }
+
+    private ApprovedSubjectsSnapshot withPublishedTemplate(ApprovedSubjectsSnapshot snapshot, CertificateTemplateVersion version) {
+        CertificateSnapshot holder = new CertificateSnapshot(snapshot.holderFullName(), snapshot.documentTypeLabel(),
+                snapshot.documentNumber(), "carrera", snapshot.programName(), null, null, snapshot.issuedOn(), snapshot.issuedOn(),
+                snapshot.institutionName(), snapshot.signatories(), snapshot.templateRef(), null);
+        CertificateSnapshot published = templateSource.snapshotWith(holder, version);
+        return snapshot.withPublishedTemplate(published.institutionName(), published.signatories(), published.templateRef());
     }
 
     private ApprovedSubjectsSnapshot snapshotOf(Student student, ProgramEnrollment enrollment, LocalDateTime now, int validityDays) {

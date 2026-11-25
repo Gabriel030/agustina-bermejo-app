@@ -29,4 +29,10 @@ public record ApprovedSubjectsSnapshot(
         subjects = subjects == null ? List.of() : List.copyOf(subjects);
         signatories = signatories == null ? List.of() : List.copyOf(signatories);
     }
+
+    public ApprovedSubjectsSnapshot withPublishedTemplate(String institutionName, List<SignatorySnapshot> signatories, String templateRef) {
+        return new ApprovedSubjectsSnapshot(holderFullName, documentTypeLabel, documentNumber, programName, institutionName, subjects,
+                approvedCount, totalSubjects, progressPercentage, averageGrade, recipientType, recipientText, issuedOn, validUntil,
+                signatories, templateRef);
+    }
 }

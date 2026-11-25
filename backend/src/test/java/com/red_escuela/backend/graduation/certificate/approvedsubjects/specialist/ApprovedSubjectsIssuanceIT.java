@@ -13,8 +13,12 @@ import com.red_escuela.backend.graduation.certificate.approvedsubjects.entity.Ap
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.entity.ApprovedSubjectsCertificateStatus;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.render.ApprovedSubjectsPdfRenderer;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.repository.ApprovedSubjectsCertificateRepository;
+import com.red_escuela.backend.graduation.certificate.approvedsubjects.snapshot.ApprovedSubjectsSnapshot;
+import com.red_escuela.backend.graduation.certificate.approvedsubjects.snapshot.ApprovedSubjectsSnapshotFactory;
 import com.red_escuela.backend.graduation.certificate.dto.DocumentValidityStatus;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateDigest;
+import com.red_escuela.backend.graduation.certificate.template.PublishedTemplateFixtures;
+import com.red_escuela.backend.graduation.certificate.template.specialist.CertificateTemplateRenderSource;
 import com.red_escuela.backend.graduation.procedure.exception.IssuanceLimitReachedException;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
@@ -41,6 +45,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -72,6 +77,8 @@ class ApprovedSubjectsIssuanceIT extends AbstractIntegrationTest {
     private ApprovedSubjectsPdfRenderer renderer;
     @Autowired
     private CertificateDigest digest;
+    @Autowired
+    private CertificateTemplateRenderSource templateSource;
 
     private Long studentId;
     private Long personId;
@@ -181,9 +188,50 @@ class ApprovedSubjectsIssuanceIT extends AbstractIntegrationTest {
         ApprovedSubjectsCertificateResponse response = issuer.issue(studentId, enrollmentId, personId, NOW);
 
         ApprovedSubjectsCertificate stored = repository.findById(response.id()).orElseThrow();
-        byte[] regenerated = renderer.render(stored.getSnapshot(), stored.certificateCode());
+        byte[] regenerated = renderer.render(stored.getSnapshot(), stored.certificateCode(),
+                templateSource.assetsOf(templateSource.byId(stored.getTemplateVersionId()), stored.getRegistryNumber()));
         assertThat(digest.sha256(regenerated)).isEqualTo(stored.getPdfSha256());
-        assertThat(digest.sha256(renderer.render(stored.getSnapshot(), stored.certificateCode()))).isEqualTo(stored.getPdfSha256());
+    }
+
+    @Test
+    void issuanceWithPublishedVersionStoresItsIdAndTemplateReference() {
+        ApprovedSubjectsCertificateResponse response = issuer.issue(studentId, enrollmentId, personId, NOW);
+
+        Map<String, Object> row = jdbc.queryForMap("select template_version_id, template_ref from approved_subjects_certificate where id = ?",
+                response.id());
+        assertThat(((Number) row.get("template_version_id")).longValue())
+                .isEqualTo(PublishedTemplateFixtures.currentPublishedId(jdbc, "APPROVED_SUBJECTS_CERTIFICATE"));
+        assertThat(row.get("template_ref")).isEqualTo(PublishedTemplateFixtures.currentPublishedRef(jdbc, "APPROVED_SUBJECTS_CERTIFICATE"));
+    }
+
+    @Test
+    void republishingTheTemplateDoesNotChangeTheRegeneratedPdfNorItsHash() {
+        ApprovedSubjectsCertificateResponse response = issuer.issue(studentId, enrollmentId, personId, NOW);
+        ApprovedSubjectsCertificate stored = repository.findById(response.id()).orElseThrow();
+        PublishedTemplateFixtures.publishRebrandedVersion(jdbc, "APPROVED_SUBJECTS_CERTIFICATE");
+
+        byte[] regenerated = renderer.render(stored.getSnapshot(), stored.certificateCode(),
+                templateSource.assetsOf(templateSource.byId(stored.getTemplateVersionId()), stored.getRegistryNumber()));
+
+        assertThat(digest.sha256(regenerated)).isEqualTo(stored.getPdfSha256());
+    }
+
+    @Test
+    void certificateWithoutTemplateVersionRegeneratesTheBuiltInDesignWithTheSameHash() {
+        ApprovedSubjectsCertificateResponse response = issuer.issue(studentId, enrollmentId, personId, NOW);
+        ApprovedSubjectsCertificate stored = repository.findById(response.id()).orElseThrow();
+        ApprovedSubjectsSnapshot builtIn = stored.getSnapshot().withPublishedTemplate(stored.getSnapshot().institutionName(),
+                stored.getSnapshot().signatories(), ApprovedSubjectsSnapshotFactory.TEMPLATE_REF);
+        byte[] legacy = renderer.render(builtIn, stored.certificateCode());
+        jdbc.update("update approved_subjects_certificate set template_version_id = null, template_ref = ?, pdf_sha256 = ?, "
+                + "snapshot = jsonb_set(snapshot, '{templateRef}', to_jsonb(?::text)) where id = ?",
+                ApprovedSubjectsSnapshotFactory.TEMPLATE_REF, digest.sha256(legacy), ApprovedSubjectsSnapshotFactory.TEMPLATE_REF,
+                response.id());
+
+        ApprovedSubjectsCertificate reloaded = repository.findById(response.id()).orElseThrow();
+
+        assertThat(reloaded.getTemplateVersionId()).isNull();
+        assertThat(digest.sha256(renderer.render(reloaded.getSnapshot(), reloaded.certificateCode()))).isEqualTo(reloaded.getPdfSha256());
     }
 
     @Test
