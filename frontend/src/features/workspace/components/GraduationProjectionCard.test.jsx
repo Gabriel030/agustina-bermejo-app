@@ -68,6 +68,14 @@ describe('GraduationProjectionCard', () => {
     expect(screen.queryByText('cuatrimestres estimados')).not.toBeInTheDocument();
   });
 
+  it('explains that the projection horizon was exceeded at the current pace', async () => {
+    useProjection(projection({ status: 'NOT_PROJECTABLE', estimatedPeriods: null, range: null, confidence: null, estimatedGraduationYear: null, reasons: ['PROJECTION_HORIZON_EXCEEDED'] }));
+    renderWithProviders(<GraduationProjectionCard carreraId={5} />);
+
+    expect(await screen.findByText('A tu ritmo actual la estimación supera los 20 años (40 cuatrimestres), así que no la mostramos. Consultá con Administración o con tu plan de estudios.')).toBeInTheDocument();
+    expect(screen.queryByText('No pudimos estimar tu egreso con los datos actuales.')).not.toBeInTheDocument();
+  });
+
   it('says the requirements are met when there is nothing left to project', async () => {
     useProjection(projection({ status: 'REQUIREMENTS_MET', estimatedPeriods: null, range: null, confidence: null }));
     renderWithProviders(<GraduationProjectionCard carreraId={5} />);
