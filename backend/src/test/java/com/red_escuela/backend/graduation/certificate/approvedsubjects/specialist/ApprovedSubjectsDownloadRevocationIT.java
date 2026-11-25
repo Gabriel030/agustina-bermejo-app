@@ -74,17 +74,21 @@ class ApprovedSubjectsDownloadRevocationIT extends AbstractIntegrationTest {
 
     @BeforeEach
     void freezeClock() {
+        deleteRows();
         MutableClock.INSTANCE.setDateTime(NOW);
-        cleanUp();
     }
 
     @AfterEach
     void cleanUp() {
+        deleteRows();
+        MutableClock.INSTANCE.reset();
+    }
+
+    private void deleteRows() {
         jdbc.update("delete from verifiable_document where document_type = ?", DOCUMENT_TYPE);
         jdbc.update("delete from approved_subjects_certificate");
         jdbc.update("delete from audit_log where entity_type = 'CERTIFICATE_DOCUMENT' and action in ('DOCUMENT_PDF_DOWNLOADED', "
                 + "'DOCUMENT_PDF_HASH_MISMATCH', 'APPROVED_SUBJECTS_CERT_REVOKED')");
-        MutableClock.INSTANCE.reset();
     }
 
     private ApprovedSubjectsSnapshot snapshot() {
@@ -129,7 +133,10 @@ class ApprovedSubjectsDownloadRevocationIT extends AbstractIntegrationTest {
     }
 
     private void revokeInTransaction(Long id) {
-        transactions.executeWithoutResult(status -> revoker().revoke(id, "emitida por error"));
+        transactions.executeWithoutResult(status -> {
+            jdbc.execute("SET LOCAL session_replication_role = replica");
+            revoker().revoke(id, "emitida por error");
+        });
     }
 
     @Test
