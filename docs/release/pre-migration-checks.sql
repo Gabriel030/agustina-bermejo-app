@@ -344,7 +344,7 @@ where r.payment_id is not null
 order by r.id;
 
 \echo
-\echo [V468] Franjas de aula solapadas (misma aula, mismo dia y hora, periodos de termino que se pisan, ambas de comisiones ACTIVE); V468 ABORTA al crear el EXCLUDE si hay filas (corregir antes: mover una franja a otra aula u horario o desactivar la comision; no se borran datos):
+\echo [V470] Franjas de aula solapadas (misma aula, mismo dia y hora, periodos de termino que se pisan, ambas de comisiones ACTIVE); V470 ABORTA al crear el EXCLUDE si hay filas (corregir antes: mover una franja a otra aula u horario o desactivar la comision; no se borran datos):
 with active_slots as (
     select s.id, s.classroom_id, s.day_of_week, s.start_time, s.end_time,
            tsrange(t.start_date, t.end_date, '[]') as term_period
@@ -363,7 +363,7 @@ join active_slots b on a.id < b.id and a.classroom_id = b.classroom_id and a.day
     and a.term_period && b.term_period
 order by a.classroom_id, a.id;
 
-\echo [V468] Franjas de docente solapadas (mismo docente asignado a dos comisiones ACTIVE con franjas que se pisan); V468 ABORTA al poblar la proyeccion si hay filas:
+\echo [V470] Franjas de docente solapadas (mismo docente asignado a dos comisiones ACTIVE con franjas que se pisan); V470 ABORTA al poblar la proyeccion si hay filas:
 with instructor_slots as (
     select distinct s.id as slot_id, l.instructor_id, s.day_of_week, s.start_time, s.end_time,
            tsrange(t.start_date, t.end_date, '[]') as term_period
