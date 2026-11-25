@@ -8,7 +8,7 @@ import com.red_escuela.backend.enrollment.events.DirectorApprovalRequestRejected
 import com.red_escuela.backend.enrollment.events.EnrollmentFeeExemptionGrantedEvent;
 import com.red_escuela.backend.enrollment.events.EnrollmentFeeExemptionRevokedEvent;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
+import com.red_escuela.backend.shared.event.service.ProcessedEffectGuard;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;

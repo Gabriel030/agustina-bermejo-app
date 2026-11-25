@@ -13,7 +13,7 @@ import com.red_escuela.backend.graduation.events.GraduationRequestVerifiedEvent;
 import com.red_escuela.backend.graduation.events.GraduationRequestedEvent;
 
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
+import com.red_escuela.backend.shared.event.service.ProcessedEffectGuard;
 import jakarta.persistence.EntityManager;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.modulith.events.ApplicationModuleListener;

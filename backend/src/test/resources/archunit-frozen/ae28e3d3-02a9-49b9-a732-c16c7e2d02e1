@@ -1,1 +1,0 @@
-com.red_escuela.backend.shared.event.ProcessedEffectGuard.runEffectOnce(com.red_escuela.backend.shared.event.DeduplicableDomainEvent, java.lang.String, java.lang.Runnable) declares @Transactional

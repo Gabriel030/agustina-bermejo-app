@@ -5,7 +5,7 @@ import com.red_escuela.backend.notification.domain.AttendanceJustificationApprov
 import com.red_escuela.backend.attendance.events.AttendanceJustificationApprovedEvent;
 import com.red_escuela.backend.attendance.events.AttendanceJustificationRejectedEvent;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
+import com.red_escuela.backend.shared.event.service.ProcessedEffectGuard;
 import jakarta.persistence.EntityManager;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.modulith.events.ApplicationModuleListener;

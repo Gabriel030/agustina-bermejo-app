@@ -47,6 +47,39 @@ class EnrollmentLockBeforeAccountLockTest {
         assertThat(violations).isEmpty();
     }
 
+    private static final List<String> TRANSACTION_COMPOSERS = List.of(
+            "billing/run/service/SelectPaymentPlanForProgramTransaction.java",
+            "billing/run/service/SelectPaymentPlanForCourseTransaction.java",
+            "billing/run/service/CreateAdHocInvoiceForProgramEnrollmentTransaction.java",
+            "billing/run/service/CreateAdHocInvoiceForCourseEnrollmentTransaction.java",
+            "billing/cohort/service/CreateProgramCohortTransaction.java",
+            "billing/cohort/service/UpdateCohortEntryFeeDiscountTransaction.java",
+            "billing/configuration/service/CreateProgramYearBillingTemplateTransaction.java",
+            "billing/configuration/service/UpdateYearBillingConfigurationTransaction.java",
+            "billing/payment/service/UpdatePaymentGatewayConfigTransaction.java",
+            "billing/payment/service/UploadQrImageTransaction.java");
+
+    @Test
+    void theTransactionComposersNeverTakeTheEnrollmentOrAccountLockDirectly() throws IOException {
+        List<String> violations = new ArrayList<>();
+        for (String file : TRANSACTION_COMPOSERS) {
+            String source = Files.readString(Path.of("src/main/java/com/red_escuela/backend").resolve(file));
+            for (String lock : List.of(ENROLLMENT_LOCKS, "lockEnrollmentsOfDiscountsAppliedOnInvoices", ACCOUNT_LOCK)) {
+                if (positionOf(source, lock) >= 0) {
+                    violations.add(file + " calls " + lock);
+                }
+            }
+        }
+        assertThat(violations).isEmpty();
+    }
+
+    @Test
+    void theYearConfigurationComposerLocksTheTemplateBeforeAnyOtherWork() throws IOException {
+        String source = Files.readString(Path.of("src/main/java/com/red_escuela/backend/billing/configuration/service/UpdateYearBillingConfigurationTransaction.java"));
+        String body = bodiesOf(source, "update").get(0);
+        assertThat(body.substring(0, body.indexOf(';'))).contains("findByIdForUpdate");
+    }
+
     @Test
     void anInvertedOrderIsReportedAndTheRightOrderIsNot() {
         String inverted = "{ lockStudentCurrentAccount(1L); lockEnrollmentsOfDiscountsAppliedOn(2L); }";
