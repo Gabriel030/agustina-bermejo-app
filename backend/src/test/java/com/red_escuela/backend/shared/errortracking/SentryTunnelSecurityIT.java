@@ -61,4 +61,18 @@ class SentryTunnelSecurityIT extends AbstractIntegrationTest {
             return request;
         }).content("x")).andExpect(status().isNotFound());
     }
+
+    @Value("${app.rate-limit.monitoring-tunnel-global.capacity:120}")
+    private int globalCapacity;
+
+    @Test
+    void emptyDsnKeepsAnsweringNotFoundAndNeverConsumesTheGlobalBucket() throws Exception {
+        for (int attempt = 0; attempt < globalCapacity + 5; attempt++) {
+            String address = "198.51.101." + (attempt + 1);
+            mockMvc.perform(post(PATH).with(request -> {
+                request.setRemoteAddr(address);
+                return request;
+            }).content("x")).andExpect(status().isNotFound());
+        }
+    }
 }

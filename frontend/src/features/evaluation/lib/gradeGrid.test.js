@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   buildGradePayload,
   columnLoadSummary,
@@ -7,6 +7,7 @@ import {
   pruneLockedDrafts,
   collectPendingJobs,
   correctionOf,
+  findSavedCell,
   formatScore,
   hasInvalidDraft,
   isValidScore,
@@ -128,5 +129,53 @@ describe('publication helpers', () => {
   it('counts loaded and missing grades per column', () => {
     const students = [{ grades: [{ type: 'TP', sequenceNumber: 1, score: 6 }] }, { grades: [] }];
     expect(columnLoadSummary(students, tp)).toEqual({ loaded: 1, missing: 1, total: 2 });
+  });
+});
+
+describe('findSavedCell equivalence with the linear lookup', () => {
+  const legacyFindSavedCell = (student, column) =>
+    student.grades.find((grade) => grade.type === column.type && grade.sequenceNumber === column.sequenceNumber);
+
+  const withDuplicates = {
+    grades: [
+      { gradeItemId: 1, type: 'EXAM', sequenceNumber: 1, score: 4 },
+      { gradeItemId: 2, type: 'EXAM', sequenceNumber: 1, score: 9 },
+      { gradeItemId: 3, type: 'EXAM', sequenceNumber: 2, score: 6 },
+      { gradeItemId: 4, type: 'FINAL', sequenceNumber: 1, score: 8 },
+    ],
+  };
+  const withoutGrades = { grades: [] };
+  const columns = [
+    { type: 'EXAM', sequenceNumber: 1 },
+    { type: 'EXAM', sequenceNumber: 2 },
+    { type: 'EXAM', sequenceNumber: 3 },
+    { type: 'FINAL', sequenceNumber: 1 },
+    { type: 'FINAL', sequenceNumber: 2 },
+    { type: 'MAKEUP', sequenceNumber: 1 },
+  ];
+
+  it('returns exactly what the linear lookup returned for every cell', () => {
+    for (const student of [withDuplicates, withoutGrades]) {
+      for (const column of columns) {
+        expect(findSavedCell(student, column)).toBe(legacyFindSavedCell(student, column));
+      }
+    }
+  });
+
+  it('keeps the first grade when a cell is duplicated and returns undefined when missing', () => {
+    expect(findSavedCell(withDuplicates, columns[0]).gradeItemId).toBe(1);
+    expect(findSavedCell(withDuplicates, columns[2])).toBeUndefined();
+    expect(findSavedCell(withoutGrades, columns[0])).toBeUndefined();
+  });
+
+  it('builds the index once per student and not once per cell', () => {
+    const iterations = vi.fn();
+    const grades = new Proxy(
+      [{ type: 'EXAM', sequenceNumber: 1, score: 5 }],
+      { get: (target, property, receiver) => { if (property === Symbol.iterator) iterations(); return Reflect.get(target, property, receiver); } },
+    );
+    const student = { grades };
+    columns.forEach((column) => findSavedCell(student, column));
+    expect(iterations).toHaveBeenCalledTimes(1);
   });
 });
