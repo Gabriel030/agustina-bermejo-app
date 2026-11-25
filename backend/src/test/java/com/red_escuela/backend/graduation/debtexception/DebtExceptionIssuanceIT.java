@@ -267,8 +267,9 @@ class DebtExceptionIssuanceIT extends AbstractIntegrationTest {
     private void deleteDocuments() {
         jdbc.update("delete from verifiable_document where document_type in ('REGULAR_STUDENT_CERTIFICATE', "
                 + "'EXAM_REGISTRATION_CERTIFICATE', 'EXAM_CERTIFICATE', 'APPROVED_SUBJECTS_CERTIFICATE')");
-        jdbc.update("delete from regular_certificate_request");
+        jdbc.update("update regular_certificate_request set certificate_id = null");
         DOCUMENT_TABLES.values().forEach(table -> jdbc.update("delete from " + table));
+        jdbc.update("delete from regular_certificate_request");
     }
 
     private void setBillingMode(String mode) {
