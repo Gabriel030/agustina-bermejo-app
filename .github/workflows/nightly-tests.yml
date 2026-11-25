@@ -4,6 +4,11 @@ on:
   schedule:
     - cron: '30 6 * * *'
   workflow_dispatch:
+    inputs:
+      update_baselines:
+        description: Regenerate the visual baselines and upload them as an artifact
+        type: boolean
+        default: false
 
 concurrency:
   group: nightly-tests
@@ -187,10 +192,97 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
+  visual-regression:
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.55.0-noble
+      options: --user root
+    needs: decide
+    if: needs.decide.outputs.run == 'true'
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    env:
+      HOME: /root
+    steps:
+      - name: Refuse to update baselines on a protected branch
+        if: inputs.update_baselines == true
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          case "$REF_NAME" in
+            develop|master|release/*|hotfix/*)
+              echo "update_baselines is not allowed on $REF_NAME"
+              exit 1
+              ;;
+          esac
+
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || needs.decide.outputs.sha }}
+
+      - name: Install the frontend and e2e dependencies
+        run: |
+          npm ci --prefix frontend
+          npm ci --prefix e2e
+
+      - name: Compare the screenshots against the baselines
+        if: inputs.update_baselines != true
+        working-directory: e2e
+        run: npm run test:visual
+        env:
+          CI: "true"
+
+      - name: Regenerate the baselines
+        if: inputs.update_baselines == true
+        working-directory: e2e
+        run: npm run test:visual:update
+        env:
+          CI: "true"
+
+      - name: Commit the regenerated baselines to the dispatched branch
+        if: inputs.update_baselines == true
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- e2e/specs/visual/__screenshots__
+          if git diff --cached --quiet; then
+            echo "baselines unchanged"
+            exit 0
+          fi
+          if git diff --cached --name-only | grep -v '^e2e/specs/visual/__screenshots__/'; then
+            echo "unexpected files staged"
+            exit 1
+          fi
+          git commit -m "test(e2e): baselines visuales regeneradas en el contenedor de Playwright"
+          git push origin "HEAD:refs/heads/$REF_NAME"
+
+      - name: Upload the regenerated baselines
+        if: inputs.update_baselines == true
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-baselines
+          path: e2e/specs/visual/__screenshots__
+          retention-days: 7
+
+      - name: Upload the visual report and the diffs
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: visual-regression-report
+          path: |
+            e2e/playwright-report
+            e2e/test-results
+          retention-days: 7
+          if-no-files-found: ignore
+
   record:
     runs-on: ubuntu-latest
-    needs: [decide, nightly-tests, demo-seed, pwa-offline-e2e]
-    if: needs.decide.outputs.run == 'true' && needs.nightly-tests.result == 'success' && needs.demo-seed.result == 'success' && needs.pwa-offline-e2e.result == 'success'
+    needs: [decide, nightly-tests, demo-seed, pwa-offline-e2e, visual-regression]
+    if: needs.decide.outputs.run == 'true' && needs.nightly-tests.result == 'success' && needs.demo-seed.result == 'success' && needs.pwa-offline-e2e.result == 'success' && needs.visual-regression.result == 'success'
     steps:
       - name: Record the verified develop commit
         run: |
