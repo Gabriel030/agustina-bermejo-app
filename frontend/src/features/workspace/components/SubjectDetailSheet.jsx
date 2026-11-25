@@ -1,6 +1,8 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
-import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { X } from 'lucide-react';
+import { StatusPill } from '@/components/StatusPill';
+import { Sheet, SheetClose, SheetContent, SheetDescription, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { PlanStatusPill } from '@/features/workspace/components/PlanStatusPill';
 import { EquivalenceChip } from '@/features/workspace/components/EquivalenceChip';
 import {
@@ -41,7 +43,8 @@ function EquivalenceDetails({ equivalence }) {
   );
 }
 
-function SubjectDetailContent({ subject, relationIndex }) {
+function SubjectDetailContent({ subject, relationIndex, audience, onViewEnrollment }) {
+  const staff = audience === 'staff';
   const status = CURRICULUM_STATE_TO_PLAN_STATUS[subject.state];
   const missing = subject.state === 'BLOCKED' ? describeMissingPrerequisites(subject) : [];
   const dependents = getDependentsOf(relationIndex, subject.programSubjectId);
@@ -52,6 +55,7 @@ function SubjectDetailContent({ subject, relationIndex }) {
       <div className="flex flex-wrap items-center gap-1.5">
         <PlanStatusPill status={status} />
         {isApprovedByEquivalence(subject) && <EquivalenceChip />}
+        {staff && subject.prerequisitesWaived && <StatusPill tone="neutral">Eximida de correlativas</StatusPill>}
       </div>
       {byEquivalence && (
         <DetailSection title="Equivalencia">
@@ -59,7 +63,7 @@ function SubjectDetailContent({ subject, relationIndex }) {
         </DetailSection>
       )}
       {missing.length > 0 && (
-        <DetailSection title="Qué te falta">
+        <DetailSection title={staff ? 'Qué le falta' : 'Qué te falta'}>
           <ul className="flex flex-col gap-1.5 text-size-13 text-ink">
             {missing.map((text) => (
               <li key={text}>{text}</li>
@@ -69,8 +73,8 @@ function SubjectDetailContent({ subject, relationIndex }) {
       )}
       {status === 'disponible' && (
         <DetailSection title="Disponible">
-          <p className="text-size-13 text-ink">Ya cumplís las correlativas de esta materia.</p>
-          <p className="text-size-12 text-ink-faint">Podés inscribirte cuando abra la inscripción</p>
+          <p className="text-size-13 text-ink">{staff ? 'Ya cumple las correlativas de esta materia.' : 'Ya cumplís las correlativas de esta materia.'}</p>
+          {!staff && <p className="text-size-12 text-ink-faint">Podés inscribirte cuando abra la inscripción</p>}
         </DetailSection>
       )}
       <DetailSection title="Qué desbloquea">
@@ -86,7 +90,12 @@ function SubjectDetailContent({ subject, relationIndex }) {
           <p className="text-size-13 text-ink-faint">No es correlativa de otras materias.</p>
         )}
       </DetailSection>
-      {subject.currentEnrollmentId != null && (
+      {subject.currentEnrollmentId != null && staff && onViewEnrollment && (
+        <Button type="button" variant="outline" className="h-11 self-start" onClick={() => onViewEnrollment(subject.currentEnrollmentId)}>
+          Ver cursada en Evaluación
+        </Button>
+      )}
+      {subject.currentEnrollmentId != null && !staff && (
         <Button asChild variant="outline" className="h-11 self-start">
           <Link to={`/alumno/mis-carreras/materias/${subject.currentEnrollmentId}`}>Ver mi cursada</Link>
         </Button>
@@ -95,7 +104,7 @@ function SubjectDetailContent({ subject, relationIndex }) {
   );
 }
 
-export function SubjectDetailSheet({ subject, relationIndex, creditsDefined = true, open, onOpenChange, onCloseAutoFocus }) {
+export function SubjectDetailSheet({ subject, relationIndex, creditsDefined = true, audience = 'student', onViewEnrollment, open, onOpenChange, onCloseAutoFocus }) {
   const compact = useMediaQuery('(max-width: 767px)');
   if (!subject) return null;
   const term = describeCurricularTerm(subject.curricularTerm);
@@ -105,6 +114,7 @@ export function SubjectDetailSheet({ subject, relationIndex, creditsDefined = tr
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side={compact ? 'bottom' : 'right'}
+        showCloseButton={false}
         onCloseAutoFocus={onCloseAutoFocus}
         className="data-[side=right]:w-96 data-[side=right]:max-w-full data-[side=bottom]:max-h-[85dvh] data-[side=bottom]:overflow-y-auto data-[side=right]:overflow-y-auto"
       >
@@ -112,7 +122,13 @@ export function SubjectDetailSheet({ subject, relationIndex, creditsDefined = tr
           <SheetTitle>{subject.subjectName}</SheetTitle>
           <SheetDescription>{facts.join(' · ')}</SheetDescription>
         </SheetHeader>
-        <SubjectDetailContent subject={subject} relationIndex={relationIndex} />
+        <SheetClose asChild>
+          <Button variant="ghost" size="icon" className="absolute top-2 right-2 size-11">
+            <X aria-hidden="true" />
+            <span className="sr-only">Cerrar</span>
+          </Button>
+        </SheetClose>
+        <SubjectDetailContent subject={subject} relationIndex={relationIndex} audience={audience} onViewEnrollment={onViewEnrollment} />
       </SheetContent>
     </Sheet>
   );

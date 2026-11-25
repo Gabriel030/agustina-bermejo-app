@@ -137,6 +137,7 @@ class SubjectEquivalenceControllerIT extends AbstractIntegrationTest {
                 .satisfies(event -> {
                     assertThat(event.subjectEquivalenceId()).isEqualTo(saved.getId());
                     assertThat(event.studentPersonId()).isEqualTo(student.getPerson().getId());
+                    assertThat(event.subjectName()).isEqualTo("Materia A");
                 });
     }
 

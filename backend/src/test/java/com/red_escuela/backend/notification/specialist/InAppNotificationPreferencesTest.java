@@ -33,7 +33,8 @@ class InAppNotificationPreferencesTest {
             NotificationType.COURSE_WAITLIST_EXPIRED, NotificationType.PROGRAM_APPLICATION_APPROVED,
             NotificationType.COLLECTION_REMINDER, NotificationType.HOLIDAYS_MISSING_FOR_NEXT_YEAR,
             NotificationType.WAITLIST_PAUSED_BY_SCHEDULE_OVERLAP, NotificationType.WAITLIST_EXPIRING_SOON,
-            NotificationType.WAITLIST_REMOVED_BY_STAFF, NotificationType.WAITLIST_ENTRY_EXPIRED);
+            NotificationType.WAITLIST_REMOVED_BY_STAFF, NotificationType.WAITLIST_ENTRY_EXPIRED,
+            NotificationType.SUBJECT_EQUIVALENCE_RECORDED, NotificationType.SUBJECT_EQUIVALENCE_VOIDED);
 
     private final NotificationRepository repository = mock(NotificationRepository.class);
     private final NotificationPreferenceFinder finder = mock(NotificationPreferenceFinder.class);
@@ -74,6 +75,8 @@ class InAppNotificationPreferencesTest {
         assertThat(UserPreferenceEventResolver.resolve(NotificationType.WAITLIST_EXPIRING_SOON)).contains(NotificationEvent.SUBJECT_ENROLLMENT);
         assertThat(UserPreferenceEventResolver.resolve(NotificationType.WAITLIST_REMOVED_BY_STAFF)).contains(NotificationEvent.SUBJECT_ENROLLMENT);
         assertThat(UserPreferenceEventResolver.resolve(NotificationType.WAITLIST_ENTRY_EXPIRED)).contains(NotificationEvent.SUBJECT_ENROLLMENT);
+        assertThat(UserPreferenceEventResolver.resolve(NotificationType.SUBJECT_EQUIVALENCE_RECORDED)).contains(NotificationEvent.SUBJECT_ENROLLMENT);
+        assertThat(UserPreferenceEventResolver.resolve(NotificationType.SUBJECT_EQUIVALENCE_VOIDED)).contains(NotificationEvent.SUBJECT_ENROLLMENT);
         assertThat(UserPreferenceEventResolver.resolve(NotificationType.COLLECTION_REMINDER)).contains(NotificationEvent.PAYMENT_DUE_SOON);
     }
 

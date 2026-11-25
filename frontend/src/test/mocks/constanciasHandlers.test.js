@@ -79,6 +79,10 @@ describe('constancias default handlers', () => {
     const detail = (await call('GET', '/certificate-exceptions/9')).body;
     expect(detail.debtTotalAtRequest).toEqual({ amount: '45000.00', currency: 'ARS' });
     expect(detail.overdueInstallmentsAtRequest).toBe(2);
+    expect(detail.studentName).toBe('Ana Alumna');
+    expect(detail.programName).toBe('Tecnicatura en Administración');
+    expect(detail.requestedByName).toBe('Beto Administrativo');
+    expect(detail.decidedByName).toBeNull();
   });
 
   it('documentTemplatesEndpointsAnswerAgainstTheContract', async () => {

@@ -170,7 +170,10 @@ public class CurriculumProgressReader {
                 .map(prerequisite -> new CurriculumProgressView.BlockingPrerequisite(
                         prerequisite.prerequisiteSubjectId(), prerequisite.prerequisiteSubjectCode(),
                         prerequisite.prerequisiteSubjectName(), prerequisite.requirementType(),
-                        standingOf(standings.getOrDefault(prerequisite.prerequisiteSubjectId(), SubjectStanding.NONE))))
+                        standingOf(standings.getOrDefault(prerequisite.prerequisiteSubjectId(), SubjectStanding.NONE)),
+                        prerequisite.minGrade(),
+                        standings.getOrDefault(prerequisite.prerequisiteSubjectId(), SubjectStanding.NONE)
+                                .scoreForPrerequisiteCheck()))
                 .toList();
     }
 
@@ -178,21 +181,26 @@ public class CurriculumProgressReader {
         return requirementPolicy.standingOf(standing.courseworkStatuses(), standing.isApprovedByEquivalence());
     }
 
+    private boolean isMet(CurriculumProgressView.BlockingPrerequisite prerequisite) {
+        return requirementPolicy.isMet(prerequisite.requirementType(), prerequisite.standing(),
+                prerequisite.minGrade(), prerequisite.approvedScore());
+    }
+
     private List<CurriculumProgressView.BlockingPrerequisite> unmetOf(
             List<CurriculumProgressView.BlockingPrerequisite> prerequisites) {
         return prerequisites.stream()
-                .filter(prerequisite -> !requirementPolicy.isMet(prerequisite.requirementType(), prerequisite.standing()))
+                .filter(prerequisite -> !isMet(prerequisite))
                 .toList();
     }
 
     private List<CurriculumProgressView.BlockingPrerequisite> waivedOf(
             List<CurriculumProgressView.BlockingPrerequisite> prerequisites) {
         return prerequisites.stream()
-                .map(prerequisite -> requirementPolicy.isMet(prerequisite.requirementType(), prerequisite.standing())
+                .map(prerequisite -> isMet(prerequisite)
                         ? prerequisite
                         : new CurriculumProgressView.BlockingPrerequisite(prerequisite.subjectId(),
                                 prerequisite.subjectCode(), prerequisite.subjectName(), prerequisite.requirementType(),
-                                PrerequisiteStanding.WAIVED))
+                                PrerequisiteStanding.WAIVED, prerequisite.minGrade(), null))
                 .toList();
     }
 

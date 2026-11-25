@@ -2768,6 +2768,9 @@
             "format" : "int64",
             "type" : [ "integer", "null" ]
           },
+          "decidedByName" : {
+            "type" : [ "string", "null" ]
+          },
           "decisionReason" : {
             "type" : [ "string", "null" ]
           },
@@ -2795,6 +2798,9 @@
             "format" : "int32",
             "type" : [ "integer", "null" ]
           },
+          "programName" : {
+            "type" : [ "string", "null" ]
+          },
           "reason" : {
             "type" : "string"
           },
@@ -2806,6 +2812,9 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "requestedByName" : {
+            "type" : [ "string", "null" ]
+          },
           "status" : {
             "enum" : [ "PENDING", "APPROVED", "REJECTED", "WITHDRAWN", "CONSUMED", "EXPIRED" ],
             "type" : "string"
@@ -2814,12 +2823,15 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "studentName" : {
+            "type" : [ "string", "null" ]
+          },
           "validUntil" : {
             "format" : "date-time",
             "type" : [ "string", "null" ]
           }
         },
-        "required" : [ "createdByDirector", "debtTotalAtRequest", "decidedAt", "decidedById", "decisionReason", "enrollmentId", "id", "kind", "organismKind", "organismReference", "overdueInstallmentsAtRequest", "reason", "requestedAt", "requestedById", "status", "studentId", "validUntil" ],
+        "required" : [ "createdByDirector", "debtTotalAtRequest", "decidedAt", "decidedById", "decidedByName", "decisionReason", "enrollmentId", "id", "kind", "organismKind", "organismReference", "overdueInstallmentsAtRequest", "programName", "reason", "requestedAt", "requestedById", "requestedByName", "status", "studentId", "studentName", "validUntil" ],
         "type" : "object"
       },
       "CertificateExceptionSummaryResponse" : {
@@ -5831,6 +5843,12 @@
       },
       "CurriculumBlockingPrerequisiteResponse" : {
         "properties" : {
+          "approvedScore" : {
+            "type" : [ "number", "null" ]
+          },
+          "minGrade" : {
+            "type" : [ "number", "null" ]
+          },
           "requirementType" : {
             "enum" : [ "APPROVED", "PASSED_COURSEWORK" ],
             "type" : "string"
@@ -5850,7 +5868,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "requirementType", "standing", "subjectCode", "subjectId", "subjectName" ],
+        "required" : [ "approvedScore", "minGrade", "requirementType", "standing", "subjectCode", "subjectId", "subjectName" ],
         "type" : "object"
       },
       "CurriculumCorequisiteResponse" : {

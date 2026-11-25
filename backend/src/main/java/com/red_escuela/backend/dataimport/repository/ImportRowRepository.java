@@ -16,6 +16,10 @@ import org.springframework.stereotype.Repository;
 public interface ImportRowRepository extends JpaRepository<ImportRow, Long> {
     List<ImportRow> findByBatchIdAndEntityTypeOrderByRowNumber(Long batchId, ImportEntityType entityType);
 
+    @Query("select r from ImportRow r where r.batchId = :batchId and r.entityType = :entityType and r.rowNumber > :afterRowNumber order by r.rowNumber")
+    List<ImportRow> findChunkAfterRowNumber(@Param("batchId") Long batchId, @Param("entityType") ImportEntityType entityType,
+            @Param("afterRowNumber") int afterRowNumber, Pageable pageable);
+
     List<ImportRow> findByBatchIdAndEntityTypeAndStatusOrderByRowNumber(Long batchId, ImportEntityType entityType,
             ImportRowStatus status, Pageable pageable);
 
