@@ -7,6 +7,7 @@ import com.red_escuela.backend.graduation.certificate.engine.SignatorySnapshot;
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificateKind;
 import com.red_escuela.backend.graduation.certificate.template.dto.CertificateTemplateContent;
 import com.red_escuela.backend.graduation.certificate.template.dto.CertificateTemplateSigner;
+import com.red_escuela.backend.graduation.certificate.template.dto.DocumentTemplateType;
 import com.red_escuela.backend.graduation.certificate.template.dto.TemplatePreviewSource;
 import com.red_escuela.backend.graduation.certificate.template.dto.TemplateVersionStatus;
 import com.red_escuela.backend.graduation.certificate.template.entity.CertificateTemplate;
@@ -41,6 +42,16 @@ public class CertificateTemplateRenderSource {
     public CertificateTemplateVersion currentPublished(GraduationCertificateKind kind) {
         CertificateTemplate template = templateFinder.find(kind);
         return versionRepository.findFirstByTemplateIdAndStatusOrderByVersionNumberDesc(template.getId(), TemplateVersionStatus.PUBLISHED)
+                .orElseThrow(TemplateVersionNotFoundException::new);
+    }
+
+    public CertificateTemplateVersion forPreview(DocumentTemplateType type, TemplatePreviewSource source) {
+        CertificateTemplate template = templateFinder.find(type);
+        if (source == TemplatePreviewSource.PUBLISHED) {
+            return versionRepository.findFirstByTemplateIdAndStatusOrderByVersionNumberDesc(template.getId(), TemplateVersionStatus.PUBLISHED)
+                    .orElseThrow(TemplateVersionNotFoundException::new);
+        }
+        return versionRepository.findByTemplateIdAndStatus(template.getId(), TemplateVersionStatus.DRAFT)
                 .orElseThrow(TemplateVersionNotFoundException::new);
     }
 

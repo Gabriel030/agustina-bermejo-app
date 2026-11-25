@@ -64,16 +64,30 @@ public class CertificateTemplateReader {
     }
 
     public List<CertificateTemplateVersionSummaryResponse> listVersions(GraduationCertificateKind kind) {
-        CertificateTemplate template = templateFinder.find(kind);
+        return listPublished(templateFinder.find(kind));
+    }
+
+    private List<CertificateTemplateVersionSummaryResponse> listPublished(CertificateTemplate template) {
         return versionRepository.findByTemplateIdAndStatusOrderByVersionNumberDesc(template.getId(), TemplateVersionStatus.PUBLISHED)
                 .stream().map(CertificateTemplateResponses::summaryOf).toList();
     }
 
     public CertificateTemplateVersionResponse readVersion(GraduationCertificateKind kind, int versionNumber) {
-        CertificateTemplate template = templateFinder.find(kind);
+        return versionOf(templateFinder.find(kind), versionNumber);
+    }
+
+    private CertificateTemplateVersionResponse versionOf(CertificateTemplate template, int versionNumber) {
         CertificateTemplateVersion version = versionRepository.findByTemplateIdAndVersionNumber(template.getId(), versionNumber)
                 .orElseThrow(TemplateVersionNotFoundException::new);
         return CertificateTemplateResponses.of(version);
+    }
+
+    public List<CertificateTemplateVersionSummaryResponse> listVersions(DocumentTemplateType type) {
+        return listPublished(templateFinder.find(type));
+    }
+
+    public CertificateTemplateVersionResponse readVersion(DocumentTemplateType type, int versionNumber) {
+        return versionOf(templateFinder.find(type), versionNumber);
     }
 
     public CertificateTemplateImageContent readImage(GraduationCertificateKind kind, Long imageId) {
