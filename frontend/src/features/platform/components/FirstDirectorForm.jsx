@@ -69,11 +69,11 @@ export function FirstDirectorForm({ formState, institutionLocked, pending, banne
           label="Nombre de la institución"
           hint={institutionLocked ? 'La institución ya existe, se le asigna el Director.' : 'Se crea junto con su primer Director.'}
           error={shownErrors.institutionName}
-          badge={institutionLocked && <StatusPill tone="neutral"><Lock className="h-3.5 w-3.5" aria-hidden="true" />Ya existe</StatusPill>}
+          badge={institutionLocked && <StatusPill tone="neutral" icon={Lock}>Ya existe</StatusPill>}
         >
           <Input
             {...control('institutionName')}
-            className={cn(FIRST_DIRECTOR_CONTROL_CLASS, 'disabled:bg-neutral-bg disabled:text-ink-soft disabled:opacity-100')}
+            className={cn(FIRST_DIRECTOR_CONTROL_CLASS, 'disabled:bg-(--disabled-bg) disabled:text-(--disabled-fg)')}
             value={effectiveForm.institutionName}
             placeholder="Ej. Instituto Superior Nuevo Horizonte"
             maxLength={FIELD_LIMITS.institutionName}
@@ -149,7 +149,7 @@ export function FirstDirectorForm({ formState, institutionLocked, pending, banne
         <Button
           type="submit"
           variant="primary"
-          className="h-11 w-full px-4 aria-disabled:cursor-not-allowed aria-disabled:opacity-60 sm:w-auto"
+          className="h-11 w-full px-4 aria-disabled:cursor-not-allowed aria-disabled:border-(--border) aria-disabled:bg-(--disabled-bg) aria-disabled:text-(--disabled-fg) sm:w-auto"
           aria-disabled={missing.length > 0 || pending}
           aria-describedby={WHY_ID}
         >

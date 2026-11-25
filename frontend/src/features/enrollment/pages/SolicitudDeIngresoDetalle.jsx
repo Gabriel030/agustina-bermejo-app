@@ -449,7 +449,7 @@ export function SolicitudDeIngresoDetalle() {
           <Button
             type="button"
             variant="primary"
-            className="min-h-11 px-5 aria-disabled:cursor-not-allowed aria-disabled:opacity-55"
+            className="min-h-11 px-5 aria-disabled:cursor-not-allowed aria-disabled:border-(--border) aria-disabled:bg-(--disabled-bg) aria-disabled:text-(--disabled-fg)"
             aria-disabled={blockReason ? 'true' : undefined}
             aria-describedby="approve-hint"
             disabled={busy}

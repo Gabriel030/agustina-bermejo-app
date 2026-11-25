@@ -91,7 +91,7 @@ export function LlamadosDisponibles({ subjectId, programSectionEnrollmentId, mis
           <div
             key={mesa.id}
             className={`flex flex-col gap-2 rounded-xl border border-border px-4 py-3 sm:flex-row sm:items-center sm:justify-between ${
-              bloqueadaPorOtra ? 'opacity-50' : ''
+              bloqueadaPorOtra ? 'bg-(--disabled-bg)' : ''
             }`}
           >
             <div>

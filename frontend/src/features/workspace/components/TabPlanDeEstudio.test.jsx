@@ -510,4 +510,52 @@ describe('TabPlanDeEstudio summary and mobile accordion', () => {
     await user.click(trigger);
     expect(trigger).toHaveAttribute('aria-expanded', 'true');
   });
+
+  describe('projection call to action', () => {
+    const projected = {
+      programEnrollmentId: 5,
+      status: 'PROJECTED',
+      estimatedPeriods: 8,
+      range: { minPeriods: 6, maxPeriods: 8 },
+      estimatedGraduationYear: 2030,
+      periodUnit: 'SEMESTER',
+      method: 'HISTORICAL_PACE_WITH_PREREQUISITES',
+      confidence: 'MEDIUM',
+      basis: null,
+      assumptions: [],
+      warnings: [],
+      reasons: [],
+    };
+
+    function useProjection() {
+      server.use(http.get(`${API}/me/program-enrollments/5/progress/projection`, () => HttpResponse.json(projected)));
+    }
+
+    it('applies the available filter and moves focus to the list heading', async () => {
+      useProjection();
+      useProgress(
+        progress([
+          subject(),
+          subject({ programSubjectId: 2, subjectCode: 'MAT201', subjectName: 'Análisis', curricularYear: 2, state: 'AVAILABLE', finalScore: null }),
+        ]),
+      );
+      const user = userEvent.setup();
+      renderWithProviders(<TabPlanDeEstudio carreraId={5} />);
+
+      await user.click(await screen.findByRole('button', { name: 'Ver qué puedo cursar' }));
+
+      expect(screen.getByRole('heading', { name: 'Materias del plan' })).toHaveFocus();
+      expect(screen.getByText('Análisis')).toBeInTheDocument();
+      expect(screen.queryByText('Matemática I')).not.toBeInTheDocument();
+    });
+
+    it('hides the call to action when no subject is available', async () => {
+      useProjection();
+      useProgress(progress([subject()]));
+      renderWithProviders(<TabPlanDeEstudio carreraId={5} />);
+
+      await screen.findByText('cuatrimestres estimados');
+      expect(screen.queryByRole('button', { name: 'Ver qué puedo cursar' })).not.toBeInTheDocument();
+    });
+  });
 });

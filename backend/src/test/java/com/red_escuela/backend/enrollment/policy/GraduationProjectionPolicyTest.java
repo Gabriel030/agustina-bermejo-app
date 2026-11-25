@@ -227,11 +227,48 @@ class GraduationProjectionPolicyTest {
         assertThat(policy.confidenceOf(1, 2)).isEqualTo(ProjectionConfidence.LOW);
         assertThat(policy.confidenceOf(2, 2)).isEqualTo(ProjectionConfidence.MEDIUM);
         assertThat(policy.confidenceOf(3, 2)).isEqualTo(ProjectionConfidence.MEDIUM);
-        assertThat(policy.confidenceOf(4, 2)).isEqualTo(ProjectionConfidence.LOW);
+        assertThat(policy.confidenceOf(4, 2)).isEqualTo(ProjectionConfidence.MEDIUM);
         assertThat(policy.confidenceOf(1, 3)).isEqualTo(ProjectionConfidence.MEDIUM);
         assertThat(policy.confidenceOf(4, 7)).isEqualTo(ProjectionConfidence.MEDIUM);
         assertThat(policy.confidenceOf(4, 8)).isEqualTo(ProjectionConfidence.HIGH);
         assertThat(policy.confidenceOf(3, 8)).isEqualTo(ProjectionConfidence.MEDIUM);
+    }
+
+    @Test
+    void confidenceNeverDecreasesWhenPeriodsOrApprovedSubjectsGrow() {
+        for (int closed = 0; closed <= 12; closed++) {
+            for (int approved = 0; approved <= 20; approved++) {
+                int current = rankOf(policy.confidenceOf(closed, approved));
+                assertThat(rankOf(policy.confidenceOf(closed + 1, approved))).isGreaterThanOrEqualTo(current);
+                assertThat(rankOf(policy.confidenceOf(closed, approved + 1))).isGreaterThanOrEqualTo(current);
+            }
+        }
+    }
+
+    @Test
+    void studentWithFourClosedPeriodsAndTwoApprovedSubjectsSeesTheGraduationYear() {
+        List<ProjectionSubject> subjects = new ArrayList<>(subjectsOf(1, 2, CurriculumSubjectState.APPROVED));
+        subjects.addAll(subjectsOf(3, 6, CurriculumSubjectState.AVAILABLE));
+
+        GraduationProjection view = project(subjects, 24, List.of(), 5, 4, MARCH);
+
+        assertThat(view.status()).isEqualTo(ProjectionStatus.PROJECTED);
+        assertThat(view.confidence()).isEqualTo(ProjectionConfidence.MEDIUM);
+        assertThat(view.estimatedGraduationYear()).isNotNull();
+    }
+
+    @Test
+    void simulationThatDoesNotConvergeReportsHorizonExceededAndNotCreditsUnreachable() {
+        List<ProjectionSubject> subjects = new ArrayList<>();
+        subjects.add(subject(1, 3, CurriculumSubjectState.AVAILABLE, null, null));
+        for (int id = 2; id <= 41; id++) {
+            subjects.add(subject(id, 3, CurriculumSubjectState.BLOCKED, null, null, id - 1L));
+        }
+
+        GraduationProjection view = project(subjects, 123, List.of(), 25, 0, MARCH);
+
+        assertThat(view.status()).isEqualTo(ProjectionStatus.NOT_PROJECTABLE);
+        assertThat(view.reasons()).containsExactly(ProjectionBlockReason.PROJECTION_HORIZON_EXCEEDED);
     }
 
     @Test
@@ -275,6 +312,14 @@ class GraduationProjectionPolicyTest {
             subjects.add(subject(id, 3, state, null, null));
         }
         return subjects;
+    }
+
+    private int rankOf(ProjectionConfidence confidence) {
+        return switch (confidence) {
+            case LOW -> 0;
+            case MEDIUM -> 1;
+            case HIGH -> 2;
+        };
     }
 
     private ProjectionSubject withCredits(ProjectionSubject subject, int credits) {

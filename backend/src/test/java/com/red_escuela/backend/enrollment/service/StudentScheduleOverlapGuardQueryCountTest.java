@@ -1,7 +1,6 @@
 package com.red_escuela.backend.enrollment.service;
 
 import com.red_escuela.backend.academicstructure.CycleTestFixtures;
-import com.red_escuela.backend.academicstructure.entity.Classroom;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -52,7 +51,6 @@ class StudentScheduleOverlapGuardQueryCountTest extends AbstractIntegrationTest 
 
     private CycleTestFixtures fixtures;
     private Term term;
-    private Classroom classroom;
     private Institution institution;
     private Student student;
     private ProgramEnrollment programEnrollment;
@@ -61,7 +59,6 @@ class StudentScheduleOverlapGuardQueryCountTest extends AbstractIntegrationTest 
     void setUp() {
         fixtures = new CycleTestFixtures(entityManager);
         term = fixtures.term(2026);
-        classroom = fixtures.classroom(30);
         Institution institution = new Institution();
         institution.setName("Overlap institute");
         entityManager.persist(institution);
@@ -86,7 +83,7 @@ class StudentScheduleOverlapGuardQueryCountTest extends AbstractIntegrationTest 
 
     private SubjectSection section(DayOfWeek day, int fromHour, int toHour) {
         SubjectSection section = fixtures.section(fixtures.subject(), term, StatusType.ACTIVE, null);
-        fixtures.slot(section, classroom, day, LocalTime.of(fromHour, 0), LocalTime.of(toHour, 0));
+        fixtures.slot(section, fixtures.classroom(30), day, LocalTime.of(fromHour, 0), LocalTime.of(toHour, 0));
         return section;
     }
 

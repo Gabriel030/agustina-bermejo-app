@@ -18,6 +18,8 @@ import {
   filterEquivalences,
 } from '@/features/workspace/lib/subjectEquivalences';
 import { formatFinalScore } from '@/features/workspace/lib/curriculumPlan';
+import { EquivalenceRecordButton } from '@/features/workspace/components/EquivalenceRecordButton';
+import { useEquivalenceActions } from '@/features/workspace/hooks/EquivalenceActionsContext';
 import { useSubjectEquivalences } from '@/features/enrollment';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { formatDate, formatDateTime } from '@/lib/billing';
@@ -164,6 +166,7 @@ function EquivalenceCards({ equivalences, onOpen }) {
 
 export function EquivalencesSection({ programEnrollmentId, readOnlyNotice = false }) {
   const compact = useMediaQuery('(max-width: 767px)');
+  const actions = useEquivalenceActions();
   const [filterId, setFilterId] = useState('vigentes');
   const [selectedId, setSelectedId] = useState(null);
   const triggerRef = useRef(null);
@@ -174,6 +177,11 @@ export function EquivalencesSection({ programEnrollmentId, readOnlyNotice = fals
   function openDetail(equivalence, trigger) {
     triggerRef.current = trigger;
     setSelectedId(equivalence.id);
+  }
+
+  function requestVoid(equivalence) {
+    setSelectedId(null);
+    actions.openVoid(equivalence, triggerRef.current);
   }
 
   function returnFocusToTrigger(event) {
@@ -194,9 +202,10 @@ export function EquivalencesSection({ programEnrollmentId, readOnlyNotice = fals
           Equivalencias
         </h2>
         {readOnlyNotice && <StatusPill tone="neutral" icon={Eye}>Solo lectura</StatusPill>}
+        {actions?.visible && !compact && <EquivalenceRecordButton actions={actions} />}
       </div>
       {isLoading ? (
-        <div className="flex flex-col gap-2" aria-busy="true" aria-label="Cargando equivalencias">
+        <div role="status" className="flex flex-col gap-2" aria-busy="true" aria-label="Cargando equivalencias">
           <Skeleton className="h-12" />
           <Skeleton className="h-12" />
         </div>
@@ -244,6 +253,7 @@ export function EquivalencesSection({ programEnrollmentId, readOnlyNotice = fals
         open={selected != null}
         onOpenChange={(next) => !next && setSelectedId(null)}
         onCloseAutoFocus={returnFocusToTrigger}
+        onRequestVoid={requestVoid}
       />
     </GlassCard>
   );

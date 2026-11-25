@@ -4,15 +4,6 @@
 @import "./theme/fonts.css";
 @import "./theme/tokens.css";
 
-/*
- * Mapeo de los tokens de Vidrio Líquido a las variables que usan las
- * primitivas de shadcn/ui (--primary, --card, etc.) más las clases
- * utilitarias propias (bg-success-bg, text-danger, bg-surface...).
- * Los valores de cada token cambian con `[data-theme]` (ver
- * theme/tokens.css y context/ThemeContext.jsx) — estas clases no
- * necesitan saber si el tema activo es claro u oscuro, solo consumen
- * la variable.
- */
 @theme inline {
   --font-sans: 'Manrope Variable', system-ui, sans-serif;
   --font-heading: 'Sora Variable', system-ui, sans-serif;

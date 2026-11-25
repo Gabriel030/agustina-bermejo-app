@@ -74,15 +74,17 @@ function PlanSubjectPicker({ programId, excludeId, selected, onSelect }) {
       {isError && <LoadErrorState error={error} onRetry={refetch} resource="las materias del plan" bare />}
       <div className="flex max-h-56 flex-col divide-y divide-neutral-bg overflow-y-auto">
         {candidates.map((ps) => (
-          <button
+          <Button
             key={ps.id}
             type="button"
+            variant="row"
+            size="row"
             onClick={() => onSelect(ps)}
-            className="flex flex-col gap-0.5 rounded-xl px-3 py-2 text-left transition-colors hover:bg-neutral-bg/60"
+            className="flex-col items-start justify-start gap-0.5 rounded-xl px-3 py-2 transition-colors"
           >
             <span className="text-size-11 font-bold uppercase tracking-widest text-ink-faint">{ps.subjectCode}</span>
             <span className="text-size-13-5 font-medium text-ink">{ps.subjectName}</span>
-          </button>
+          </Button>
         ))}
         {!isLoading && !isError && candidates.length === 0 && (
           <p className="py-3 text-center text-size-13 text-ink-faint">No hay otras materias en el plan que coincidan.</p>

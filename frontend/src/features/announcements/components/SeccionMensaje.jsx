@@ -1,6 +1,7 @@
 import { Info } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { CATEGORIA_AVISO_LABEL, hintDePrivacidad } from '@/lib/avisos';
@@ -35,18 +36,19 @@ export function SeccionMensaje({ valores, onChange, mostrarHintPrivacidad, alcan
             </SelectContent>
           </Select>
         </div>
-        <button
+        <Button
           type="button"
+          variant="ghost"
           aria-pressed={valores.urgent}
           onClick={() => onChange({ ...valores, urgent: !valores.urgent })}
-          className={`rounded-xl border px-3.5 py-2 text-size-12-5 font-bold transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+          className={`h-auto rounded-xl border px-3.5 py-2 text-size-12-5 font-bold transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
             valores.urgent
-              ? 'border-transparent bg-brand text-on-accent'
+              ? 'border-transparent bg-brand text-on-accent hover:bg-brand hover:text-on-accent'
               : 'border-border text-ink-soft hover:border-brand hover:text-ink'
           }`}
         >
           Marcar como urgente
-        </button>
+        </Button>
       </div>
 
       <div className="flex flex-col gap-1.5">
