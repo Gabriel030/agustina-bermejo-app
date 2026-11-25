@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { AlertTriangle, Ban, Check, ChevronDown, ChevronLeft, Download, Info, Minus, RefreshCw, Search, Undo2, WifiOff } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { PageContainer } from '@/components/PageContainer';
@@ -31,6 +31,8 @@ import { ExportAttendanceDialog } from '@/features/attendance/components/ExportA
 import { EXPORT_SCOPES } from '@/features/attendance/lib/exportScopes';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Label } from '@/components/ui/label';
+import { AttendanceHistoryRow } from '@/features/attendance/components/AttendanceHistoryRow';
+import { historyDateDivider, rejectionText } from '@/features/attendance/lib/attendanceHistory';
 import { AttendanceStudentRow } from '@/features/attendance/components/AttendanceStudentRow';
 import { AttendanceSummaryCard } from '@/features/attendance/components/AttendanceSummaryCard';
 import { AttendanceSaveBar } from '@/features/attendance/components/AttendanceSaveBar';
@@ -348,11 +350,6 @@ function agruparPorAnioYMes(fechas) {
   }));
 }
 
-function rejectionText(rejection) {
-  const date = formatDate(rejection.rejectedAt);
-  return `Justificación rechazada: ${rejection.reason}${date ? ` (${date})` : ''}`;
-}
-
 export function TabHistorial({ type, sectionId, returnRequest }) {
   const { data: historial, isLoading } = useHistorialAsistencia(type, sectionId);
   const { data: pedidos } = useMisPedidosDeAsistencia();
@@ -362,7 +359,17 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
   const [alumnoHover, setAlumnoHover] = useState(null);
   const [alumnoFijado, setAlumnoFijado] = useState(null);
   const alumnoResaltado = alumnoHover ?? alumnoFijado;
-  const [fechaHover, setFechaHover] = useState(null);
+  const tableRef = useRef(null);
+  const clearRowHover = useCallback(() => setAlumnoHover(null), []);
+  const toggleRowPin = useCallback((studentId) => setAlumnoFijado((prev) => (prev === studentId ? null : studentId)), []);
+  const highlightDate = useCallback((date) => {
+    tableRef.current?.querySelectorAll('[data-hl]').forEach((el) => el.removeAttribute('data-hl'));
+    if (date) tableRef.current?.querySelectorAll(`[data-date="${date}"]`).forEach((el) => el.setAttribute('data-hl', ''));
+  }, []);
+  const handleTableMouseOver = useCallback((e) => {
+    const cell = e.target.closest?.('[data-date]');
+    highlightDate(cell ? cell.dataset.date : null);
+  }, [highlightDate]);
 
   const pendingRequest = findPendingRequestForAttendance(pedidos, celdaSeleccionada?.attendanceId);
   const gruposPorAnio = useMemo(() => agruparPorAnioYMes(historial?.classDates ?? []), [historial]);
@@ -390,7 +397,7 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
   const celdaSticky = 'sticky left-0 z-10';
   const divisorDeMes = 'border-r-2 border-r-ink-faint/30';
   const divisorDeAnio = 'border-r-[3px] border-r-ink/50';
-  const divisor = (fecha) => (finesDeAnio.has(fecha) ? divisorDeAnio : finesDeMes.has(fecha) ? divisorDeMes : '');
+  const divisor = (fecha) => historyDateDivider(fecha, finesDeMes, finesDeAnio);
 
   return (
     <div className="flex flex-col gap-4 pt-4">
@@ -406,7 +413,7 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
       <GlassCard className="flex flex-col gap-3 p-4">
         <div className="font-heading text-size-14 font-semibold text-ink">Historial de asistencia</div>
         <div className="overflow-x-auto">
-      <table className="border-separate border-spacing-0 text-size-11-5">
+      <table ref={tableRef} className="border-separate border-spacing-0 text-size-11-5" onMouseOver={handleTableMouseOver} onMouseLeave={() => highlightDate(null)}>
         <thead>
           <tr>
             <th rowSpan={3} className={`${celdaSticky} bg-surface whitespace-nowrap border-b border-border px-3 py-1 text-left align-bottom font-semibold text-ink-faint`}>
@@ -440,9 +447,8 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
             {historial.classDates.map((fecha) => (
               <th
                 key={fecha}
-                onMouseEnter={() => setFechaHover(fecha)}
-                onMouseLeave={() => setFechaHover(null)}
-                className={`bg-surface w-7 border-b border-border px-0.5 py-1 text-center font-normal text-ink-faint ${divisor(fecha)} ${fecha === fechaHover ? 'shadow-(--sh-highlight-row)' : ''}`}
+                data-date={fecha}
+                className={`bg-surface w-7 border-b border-border px-0.5 py-1 text-center font-normal text-ink-faint data-hl:shadow-(--sh-highlight-row) ${divisor(fecha)}`}
               >
                 {Number(fecha.slice(8, 10))}
               </th>
@@ -450,48 +456,21 @@ export function TabHistorial({ type, sectionId, returnRequest }) {
           </tr>
         </thead>
         <tbody>
-          {historial.rows.map((fila) => {
-            const resaltada = fila.studentId === alumnoResaltado;
-            return (
-              <tr
-                key={fila.studentId}
-                onMouseEnter={() => setAlumnoHover(fila.studentId)}
-                onMouseLeave={() => setAlumnoHover(null)}
-                onClick={() => setAlumnoFijado((prev) => (prev === fila.studentId ? null : fila.studentId))}
-                className="cursor-pointer"
-              >
-                <td className={`${celdaSticky} whitespace-nowrap border-y-2 px-3 py-1 font-medium ${resaltada ? 'border-brand bg-brand text-on-accent' : 'border-transparent bg-surface text-ink'}`}>
-                  {fila.studentName}
-                </td>
-                {historial.classDates.map((fecha) => {
-                  const celda = fila.cellsByDate[fecha];
-                  const config = celda ? STATUS_BY_VALUE[celda.status] : null;
-                  return (
-                    <td
-                      key={fecha}
-                      onMouseEnter={() => setFechaHover(fecha)}
-                      onMouseLeave={() => setFechaHover(null)}
-                      onClick={(e) => {
-                        if (!celda) return;
-                        e.stopPropagation();
-                        setCeldaSeleccionada({ studentName: fila.studentName, fecha, ...celda });
-                      }}
-                      className={`w-7 border-y-[3px] px-0.5 py-1 text-center ${celda ? 'cursor-pointer' : ''} ${config ? config.rowClass : ''} ${divisor(fecha)} ${resaltada ? 'border-brand' : 'border-transparent'} ${returnRequest && fila.studentName === returnRequest.studentName && fecha === returnRequest.classDate ? 'ring-2 ring-inset ring-brand' : ''} ${fecha === fechaHover ? 'shadow-(--sh-highlight-row)' : ''}`}
-                      title={celda?.rejection ? rejectionText(celda.rejection) : (config?.label ?? 'Sin cargar')}
-                      tabIndex={celda?.rejection ? 0 : undefined}
-                      aria-label={celda?.rejection ? `${config.label}. ${rejectionText(celda.rejection)}` : undefined}
-                    >
-                      {config ? config.label[0] : '·'}
-                      {celda?.rejection && <span aria-hidden="true" className="ml-0.5 text-danger">!</span>}
-                    </td>
-                  );
-                })}
-                <td className={`border-y-2 px-2 py-1 text-center font-semibold ${resaltada ? 'border-brand bg-brand text-on-accent' : 'border-transparent text-ink'}`}>
-                  {fila.attendancePercent == null ? '-' : `${Math.round(attendancePercentToPoints(fila.attendancePercent))}%`}
-                </td>
-              </tr>
-            );
-          })}
+          {historial.rows.map((fila) => (
+            <AttendanceHistoryRow
+              key={fila.studentId}
+              row={fila}
+              classDates={historial.classDates}
+              highlighted={fila.studentId === alumnoResaltado}
+              monthEnds={finesDeMes}
+              yearEnds={finesDeAnio}
+              returnRequest={returnRequest}
+              onRowEnter={setAlumnoHover}
+              onRowLeave={clearRowHover}
+              onRowToggle={toggleRowPin}
+              onCellSelect={setCeldaSeleccionada}
+            />
+          ))}
         </tbody>
       </table>
         </div>
