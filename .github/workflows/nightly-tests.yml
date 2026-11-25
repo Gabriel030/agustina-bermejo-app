@@ -200,9 +200,21 @@ jobs:
     needs: decide
     if: needs.decide.outputs.run == 'true'
     timeout-minutes: 30
+    permissions:
+      contents: write
     env:
       HOME: /root
     steps:
+      - name: Refuse to update baselines on a protected branch
+        if: inputs.update_baselines == true
+        run: |
+          case "${{ github.ref_name }}" in
+            develop|master|release/*|hotfix/*)
+              echo "update_baselines is not allowed on ${{ github.ref_name }}"
+              exit 1
+              ;;
+          esac
+
       - uses: actions/checkout@v7
         with:
           ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || needs.decide.outputs.sha }}
@@ -225,6 +237,24 @@ jobs:
         run: npm run test:visual:update
         env:
           CI: "true"
+
+      - name: Commit the regenerated baselines to the dispatched branch
+        if: inputs.update_baselines == true
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A -- e2e/specs/visual/__screenshots__
+          if git diff --cached --quiet; then
+            echo "baselines unchanged"
+            exit 0
+          fi
+          if git diff --cached --name-only | grep -v '^e2e/specs/visual/__screenshots__/'; then
+            echo "unexpected files staged"
+            exit 1
+          fi
+          git commit -m "test(e2e): baselines visuales regeneradas en el contenedor de Playwright"
+          git push origin "HEAD:refs/heads/${{ github.ref_name }}"
 
       - name: Upload the regenerated baselines
         if: inputs.update_baselines == true
