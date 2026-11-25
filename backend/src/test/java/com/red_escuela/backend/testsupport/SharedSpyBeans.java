@@ -4,6 +4,7 @@ import com.red_escuela.backend.shared.module.OnlinePaymentDependencyPort;
 import com.red_escuela.backend.billing.account.service.CurrentAccountAllocationService;
 import com.red_escuela.backend.billing.operation.PaymentGatewayConfigChangeRecordingPort;
 import com.red_escuela.backend.billing.collections.repository.LateFeeChargeRepository;
+import com.red_escuela.backend.billing.invoice.service.InvoiceViewLoader;
 import com.red_escuela.backend.billing.invoice.service.PendingInvoiceQueryService;
 import com.red_escuela.backend.billing.run.operation.MonthlyInvoiceIssuanceJob;
 import com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort;
@@ -30,6 +31,7 @@ import java.lang.annotation.Target;
         EnrollmentWithdrawalBillingPort.class,
         OnlinePaymentDependencyPort.class,
         PaymentGatewayConfigChangeRecordingPort.class,
+        InvoiceViewLoader.class,
         WhatsAppProviderConfiguration.class
 }, reset = MockReset.AFTER)
 public @interface SharedSpyBeans {
