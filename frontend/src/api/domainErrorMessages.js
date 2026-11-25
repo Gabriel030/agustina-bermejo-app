@@ -269,6 +269,8 @@ export const DOMAIN_ERROR_MESSAGES = {
   SECTION_NOT_FOUND: 'No encontramos la comisión.',
   SESSION_NOT_FOUND: 'No encontramos la sesión.',
   STUDENT_NOT_FOUND: 'No encontramos al alumno.',
+  STUDENT_DOCUMENT_ALREADY_EXISTS: 'Ya existe otra persona con ese documento.',
+  STUDENT_EMAIL_CHANGE_NOT_AVAILABLE: 'El cambio de email todavía no está disponible.',
   SUBJECT_NOT_FOUND: 'No encontramos la materia.',
   TERM_NOT_FOUND: 'No encontramos el cuatrimestre.',
   ACTIVE_TERM_ALREADY_EXISTS: 'Ya hay un cuatrimestre activo.',
