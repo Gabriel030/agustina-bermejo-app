@@ -41,8 +41,7 @@ function PublishHeader({ column, students, hasDrafts, boardHref, onPublish }) {
   const label = gradeColumnLabel(column);
   if (isColumnLocked(column)) {
     return (
-      <StatusPill tone="success" className="px-2 py-0.5 normal-case tracking-normal">
-        <Lock aria-hidden="true" className="size-3" />
+      <StatusPill tone="success" className="px-2 py-0.5 normal-case tracking-normal" icon={Lock}>
         Publicada
       </StatusPill>
     );

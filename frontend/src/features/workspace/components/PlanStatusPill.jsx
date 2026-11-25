@@ -4,8 +4,7 @@ import { PLAN_STATUS_PILL } from '@/features/workspace/components/planStatusPill
 export function PlanStatusPill({ status }) {
   const { label, tone, Icon } = PLAN_STATUS_PILL[status];
   return (
-    <StatusPill tone={tone}>
-      <Icon className="h-3 w-3" aria-hidden="true" />
+    <StatusPill tone={tone} icon={Icon}>
       {label}
     </StatusPill>
   );

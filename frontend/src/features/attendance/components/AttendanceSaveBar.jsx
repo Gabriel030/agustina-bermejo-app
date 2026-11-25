@@ -7,16 +7,14 @@ function barSummary({ hasPendingChanges, changedCount, saved, canceled }) {
   if (hasPendingChanges) {
     const label = changedCount === 0 ? 'Cambios sin guardar' : `${changedCount} ${changedCount === 1 ? 'cambio' : 'cambios'} sin guardar`;
     return (
-      <StatusPill tone="accent">
-        <AlertTriangle className="size-3.5" aria-hidden="true" />
+      <StatusPill tone="accent" icon={AlertTriangle}>
         {label}
       </StatusPill>
     );
   }
   if (saved || canceled) {
     return (
-      <StatusPill tone="success">
-        <Check className="size-3.5" aria-hidden="true" />
+      <StatusPill tone="success" icon={Check}>
         Todo guardado
       </StatusPill>
     );

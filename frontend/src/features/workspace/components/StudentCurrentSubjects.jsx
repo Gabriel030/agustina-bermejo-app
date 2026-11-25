@@ -21,8 +21,7 @@ function SubjectStatus({ sectionEnrollment }) {
   const status = planStatusOf(sectionEnrollment);
   if (status === 'waitlisted') {
     return (
-      <StatusPill tone="warning">
-        <Clock className="h-3 w-3" aria-hidden="true" />
+      <StatusPill tone="warning" icon={Clock}>
         En lista de espera
       </StatusPill>
     );

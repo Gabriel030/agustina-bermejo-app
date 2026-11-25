@@ -40,8 +40,7 @@ function SettingRow({ field, saved, value, error, changed, onChange, onBlur }) {
           </label>
           <InfoTip label={`Más información sobre ${field.label.toLowerCase()}`}>{field.tip}</InfoTip>
           {changed && (
-            <StatusPill tone="accent">
-              <Check className="size-3" aria-hidden="true" />
+            <StatusPill tone="accent" icon={Check}>
               Modificado
             </StatusPill>
           )}
@@ -125,8 +124,7 @@ function ChangesBar({ count, invalidCount, onDiscard, onReview }) {
         {count === 0 ? (
           <span className="text-sm font-semibold text-ink-faint">Sin cambios por guardar</span>
         ) : (
-          <StatusPill tone="accent" className="text-size-13">
-            <AlertCircle className="size-3.5" aria-hidden="true" />
+          <StatusPill tone="accent" className="text-size-13" icon={AlertCircle}>
             {count} {count === 1 ? 'cambio sin guardar' : 'cambios sin guardar'}
           </StatusPill>
         )}
