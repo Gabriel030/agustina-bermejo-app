@@ -1,0 +1,74 @@
+services:
+  glitchtip-postgres:
+    image: postgres:18-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: glitchtip
+      POSTGRES_USER: glitchtip
+      POSTGRES_PASSWORD: "${GLITCHTIP_POSTGRES_PASSWORD:?GLITCHTIP_POSTGRES_PASSWORD es obligatoria: es la clave de la base propia de GlitchTip}"
+    command:
+      - postgres
+      - -c
+      - max_locks_per_transaction=512
+    volumes:
+      - glitchtip_postgres_data:/var/lib/postgresql
+    networks:
+      - internal
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U glitchtip -d glitchtip"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          memory: ${GLITCHTIP_POSTGRES_MEMORY_LIMIT:-512m}
+          cpus: "${GLITCHTIP_POSTGRES_CPU_LIMIT:-0.5}"
+
+  glitchtip:
+    image: "${GLITCHTIP_IMAGE:?GLITCHTIP_IMAGE es obligatoria: fijar la imagen con tag explícito, por ejemplo glitchtip/glitchtip:7.0.0 (nunca latest). Ver docs/deploy/glitchtip.md}"
+    restart: unless-stopped
+    environment:
+      SECRET_KEY: "${GLITCHTIP_SECRET_KEY:?GLITCHTIP_SECRET_KEY es obligatoria: generar con openssl rand -base64 48 | tr -d '/+='}"
+      DATABASE_URL: postgres://glitchtip:${GLITCHTIP_POSTGRES_PASSWORD:?GLITCHTIP_POSTGRES_PASSWORD es obligatoria}@glitchtip-postgres:5432/glitchtip
+      VALKEY_URL: ""
+      GLITCHTIP_DOMAIN: ${GLITCHTIP_DOMAIN:-http://localhost:8001}
+      ALLOWED_HOSTS: glitchtip,localhost,127.0.0.1
+      ENABLE_USER_REGISTRATION: "false"
+      ENABLE_ORGANIZATION_CREATION: "false"
+      EMAIL_BACKEND: django.core.mail.backends.console.EmailBackend
+      GLITCHTIP_RETENTION_DAYS: ${GLITCHTIP_RETENTION_DAYS:-30}
+      GLITCHTIP_ENABLE_UPTIME: "false"
+      DEBUG: "false"
+    ports:
+      - "${GLITCHTIP_BIND:-127.0.0.1:8001}:8000"
+    depends_on:
+      glitchtip-postgres:
+        condition: service_healthy
+    networks:
+      - internal
+      - default
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "python", "healthcheck.py"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+    deploy:
+      resources:
+        limits:
+          memory: ${GLITCHTIP_MEMORY_LIMIT:-768m}
+          cpus: "${GLITCHTIP_CPU_LIMIT:-1}"
+
+networks:
+  internal:
+    internal: true
+
+volumes:
+  glitchtip_postgres_data:
