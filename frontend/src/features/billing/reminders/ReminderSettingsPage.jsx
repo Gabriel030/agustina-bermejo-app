@@ -100,15 +100,17 @@ function SendingSettingsBlock({ overrides, general, readOnly, onChange }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="flex flex-col gap-3">
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="inline"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className="flex items-center gap-2 font-heading text-base font-semibold text-ink"
+        className="min-h-11 gap-2 self-start font-heading text-base font-semibold text-ink hover:bg-transparent"
       >
         Ajustes de envío
         <ChevronDown className={`size-4 transition-transform ${open ? 'rotate-180' : ''}`} />
-      </button>
+      </Button>
       {open && <SendingOverrides overrides={overrides} general={general} disabled={readOnly} onChange={onChange} />}
     </div>
   );
