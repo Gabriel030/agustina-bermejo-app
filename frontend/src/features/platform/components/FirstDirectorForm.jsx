@@ -69,7 +69,7 @@ export function FirstDirectorForm({ formState, institutionLocked, pending, banne
           label="Nombre de la institución"
           hint={institutionLocked ? 'La institución ya existe, se le asigna el Director.' : 'Se crea junto con su primer Director.'}
           error={shownErrors.institutionName}
-          badge={institutionLocked && <StatusPill tone="neutral"><Lock className="h-3.5 w-3.5" aria-hidden="true" />Ya existe</StatusPill>}
+          badge={institutionLocked && <StatusPill tone="neutral" icon={Lock}>Ya existe</StatusPill>}
         >
           <Input
             {...control('institutionName')}

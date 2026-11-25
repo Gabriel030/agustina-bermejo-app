@@ -1,3 +1,4 @@
+import { Lock, Plus } from 'lucide-react';
 import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -176,6 +177,19 @@ export function DesignCatalog() {
               {tone}
             </StatusPill>
           ))}
+        </Row>
+        <Row>
+          {PILL_TONES.map((tone) => (
+            <StatusPill key={tone} tone={tone} icon={null}>
+              {tone} sin ícono
+            </StatusPill>
+          ))}
+          <StatusPill tone="accent" icon={Plus}>
+            Disponible
+          </StatusPill>
+          <StatusPill tone="neutral" icon={Lock}>
+            Bloqueada
+          </StatusPill>
         </Row>
         <Row>
           {BADGE_VARIANTS.map((variant) => (

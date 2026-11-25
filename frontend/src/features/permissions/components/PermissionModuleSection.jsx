@@ -107,8 +107,7 @@ export function PermissionModuleSection({ module, grid, roles, permissions, open
                     <Tooltip>
                         <TooltipTrigger asChild>
                           <span tabIndex={0} aria-label={SENSITIVE_TOOLTIP} className="rounded-full outline-none focus-visible:ring-2 focus-visible:ring-ring">
-                            <StatusPill tone="warning">
-                              <AlertTriangle className="size-3" aria-hidden="true" /> Sensible
+                            <StatusPill tone="warning" icon={AlertTriangle}> Sensible
                             </StatusPill>
                           </span>
                         </TooltipTrigger>

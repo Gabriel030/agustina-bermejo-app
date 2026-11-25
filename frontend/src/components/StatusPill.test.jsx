@@ -34,4 +34,48 @@ describe('StatusPill', () => {
     expect(icon).toHaveAttribute('aria-hidden', 'true');
     expect(screen.getByText('Activo')).toBeInTheDocument();
   });
+
+  it('warning tone shows an alert icon by default', () => {
+    const { container } = render(<StatusPill tone="warning">Pendiente</StatusPill>);
+    expect(container.querySelector('svg')).toHaveAttribute('aria-hidden', 'true');
+    expect(container.querySelector('svg')).toHaveClass('lucide-triangle-alert');
+  });
+
+  it('danger tone shows a circle with x icon by default', () => {
+    const { container } = render(<StatusPill tone="danger">Vencido</StatusPill>);
+    expect(container.querySelector('svg')).toHaveClass('lucide-circle-x');
+  });
+
+  it.each(['success', 'accent', 'neutral'])('%s tone has no automatic icon', (tone) => {
+    const { container } = render(<StatusPill tone={tone}>Estado</StatusPill>);
+    expect(container.querySelector('svg')).toBeNull();
+  });
+
+  it('explicit icon wins over the tone default', () => {
+    const { container } = render(
+      <StatusPill tone="danger" icon={Check}>
+        Vencido
+      </StatusPill>,
+    );
+    expect(container.querySelector('svg')).toHaveClass('lucide-check');
+    expect(container.querySelectorAll('svg')).toHaveLength(1);
+  });
+
+  it('null icon turns the automatic icon off', () => {
+    const { container } = render(
+      <StatusPill tone="warning" icon={null}>
+        Pendiente
+      </StatusPill>,
+    );
+    expect(container.querySelector('svg')).toBeNull();
+  });
+
+  it('dot suppresses the automatic icon', () => {
+    const { container } = render(
+      <StatusPill tone="warning" dot>
+        Pendiente
+      </StatusPill>,
+    );
+    expect(container.querySelector('svg')).toBeNull();
+  });
 });

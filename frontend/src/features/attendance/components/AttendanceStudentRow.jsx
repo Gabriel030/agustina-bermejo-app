@@ -32,8 +32,7 @@ export function AttendanceStudentRow({ student, status, onChangeStatus, locked, 
       <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 font-heading text-size-14-5 font-semibold text-ink">
         <span>{student.studentName}</span>
         {showStatusPill && (
-          <StatusPill tone={pill.tone}>
-            <PillIcon className="size-3.5" aria-hidden="true" />
+          <StatusPill tone={pill.tone} icon={PillIcon}>
             {pill.label}
           </StatusPill>
         )}

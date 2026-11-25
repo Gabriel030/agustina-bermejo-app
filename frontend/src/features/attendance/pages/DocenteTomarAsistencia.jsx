@@ -54,23 +54,20 @@ const CLASS_DATE_LABEL = new Intl.DateTimeFormat('es-AR', { day: 'numeric', mont
 function SavedStatePill({ canceled, saved }) {
   if (canceled) {
     return (
-      <StatusPill tone="danger">
-        <Ban className="size-3.5" aria-hidden="true" />
+      <StatusPill tone="danger" icon={Ban}>
         Clase cancelada
       </StatusPill>
     );
   }
   if (saved) {
     return (
-      <StatusPill tone="success">
-        <Check className="size-3.5" aria-hidden="true" />
+      <StatusPill tone="success" icon={Check}>
         Asistencia guardada
       </StatusPill>
     );
   }
   return (
-    <StatusPill tone="neutral">
-      <Minus className="size-3.5" aria-hidden="true" />
+    <StatusPill tone="neutral" icon={Minus}>
       Sin tomar todavía
     </StatusPill>
   );
