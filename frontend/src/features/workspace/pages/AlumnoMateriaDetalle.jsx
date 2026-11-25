@@ -120,8 +120,7 @@ export function AlumnoMateriaDetalle() {
         <div>
           <div className="flex flex-wrap items-center gap-2.5">
             <h1 className="font-heading text-2xl font-bold tracking-tight text-ink">{inscripcion.subjectName}</h1>
-            <StatusPill tone={badge.tone}>
-              <badge.Icon className="h-3.5 w-3.5" aria-hidden="true" />
+            <StatusPill tone={badge.tone} icon={badge.Icon}>
               {badge.label}
             </StatusPill>
           </div>

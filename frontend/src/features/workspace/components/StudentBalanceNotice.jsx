@@ -47,8 +47,7 @@ export function StudentBalanceNotice({ standing, isLoading, isError, onRetry }) 
   if (standing === 'AL_DIA') {
     return (
       <div className="flex">
-        <StatusPill tone="success">
-          <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
+        <StatusPill tone="success" icon={CheckCircle2}>
           Pagos al día
         </StatusPill>
       </div>
