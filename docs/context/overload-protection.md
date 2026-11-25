@@ -22,6 +22,7 @@ Un `429` lleva `Retry-After` (segundos), `code=REQUEST_RATE_LIMIT_EXCEEDED` y `r
 | `POST /auth/refresh` | IP | `refresh.capacity`, `refresh.refill-per-minute` | 30 |
 | `POST /auth/reset-password` | IP | `reset-password.*` | 10 |
 | `POST /prospects` (público) | IP | `prospects.*` | 10 |
+| `POST /public/monitoring/tunnel` (solo con `SENTRY_DSN`) | IP, y además un tope global (clave única) tras el de IP | `refresh.*` por IP; `monitoring-tunnel-global.*` (`SENTRY_TUNNEL_GLOBAL_PER_MINUTE`) | 30 por IP; 120 global |
 | Pedidos autenticados `GET`/`HEAD` | usuario | `user-read.*` | 600 |
 | Pedidos autenticados de escritura | usuario | `user-write.*` | 120 |
 | `/auth/login`, `/auth/google`, `/auth/register`, `/auth/forgot-password`, `/auth/verify-reset-code` | IP | `auth.rate-limit.*` (preexistente) | ver `application.properties` |

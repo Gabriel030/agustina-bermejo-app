@@ -9,6 +9,7 @@ import { installFixedClock } from '@/test/fixedClock';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { DraftInvoicesPage } from './DraftInvoicesPage';
 import { MonthlyRunPage } from './MonthlyRunPage';
+import * as draftSelection from './draftSelection';
 import { restoreViewport, useCompactViewport } from '@/test/compactViewport';
 
 const API = 'http://localhost:8080';
@@ -19,6 +20,11 @@ const ROUTE = '/director/emision-mensual/7/borradores';
 vi.mock('@/context/AuthContext', () => ({
   useAuth: () => ({ usuario: { nombre: 'Ana', apellido: 'Pérez', roles: ['DIRECTOR'] }, roles: ['DIRECTOR'] }),
 }));
+
+vi.mock('./draftSelection', async (importOriginal) => {
+  const actual = await importOriginal();
+  return { ...actual, summarizeDraftSelection: vi.fn(actual.summarizeDraftSelection) };
+});
 
 installFixedClock();
 
@@ -111,6 +117,21 @@ async function selectGroups(user, ...names) {
 }
 
 describe('DraftInvoicesPage', () => {
+  it('does not recompute the selection summary on a re-render without data changes', async () => {
+    mockDrafts([PROGRAM_GROUP, SEPARATE_GROUP]);
+    const user = userEvent.setup();
+    renderPage();
+
+    await selectGroups(user, 'Tecnicatura en Enfermería');
+    await screen.findByText('2 facturas seleccionadas');
+    const callsBefore = draftSelection.summarizeDraftSelection.mock.calls.length;
+
+    await user.click(screen.getByRole('button', { name: /Aprobar y emitir/ }));
+    await screen.findByRole('alertdialog');
+
+    expect(draftSelection.summarizeDraftSelection.mock.calls.length).toBe(callsBefore);
+  });
+
   it('lists the groups in Spanish with the difference against the previous month', async () => {
     mockDrafts([PROGRAM_GROUP, SEPARATE_GROUP]);
     renderPage();
