@@ -22,9 +22,17 @@ import com.red_escuela.backend.shared.audit.AuditEntityType;
 import com.red_escuela.backend.shared.audit.AuditRecord;
 import com.red_escuela.backend.shared.audit.service.AuditTrail;
 import com.red_escuela.backend.shared.domain.Grade;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.dto.ApprovedSubjectsCertificateResponse;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.entity.ApprovedSubjectsCertificate;
+import com.red_escuela.backend.graduation.certificate.approvedsubjects.policy.ApprovedSubjectsBlocker;
+import com.red_escuela.backend.graduation.certificate.approvedsubjects.policy.ApprovedSubjectsEligibilityInput;
+import com.red_escuela.backend.graduation.certificate.approvedsubjects.policy.ApprovedSubjectsEligibilityPolicy;
+import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.ApprovedSubjectsActor;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.ApprovedSubjectsCertificateIssuing;
+import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.ApprovedSubjectsEligibilityFacts;
+import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.OwnApprovedSubjectsEnrollments;
+import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.OwnedEnrollment;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.ApprovedSubjectsRefusals;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.render.ApprovedSubjectsPdfRenderer;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.repository.ApprovedSubjectsCertificateRepository;
@@ -37,6 +45,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
+import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
@@ -64,6 +73,11 @@ public class ApprovedSubjectsCertificateIssuer implements ApprovedSubjectsCertif
     private final ApprovedSubjectsRefusals refusals;
     private final MeterRegistry meterRegistry;
     private final CertificateTemplateRenderSource templateSource;
+    private final ApprovedSubjectsEligibilityFacts eligibilityFacts;
+    private final OwnApprovedSubjectsEnrollments ownEnrollments;
+    private final ApprovedSubjectsActor actor;
+    private final Clock clock;
+    private final ApprovedSubjectsEligibilityPolicy eligibilityPolicy = new ApprovedSubjectsEligibilityPolicy();
     private final SecureRandom random = new SecureRandom();
 
     public ApprovedSubjectsCertificateIssuer(StudentFinder studentFinder, ProgramEnrollmentFinder programEnrollmentFinder,
@@ -74,7 +88,9 @@ public class ApprovedSubjectsCertificateIssuer implements ApprovedSubjectsCertif
                                              VerifiableDocumentRegistry verifiableDocumentRegistry, AuditTrail auditTrail,
                                              ApprovedSubjectsCertificateResponseAssembler responses, ApprovedSubjectsRefusals refusals,
                                              MeterRegistry meterRegistry,
-                                             CertificateTemplateRenderSource templateSource) {
+                                             CertificateTemplateRenderSource templateSource,
+                                             ApprovedSubjectsEligibilityFacts eligibilityFacts,
+                                             OwnApprovedSubjectsEnrollments ownEnrollments, ApprovedSubjectsActor actor, Clock clock) {
         this.studentFinder = studentFinder;
         this.programEnrollmentFinder = programEnrollmentFinder;
         this.programCurriculumFinder = programCurriculumFinder;
@@ -91,6 +107,27 @@ public class ApprovedSubjectsCertificateIssuer implements ApprovedSubjectsCertif
         this.refusals = refusals;
         this.meterRegistry = meterRegistry;
         this.templateSource = templateSource;
+        this.eligibilityFacts = eligibilityFacts;
+        this.ownEnrollments = ownEnrollments;
+        this.actor = actor;
+        this.clock = clock;
+    }
+
+    @Transactional
+    public ApprovedSubjectsCertificateResponse issueUnderDebtException(Long studentId, Long enrollmentId) {
+        LocalDateTime now = LocalDateTime.now(clock);
+        OwnedEnrollment enrollment = ownEnrollments.findOwnedBy(studentId, enrollmentId).orElseThrow(refusals::enrollmentNotFound);
+        ApprovedSubjectsEligibilityInput input = eligibilityFacts.inputFor(studentId, enrollment, now);
+        List<ApprovedSubjectsBlocker> blockers = eligibilityPolicy.blockersOf(new ApprovedSubjectsEligibilityInput(BillingMode.OFF, false,
+                input.institutionallyRegular(), input.issuedToday(), input.dailyIssuanceLimit(), input.approvedSubjectsCount(),
+                input.hasActiveProgramEnrollment()));
+        if (blockers.equals(List.of(ApprovedSubjectsBlocker.ISSUANCE_LIMIT_REACHED))) {
+            throw refusals.issuanceLimitReached();
+        }
+        if (!blockers.isEmpty()) {
+            throw refusals.notEligible();
+        }
+        return issue(studentId, enrollment.enrollmentId(), actor.currentPersonId(), now);
     }
 
     @Override
