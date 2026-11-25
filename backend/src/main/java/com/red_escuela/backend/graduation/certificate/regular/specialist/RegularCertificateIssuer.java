@@ -4,6 +4,10 @@ import com.red_escuela.backend.graduation.certificate.engine.CertificateCode;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateFileStore;
 import com.red_escuela.backend.graduation.certificate.engine.CertificatePdfRenderer;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateSnapshot;
+import com.red_escuela.backend.graduation.certificate.engine.CertificateTemplateDefinition;
+import com.red_escuela.backend.graduation.certificate.template.dto.DocumentTemplateType;
+import com.red_escuela.backend.graduation.certificate.template.entity.CertificateTemplateVersion;
+import com.red_escuela.backend.graduation.certificate.template.specialist.CertificateTemplateRenderSource;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertificateResponse;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertificateSubmissionResponse;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularityReason;
@@ -70,6 +74,7 @@ public class RegularCertificateIssuer {
     private final RegularCertificateSettingsFinder settingsFinder;
     private final CertificateExceptionConsumer exceptionConsumer;
     private final VerifiableDocumentRegistry verifiableDocumentRegistry;
+    private final CertificateTemplateRenderSource templateSource;
     private final SecureRandom random = new SecureRandom();
 
     public RegularCertificateIssuer(RegularStudentCertificateRepository certificateRepository,
@@ -82,7 +87,8 @@ public class RegularCertificateIssuer {
                                     MeterRegistry meterRegistry, Clock clock,
                                     RegularCertificateSettingsFinder settingsFinder,
                                     CertificateExceptionConsumer exceptionConsumer,
-                                    VerifiableDocumentRegistry verifiableDocumentRegistry) {
+                                    VerifiableDocumentRegistry verifiableDocumentRegistry,
+                                    CertificateTemplateRenderSource templateSource) {
         this.certificateRepository = certificateRepository;
         this.requestRepository = requestRepository;
         this.regularityEvaluator = regularityEvaluator;
@@ -100,6 +106,7 @@ public class RegularCertificateIssuer {
         this.settingsFinder = settingsFinder;
         this.exceptionConsumer = exceptionConsumer;
         this.verifiableDocumentRegistry = verifiableDocumentRegistry;
+        this.templateSource = templateSource;
     }
 
     @Transactional(noRollbackFor = {NotRegularException.class, RegularCertificateAlreadyIssuedException.class,
@@ -233,11 +240,18 @@ public class RegularCertificateIssuer {
                                               StandingResolution standing, Long actorId, LocalDateTime now) {
         Long studentId = facts.student().getId();
         CertificateCode code = newUniqueCode();
-        CertificateSnapshot snapshot = template.snapshotOf(facts, now.toLocalDate()).withRecipientLabel(command.recipientLabel());
+        CertificateSnapshot builtInSnapshot = template.snapshotOf(facts, now.toLocalDate()).withRecipientLabel(command.recipientLabel());
+        Optional<CertificateTemplateVersion> publishedVersion = templateSource.findCurrentPublished(DocumentTemplateType.REGULAR_STUDENT_CERTIFICATE);
+        CertificateSnapshot snapshot = publishedVersion
+                .map(version -> templateSource.snapshotWith(builtInSnapshot.withExtraMarkers(template.extraMarkersOf(command.recipientLabel())), version))
+                .orElse(builtInSnapshot);
         ValidityDays validityDays = settingsFinder.current().validityDays();
         LocalDateTime expiresAt = now.plusDays(validityDays.value());
         String url = verificationUrl.of(code);
-        byte[] pdf = renderer.render(template.definitionFor(snapshot, expiresAt.toLocalDate()), snapshot, code, url);
+        CertificateTemplateDefinition definition = template.definitionFor(snapshot, expiresAt.toLocalDate());
+        byte[] pdf = publishedVersion
+                .map(version -> renderer.render(definition, snapshot, code, url, templateSource.assetsOf(version, null)))
+                .orElseGet(() -> renderer.render(definition, snapshot, code, url));
         String path = fileStore.save(code.value(), pdf);
         try {
             Optional<RegularCertificateRequest> pending = findPendingRequest(command);
@@ -264,6 +278,7 @@ public class RegularCertificateIssuer {
                     .exceptionId(command.exceptionId())
                     .snapshot(snapshot)
                     .templateRef(snapshot.templateRef())
+                    .templateVersionId(publishedVersion.map(CertificateTemplateVersion::getId).orElse(null))
                     .pdfSha256(digest.sha256(pdf))
                     .renderEngineVersion(CertificatePdfRenderer.ENGINE_VERSION)
                     .pdfPath(path)

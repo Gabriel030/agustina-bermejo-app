@@ -49,7 +49,16 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import java.util.concurrent.atomic.AtomicInteger;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import com.red_escuela.backend.graduation.certificate.engine.CertificateCode;
 import com.red_escuela.backend.graduation.certificate.engine.CertificatePdfRenderer;
+import com.red_escuela.backend.graduation.certificate.engine.CertificateSnapshot;
+import com.red_escuela.backend.graduation.certificate.examregistration.entity.ExamRegistrationCertificate;
+import com.red_escuela.backend.graduation.certificate.examregistration.repository.ExamRegistrationCertificateRepository;
+import com.red_escuela.backend.graduation.certificate.specialist.CertificateVerificationUrl;
+import com.red_escuela.backend.graduation.certificate.template.PublishedTemplateFixtures;
+import com.red_escuela.backend.graduation.procedure.specialist.ExamRegistrationCertificateTemplate;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.text.PDFTextStripper;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateDigest;
 import com.red_escuela.backend.graduation.certificate.specialist.VerifiableDocumentRegistry;
 import static org.mockito.ArgumentMatchers.any;
@@ -103,6 +112,12 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
     private RoleRepository roleRepository;
     @Autowired
     private FeatureSnapshotHolder snapshotHolder;
+    @Autowired
+    private ExamRegistrationCertificateRepository certificateRepository;
+    @Autowired
+    private ExamRegistrationCertificateTemplate examTemplate;
+    @Autowired
+    private CertificateVerificationUrl verificationUrl;
 
     private Long enrollmentId;
     private Long registrationId;
@@ -290,11 +305,63 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
         Map<String, Object> row = jdbc.queryForMap("select * from exam_registration_certificate");
         assertThat(row.get("pdf_sha256").toString()).hasSize(64);
         assertThat(row.get("render_engine_version")).isEqualTo("1");
-        assertThat(row.get("template_ref")).isEqualTo("EXAM_REGISTRATION_BUILT_IN_V1");
+        assertThat(row.get("template_ref")).isEqualTo(PublishedTemplateFixtures.currentPublishedRef(jdbc, "EXAM_REGISTRATION_CERTIFICATE"));
         assertThat(row.get("snapshot").toString()).contains("\"titleName\"");
         assertThat(row.get("recipient_type")).isNull();
         assertThat(jdbc.queryForObject("select count(*) from audit_log where entity_type = 'CERTIFICATE_DOCUMENT' and action = 'DOCUMENT_GENERATED_BY_STUDENT' and entity_id in (select id from exam_registration_certificate)", Long.class))
                 .isEqualTo(1L);
+    }
+
+
+    @Test
+    void issuanceWithPublishedVersionStoresItsIdAndPrintsTheExamMarkers() throws Exception {
+        Long id = issuedId(studentToken);
+
+        Map<String, Object> row = jdbc.queryForMap("select template_version_id, template_ref, snapshot::text as snapshot from exam_registration_certificate");
+        assertThat(((Number) row.get("template_version_id")).longValue())
+                .isEqualTo(PublishedTemplateFixtures.currentPublishedId(jdbc, "EXAM_REGISTRATION_CERTIFICATE"));
+        assertThat(row.get("snapshot").toString()).contains("\"subjectName\"").contains("\"examDate\"");
+        MvcResult result = download(studentToken, id).andExpect(status().isOk()).andReturn();
+        try (var document = Loader.loadPDF(result.getResponse().getContentAsByteArray())) {
+            assertThat(new PDFTextStripper().getText(document).replaceAll("\\s+", " ")).contains("para rendir").contains("20/11/2026");
+        }
+    }
+
+    @Test
+    void republishingTheTemplateDoesNotChangeTheRegeneratedPdfNorItsHash() throws Exception {
+        Long id = issuedId(studentToken);
+        String sha = jdbc.queryForObject("select pdf_sha256 from exam_registration_certificate", String.class);
+        PublishedTemplateFixtures.publishRebrandedVersion(jdbc, "EXAM_REGISTRATION_CERTIFICATE");
+        String path = jdbc.queryForObject("select pdf_path from exam_registration_certificate", String.class);
+        Files.delete(Path.of(certificatesDirectory).toAbsolutePath().normalize().resolve(path));
+
+        MvcResult result = download(studentToken, id).andExpect(status().isOk()).andReturn();
+
+        assertThat(sha256(result.getResponse().getContentAsByteArray())).isEqualTo(sha);
+        try (var document = Loader.loadPDF(result.getResponse().getContentAsByteArray())) {
+            assertThat(new PDFTextStripper().getText(document)).doesNotContain("INSTITUTO REPUBLICADO");
+        }
+    }
+
+    @Test
+    void certificateWithoutTemplateVersionRegeneratesTheBuiltInDesignWithTheSameHash() throws Exception {
+        Long id = issuedId(studentToken);
+        ExamRegistrationCertificate stored = certificateRepository.findById(id).orElseThrow();
+        CertificateSnapshot builtIn = PublishedTemplateFixtures.withBuiltInRef(stored.getSnapshot(),
+                ExamRegistrationCertificateTemplate.EXAM_REGISTRATION_BUILT_IN_V1);
+        CertificateCode code = stored.certificateCode();
+        byte[] legacy = renderer.render(examTemplate.definitionFor(builtIn, stored.getRecipientType(), stored.getRecipientText()), builtIn, code,
+                verificationUrl.of(code));
+        jdbc.update("update exam_registration_certificate set template_version_id = null, template_ref = ?, pdf_sha256 = ?, "
+                + "snapshot = jsonb_set(snapshot - 'extraMarkers', '{templateRef}', to_jsonb(?::text)) where id = ?",
+                ExamRegistrationCertificateTemplate.EXAM_REGISTRATION_BUILT_IN_V1, sha256(legacy),
+                ExamRegistrationCertificateTemplate.EXAM_REGISTRATION_BUILT_IN_V1, id);
+        String path = jdbc.queryForObject("select pdf_path from exam_registration_certificate", String.class);
+        Files.delete(Path.of(certificatesDirectory).toAbsolutePath().normalize().resolve(path));
+
+        MvcResult result = download(studentToken, id).andExpect(status().isOk()).andReturn();
+
+        assertThat(result.getResponse().getContentAsByteArray()).isEqualTo(legacy);
     }
 
     @Test

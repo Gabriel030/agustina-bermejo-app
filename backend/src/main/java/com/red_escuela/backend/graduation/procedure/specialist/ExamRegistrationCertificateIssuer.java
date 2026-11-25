@@ -8,6 +8,10 @@ import com.red_escuela.backend.graduation.certificate.engine.CertificateCode;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateFileStore;
 import com.red_escuela.backend.graduation.certificate.engine.CertificatePdfRenderer;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateSnapshot;
+import com.red_escuela.backend.graduation.certificate.engine.CertificateTemplateDefinition;
+import com.red_escuela.backend.graduation.certificate.template.dto.DocumentTemplateType;
+import com.red_escuela.backend.graduation.certificate.template.entity.CertificateTemplateVersion;
+import com.red_escuela.backend.graduation.certificate.template.specialist.CertificateTemplateRenderSource;
 import com.red_escuela.backend.graduation.certificate.examregistration.entity.ExamRegistrationCertificate;
 import com.red_escuela.backend.graduation.certificate.examregistration.exception.InvalidExamRegistrationRecipientException;
 import com.red_escuela.backend.graduation.certificate.examregistration.repository.ExamRegistrationCertificateRepository;
@@ -32,6 +36,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -43,6 +50,7 @@ public class ExamRegistrationCertificateIssuer {
 
     private static final int CODE_ATTEMPTS = 3;
     private static final int RECIPIENT_MAX_LENGTH = 80;
+    private static final DateTimeFormatter EXAM_DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
 
     private final ExamRegistrationEligibilityEvaluator evaluator;
     private final ExamRegistrationCertificateRepository repository;
@@ -58,6 +66,7 @@ public class ExamRegistrationCertificateIssuer {
     private final StudentFinder studentFinder;
     private final MeterRegistry meterRegistry;
     private final Clock clock;
+    private final CertificateTemplateRenderSource templateSource;
     private final SecureRandom random = new SecureRandom();
 
     public ExamRegistrationCertificateIssuer(ExamRegistrationEligibilityEvaluator evaluator,
@@ -67,7 +76,8 @@ public class ExamRegistrationCertificateIssuer {
                                              CertificateDigest digest, CertificateDocumentAuditRecorder auditRecorder,
                                              VerifiableDocumentRegistry verifiableDocumentRegistry, DocumentIssuanceSettings issuanceSettings,
                                              CurrentActorFinder currentActorFinder, StudentFinder studentFinder,
-                                             MeterRegistry meterRegistry, Clock clock) {
+                                             MeterRegistry meterRegistry, Clock clock,
+                                             CertificateTemplateRenderSource templateSource) {
         this.evaluator = evaluator;
         this.repository = repository;
         this.template = template;
@@ -82,6 +92,7 @@ public class ExamRegistrationCertificateIssuer {
         this.studentFinder = studentFinder;
         this.meterRegistry = meterRegistry;
         this.clock = clock;
+        this.templateSource = templateSource;
     }
 
     @Transactional
@@ -110,9 +121,16 @@ public class ExamRegistrationCertificateIssuer {
     private ExamRegistrationCertificate issue(Student student, OwnExamRegistrationView registration, RecipientType recipientType,
                                               String recipientText, LocalDateTime now) {
         CertificateCode code = newUniqueCode();
-        CertificateSnapshot snapshot = template.snapshotOf(student, registration);
+        CertificateSnapshot builtInSnapshot = template.snapshotOf(student, registration);
+        Optional<CertificateTemplateVersion> publishedVersion = templateSource.findCurrentPublished(DocumentTemplateType.EXAM_REGISTRATION_CERTIFICATE);
+        CertificateSnapshot snapshot = publishedVersion
+                .map(version -> templateSource.snapshotWith(builtInSnapshot.withExtraMarkers(extraMarkersOf(registration, recipientText)), version))
+                .orElse(builtInSnapshot);
         String url = verificationUrl.of(code);
-        byte[] pdf = renderer.render(template.definitionFor(snapshot, recipientType, recipientText), snapshot, code, url);
+        CertificateTemplateDefinition definition = template.definitionFor(snapshot, recipientType, recipientText);
+        byte[] pdf = publishedVersion
+                .map(version -> renderer.render(definition, snapshot, code, url, templateSource.assetsOf(version, null)))
+                .orElseGet(() -> renderer.render(definition, snapshot, code, url));
         String path = fileStore.save(code.value(), pdf);
         try {
             ExamRegistrationCertificate saved = repository.saveAndFlush(ExamRegistrationCertificate.builder()
@@ -128,6 +146,7 @@ public class ExamRegistrationCertificateIssuer {
                     .recipientText(recipientText)
                     .snapshot(snapshot)
                     .templateRef(snapshot.templateRef())
+                    .templateVersionId(publishedVersion.map(CertificateTemplateVersion::getId).orElse(null))
                     .pdfSha256(digest.sha256(pdf))
                     .pdfPath(path)
                     .renderEngineVersion(CertificatePdfRenderer.ENGINE_VERSION)
@@ -143,6 +162,16 @@ public class ExamRegistrationCertificateIssuer {
             fileStore.deleteIfRolledBack(path);
             throw failure;
         }
+    }
+
+    private Map<String, String> extraMarkersOf(OwnExamRegistrationView registration, String recipientText) {
+        Map<String, String> markers = new HashMap<>();
+        markers.put("subjectName", registration.subjectName());
+        markers.put("examDate", registration.examDateTime().toLocalDate().format(EXAM_DATE_FORMAT));
+        if (recipientText != null) {
+            markers.put("recipient", recipientText);
+        }
+        return markers;
     }
 
     private boolean sameRecipient(ExamRegistrationCertificate current, RecipientType recipientType, String recipientText) {

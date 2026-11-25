@@ -4,6 +4,8 @@ import com.red_escuela.backend.graduation.certificate.dto.CertificateDocumentTyp
 import com.red_escuela.backend.graduation.certificate.engine.CertificateCode;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateFileStore;
 import com.red_escuela.backend.graduation.certificate.engine.CertificatePdfRenderer;
+import com.red_escuela.backend.graduation.certificate.engine.CertificateTemplateDefinition;
+import com.red_escuela.backend.graduation.certificate.template.specialist.CertificateTemplateRenderSource;
 import com.red_escuela.backend.graduation.certificate.examregistration.entity.ExamRegistrationCertificate;
 import com.red_escuela.backend.graduation.certificate.examregistration.exception.ExamRegistrationCertificateNotFoundException;
 import com.red_escuela.backend.graduation.certificate.examregistration.repository.ExamRegistrationCertificateRepository;
@@ -34,12 +36,13 @@ public class ExamRegistrationCertificatePdfProvider {
     private final CertificateDigest digest;
     private final CertificateDocumentAuditRecorder auditRecorder;
     private final Clock clock;
+    private final CertificateTemplateRenderSource templateSource;
 
     public ExamRegistrationCertificatePdfProvider(ExamRegistrationCertificateRepository repository, CertificateFileStore fileStore,
                                                   CertificatePdfRenderer renderer, ExamRegistrationCertificateTemplate template,
                                                   CertificateVerificationUrl verificationUrl, CertificateDigest digest,
                                                   CertificateDocumentAuditRecorder auditRecorder,
-                                                  Clock clock) {
+                                                  Clock clock, CertificateTemplateRenderSource templateSource) {
         this.repository = repository;
         this.fileStore = fileStore;
         this.renderer = renderer;
@@ -48,6 +51,7 @@ public class ExamRegistrationCertificatePdfProvider {
         this.digest = digest;
         this.auditRecorder = auditRecorder;
         this.clock = clock;
+        this.templateSource = templateSource;
     }
 
     @Transactional
@@ -69,8 +73,12 @@ public class ExamRegistrationCertificatePdfProvider {
             log.warn("El PDF de la constancia de inscripción {} falta; se regenera desde el snapshot", certificate.getId());
         }
         CertificateCode code = certificate.certificateCode();
-        byte[] regenerated = renderer.render(template.definitionFor(certificate.getSnapshot(), certificate.getRecipientType(),
-                certificate.getRecipientText()), certificate.getSnapshot(), code, verificationUrl.of(code));
+        CertificateTemplateDefinition definition = template.definitionFor(certificate.getSnapshot(), certificate.getRecipientType(),
+                certificate.getRecipientText());
+        byte[] regenerated = certificate.getTemplateVersionId() == null
+                ? renderer.render(definition, certificate.getSnapshot(), code, verificationUrl.of(code))
+                : renderer.render(definition, certificate.getSnapshot(), code, verificationUrl.of(code),
+                        templateSource.assetsOf(templateSource.byId(certificate.getTemplateVersionId()), certificate.getRegistryNumber()));
         String regeneratedSha256 = digest.sha256(regenerated);
         if (!regeneratedSha256.equals(certificate.getPdfSha256())) {
             log.error("El PDF regenerado de la constancia de inscripción {} no coincide con el hash registrado", certificate.getId());
