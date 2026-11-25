@@ -24,11 +24,6 @@ public interface BroadcastRecipientRepository extends JpaRepository<BroadcastRec
     Set<Long> findPersonIdsByBroadcastId(@Param("broadcastId") Long broadcastId);
 
     @Modifying(flushAutomatically = true, clearAutomatically = true)
-    @Query("update BroadcastRecipient r set r.addressMasked = null, r.anonymizedAt = :now "
-            + "where r.broadcastId = :broadcastId and r.anonymizedAt is null")
-    int anonymizeByBroadcastId(@Param("broadcastId") Long broadcastId, @Param("now") Instant now);
-
-    @Modifying(flushAutomatically = true, clearAutomatically = true)
     @Query(value = "delete from broadcast_recipient where id in "
             + "(select id from broadcast_recipient where broadcast_id = :broadcastId order by id limit :chunkSize)", nativeQuery = true)
     int deleteChunkByBroadcastId(@Param("broadcastId") Long broadcastId, @Param("chunkSize") int chunkSize);
