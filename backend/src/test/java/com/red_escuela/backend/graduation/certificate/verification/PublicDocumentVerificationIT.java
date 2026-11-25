@@ -48,7 +48,6 @@ class PublicDocumentVerificationIT extends AbstractIntegrationTest {
             + "\"programLevel\":\"UNDERGRADUATE\",\"hours\":1860,\"graduationDate\":\"2026-07-15\",\"issuedOn\":\"2026-11-05\","
             + "\"institutionName\":\"Instituto\",\"signatories\":[],\"templateRef\":\"BUILT_IN_V1\"}";
     private static final Set<CertificateDocumentType> TYPES_WITHOUT_ISSUER_YET = EnumSet.of(
-            CertificateDocumentType.APPROVED_SUBJECTS_CERTIFICATE,
             CertificateDocumentType.EXAM_CERTIFICATE);
     private static final AtomicInteger CLIENTS = new AtomicInteger(100);
 
@@ -63,6 +62,7 @@ class PublicDocumentVerificationIT extends AbstractIntegrationTest {
 
     private final List<Long> graduationIds = new ArrayList<>();
     private final List<Long> regularIds = new ArrayList<>();
+    private final List<Long> approvedSubjectsIds = new ArrayList<>();
 
     @AfterEach
     void cleanUp() {
@@ -72,6 +72,10 @@ class PublicDocumentVerificationIT extends AbstractIntegrationTest {
             jdbc.update("update graduation_certificate set replaces_id = null where id = ?", id);
         });
         graduationIds.forEach(id -> jdbc.update("delete from graduation_certificate where id = ?", id));
+        approvedSubjectsIds.forEach(id -> {
+            jdbc.update("delete from verifiable_document where document_type = 'APPROVED_SUBJECTS_CERTIFICATE' and source_id = ?", id);
+            jdbc.update("delete from approved_subjects_certificate where id = ?", id);
+        });
         regularIds.forEach(id -> {
             jdbc.update("delete from verifiable_document where document_type = 'REGULAR_STUDENT_CERTIFICATE' and source_id = ?", id);
             jdbc.update("delete from regular_student_certificate where id = ?", id);
@@ -149,6 +153,33 @@ class PublicDocumentVerificationIT extends AbstractIntegrationTest {
         return code;
     }
 
+    private static final String APPROVED_SUBJECTS_SNAPSHOT = "{\"holderFullName\":\"PÉREZ, ANA\",\"documentTypeLabel\":\"DNI\","
+            + "\"documentNumber\":\"30123456\",\"programName\":\"Tecnicatura en Enfermería\",\"institutionName\":\"Instituto\","
+            + "\"subjects\":[{\"name\":\"Anatomía\",\"year\":1,\"grade\":8.00,\"approvedOn\":\"2026-05-20\"}],\"approvedCount\":1,"
+            + "\"totalSubjects\":4,\"progressPercentage\":25.00,\"averageGrade\":8.00,\"issuedOn\":\"2026-11-05\","
+            + "\"validUntil\":\"2026-12-05\",\"signatories\":[],\"templateRef\":\"APPROVED_SUBJECTS_BUILT_IN_V1\"}";
+
+    private String insertApprovedSubjects(String status, LocalDateTime expiresAt, boolean registered) {
+        String code = CertificateCode.generate(new SecureRandom()).value();
+        long[] id = new long[1];
+        transactions.executeWithoutResult(tx -> {
+            jdbc.execute("SET LOCAL session_replication_role = replica");
+            id[0] = jdbc.queryForObject("insert into approved_subjects_certificate (code, program_enrollment_id, student_id, status, issued_at, "
+                    + "expires_at, validity_days, issued_by_id, snapshot, template_ref, render_engine_version, pdf_sha256, revoked_at, "
+                    + "revoked_by_id, revocation_reason) values (?, ?, 987654, ?, '2026-11-05 10:00:00', ?, 30, 1, ?::jsonb, "
+                    + "'APPROVED_SUBJECTS_BUILT_IN_V1', '1', repeat('a', 64), ?, ?, ?) returning id", Long.class, code,
+                    ThreadLocalRandom.current().nextLong(1_000_000, 9_000_000), status, Timestamp.valueOf(expiresAt), APPROVED_SUBJECTS_SNAPSHOT,
+                    "REVOKED".equals(status) ? Timestamp.valueOf("2026-11-09 08:00:00") : null,
+                    "REVOKED".equals(status) ? 1L : null, "REVOKED".equals(status) ? "motivo interno" : null);
+            if (registered) {
+                jdbc.update("insert into verifiable_document (code, document_type, source_id, registered_at) values (?, 'APPROVED_SUBJECTS_CERTIFICATE', ?, now())",
+                        code, id[0]);
+            }
+        });
+        approvedSubjectsIds.add(id[0]);
+        return code;
+    }
+
     private static String withoutRequestId(String body) {
         return body.replaceAll("\"requestId\":\"[^\"]*\"", "");
     }
@@ -218,6 +249,47 @@ class PublicDocumentVerificationIT extends AbstractIntegrationTest {
 
         assertThat(verify(code).getResponse().getContentAsString()).contains("\"status\":\"REVOKED\"")
                 .doesNotContain("motivo interno", "recibo 1234", "Enfermería");
+    }
+
+    @Test
+    void approvedSubjectsCertificateIsValidWithMaskedMinimalDataAndNoSubjectsOrGrades() throws Exception {
+        String code = insertApprovedSubjects("VALID", LocalDateTime.of(2026, 12, 5, 10, 0), true);
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 20, 9, 0));
+
+        MvcResult result = verify(code);
+
+        assertThat(result.getResponse().getStatus()).isEqualTo(200);
+        assertThat(result.getResponse().getContentAsString()).contains("\"documentType\":\"APPROVED_SUBJECTS_CERTIFICATE\"", "\"status\":\"VALID\"",
+                        "*****456", "PÉREZ, ANA")
+                .doesNotContain("30123456", "Anatomía", "Enfermería", "8.00", "motivo interno");
+    }
+
+    @Test
+    void approvedSubjectsCertificateExpiresAtTheExactInstantOfItsExpiry() throws Exception {
+        String code = insertApprovedSubjects("VALID", LocalDateTime.of(2026, 12, 5, 10, 0), true);
+
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 12, 5, 9, 59));
+        assertThat(verify(code).getResponse().getContentAsString()).contains("\"status\":\"VALID\"");
+
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 12, 5, 10, 0));
+        assertThat(verify(code).getResponse().getContentAsString()).contains("\"status\":\"EXPIRED\"");
+    }
+
+    @Test
+    void expiredAndRevokedApprovedSubjectsCertificatesReportTheirStatusWithoutReason() throws Exception {
+        String expired = insertApprovedSubjects("EXPIRED", LocalDateTime.of(2026, 11, 20, 10, 0), true);
+        String revoked = insertApprovedSubjects("REVOKED", LocalDateTime.of(2027, 1, 5, 10, 0), true);
+
+        assertThat(verify(expired).getResponse().getContentAsString()).contains("\"status\":\"EXPIRED\"");
+        assertThat(verify(revoked).getResponse().getContentAsString()).contains("\"status\":\"REVOKED\"")
+                .doesNotContain("motivo interno", "Anatomía");
+    }
+
+    @Test
+    void unregisteredApprovedSubjectsCertificateAnswersTheGeneric404() throws Exception {
+        String code = insertApprovedSubjects("VALID", LocalDateTime.of(2026, 12, 5, 10, 0), false);
+
+        assertThat(verify(code).getResponse().getStatus()).isEqualTo(404);
     }
 
     @Test
