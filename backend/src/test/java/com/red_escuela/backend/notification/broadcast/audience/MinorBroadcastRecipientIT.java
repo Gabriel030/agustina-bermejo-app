@@ -198,7 +198,7 @@ class MinorBroadcastRecipientIT extends AbstractIntegrationTest {
 
     @Test
     void minorLookupAddsExactlyOneQueryPerChunkOfFiveHundred() {
-        Map<Long, ExclusionReason> reasons = evaluateCounting(mixedAudience(1001), 5);
+        Map<Long, ExclusionReason> reasons = evaluateCounting(mixedAudience(1001), 7);
 
         assertThat(reasons.values()).containsOnly(ExclusionReason.NO_CHANNEL_ADDRESS);
         assertThat(reasons).hasSize(167);
