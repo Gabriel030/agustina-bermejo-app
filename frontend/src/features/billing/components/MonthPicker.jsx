@@ -69,7 +69,7 @@ function StepButton({ label, reason, onClick, children }) {
         onClick={reason ? undefined : onClick}
         className={cn(
           'flex h-10 w-11 max-md:h-11 items-center justify-center rounded-[10px] text-ink-soft transition-colors hover:bg-accent-soft hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring',
-          reason && 'cursor-not-allowed opacity-40 hover:bg-transparent hover:text-ink-soft',
+          'aria-disabled:cursor-not-allowed aria-disabled:text-(--disabled-fg) aria-disabled:hover:bg-transparent aria-disabled:hover:text-(--disabled-fg)',
         )}
       >
         {children}
@@ -95,7 +95,7 @@ function Cell({ label, name, reason, selected, current, focusable, cellRef, onSe
           !selected && !reason && 'hover:bg-accent-soft',
           current && !selected && 'border-primary',
           selected && 'bg-brand text-on-accent',
-          reason && 'cursor-not-allowed text-ink-faint opacity-50',
+          'aria-disabled:cursor-not-allowed aria-disabled:text-(--disabled-fg)',
         )}
       >
         {name}
@@ -213,7 +213,7 @@ export function MonthPicker({ value, onChange, minMonth, maxMonth, currentMonth,
       aria-label={`Mes, ${label}`}
       aria-disabled={disabled ? 'true' : undefined}
       onClick={disabled ? (event) => event.preventDefault() : undefined}
-      className={cn('h-10 min-w-0 justify-start gap-2 font-semibold', disabled && 'cursor-not-allowed opacity-55', className)}
+      className={cn('h-10 min-w-0 justify-start gap-2 font-semibold aria-disabled:cursor-not-allowed aria-disabled:bg-(--disabled-bg) aria-disabled:text-(--disabled-fg)', className)}
     >
       <CalendarDays />
       <span className="truncate first-letter:uppercase">{label}</span>
@@ -336,7 +336,7 @@ export function MonthPicker({ value, onChange, minMonth, maxMonth, currentMonth,
                     aria-label={reason ? `${shortcut.aria}, ${reason.toLowerCase()}` : shortcut.aria}
                     aria-disabled={reason ? 'true' : undefined}
                     onClick={reason ? undefined : () => pick(shortcut.month)}
-                    className={cn('h-10 flex-1 px-2 text-size-13 font-bold', reason && 'cursor-not-allowed opacity-50')}
+                    className="h-10 flex-1 px-2 text-size-13 font-bold aria-disabled:cursor-not-allowed aria-disabled:text-(--disabled-fg)"
                   >
                     {shortcut.text}
                   </Button>

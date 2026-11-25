@@ -27,7 +27,7 @@ export function WaveMobileBar({ controller }) {
         loadingLabel: primary.label,
         loading,
         onClick,
-        className: 'aria-disabled:cursor-not-allowed aria-disabled:opacity-50',
+        className: 'aria-disabled:cursor-not-allowed aria-disabled:border-(--border) aria-disabled:bg-(--disabled-bg) aria-disabled:text-(--disabled-fg)',
       }}
       secondary={menu.map((item) => ({
         key: item.key,
