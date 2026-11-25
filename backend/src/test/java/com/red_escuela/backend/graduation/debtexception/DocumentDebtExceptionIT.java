@@ -269,11 +269,11 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
 
     @Test
     void exceptionBoundToARegistrationOnlyServesThatRegistration() throws Exception {
-        issueForRegistration(studentId, "EXAM_REGISTRATION_CERTIFICATE", 77L).andExpect(status().isCreated());
+        issueForRegistration(studentId, "GRADUATION_CERTIFICATE", 77L).andExpect(status().isCreated());
 
-        assertThat(consume(studentId, CertificateDocumentType.EXAM_REGISTRATION_CERTIFICATE, null)).isEmpty();
-        assertThat(consume(studentId, CertificateDocumentType.EXAM_REGISTRATION_CERTIFICATE, 78L)).isEmpty();
-        assertThat(consume(studentId, CertificateDocumentType.EXAM_REGISTRATION_CERTIFICATE, 77L)).isPresent();
+        assertThat(consume(studentId, CertificateDocumentType.GRADUATION_CERTIFICATE, null)).isEmpty();
+        assertThat(consume(studentId, CertificateDocumentType.GRADUATION_CERTIFICATE, 78L)).isEmpty();
+        assertThat(consume(studentId, CertificateDocumentType.GRADUATION_CERTIFICATE, 77L)).isPresent();
     }
 
     @Test
@@ -539,10 +539,10 @@ class DocumentDebtExceptionIT extends AbstractIntegrationTest {
 
     @Test
     void exceptionWithoutRegistrationServesAnyRegistration() throws Exception {
-        issue(administrativeToken, studentId, "EXAM_REGISTRATION_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
+        issue(administrativeToken, studentId, "GRADUATION_CERTIFICATE", REASON, 5).andExpect(status().isCreated());
 
-        assertThat(consume(studentId, CertificateDocumentType.EXAM_REGISTRATION_CERTIFICATE, 99L)).isPresent();
-        assertThat(consume(studentId, CertificateDocumentType.EXAM_REGISTRATION_CERTIFICATE, 99L)).isEmpty();
+        assertThat(consume(studentId, CertificateDocumentType.GRADUATION_CERTIFICATE, 99L)).isPresent();
+        assertThat(consume(studentId, CertificateDocumentType.GRADUATION_CERTIFICATE, 99L)).isEmpty();
     }
 
     @Test
