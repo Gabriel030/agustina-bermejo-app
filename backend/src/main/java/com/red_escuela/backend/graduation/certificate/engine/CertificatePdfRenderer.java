@@ -46,7 +46,8 @@ public class CertificatePdfRenderer {
 
     public byte[] render(CertificateTemplateDefinition definition, CertificateSnapshot snapshot, CertificateCode code,
                          String verificationUrl, CertificateAssets assets) {
-        if (BuiltInCertificateTemplate.BUILT_IN_V1.equals(definition.templateRef())) {
+        if (BuiltInCertificateTemplate.BUILT_IN_V1.equals(definition.templateRef())
+                || BuiltInCertificateTemplate.isPublishedVersionRef(snapshot.templateRef())) {
             return renderApproval(snapshot, code, verificationUrl, assets);
         }
         try (PDDocument document = new PDDocument(); InputStream fontStream = CertificatePdfRenderer.class.getResourceAsStream(FONT_RESOURCE)) {

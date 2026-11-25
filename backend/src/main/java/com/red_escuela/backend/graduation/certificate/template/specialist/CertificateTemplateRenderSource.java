@@ -45,12 +45,17 @@ public class CertificateTemplateRenderSource {
                 .orElseThrow(TemplateVersionNotFoundException::new);
     }
 
-    public CertificateTemplateVersion forPreview(DocumentTemplateType type, TemplatePreviewSource source) {
+    public CertificateTemplateVersion currentPublished(DocumentTemplateType type) {
         CertificateTemplate template = templateFinder.find(type);
+        return versionRepository.findFirstByTemplateIdAndStatusOrderByVersionNumberDesc(template.getId(), TemplateVersionStatus.PUBLISHED)
+                .orElseThrow(TemplateVersionNotFoundException::new);
+    }
+
+    public CertificateTemplateVersion forPreview(DocumentTemplateType type, TemplatePreviewSource source) {
         if (source == TemplatePreviewSource.PUBLISHED) {
-            return versionRepository.findFirstByTemplateIdAndStatusOrderByVersionNumberDesc(template.getId(), TemplateVersionStatus.PUBLISHED)
-                    .orElseThrow(TemplateVersionNotFoundException::new);
+            return currentPublished(type);
         }
+        CertificateTemplate template = templateFinder.find(type);
         return versionRepository.findByTemplateIdAndStatus(template.getId(), TemplateVersionStatus.DRAFT)
                 .orElseThrow(TemplateVersionNotFoundException::new);
     }

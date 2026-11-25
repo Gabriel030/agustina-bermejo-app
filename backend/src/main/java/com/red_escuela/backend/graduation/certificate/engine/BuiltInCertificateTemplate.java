@@ -7,6 +7,11 @@ import org.springframework.stereotype.Component;
 public class BuiltInCertificateTemplate implements CertificateTemplateResolver {
 
     public static final String BUILT_IN_V1 = "BUILT_IN_V1";
+    private static final String PUBLISHED_VERSION_PREFIX = "TEMPLATE_";
+
+    public static boolean isPublishedVersionRef(String templateRef) {
+        return templateRef != null && templateRef.startsWith(PUBLISHED_VERSION_PREFIX);
+    }
 
     private static final String BODY = "Se certifica que {holder}, {documentType} {documentNumber}, ha cumplido con todos los requisitos"
             + " académicos de {titleKind} {titleName}{hours}, con fecha de egreso {graduationDate}.";
