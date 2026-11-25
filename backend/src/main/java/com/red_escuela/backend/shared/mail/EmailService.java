@@ -15,4 +15,6 @@ public interface EmailService {
     void sendEmailChangeOwnerApproval(String recipientName, String currentEmail, String requestedEmail, String approvalLink, String cancellationLink);
 
     void sendEmailChangeNotice(String recipientName, String previousEmail, String newEmail, String cancellationLink);
+
+    void sendEmailChangedNotice(String recipientName, String previousEmail, String newEmail);
 }

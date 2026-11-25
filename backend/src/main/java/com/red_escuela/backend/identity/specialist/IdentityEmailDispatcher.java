@@ -5,6 +5,7 @@ import com.red_escuela.backend.identity.events.EmailVerificationIssuedEvent;
 import com.red_escuela.backend.identity.events.GuardianConfirmationRequestedEvent;
 import com.red_escuela.backend.identity.events.PasswordResetCodeIssuedEvent;
 import com.red_escuela.backend.identity.events.PasswordResetLockoutNoticeEvent;
+import com.red_escuela.backend.identity.events.StudentEmailChangedEvent;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.shared.event.service.ProcessedEffectGuard;
 import com.red_escuela.backend.shared.mail.EmailService;
@@ -90,6 +91,20 @@ public class IdentityEmailDispatcher {
                                 event.cancellationLink());
                     }
                 }, () -> log.warn("Email change mail skipped, person not found: personId={}", event.personId())));
+    }
+
+    @ApplicationModuleListener
+    public void onStudentEmailChanged(StudentEmailChangedEvent event) {
+        effectGuard.runEffectOnce(event, "IdentityEmailDispatcher.onStudentEmailChanged", () ->
+                personRepository.findById(event.personId()).ifPresentOrElse(person -> {
+                    emailService.sendEmailVerification(new MailRecipient(person.getId(),
+                            displayNameOf(person, event.newEmail()), event.newEmail()),
+                            institutionNameResolver.resolveInstitutionName(), event.verificationLink());
+                    if (event.previousEmail() != null) {
+                        emailService.sendEmailChangedNotice(displayNameOf(person, event.previousEmail()),
+                                event.previousEmail(), event.newEmail());
+                    }
+                }, () -> log.warn("Student email change mail skipped, person not found: personId={}", event.personId())));
     }
 
     @ApplicationModuleListener
