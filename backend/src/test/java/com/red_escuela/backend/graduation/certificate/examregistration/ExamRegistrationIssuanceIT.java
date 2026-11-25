@@ -797,7 +797,7 @@ class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
         generateWithRecipient("EMPLOYER", "Empresa A");
         MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 11, 11, 10, 0));
         List<String> filesBefore = storedFileNames();
-        doThrow(new IllegalStateException("render caído")).when(renderer).render(any(), any(), any(), any());
+        doThrow(new IllegalStateException("render caído")).when(renderer).render(any(), any(), any(), any(), any());
 
         generate(studentToken, "{\"recipientType\":\"HEALTH_INSURANCE\",\"recipientText\":\"Obra social B\"}")
                 .andExpect(result -> assertThat(result.getResponse().getStatus()).isGreaterThanOrEqualTo(400));

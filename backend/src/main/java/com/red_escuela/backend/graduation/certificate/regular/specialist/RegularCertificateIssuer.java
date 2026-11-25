@@ -243,7 +243,8 @@ public class RegularCertificateIssuer {
         CertificateSnapshot builtInSnapshot = template.snapshotOf(facts, now.toLocalDate()).withRecipientLabel(command.recipientLabel());
         Optional<CertificateTemplateVersion> publishedVersion = templateSource.findCurrentPublished(DocumentTemplateType.REGULAR_STUDENT_CERTIFICATE);
         CertificateSnapshot snapshot = publishedVersion
-                .map(version -> templateSource.snapshotWith(builtInSnapshot.withExtraMarkers(template.extraMarkersOf(command.recipientLabel())), version))
+                .map(version -> templateSource.snapshotWith(builtInSnapshot.withExtraMarkers(template.extraMarkersOf(command.recipientLabel())), version)
+                        .withRecipientLabel(command.recipientLabel()))
                 .orElse(builtInSnapshot);
         ValidityDays validityDays = settingsFinder.current().validityDays();
         LocalDateTime expiresAt = now.plusDays(validityDays.value());
