@@ -296,6 +296,7 @@ class ApprovedProceduresIntegrationTest extends AbstractIntegrationTest {
     void everyIssuedDocumentTypeThatExistsTodayIsRegisteredAsASource() {
         assertThat(approvedSources.forType(CertificateDocumentType.REGULAR_STUDENT_CERTIFICATE)).isPresent();
         assertThat(approvedSources.forType(CertificateDocumentType.GRADUATION_CERTIFICATE)).isPresent();
+        assertThat(approvedSources.forType(CertificateDocumentType.APPROVED_SUBJECTS_CERTIFICATE)).isPresent();
     }
 
     @Test
