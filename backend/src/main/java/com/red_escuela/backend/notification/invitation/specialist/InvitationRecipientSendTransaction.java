@@ -90,7 +90,7 @@ public class InvitationRecipientSendTransaction {
         if (!guardianEmailCollisionFinder.findPersonIdsWithEmailSharedWithGuardian(List.of(recipient.getPersonId())).isEmpty()) {
             return exclude(recipient, InvitationExclusionReason.SHARED_EMAIL);
         }
-        if (!capacity.hasCapacityToday(wave)) {
+        if (!capacity.hasCapacityTodayInSendingTurn(wave)) {
             return InvitationSendResult.NO_QUOTA;
         }
         if (mailSender.isMailChannelRejectingCalls()) {
