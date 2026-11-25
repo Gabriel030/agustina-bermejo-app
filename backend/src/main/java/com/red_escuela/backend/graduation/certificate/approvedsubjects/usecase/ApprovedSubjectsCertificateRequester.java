@@ -11,11 +11,14 @@ import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.Appr
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.OwnApprovedSubjectsEnrollments;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.OwnedEnrollment;
 
+import com.red_escuela.backend.shared.UseCase;
+
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public class ApprovedSubjectsCertificateRequester {
+@UseCase
+public class ApprovedSubjectsCertificateRequester implements RequestApprovedSubjectsCertificateUseCase {
 
     private final ApprovedSubjectsActor actor;
     private final OwnApprovedSubjectsEnrollments enrollments;
@@ -39,6 +42,7 @@ public class ApprovedSubjectsCertificateRequester {
         this.clock = clock;
     }
 
+    @Override
     public ApprovedSubjectsCertificateResponse request(RequestApprovedSubjectsCertificateRequest request) {
         Long studentId = actor.currentStudentId();
         OwnedEnrollment enrollment = enrollments.findOwnedBy(studentId, request.enrollmentId())

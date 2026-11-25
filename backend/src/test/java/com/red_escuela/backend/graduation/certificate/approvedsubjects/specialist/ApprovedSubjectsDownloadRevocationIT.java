@@ -125,7 +125,7 @@ class ApprovedSubjectsDownloadRevocationIT extends AbstractIntegrationTest {
                 return 77L;
             }
         };
-        return new ApprovedSubjectsCertificateRevoker(store, responses, actor, auditLog, clock);
+        return new ApprovedSubjectsCertificateRevoker(store, responses, actor, auditLog, new SpringApprovedSubjectsTransaction(), clock);
     }
 
     private void revokeInTransaction(Long id) {

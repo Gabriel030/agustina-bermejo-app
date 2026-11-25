@@ -33,6 +33,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.support.TransactionTemplate;
 
@@ -45,6 +46,8 @@ import java.util.UUID;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -86,6 +89,8 @@ class ApprovedSubjectsProcedureEligibilityIT extends AbstractIntegrationTest {
     private int recordedDays;
     private String studentToken;
     private String strangerToken;
+    private String directorToken;
+    private String staffToken;
 
     @BeforeEach
     void seed() {
@@ -142,6 +147,8 @@ class ApprovedSubjectsProcedureEligibilityIT extends AbstractIntegrationTest {
             sectionEnrollmentId = sectionEnrollment.getId();
             studentToken = jwtService.generateAccessToken(studentPerson);
             strangerToken = jwtService.generateAccessToken(stranger.getPerson());
+            directorToken = jwtService.generateAccessToken(persistPerson("DIRECTOR"));
+            staffToken = jwtService.generateAccessToken(persistPerson("ADMINISTRATIVO"));
         });
         recordedDays = 0;
         recordAttendance(8, 1);
@@ -298,5 +305,98 @@ class ApprovedSubjectsProcedureEligibilityIT extends AbstractIntegrationTest {
     void anotherStudentsEnrollmentIsNotFound() throws Exception {
         mockMvc.perform(get("/me/procedures/APPROVED_SUBJECTS_CERTIFICATE/eligibility").param("enrollmentId", enrollmentId.toString())
                 .header("Authorization", "Bearer " + strangerToken)).andExpect(status().isNotFound());
+    }
+
+    private ResultActions requestCertificate(String token, Long enrollment) throws Exception {
+        return mockMvc.perform(post("/me/approved-subjects-certificates").header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"enrollmentId\":" + enrollment + "}"));
+    }
+
+    private ResultActions generateOwnDocument(String token) throws Exception {
+        return mockMvc.perform(post("/me/documents/APPROVED_SUBJECTS_CERTIFICATE").header("Authorization", "Bearer " + token)
+                .contentType(MediaType.APPLICATION_JSON).content("{}"));
+    }
+
+    private long idOf(ResultActions result) throws Exception {
+        Number id = com.jayway.jsonpath.JsonPath.read(result.andReturn().getResponse().getContentAsString(), "$.id");
+        return id.longValue();
+    }
+
+    @Test
+    void requestEndpointIssuesTheCertificate() throws Exception {
+        requestCertificate(studentToken, enrollmentId).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("VALID")).andExpect(jsonPath("$.enrollmentId").value(enrollmentId));
+
+        assertThat(certificateRepository.findByStudentIdOrderByIssuedAtDesc(studentId)).hasSize(1);
+    }
+
+    @Test
+    void requestEndpointRejectsEachBlockerWithoutIssuing() throws Exception {
+        recordAttendance(0, 40);
+        requestCertificate(studentToken, enrollmentId).andExpect(status().isUnprocessableEntity());
+        setBillingMode("MIRROR");
+        requestCertificate(studentToken, enrollmentId).andExpect(status().isUnprocessableEntity());
+        jdbc.update("delete from subject_equivalence where program_enrollment_id = ?", enrollmentId);
+        setBillingMode("OFF");
+        requestCertificate(studentToken, enrollmentId).andExpect(status().isUnprocessableEntity());
+
+        assertThat(certificateRepository.findByStudentIdOrderByIssuedAtDesc(studentId)).isEmpty();
+    }
+
+    @Test
+    void requestEndpointStopsAtTheDailyLimit() throws Exception {
+        requestCertificate(studentToken, enrollmentId).andExpect(status().isCreated());
+
+        requestCertificate(studentToken, enrollmentId).andExpect(status().isTooManyRequests())
+                .andExpect(jsonPath("$.code").value("ISSUANCE_LIMIT_REACHED"));
+        assertThat(certificateRepository.findByStudentIdOrderByIssuedAtDesc(studentId)).hasSize(1);
+    }
+
+    @Test
+    void requestEndpointWithAnotherStudentsEnrollmentIsNotFound() throws Exception {
+        requestCertificate(strangerToken, enrollmentId).andExpect(status().isNotFound());
+
+        assertThat(certificateRepository.findByStudentIdOrderByIssuedAtDesc(studentId)).isEmpty();
+    }
+
+    @Test
+    void generateOwnDocumentDispatchesToTheApprovedSubjectsCertificate() throws Exception {
+        generateOwnDocument(studentToken).andExpect(status().isCreated())
+                .andExpect(jsonPath("$.documentType").value("APPROVED_SUBJECTS_CERTIFICATE"))
+                .andExpect(jsonPath("$.status").value("VALID"));
+
+        generateOwnDocument(studentToken).andExpect(status().isTooManyRequests());
+        assertThat(certificateRepository.findByStudentIdOrderByIssuedAtDesc(studentId)).hasSize(1);
+    }
+
+    @Test
+    void issuedCertificateIsListedAndDownloadedFromProcedures() throws Exception {
+        long id = idOf(requestCertificate(studentToken, enrollmentId).andExpect(status().isCreated()));
+
+        mockMvc.perform(get("/me/procedures/approved").header("Authorization", "Bearer " + studentToken))
+                .andExpect(jsonPath("$[0].documentType").value("APPROVED_SUBJECTS_CERTIFICATE"))
+                .andExpect(jsonPath("$[0].id").value(id)).andExpect(jsonPath("$[0].status").value("VALID"));
+        mockMvc.perform(get("/me/procedures/approved/APPROVED_SUBJECTS_CERTIFICATE/" + id + "/pdf")
+                        .header("Authorization", "Bearer " + studentToken))
+                .andExpect(status().isOk()).andExpect(content().contentType(MediaType.APPLICATION_PDF));
+        mockMvc.perform(get("/me/procedures/approved/APPROVED_SUBJECTS_CERTIFICATE/" + id + "/pdf")
+                .header("Authorization", "Bearer " + strangerToken)).andExpect(status().isNotFound());
+    }
+
+    @Test
+    void directorRevokesAndOthersAreForbidden() throws Exception {
+        long id = idOf(requestCertificate(studentToken, enrollmentId).andExpect(status().isCreated()));
+        String body = "{\"reason\":\"Motivo suficiente\"}";
+
+        mockMvc.perform(post("/approved-subjects-certificates/" + id + "/revoke").header("Authorization", "Bearer " + staffToken)
+                .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isForbidden());
+        mockMvc.perform(post("/approved-subjects-certificates/" + id + "/revoke").header("Authorization", "Bearer " + studentToken)
+                .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isForbidden());
+        mockMvc.perform(post("/approved-subjects-certificates/" + id + "/revoke").header("Authorization", "Bearer " + directorToken)
+                .contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("REVOKED"));
+
+        assertThat(jdbc.queryForObject("select count(*) from audit_log where action = 'APPROVED_SUBJECTS_CERT_REVOKED' and entity_id = ?",
+                Long.class, id)).isEqualTo(1L);
     }
 }
