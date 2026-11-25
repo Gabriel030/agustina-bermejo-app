@@ -7,6 +7,7 @@ import com.red_escuela.backend.billing.configuration.service.DirectConfiguration
 import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
 import com.red_escuela.backend.billing.operation.PaymentGatewayConfigChangeRecordingPort;
 import com.red_escuela.backend.billing.collections.repository.LateFeeChargeRepository;
+import com.red_escuela.backend.billing.invoice.service.InvoiceViewLoader;
 import com.red_escuela.backend.billing.invoice.service.PendingInvoiceQueryService;
 import com.red_escuela.backend.billing.run.operation.MonthlyInvoiceIssuanceJob;
 import com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort;
@@ -33,6 +34,7 @@ import java.lang.annotation.Target;
         EnrollmentWithdrawalBillingPort.class,
         OnlinePaymentDependencyPort.class,
         PaymentGatewayConfigChangeRecordingPort.class,
+        InvoiceViewLoader.class,
         ConfigurationVersionActivator.class,
         DirectConfigurationPublisher.class,
         BillingOperationPipeline.class,
