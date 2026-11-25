@@ -64,10 +64,6 @@ function FilaAlumno({ alumno, onClick }) {
   );
 }
 
-function normalizeSearch(text) {
-  return (text ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
-}
-
 function FilaProspecto({ prospect, onClick }) {
   const complete = prospect.missingDocuments.length === 0;
   return (
@@ -93,8 +89,8 @@ function FilaProspecto({ prospect, onClick }) {
   );
 }
 
-function ListaProspectos({ search, navigate, rolBase, tabActivo }) {
-  const { data, isLoading, isError, error, refetch } = useStaffProspects();
+function ListaProspectos({ search, page, onPageChange, navigate, rolBase, tabActivo }) {
+  const { data, isLoading, isError, error, refetch } = useStaffProspects({ search: search || undefined, page });
   if (isLoading) {
     return (
       <div className="flex flex-col gap-1">
@@ -105,28 +101,29 @@ function ListaProspectos({ search, navigate, rolBase, tabActivo }) {
     );
   }
   if (isError) return <LoadErrorState bare error={error} onRetry={refetch} resource="los prospectos" />;
-  const term = normalizeSearch(search);
-  const prospects = (data ?? []).filter(
-    (p) => !term || normalizeSearch(`${p.nombre} ${p.apellido} ${p.email}`).includes(term),
-  );
+  const prospects = data?.items ?? [];
+  const totalPages = data ? Math.max(1, Math.ceil(data.totalElements / data.size)) : 1;
   if (!prospects.length) {
     return (
       <EmptyState
-        title={term ? 'Ningún prospecto coincide con la búsqueda' : 'No hay prospectos'}
-        description={term ? 'Probá con otro nombre o email.' : 'Los alumnos dados de alta sin confirmar aparecen acá.'}
+        title={search ? 'Ningún prospecto coincide con la búsqueda' : 'No hay prospectos'}
+        description={search ? 'Probá con otro nombre o email.' : 'Los alumnos dados de alta sin confirmar aparecen acá.'}
       />
     );
   }
   return (
-    <div className="flex flex-col gap-1">
-      {prospects.map((prospect) => (
-        <FilaProspecto
-          key={prospect.id}
-          prospect={prospect}
-          onClick={() => navigate(`/${rolBase}/alumnos/${prospect.id}?tab=${tabActivo}`)}
-        />
-      ))}
-    </div>
+    <>
+      <div className="flex flex-col gap-1">
+        {prospects.map((prospect) => (
+          <FilaProspecto
+            key={prospect.id}
+            prospect={prospect}
+            onClick={() => navigate(`/${rolBase}/alumnos/${prospect.id}?tab=${tabActivo}`)}
+          />
+        ))}
+      </div>
+      <Paginador page={page + 1} totalPages={totalPages} onChange={(next) => onPageChange(next - 1)} />
+    </>
   );
 }
 
@@ -223,6 +220,8 @@ export function PadronAlumnos() {
                 {tab.id === 'prospectos' ? (
                   <ListaProspectos
                     search={searchDebounced}
+                    page={page}
+                    onPageChange={setPage}
                     navigate={navigate}
                     rolBase={rolBase}
                     tabActivo={tabActivo}
