@@ -701,7 +701,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SIGNATORY_DUPLICATED_IN_TEMPLATE` | no | `SignatoryDuplicatedInTemplateException` | graduation |
 | `SIGNATORY_ROLE_INVALID` | no | `SignatoryRoleInvalidException` | graduation |
 | `SIGNATORY_SIGNATURE_INVALID` | no | `SignatorySignatureInvalidException` | graduation |
-| `STUDENT_EMAIL_CHANGE_NOT_AVAILABLE` | no | `StudentEmailChangeNotAvailableException` | identity |
+| `STUDENT_EMAIL_CHANGE_GOOGLE_ACCOUNT` | no | `StudentEmailChangeGoogleAccountException` | identity |
 | `SUBJECT_NOT_IN_PLAN` | no | `SubjectNotInPlanException` | enrollment |
 | `TEMPLATE_IMAGE_INVALID` | no | `TemplateImageInvalidException` | graduation |
 | `TEMPLATE_INCOMPLETE` | no | `TemplateIncompleteException` | graduation |

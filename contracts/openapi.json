@@ -17041,6 +17041,9 @@
           "email" : {
             "type" : "string"
           },
+          "emailEditable" : {
+            "type" : "boolean"
+          },
           "emailVerified" : {
             "type" : "boolean"
           },

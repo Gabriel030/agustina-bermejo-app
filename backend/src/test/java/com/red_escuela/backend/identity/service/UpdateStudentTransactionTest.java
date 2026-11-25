@@ -5,11 +5,12 @@ import com.red_escuela.backend.identity.entity.ContactChangeType;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.exception.StudentDocumentAlreadyExistsException;
-import com.red_escuela.backend.identity.exception.StudentEmailChangeNotAvailableException;
+import com.red_escuela.backend.identity.exception.StudentEmailChangeGoogleAccountException;
 import com.red_escuela.backend.identity.exception.StudentNotFoundException;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.StudentRepository;
 import com.red_escuela.backend.identity.specialist.ContactChangeRecorder;
+import com.red_escuela.backend.identity.specialist.StudentEmailChanger;
 import com.red_escuela.backend.shared.domain.DocumentType;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,14 +28,17 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 class UpdateStudentTransactionTest {
     private final StudentRepository studentRepository = mock(StudentRepository.class);
     private final PersonRepository personRepository = mock(PersonRepository.class);
     private final ContactChangeRecorder contactChangeRecorder = mock(ContactChangeRecorder.class);
+    private final StudentEmailChanger studentEmailChanger = mock(StudentEmailChanger.class);
     private final UpdateStudentTransaction transaction =
-            new UpdateStudentTransaction(studentRepository, personRepository, contactChangeRecorder);
+            new UpdateStudentTransaction(studentRepository, personRepository, contactChangeRecorder, studentEmailChanger);
 
     private Student student;
 
@@ -97,17 +101,29 @@ class UpdateStudentTransactionTest {
     }
 
     @Test
-    void differentEmailIsRejected() {
-        assertThatThrownBy(() -> transaction.update(5L, request("30111222", "otro@example.com"), true))
-                .isInstanceOf(StudentEmailChangeNotAvailableException.class);
-        verify(personRepository, never()).save(any());
+    void requestedEmailIsDelegatedToTheEmailChangerWithTheActor() {
+        transaction.update(5L, request("30111222", "otro@example.com"), true);
+
+        verify(studentEmailChanger).changeByStaff(5L, student.getPerson(), "otro@example.com", 77L);
+        verify(personRepository).save(eq(student.getPerson()));
     }
 
     @Test
-    void sameEmailIgnoringCaseIsAccepted() {
-        transaction.update(5L, request("30111222", "ANA@example.com"), true);
+    void missingOrBlankEmailDoesNotTouchTheEmailChanger() {
+        transaction.update(5L, request("30111222", null), true);
+        transaction.update(5L, request("30111222", "  "), true);
 
-        verify(personRepository).save(eq(student.getPerson()));
+        verifyNoInteractions(studentEmailChanger);
+    }
+
+    @Test
+    void emailChangerRejectionPreventsSavingTheStudent() {
+        doThrow(new StudentEmailChangeGoogleAccountException(5L)).when(studentEmailChanger)
+                .changeByStaff(any(), any(), any(), any());
+
+        assertThatThrownBy(() -> transaction.update(5L, request("30111222", "otro@example.com"), true))
+                .isInstanceOf(StudentEmailChangeGoogleAccountException.class);
+        verify(personRepository, never()).save(any());
     }
 
     @Test
