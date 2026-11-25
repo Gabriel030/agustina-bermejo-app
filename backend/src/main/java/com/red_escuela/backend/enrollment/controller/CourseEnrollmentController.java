@@ -6,6 +6,7 @@ import com.red_escuela.backend.billing.usecase.invoice.CreateAdHocInvoiceForCour
 import com.red_escuela.backend.enrollment.dto.CourseEnrollmentResponse;
 import com.red_escuela.backend.enrollment.dto.CourseProgressResponse;
 import com.red_escuela.backend.enrollment.dto.CreateCourseEnrollmentRequest;
+import com.red_escuela.backend.enrollment.usecase.courseenrollment.EnrollCourseByStaff;
 import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
 import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import jakarta.validation.Valid;
@@ -24,11 +25,13 @@ import java.util.List;
 @RestController
 public class CourseEnrollmentController {
     private final CourseEnrollmentService courseEnrollmentService;
+    private final EnrollCourseByStaff enrollCourseByStaff;
     private final CurrentPersonService currentPersonService;
     private final CreateAdHocInvoiceForCourseEnrollmentUseCase createAdHocInvoiceUseCase;
 
-    public CourseEnrollmentController(CourseEnrollmentService courseEnrollmentService, CurrentPersonService currentPersonService, CreateAdHocInvoiceForCourseEnrollmentUseCase createAdHocInvoiceUseCase) {
+    public CourseEnrollmentController(CourseEnrollmentService courseEnrollmentService, EnrollCourseByStaff enrollCourseByStaff, CurrentPersonService currentPersonService, CreateAdHocInvoiceForCourseEnrollmentUseCase createAdHocInvoiceUseCase) {
         this.courseEnrollmentService = courseEnrollmentService;
+        this.enrollCourseByStaff = enrollCourseByStaff;
         this.currentPersonService = currentPersonService;
         this.createAdHocInvoiceUseCase = createAdHocInvoiceUseCase;
     }
@@ -37,7 +40,7 @@ public class CourseEnrollmentController {
     @ResponseStatus(HttpStatus.CREATED)
     @RequiresPermission(code = "enrollment.create_course_enrollment", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public CourseEnrollmentResponse enroll(@PathVariable Long id, @Valid @RequestBody CreateCourseEnrollmentRequest request) {
-        return CourseEnrollmentResponse.from(courseEnrollmentService.enroll(id, request));
+        return enrollCourseByStaff.enroll(id, request);
     }
 
     @GetMapping("/students/{id}/course-enrollments")

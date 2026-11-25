@@ -36,11 +36,15 @@ public class RequestRateLimitFilter extends OncePerRequestFilter {
     private static final String STAFF_PROSPECTS_PATH = "/prospects/by-staff";
     private static final String UNSUBSCRIBE_PREFIX = "/public/unsubscribe/";
     private static final String UNSUBSCRIBE_LIMITER_KEY = "/public/unsubscribe";
+    private static final String MONITORING_TUNNEL_PATH = "/public/monitoring/tunnel";
+    private static final String MONITORING_TUNNEL_GLOBAL_KEY = "monitoring-tunnel-global";
 
     private final Map<String, KeyedRateLimiter> publicLimiters;
     private final KeyedRateLimiter staffProspectsLimiter;
     private final KeyedRateLimiter userReadLimiter;
     private final KeyedRateLimiter userWriteLimiter;
+    private final KeyedRateLimiter monitoringTunnelGlobalLimiter;
+    private final boolean monitoringTunnelActive;
     private final JsonErrorResponseWriter errorWriter;
 
     @Autowired
@@ -58,19 +62,27 @@ public class RequestRateLimitFilter extends OncePerRequestFilter {
             @Value("${app.rate-limit.user-read.capacity:600}") int userReadCapacity,
             @Value("${app.rate-limit.user-read.refill-per-minute:600}") int userReadRefill,
             @Value("${app.rate-limit.user-write.capacity:120}") int userWriteCapacity,
-            @Value("${app.rate-limit.user-write.refill-per-minute:120}") int userWriteRefill) {
+            @Value("${app.rate-limit.user-write.refill-per-minute:120}") int userWriteRefill,
+            @Value("${app.rate-limit.monitoring-tunnel-global.capacity:120}") int monitoringTunnelGlobalCapacity,
+            @Value("${app.rate-limit.monitoring-tunnel-global.refill-per-minute:120}") int monitoringTunnelGlobalRefill,
+            @Value("${sentry.dsn:}") String sentryDsn) {
         this(errorWriter, Clock.systemUTC(), maxTrackedKeys, refreshCapacity, refreshRefill, resetPasswordCapacity,
                 resetPasswordRefill, prospectsCapacity, prospectsRefill, staffProspectsCapacity, staffProspectsRefill,
                 userReadCapacity, userReadRefill,
-                userWriteCapacity, userWriteRefill);
+                userWriteCapacity, userWriteRefill, monitoringTunnelGlobalCapacity, monitoringTunnelGlobalRefill,
+                sentryDsn != null && !sentryDsn.isBlank());
     }
 
     RequestRateLimitFilter(JsonErrorResponseWriter errorWriter, Clock clock, int maxTrackedKeys, int refreshCapacity,
                            int refreshRefill, int resetPasswordCapacity, int resetPasswordRefill, int prospectsCapacity,
                            int prospectsRefill, int staffProspectsCapacity, int staffProspectsRefill,
                            int userReadCapacity, int userReadRefill, int userWriteCapacity,
-                           int userWriteRefill) {
+                           int userWriteRefill, int monitoringTunnelGlobalCapacity,
+                           int monitoringTunnelGlobalRefill, boolean monitoringTunnelActive) {
         this.errorWriter = errorWriter;
+        this.monitoringTunnelActive = monitoringTunnelActive;
+        this.monitoringTunnelGlobalLimiter = new KeyedRateLimiter(monitoringTunnelGlobalCapacity,
+                monitoringTunnelGlobalRefill, 1, IDLE_WINDOW, clock);
         this.publicLimiters = Map.of(
                 "/auth/refresh", new KeyedRateLimiter(refreshCapacity, refreshRefill, maxTrackedKeys, IDLE_WINDOW, clock),
                 "/auth/reset-password", new KeyedRateLimiter(resetPasswordCapacity, resetPasswordRefill, maxTrackedKeys, IDLE_WINDOW, clock),
@@ -81,7 +93,7 @@ public class RequestRateLimitFilter extends OncePerRequestFilter {
                 "/approve-email-change", new KeyedRateLimiter(resetPasswordCapacity, resetPasswordRefill, maxTrackedKeys, IDLE_WINDOW, clock),
                 "/cancel-email-change", new KeyedRateLimiter(resetPasswordCapacity, resetPasswordRefill, maxTrackedKeys, IDLE_WINDOW, clock),
                 UNSUBSCRIBE_LIMITER_KEY, new KeyedRateLimiter(resetPasswordCapacity, resetPasswordRefill, maxTrackedKeys, IDLE_WINDOW, clock),
-                "/public/monitoring/tunnel", new KeyedRateLimiter(refreshCapacity, refreshRefill, maxTrackedKeys, IDLE_WINDOW, clock));
+                MONITORING_TUNNEL_PATH, new KeyedRateLimiter(refreshCapacity, refreshRefill, maxTrackedKeys, IDLE_WINDOW, clock));
         this.staffProspectsLimiter = new KeyedRateLimiter(staffProspectsCapacity, staffProspectsRefill, maxTrackedKeys, IDLE_WINDOW, clock);
         this.userReadLimiter = new KeyedRateLimiter(userReadCapacity, userReadRefill, maxTrackedKeys, IDLE_WINDOW, clock);
         this.userWriteLimiter = new KeyedRateLimiter(userWriteCapacity, userWriteRefill, maxTrackedKeys, IDLE_WINDOW, clock);
@@ -114,7 +126,7 @@ public class RequestRateLimitFilter extends OncePerRequestFilter {
     private List<KeyedRateLimiter> allLimiters() {
         return Stream.concat(
                 publicLimiters.values().stream(),
-                Stream.of(staffProspectsLimiter, userReadLimiter, userWriteLimiter)).toList();
+                Stream.of(staffProspectsLimiter, userReadLimiter, userWriteLimiter, monitoringTunnelGlobalLimiter)).toList();
     }
 
     private KeyedRateLimiter.Decision decide(HttpServletRequest request) {
@@ -125,7 +137,11 @@ public class RequestRateLimitFilter extends OncePerRequestFilter {
         String path = request.getRequestURI().substring(request.getContextPath().length());
         KeyedRateLimiter publicLimiter = publicLimiterFor(method, path);
         if (publicLimiter != null) {
-            return publicLimiter.tryConsume(request.getRemoteAddr());
+            KeyedRateLimiter.Decision perIp = publicLimiter.tryConsume(request.getRemoteAddr());
+            if (perIp.allowed() && monitoringTunnelActive && POST.equals(method) && MONITORING_TUNNEL_PATH.equals(path)) {
+                return monitoringTunnelGlobalLimiter.tryConsume(MONITORING_TUNNEL_GLOBAL_KEY);
+            }
+            return perIp;
         }
         String user = authenticatedUser();
         if (user == null) {

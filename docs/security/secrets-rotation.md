@@ -88,6 +88,7 @@ institucional.
 | `app.platform-admin.username` / `.email` / `.password` | Opcionales (`@ConditionalOnProperty`) | `PlatformAdminProvisioner` | Ver su sección |
 | `ALERT_WEBHOOK_URL`, `ALERT_TELEGRAM_BOT_TOKEN` | Opcionales | Servicio `backup`, `uptime-check`, `alertmanager` | 12 meses o ante fuga |
 | `BACKUP_HEARTBEAT_URL`, `UPTIME_HEARTBEAT_URL` | Opcionales | `backup` y `uptime-check` (ping a healthchecks.io o similar) | Ante fuga (la URL es el secreto) |
+| `GLITCHTIP_SECRET_KEY` / `GLITCHTIP_POSTGRES_PASSWORD` | Obligatorias solo con el overlay de GlitchTip (sin default; la rotación está en `docs/deploy/glitchtip.md`) | `glitchtip` y `glitchtip-postgres` | 12 meses o ante fuga |
 | `GRAFANA_ADMIN_PASSWORD` | Opcional, **si falta cae a `admin`** | `grafana` | 12 meses |
 | `BACKUP_S3_ACCESS_KEY_ID` / `BACKUP_S3_SECRET_ACCESS_KEY` | Opcionales (sin bucket no se sube nada) | Servicio `backup` | 12 meses |
 | Clave `age` de cifrado de backups (`BACKUP_AGE_RECIPIENT` pública; la privada fuera del servidor) | Recomendada | Servicio `backup` cifra; la privada solo la usa `verify-restore.sh` | Ante fuga o baja de quien la tenía; ver su sección |

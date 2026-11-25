@@ -2,7 +2,11 @@ package com.red_escuela.backend.notification.broadcast;
 
 import com.red_escuela.backend.identity.api.NotificationPreferenceFinder;
 import com.red_escuela.backend.identity.api.PersonContactFinder;
+import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.entity.Student;
+import com.red_escuela.backend.notification.broadcast.template.PersonEnrollmentTestFixtures;
+import jakarta.persistence.EntityManager;
 import com.red_escuela.backend.notification.broadcast.domain.BroadcastCategory;
 import com.red_escuela.backend.notification.broadcast.domain.ChannelType;
 import com.red_escuela.backend.notification.broadcast.domain.ConsentChannel;
@@ -31,6 +35,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -45,6 +50,8 @@ class BroadcastPersonalizedRenderIT extends AbstractBroadcastDispatchIT {
 
     @Autowired
     private BroadcastRepository broadcastRepository;
+    @Autowired
+    private EntityManager fixtureEntityManager;
     @Autowired
     private BroadcastConfirmer confirmer;
     @Autowired
@@ -72,6 +79,9 @@ class BroadcastPersonalizedRenderIT extends AbstractBroadcastDispatchIT {
 
     @AfterEach
     void cleanBroadcasts() {
+        String ownStudents = "(select s.id from student s join person_role pr on pr.person_id = s.person_id join role r on r.id = pr.role_id where r.name = 'PRECEPTOR')";
+        jdbc.update("delete from subject_section_enrollment where student_id in " + ownStudents);
+        jdbc.update("delete from program_enrollment where student_id in " + ownStudents);
         jdbc.update("delete from broadcast_recipient");
         jdbc.update("delete from broadcast");
     }
@@ -194,6 +204,39 @@ class BroadcastPersonalizedRenderIT extends AbstractBroadcastDispatchIT {
 
         assertThat(sent).hasSize(1);
         assertThat(sent.get(0).unsubscribeUrl()).isNull();
+    }
+
+    private void enrollInCourse(Person person, String program, String subject, String section, LocalDateTime enrolledAt, EnrollmentStatus status) {
+        transactionTemplate.executeWithoutResult(tx -> {
+            PersonEnrollmentTestFixtures enrollments = new PersonEnrollmentTestFixtures(fixtureEntityManager);
+            Student student = enrollments.studentOf(fixtureEntityManager.find(Person.class, person.getId()));
+            enrollments.enroll(student, program, subject, section, enrolledAt, status);
+        });
+    }
+
+    @Test
+    void courseVariablesAreRenderedPerPerson() {
+        Person ana = preceptorNamed("Ana");
+        Person beto = preceptorNamed("Beto");
+        enrollInCourse(ana, "Profesorado de Historia", "Historia Antigua", "Comisión A", LocalDateTime.of(2041, 3, 1, 10, 0), EnrollmentStatus.IN_PROGRESS);
+        enrollInCourse(beto, "Tecnicatura en Redes", "Redes I", "Comisión B", LocalDateTime.of(2041, 3, 2, 10, 0), EnrollmentStatus.ENROLLED);
+
+        Broadcast broadcast = confirmedBroadcast("Aviso", "{{nombre}}: {{carrera}} / {{materia}} / {{comision}}");
+
+        assertThat(bodyOf(broadcast, ana)).isEqualTo("Ana: Profesorado de Historia / Historia Antigua / Comisión A");
+        assertThat(bodyOf(broadcast, beto)).isEqualTo("Beto: Tecnicatura en Redes / Redes I / Comisión B");
+    }
+
+    @Test
+    void mostRecentCurrentEnrollmentIsUsedWhenPersonHasSeveral() {
+        Person ana = preceptorNamed("Ana");
+        enrollInCourse(ana, "Carrera Vieja", "Materia Vieja", "Comisión Vieja", LocalDateTime.of(2041, 3, 1, 10, 0), EnrollmentStatus.IN_PROGRESS);
+        enrollInCourse(ana, "Carrera Nueva", "Materia Nueva", "Comisión Nueva", LocalDateTime.of(2041, 6, 1, 10, 0), EnrollmentStatus.ENROLLED);
+        enrollInCourse(ana, "Carrera Retirada", "Materia Retirada", "Comisión Retirada", LocalDateTime.of(2041, 7, 1, 10, 0), EnrollmentStatus.WITHDRAWN);
+
+        Broadcast broadcast = confirmedBroadcast("Aviso", "{{carrera}} / {{materia}} / {{comision}}");
+
+        assertThat(bodyOf(broadcast, ana)).isEqualTo("Carrera Nueva / Materia Nueva / Comisión Nueva");
     }
 
     @Test
