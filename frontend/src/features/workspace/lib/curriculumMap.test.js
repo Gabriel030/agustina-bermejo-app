@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest';
 import {
   buildCurriculumSections,
   buildRelationIndex,
+  countSubjectsByStatus,
+  describeCurricularTerm,
   describeMissingPrerequisites,
+  filterSubjectsByStatus,
+  isApprovedByEquivalence,
   ELECTIVES_SECTION_KEY,
   getDefaultOpenYear,
   getDependentsOf,
@@ -286,5 +290,44 @@ describe('getDefaultOpenYear', () => {
       subject(3, { curricularYear: null, category: 'ELECTIVE' }),
     ]);
     expect(getDefaultOpenYear(sections)).toBe(2);
+  });
+});
+
+describe('map card helpers', () => {
+  const subjects = [
+    { programSubjectId: 1, state: 'APPROVED' },
+    { programSubjectId: 2, state: 'APPROVED' },
+    { programSubjectId: 3, state: 'BLOCKED' },
+  ];
+
+  it('labels each term and returns null for unknown ones', () => {
+    expect(describeCurricularTerm('FIRST')).toBe('1.er cuatrimestre');
+    expect(describeCurricularTerm('SECOND')).toBe('2.º cuatrimestre');
+    expect(describeCurricularTerm('ANNUAL')).toBe('Anual');
+    expect(describeCurricularTerm(null)).toBeNull();
+  });
+
+  it('detects only equivalence approvals', () => {
+    expect(isApprovedByEquivalence({ approvalSource: 'EQUIVALENCE' })).toBe(true);
+    expect(isApprovedByEquivalence({ approvalSource: 'COURSEWORK' })).toBe(false);
+    expect(isApprovedByEquivalence({ approvalSource: null })).toBe(false);
+    expect(isApprovedByEquivalence(undefined)).toBe(false);
+  });
+
+  it('filters by the shared status filter and keeps everything for todas', () => {
+    expect(filterSubjectsByStatus(subjects, 'bloqueadas').map((s) => s.programSubjectId)).toEqual([3]);
+    expect(filterSubjectsByStatus(subjects, 'todas')).toHaveLength(3);
+    expect(filterSubjectsByStatus(undefined, 'todas')).toEqual([]);
+  });
+
+  it('counts subjects per plan status including empty ones', () => {
+    expect(countSubjectsByStatus(subjects)).toEqual({
+      aprobada: 2,
+      'en-curso': 0,
+      regular: 0,
+      desaprobada: 0,
+      disponible: 0,
+      bloqueada: 1,
+    });
   });
 });

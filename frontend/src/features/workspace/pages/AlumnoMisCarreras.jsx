@@ -49,6 +49,7 @@ export function AlumnoMisCarreras() {
   const graduated = matricula?.status === 'COMPLETED';
   const requestedTab = searchParams.get('tab') ?? 'materias';
   const tab = requestedTab === 'egreso' ? 'tramites' : requestedTab;
+  const showsPlanMap = tab === 'plan-de-estudio' && searchParams.get('vista') === 'mapa';
 
   const { data: progreso } = useMiProgreso(matricula?.id);
   const { data: regularity } = useMyRegularity('PROGRAM', graduated ? null : matricula?.id);
@@ -63,12 +64,14 @@ export function AlumnoMisCarreras() {
   function cambiarCarrera(value) {
     searchParams.set('carrera', value);
     searchParams.delete('estado');
+    searchParams.delete('materia');
     setSearchParams(searchParams, { replace: true });
   }
 
   function cambiarTab(nuevoTab) {
     searchParams.set('tab', nuevoTab);
     searchParams.delete('estado');
+    searchParams.delete('materia');
     setSearchParams(searchParams, { replace: true });
   }
 
@@ -180,9 +183,11 @@ export function AlumnoMisCarreras() {
               )}
             </div>
           </StatCard>
-          <StatCard label={<StatLabel icon={TrendingUp}>Avance del plan</StatLabel>}>
-            <ProgressBar value={porcentajeAvance} label="Avance del plan" className="mt-1.5" />
-          </StatCard>
+          {!showsPlanMap && (
+            <StatCard label={<StatLabel icon={TrendingUp}>Avance del plan</StatLabel>}>
+              <ProgressBar value={porcentajeAvance} label="Avance del plan" className="mt-1.5" />
+            </StatCard>
+          )}
         </Stagger>
       </div>
 

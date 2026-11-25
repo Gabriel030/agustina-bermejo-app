@@ -99,10 +99,10 @@ const curriculumProgress = (programEnrollmentId) => ({
       finalScore: null,
       attempts: 0,
       blockedBy: [
-        { subjectId: 12, subjectCode: 'MAT100', subjectName: 'Álgebra', requirementType: 'APPROVED', standing: 'NOT_TAKEN' },
+        { subjectId: 12, subjectCode: 'MAT100', subjectName: 'Álgebra', requirementType: 'APPROVED', standing: 'NOT_TAKEN', minGrade: null, approvedScore: null },
       ],
       prerequisites: [
-        { subjectId: 12, subjectCode: 'MAT100', subjectName: 'Álgebra', requirementType: 'APPROVED', standing: 'NOT_TAKEN' },
+        { subjectId: 12, subjectCode: 'MAT100', subjectName: 'Álgebra', requirementType: 'APPROVED', standing: 'NOT_TAKEN', minGrade: null, approvedScore: null },
       ],
       currentEnrollmentId: null,
       corequisites: [],

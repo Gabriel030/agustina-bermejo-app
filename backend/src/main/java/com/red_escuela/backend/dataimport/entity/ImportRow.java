@@ -8,6 +8,7 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.SequenceGenerator;
 import jakarta.persistence.Table;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +23,8 @@ import org.hibernate.type.SqlTypes;
 @NoArgsConstructor
 public class ImportRow {
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "import_row_seq")
+    @SequenceGenerator(name = "import_row_seq", sequenceName = "import_row_seq", allocationSize = 50)
     private Long id;
 
     @Column(name = "batch_id", nullable = false, updatable = false)

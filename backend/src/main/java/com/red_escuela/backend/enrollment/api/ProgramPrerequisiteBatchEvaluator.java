@@ -9,6 +9,7 @@ import com.red_escuela.backend.enrollment.policy.PrerequisiteRequirementPolicy;
 import com.red_escuela.backend.enrollment.policy.PrerequisiteStanding;
 import com.red_escuela.backend.enrollment.repository.DirectorApprovalRequestRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
+import com.red_escuela.backend.shared.domain.Grade;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -78,7 +79,8 @@ public class ProgramPrerequisiteBatchEvaluator {
             boolean waived, Map<Long, Map<Long, SubjectStanding>> standingsByEnrollment) {
         List<PrerequisiteDetail> details = prerequisites.stream()
                 .map(prerequisite -> detailOf(prerequisite, waived ? PrerequisiteStanding.WAIVED
-                        : standingOf(standingsByEnrollment, query.programEnrollmentId(), prerequisite)))
+                        : standingOf(standingsByEnrollment, query.programEnrollmentId(), prerequisite),
+                        waived ? null : approvedScoreOf(standingsByEnrollment, query.programEnrollmentId(), prerequisite)))
                 .toList();
         if (waived && !details.isEmpty()) {
             return new PrerequisiteBatchResult(PrerequisiteOutcome.WAIVED, details);
@@ -87,10 +89,17 @@ public class ProgramPrerequisiteBatchEvaluator {
         return new PrerequisiteBatchResult(allMet ? PrerequisiteOutcome.MET : PrerequisiteOutcome.UNMET, details);
     }
 
-    private PrerequisiteDetail detailOf(PrerequisiteView prerequisite, PrerequisiteStanding standing) {
+    private PrerequisiteDetail detailOf(PrerequisiteView prerequisite, PrerequisiteStanding standing,
+            Grade approvedScore) {
         return new PrerequisiteDetail(prerequisite.prerequisiteSubjectId(), prerequisite.prerequisiteSubjectCode(),
                 prerequisite.prerequisiteSubjectName(), prerequisite.requirementType(), standing,
-                requirementPolicy.isMetForApproval(standing), null, null);
+                requirementPolicy.isMetForApproval(standing), prerequisite.minGrade(), approvedScore);
+    }
+
+    private Grade approvedScoreOf(Map<Long, Map<Long, SubjectStanding>> standingsByEnrollment,
+            Long programEnrollmentId, PrerequisiteView prerequisite) {
+        return standingsByEnrollment.getOrDefault(programEnrollmentId, Map.of())
+                .getOrDefault(prerequisite.prerequisiteSubjectId(), SubjectStanding.NONE).scoreForPrerequisiteCheck();
     }
 
     private Map<Long, Set<Long>> waivedProgramEnrollmentsBySubject(

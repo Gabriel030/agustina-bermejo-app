@@ -18,6 +18,7 @@ import com.red_escuela.backend.academicstructure.api.ProgramSubjectView;
 import com.red_escuela.backend.academicstructure.api.SectionFinder;
 import com.red_escuela.backend.academicstructure.api.TermEnrollmentWindowFinder;
 import com.red_escuela.backend.academicstructure.api.TermEnrollmentWindowView;
+import com.red_escuela.backend.enrollment.api.PrerequisiteAssessment;
 import com.red_escuela.backend.enrollment.api.ProgramPrerequisiteEvaluator;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInSubjectException;
@@ -34,6 +35,7 @@ import com.red_escuela.backend.enrollment.exception.TermEnrollmentOverrideClosed
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
+import com.red_escuela.backend.shared.domain.Grade;
 import org.hibernate.exception.ConstraintViolationException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -398,9 +400,21 @@ public class SubjectSectionEnrollmentService {
                 .filter(assessment -> !assessment.met())
                 .findFirst()
                 .ifPresent(assessment -> {
-                    throw new PrerequisiteNotMetException(
-                            "No se cumple la correlatividad: " + assessment.subjectName());
+                    throw new PrerequisiteNotMetException(unmetPrerequisiteMessage(assessment));
                 });
+    }
+
+    private String unmetPrerequisiteMessage(PrerequisiteAssessment assessment) {
+        String message = "No se cumple la correlatividad: " + assessment.subjectName();
+        if (assessment.minGrade() == null || assessment.approvedScore() == null) {
+            return message;
+        }
+        return message + " (nota mínima " + formatGrade(assessment.minGrade())
+                + ", tu nota " + formatGrade(assessment.approvedScore()) + ")";
+    }
+
+    private String formatGrade(Grade grade) {
+        return grade.value().stripTrailingZeros().toPlainString().replace('.', ',');
     }
 
     private void validateActiveProgramEnrollment(ProgramEnrollment programEnrollment) {
