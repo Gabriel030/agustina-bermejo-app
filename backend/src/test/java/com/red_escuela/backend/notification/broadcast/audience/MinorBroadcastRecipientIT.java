@@ -166,11 +166,9 @@ class MinorBroadcastRecipientIT extends AbstractIntegrationTest {
                 .doesNotContainKey(minor.getId());
     }
 
-    @Test
-    void minorLookupQueriesDoNotGrowWithAudienceSize() {
-        studentWithGuardianEmail(personWithOwnEmail(minorBirthDate()), GUARDIAN_EMAIL);
+    private List<AudienceRecipient> mixedAudience(int size) {
         List<AudienceRecipient> recipients = new ArrayList<>();
-        for (int i = 0; i < 60; i++) {
+        for (int i = 0; i < size; i++) {
             LocalDate birthDate = i % 2 == 0 ? minorBirthDate() : ApplicationTime.today().minusYears(30);
             if (i % 3 == 0) {
                 String email = "bulk-" + i + "@example.com";
@@ -182,11 +180,27 @@ class MinorBroadcastRecipientIT extends AbstractIntegrationTest {
         }
         entityManager.flush();
         entityManager.clear();
+        return recipients;
+    }
 
-        Map<Long, ExclusionReason> reasons = QueryCountAssertions.assertAtMostQueries(entityManagerFactory, 3,
+    private Map<Long, ExclusionReason> evaluateCounting(List<AudienceRecipient> recipients, int maxQueries) {
+        return QueryCountAssertions.assertAtMostQueries(entityManagerFactory, maxQueries,
                 () -> evaluator.findExclusionReasons(recipients, ChannelType.EMAIL, BroadcastCategory.INSTITUTIONAL));
+    }
+
+    @Test
+    void minorLookupUsesOneQueryForASingleChunk() {
+        Map<Long, ExclusionReason> reasons = evaluateCounting(mixedAudience(60), 3);
 
         assertThat(reasons.values()).containsOnly(ExclusionReason.NO_CHANNEL_ADDRESS);
         assertThat(reasons).hasSize(10);
+    }
+
+    @Test
+    void minorLookupAddsExactlyOneQueryPerChunkOfFiveHundred() {
+        Map<Long, ExclusionReason> reasons = evaluateCounting(mixedAudience(1001), 5);
+
+        assertThat(reasons.values()).containsOnly(ExclusionReason.NO_CHANNEL_ADDRESS);
+        assertThat(reasons).hasSize(167);
     }
 }
