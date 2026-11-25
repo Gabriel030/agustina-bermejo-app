@@ -35,6 +35,8 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [plans/956.md](cell/plans/956.md) | Cierre de 24-D: límites de tamaño de subidas probados con servidor real | vigente |
 | [plans/1196.md](cell/plans/1196.md) | E29-D11: invitaciones por oleadas a alumnos importados | vigente |
 | [plans/1103-piloto.md](cell/plans/1103-piloto.md) | Piloto por capas de #1103: constancia de materias aprobadas (M1-b), plantilla publicada en todos los documentos (T1d) y excepción por deuda (D1c) | vigente |
+| [plans/1103.md](cell/plans/1103.md) | Lo entregado de #1103: M1-b, plantilla publicada en los documentos (T1d) y excepción por deuda (D1c), con cobertura y pendientes | vigente |
+| [handoffs/1103-piloto.md](cell/handoffs/1103-piloto.md) | Handoff del piloto por capas de #1103: horas de merge de P0 a P15, denegaciones del clasificador, choques y qué queda | vigente |
 | [plans/e22-11-12.md](cell/plans/e22-11-12.md) | E22 22.11 y 22.12: eventos síncronos entre módulos (síncronos a propósito, probados; billing con compuerta) | vigente |
 | [reports/e18-violaciones.md](cell/reports/e18-violaciones.md) | E18 M0: violaciones de Modulith medidas, ciclos, dependencias hacia arriba y procesos a cortar | vigente |
 | [reports/e25-b2-invariantes.md](cell/reports/e25-b2-invariantes.md) | E25 B2 S1: invariantes que solo protege el código, candidatas a único parcial o CHECK, con queries de verificación | vigente |
