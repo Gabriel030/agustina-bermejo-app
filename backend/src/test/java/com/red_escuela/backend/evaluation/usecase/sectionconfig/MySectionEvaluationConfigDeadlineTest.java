@@ -1,6 +1,7 @@
 package com.red_escuela.backend.evaluation.usecase.sectionconfig;
 
 import com.red_escuela.backend.evaluation.dto.SectionEvaluationConfigResponse;
+import com.red_escuela.backend.evaluation.specialist.SectionEvaluationConfigDueDaysReader;
 import com.red_escuela.backend.evaluation.specialist.SectionEvaluationConfigFinder;
 import com.red_escuela.backend.evaluation.specialist.SectionEvaluationConfigInstructorAccessChecker;
 import com.red_escuela.backend.identity.api.InstitutionAcademicSettings;
@@ -17,6 +18,7 @@ import static org.mockito.Mockito.when;
 class MySectionEvaluationConfigDeadlineTest {
 
     private final InstitutionAcademicSettingsReader reader = mock(InstitutionAcademicSettingsReader.class);
+    private final SectionEvaluationConfigDueDaysReader dueDaysReader = new SectionEvaluationConfigDueDaysReader(reader);
 
     private SectionEvaluationConfigResponse responseStartingAt(LocalDateTime start) {
         return new SectionEvaluationConfigResponse(
@@ -29,7 +31,7 @@ class MySectionEvaluationConfigDeadlineTest {
         when(reader.read()).thenReturn(new InstitutionAcademicSettings(5, 40, false));
 
         int dueDays = new GetMySectionEvaluationConfigService(
-                mock(SectionEvaluationConfigFinder.class), mock(SectionEvaluationConfigInstructorAccessChecker.class), reader)
+                mock(SectionEvaluationConfigFinder.class), mock(SectionEvaluationConfigInstructorAccessChecker.class), dueDaysReader)
                 .evaluationConfigDueDays();
 
         assertThat(dueDays).isEqualTo(40);
