@@ -392,13 +392,15 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
             </div>
           )}
           {cohorts?.map((cohort) => (
-            <button
+            <Button
               key={cohort.id}
               type="button"
+              variant="row-card"
+              size="row"
               onClick={() => dispatch({ type: 'ELEGIR_COHORTE', cohortId: cohort.id })}
               className={cn(
-                'flex flex-col rounded-xl border px-4 py-3 text-left transition-colors hover:bg-neutral-bg',
-                cohort.id === state.cohortId ? 'border-brand bg-accent-soft' : 'border-border bg-surface',
+                'min-h-11 flex-col items-stretch justify-center gap-0',
+                cohort.id === state.cohortId && 'border-brand bg-accent-soft hover:bg-accent-soft',
               )}
             >
               <span className="text-size-13-5 font-bold text-ink">{cohort.label ?? `Cohorte ${cohort.ordenEnAnio}`}</span>
@@ -408,7 +410,7 @@ export function InscripcionWizard({ tipo, target, cohorts, pricing, volverA, cur
                   Matrícula: {formatMoney(cohort.ordenEnAnio === 2 ? pricing?.matriculaCohorte2 : pricing?.matriculaCohorte1) || 'A definir'}
                 </span>
               )}
-            </button>
+            </Button>
           ))}
         </GlassCard>
       )}

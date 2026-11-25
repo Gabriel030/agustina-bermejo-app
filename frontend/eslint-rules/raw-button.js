@@ -16,14 +16,7 @@ export const RAW_BUTTON_EXCEPTIONS = [
   'src/components/table/DataTable.jsx',
   'src/features/attendance/components/SeccionAsistencia.jsx',
   'src/features/billing/credit-notes/ReasonCards.jsx',
-  'src/features/billing/credit-notes/StudentCreditNotesSection.jsx',
-  'src/features/billing/pricing/PricesPage.jsx',
-  'src/features/billing/reminders/ReminderSettingsPage.jsx',
-  'src/features/enrollment/components/InscripcionMaterias.jsx',
-  'src/features/enrollment/components/InscripcionWizard.jsx',
-  'src/features/identity/pages/MiPerfil.jsx',
   'src/features/notifications/components/NotificationBell.jsx',
-  'src/features/workspace/pages/AlumnoInicio.jsx',
 ]
 
 export const noRawButtonRule = {
