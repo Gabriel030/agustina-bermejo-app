@@ -9,7 +9,6 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
@@ -30,7 +29,11 @@ public class MinorGuardianEmailCollisionFinder {
 
     @Transactional(readOnly = true)
     public Set<Long> findMinorPersonIdsWithEmailSharedWithGuardian(Collection<Long> personIds) {
-        List<Long> minorIds = findMinorPersonIds(personIds.stream().distinct().toList());
+        Long[] distinctIds = personIds.stream().distinct().toArray(Long[]::new);
+        if (distinctIds.length == 0) {
+            return Set.of();
+        }
+        List<Long> minorIds = List.of(findMinorPersonIds(distinctIds));
         Set<Long> colliding = new HashSet<>();
         for (int from = 0; from < minorIds.size(); from += LOOKUP_CHUNK_SIZE) {
             colliding.addAll(studentRepository.findPersonIdsWithEmailEqualToAnyGuardianEmail(minorIds.subList(from, Math.min(from + LOOKUP_CHUNK_SIZE, minorIds.size()))));
@@ -38,17 +41,12 @@ public class MinorGuardianEmailCollisionFinder {
         return colliding;
     }
 
-    private List<Long> findMinorPersonIds(List<Long> ids) {
+    private Long[] findMinorPersonIds(Long[] ids) {
         LocalDate today = ApplicationTime.today();
         LocalDate looseCutoff = today.minusYears(LegalAge.ADULT_YEARS).minusDays(1);
-        List<Long> minors = new ArrayList<>();
-        for (int from = 0; from < ids.size(); from += LOOKUP_CHUNK_SIZE) {
-            for (PersonBirthDateRow row : personRepository.findBirthDatesNewerThan(ids.subList(from, Math.min(from + LOOKUP_CHUNK_SIZE, ids.size())), looseCutoff)) {
-                if (LegalAge.isMinor(row.getBirthDate(), today)) {
-                    minors.add(row.getId());
-                }
-            }
-        }
-        return minors;
+        return personRepository.findBirthDatesNewerThan(ids, looseCutoff).stream()
+                .filter(row -> LegalAge.isMinor(row.getBirthDate(), today))
+                .map(PersonBirthDateRow::getId)
+                .toArray(Long[]::new);
     }
 }
