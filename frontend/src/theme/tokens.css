@@ -8,7 +8,7 @@
   --ink: oklch(23.3% 0.024 274);
   --ink-soft: oklch(44.8% 0.034 270);
   --ink-faint: oklch(51.5% 0.033 270);
-  --accent: oklch(50.2% 0.092 226);
+  --accent: #ff00ff;
   --accent-soft: oklch(94.8% 0.018 218);
   --on-accent: oklch(100% 0 0);
   --success: oklch(51.8% 0.110 158);
