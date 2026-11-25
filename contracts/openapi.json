@@ -7651,10 +7651,10 @@
             "type" : "integer"
           },
           "studentName" : {
-            "type" : "string"
+            "type" : [ "string", "null" ]
           }
         },
-        "required" : [ "outcome", "registrationId", "studentName" ],
+        "required" : [ "outcome", "registrationId" ],
         "type" : "object"
       },
       "ExamCertificateBatchResponse" : {
