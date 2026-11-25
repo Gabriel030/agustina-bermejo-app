@@ -1,5 +1,6 @@
 package com.red_escuela.backend.notification.broadcast.audience.specialist;
 
+import com.red_escuela.backend.identity.api.MinorGuardianEmailCollisionFinder;
 import com.red_escuela.backend.notification.broadcast.domain.BroadcastCategory;
 import com.red_escuela.backend.notification.broadcast.domain.ChannelType;
 import com.red_escuela.backend.notification.broadcast.domain.ConsentDecision;
@@ -14,20 +15,27 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Component
 public class RecipientEligibilityEvaluator {
 
     private final ContactConsentLedger consentLedger;
 
-    public RecipientEligibilityEvaluator(ContactConsentLedger consentLedger) {
+    private final MinorGuardianEmailCollisionFinder minorGuardianEmailCollisionFinder;
+
+    public RecipientEligibilityEvaluator(ContactConsentLedger consentLedger, MinorGuardianEmailCollisionFinder minorGuardianEmailCollisionFinder) {
         this.consentLedger = consentLedger;
+        this.minorGuardianEmailCollisionFinder = minorGuardianEmailCollisionFinder;
     }
 
     public Optional<ExclusionReason> findExclusionReason(AudienceRecipient recipient, ChannelType channel, BroadcastCategory category) {
         Optional<ExclusionReason> addressReason = findAddressExclusionReason(recipient, channel);
         if (addressReason.isPresent()) {
             return addressReason;
+        }
+        if (channel == ChannelType.EMAIL && !minorGuardianEmailCollisionFinder.findMinorPersonIdsWithEmailSharedWithGuardian(List.of(recipient.personId())).isEmpty()) {
+            return Optional.of(ExclusionReason.NO_CHANNEL_ADDRESS);
         }
         return consentExclusionReason(consentLedger.isAllowed(recipient.personId(), channel, category));
     }
@@ -43,7 +51,13 @@ public class RecipientEligibilityEvaluator {
                 withAddress.add(recipient.personId());
             }
         }
-        consentLedger.isAllowedAll(withAddress, channel, category).forEach((personId, decision) ->
+        List<Long> eligibleForConsent = withAddress;
+        if (channel == ChannelType.EMAIL) {
+            Set<Long> minorsOnGuardianEmail = minorGuardianEmailCollisionFinder.findMinorPersonIdsWithEmailSharedWithGuardian(withAddress);
+            minorsOnGuardianEmail.forEach(personId -> reasons.put(personId, ExclusionReason.NO_CHANNEL_ADDRESS));
+            eligibleForConsent = withAddress.stream().filter(personId -> !minorsOnGuardianEmail.contains(personId)).toList();
+        }
+        consentLedger.isAllowedAll(eligibleForConsent, channel, category).forEach((personId, decision) ->
                 consentExclusionReason(decision).ifPresent(reason -> reasons.put(personId, reason)));
         return reasons;
     }
