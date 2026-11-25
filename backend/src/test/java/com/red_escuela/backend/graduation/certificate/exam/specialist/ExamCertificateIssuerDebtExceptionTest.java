@@ -27,6 +27,7 @@ import com.red_escuela.backend.graduation.certificate.exam.repository.ExamCertif
 import com.red_escuela.backend.graduation.certificate.exam.specialist.ExamCertificateIssuer.ExamCertificateIssueCommand;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateDigest;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateVerificationUrl;
+import com.red_escuela.backend.graduation.certificate.specialist.VerifiableDocumentRegistry;
 import com.red_escuela.backend.graduation.certificate.template.specialist.CertificateTemplateRenderSource;
 import com.red_escuela.backend.graduation.documentsettings.specialist.DocumentIssuanceSettingsFinder;
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
@@ -60,7 +61,8 @@ class ExamCertificateIssuerDebtExceptionTest {
                 mock(CertificateFileStore.class), mock(CertificateVerificationUrl.class), mock(CertificateDigest.class),
                 mock(StudentFinder.class), mock(CurrentActorFinder.class), mock(DocumentIssuanceSettingsFinder.class),
                 mock(AuditTrail.class), Clock.fixed(NOW.toInstant(ZoneOffset.UTC), ZoneOffset.UTC),
-                mock(CertificateTemplateRenderSource.class), registrationFinder, boardReader));
+                mock(CertificateTemplateRenderSource.class), registrationFinder, boardReader,
+                mock(VerifiableDocumentRegistry.class)));
         when(registrationFinder.requireById(REGISTRATION_ID)).thenReturn(new ExamBoardRegistrationView(REGISTRATION_ID, BOARD_ID));
     }
 
