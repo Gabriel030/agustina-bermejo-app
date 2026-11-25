@@ -8,6 +8,7 @@ import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.SubjectEquivalence;
+import com.red_escuela.backend.graduation.certificate.approvedsubjects.dto.ApprovedSubjectsCertificatePdf;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.dto.ApprovedSubjectsCertificateResponse;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.entity.ApprovedSubjectsCertificate;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.entity.ApprovedSubjectsCertificateStatus;
@@ -31,6 +32,8 @@ import com.red_escuela.backend.shared.domain.Grade;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.time.MutableClock;
 import jakarta.persistence.EntityManager;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -79,6 +82,8 @@ class ApprovedSubjectsIssuanceIT extends AbstractIntegrationTest {
     private CertificateDigest digest;
     @Autowired
     private CertificateTemplateRenderSource templateSource;
+    @Autowired
+    private ApprovedSubjectsCertificatePdfProvider pdfProvider;
 
     private Long studentId;
     private Long personId;
@@ -214,6 +219,45 @@ class ApprovedSubjectsIssuanceIT extends AbstractIntegrationTest {
                 templateSource.assetsOf(templateSource.byId(stored.getTemplateVersionId()), stored.getRegistryNumber()));
 
         assertThat(digest.sha256(regenerated)).isEqualTo(stored.getPdfSha256());
+    }
+
+    @Test
+    void ownDownloadOfACertificateIssuedWithAPublishedTemplateReturnsTheStoredHashEveryTime() {
+        ApprovedSubjectsCertificateResponse response = issuer.issue(studentId, enrollmentId, personId, NOW);
+        ApprovedSubjectsCertificate stored = repository.findById(response.id()).orElseThrow();
+
+        ApprovedSubjectsCertificatePdf first = pdfProvider.pdfOfOwn(response.id(), studentId);
+        ApprovedSubjectsCertificatePdf second = pdfProvider.pdfOfOwn(response.id(), studentId);
+
+        assertThat(stored.getTemplateVersionId()).isNotNull();
+        assertThat(digest.sha256(first.content())).isEqualTo(stored.getPdfSha256());
+        assertThat(digest.sha256(second.content())).isEqualTo(stored.getPdfSha256());
+    }
+
+    @Test
+    void ownDownloadAfterRepublishingTheTemplateKeepsTheIssuedHashAndTheOriginalDesign() throws Exception {
+        ApprovedSubjectsCertificateResponse response = issuer.issue(studentId, enrollmentId, personId, NOW);
+        ApprovedSubjectsCertificate stored = repository.findById(response.id()).orElseThrow();
+        PublishedTemplateFixtures.publishRebrandedVersion(jdbc, "APPROVED_SUBJECTS_CERTIFICATE");
+
+        ApprovedSubjectsCertificatePdf downloaded = pdfProvider.pdfOfOwn(response.id(), studentId);
+
+        assertThat(digest.sha256(downloaded.content())).isEqualTo(stored.getPdfSha256());
+        assertThat(repository.findById(response.id()).orElseThrow().getTemplateVersionId()).isEqualTo(stored.getTemplateVersionId());
+        try (var document = Loader.loadPDF(downloaded.content())) {
+            assertThat(new PDFTextStripper().getText(document)).doesNotContain("INSTITUTO REPUBLICADO");
+        }
+    }
+
+    @Test
+    void certificateIssuedAfterRepublishingUsesTheNewVersionAndKeepsTheOldOneUntouched() {
+        ApprovedSubjectsCertificateResponse before = issuer.issue(studentId, enrollmentId, personId, NOW);
+        Long republishedId = PublishedTemplateFixtures.publishRebrandedVersion(jdbc, "APPROVED_SUBJECTS_CERTIFICATE");
+
+        ApprovedSubjectsCertificateResponse after = issuer.issue(studentId, enrollmentId, personId, NOW.plusDays(1));
+
+        assertThat(repository.findById(after.id()).orElseThrow().getTemplateVersionId()).isEqualTo(republishedId);
+        assertThat(repository.findById(before.id()).orElseThrow().getTemplateVersionId()).isNotEqualTo(republishedId);
     }
 
     @Test
