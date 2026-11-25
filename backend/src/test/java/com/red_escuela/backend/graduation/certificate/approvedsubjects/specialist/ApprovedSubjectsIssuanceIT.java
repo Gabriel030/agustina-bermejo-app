@@ -114,6 +114,8 @@ class ApprovedSubjectsIssuanceIT extends AbstractIntegrationTest {
             equivalence.setOriginScore(Grade.of(new BigDecimal("8")));
             equivalence.setRecognizedOn(LocalDate.of(2026, 5, 20));
             equivalence.setResolutionNumber("R-1");
+            equivalence.setReason("Equivalencia de prueba");
+            equivalence.setRecordedById(person.getId());
             equivalence.setRecordedAt(LocalDateTime.of(2026, 5, 20, 10, 0));
             entityManager.persist(equivalence);
             entityManager.flush();
