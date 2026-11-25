@@ -1,5 +1,6 @@
 import { useId } from 'react';
 import { Info } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -25,13 +26,15 @@ export function AttendanceRegimeField({ value, onChange, lockUnlimited = false }
         <b className="text-size-13-5">Máximo de ausentismo</b>
         <Popover>
           <PopoverTrigger asChild>
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon-xs"
               aria-label="Qué significa el máximo de ausentismo"
-              className="flex h-6 w-6 items-center justify-center rounded-full border border-surface-border text-ink-soft hover:border-accent"
+              className="h-6 w-6 rounded-full border-surface-border text-ink-soft hover:border-accent hover:bg-transparent"
             >
               <Info className="h-3.5 w-3.5" />
-            </button>
+            </Button>
           </PopoverTrigger>
           <PopoverContent align="start" className="w-72 text-size-12-5">
             Se calcula sobre las clases ya dictadas. Las inasistencias justificadas no cuentan. Al superar el máximo, el alumno figura como libre en esta comisión.

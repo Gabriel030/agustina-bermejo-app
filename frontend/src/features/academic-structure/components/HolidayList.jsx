@@ -1,4 +1,5 @@
 import { ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { EmptyState } from '@/components/EmptyState';
 import { GlassCard } from '@/components/GlassCard';
 import { Skeleton } from '@/components/Skeleton';
@@ -8,12 +9,14 @@ import { cn } from '@/lib/utils';
 
 function HolidayRow({ holiday, selected, onSelect }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="row"
+      size="row"
       aria-pressed={selected}
       onClick={() => onSelect(holiday)}
       className={cn(
-        'flex min-h-14 w-full items-center gap-3 rounded-2xl px-3 py-1.5 text-left transition-colors hover:bg-neutral-bg/60',
+        'min-h-14 justify-start gap-3 px-3 py-1.5 transition-colors',
         selected && 'bg-accent-soft hover:bg-accent-soft',
       )}
     >
@@ -26,7 +29,7 @@ function HolidayRow({ holiday, selected, onSelect }) {
         <HolidayTypePill type={holiday.type} />
       </span>
       <ChevronRight aria-hidden="true" className="size-4 flex-none text-ink-faint" />
-    </button>
+    </Button>
   );
 }
 

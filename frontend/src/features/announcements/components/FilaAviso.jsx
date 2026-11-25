@@ -90,9 +90,10 @@ export function FilaAviso({ aviso, scrollerRef, soloLectura, onEditar, onElimina
           {CATEGORIA_AVISO_LABEL[aviso.category] ?? aviso.category}
         </td>
         <td className="px-3 py-[11px] text-size-12-5 text-ink-soft">
-          <button
+          <Button
             type="button"
-            className="cursor-pointer rounded-full transition hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+            variant="ghost"
+            className="h-auto cursor-pointer rounded-full border-0 p-0 font-normal transition hover:bg-transparent hover:brightness-105 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
             aria-label={`Ver destinatarios: ${aviso.audienceLabel}`}
             onClick={(e) => {
               e.stopPropagation();
@@ -102,7 +103,7 @@ export function FilaAviso({ aviso, scrollerRef, soloLectura, onEditar, onElimina
             <StatusPill tone={audienciaCompleta ? 'neutral' : 'accent'} className="whitespace-nowrap">
               {aviso.audienceLabel}
             </StatusPill>
-          </button>
+          </Button>
         </td>
         <td className="px-3 py-[11px] text-size-12-5">
           <StatusPill tone={vigencia.tone}>{vigencia.label}</StatusPill>

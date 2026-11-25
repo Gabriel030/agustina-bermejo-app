@@ -1,22 +1,24 @@
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
 import { nombreDeInstancia } from '@/lib/avisos';
 
 function Chip({ activo, onClick, rol, children }) {
   const estado = rol === 'radio' ? { 'aria-checked': activo } : { 'aria-pressed': activo };
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       role={rol}
       {...estado}
       onClick={onClick}
-      className={`rounded-xl border px-3.5 py-1.5 text-size-12-5 font-bold transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+      className={`h-auto rounded-xl border px-3.5 py-1.5 text-size-12-5 font-bold transition-all focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
         activo
-          ? 'border-transparent bg-brand text-on-accent'
+          ? 'border-transparent bg-brand text-on-accent hover:bg-brand hover:text-on-accent'
           : 'border-border text-ink-soft hover:border-brand hover:text-ink'
       }`}
     >
       {children}
-    </button>
+    </Button>
   );
 }
 
