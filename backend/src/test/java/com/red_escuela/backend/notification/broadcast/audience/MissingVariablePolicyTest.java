@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MissingVariablePolicyTest {
 
     private static boolean missing(Set<TemplateVariable> referenced, String first, String last, boolean institution) {
-        return MissingVariablePolicy.isMissingAnyVariable(referenced, first, last, institution);
+        return MissingVariablePolicy.isMissingAnyVariable(referenced, first, last, institution, true);
     }
 
     @Test
@@ -39,10 +39,16 @@ class MissingVariablePolicyTest {
     }
 
     @Test
-    void variablesWithoutPersonSourceAreMissingForEveryone() {
+    void courseVariablesAreMissingOnlyWithoutCurrentCourse() {
         for (TemplateVariable variable : EnumSet.of(TemplateVariable.PROGRAM, TemplateVariable.SUBJECT, TemplateVariable.SECTION)) {
-            assertThat(missing(EnumSet.of(variable), "Ana", "Perez", true)).isTrue();
+            assertThat(MissingVariablePolicy.isMissingAnyVariable(EnumSet.of(variable), "Ana", "Perez", true, false)).isTrue();
+            assertThat(MissingVariablePolicy.isMissingAnyVariable(EnumSet.of(variable), "Ana", "Perez", true, true)).isFalse();
         }
+    }
+
+    @Test
+    void courseVariablesAreIgnoredWhenNotReferenced() {
+        assertThat(MissingVariablePolicy.isMissingAnyVariable(EnumSet.of(TemplateVariable.FIRST_NAME), "Ana", "Perez", true, false)).isFalse();
     }
 
     @Test
