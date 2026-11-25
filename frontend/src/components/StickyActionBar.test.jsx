@@ -114,6 +114,14 @@ describe('StickyActionBar', () => {
       expect(screen.getByText('3 cambios').closest('[aria-hidden="true"]')).not.toBeNull();
     });
 
+    it('lets a long hint wrap to two lines instead of cutting it with an ellipsis', () => {
+      useCompactViewport();
+      renderMenuBar({ hint: 'Se ejecuta ahora y no se puede deshacer.' });
+      const hint = screen.getByText('Se ejecuta ahora y no se puede deshacer.');
+      expect(hint).toHaveClass('line-clamp-2');
+      expect(hint).not.toHaveClass('truncate');
+    });
+
     it('announces the saving state and shows the spinner', () => {
       useCompactViewport();
       renderMenuBar({ primary: { label: 'Guardar', loading: true, onClick: vi.fn() } });

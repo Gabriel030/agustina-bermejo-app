@@ -427,7 +427,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CLOSURE_NOT_CONFIRMED` | no | `ClosureNotConfirmedException` | evaluation |
 | `CLOSURE_NOT_REOPENABLE` | no | `ClosureNotReopenableException` | evaluation |
 | `CLOSURE_SNAPSHOT_NOT_RECALCULABLE` | no | `ClosureSnapshotNotRecalculableException` | evaluation |
-| `COHORT_ADMISSION_WINDOW_CLOSED` | no | `CohortAdmissionWindowClosedException` | billing |
+| `COHORT_ADMISSION_WINDOW_CLOSED` | no | `CohortAdmissionWindowClosedException` | enrollment |
 | `COHORT_PROMOTION_ALREADY_ACQUIRED` | no | `CohortPromotionAlreadyAcquiredException` | billing |
 | `CONCURRENT_REGULAR_CERTIFICATE_ISSUE` | no | `ConcurrentRegularCertificateIssueException` | graduation |
 | `COREQUISITE_ALREADY_EXISTS` | no | `CorequisiteAlreadyExistsException` | academicstructure |

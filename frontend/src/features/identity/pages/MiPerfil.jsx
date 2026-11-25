@@ -62,15 +62,17 @@ function InputContrasena({ value, onChange, required, placeholder, ...rest }) {
         className="pr-10"
         {...rest}
       />
-      <button
+      <Button
         type="button"
+        variant="subtle"
+        size="inline"
         onClick={() => setVisible((v) => !v)}
         tabIndex={-1}
         aria-label={visible ? 'Ocultar contraseña' : 'Ver contraseña'}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint transition-colors hover:text-ink"
+        className="absolute right-3 top-1/2 -translate-y-1/2"
       >
         {visible ? <EyeOff size={15} /> : <Eye size={15} />}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -106,11 +108,13 @@ function AvatarUpload() {
 
   return (
     <div className="flex items-center gap-4">
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="inline"
         onClick={() => fileRef.current?.click()}
         disabled={subir.isPending}
-        className="group relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl transition-opacity hover:opacity-90"
+        className="group relative size-16 shrink-0 overflow-hidden rounded-2xl hover:bg-transparent hover:opacity-90"
       >
         {avatarUrl ? (
           <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
@@ -122,7 +126,7 @@ function AvatarUpload() {
         <div className="absolute inset-0 flex items-center justify-center bg-(--overlay-bg) opacity-0 transition-opacity group-hover:opacity-100">
           <Camera size={18} className="text-on-overlay" />
         </div>
-      </button>
+      </Button>
       <div>
         <p className="text-size-13 font-medium text-ink">Foto de perfil</p>
         <p className="text-size-11 text-ink-faint">JPG o PNG, máx. 5 MB</p>

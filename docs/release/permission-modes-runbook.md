@@ -195,6 +195,10 @@ GET /payment-config y GET /payment-config/qr-image son visibles para cualquier u
 
 El módulo no tiene permisos en la grilla: sus cinco controllers son del alumno (/me/*) o públicos con token (/public/calendar/{token}.ics). No hay migración de permisos ni cambio de resultado para el Director en ENFORCE.
 
+## Announcement
+
+Sin permisos en la grilla y sin migración, por decisión de Gabriel (24-nov). Sus dos endpoints son del alumno: `GET /me/announcements` y `POST /me/announcements/{id}/read` (`MeAnnouncementController`). No llevan `@RequiresPermission` y están exentos por endpoint en `CONTROLLERS_WITHOUT_ROLE_RULE` de `PermissionGateCoverageTest`. La exención es permanente: el servicio acota cada consulta y cada lectura al alumno autenticado (solo sus comunicados y sus destinatarios), así que no hace falta un permiso `announcement.read_own`. Ninguna fila de la grilla cambia de resultado ni se migra; las filas de `authorization-matrix.csv` documentan la regla real de cada rol.
+
 ## Notas operativas
 
 - Los contadores de discrepancias anteriores a la migración V288 no guardaban la dirección: se les asignó una según la grilla de ese momento y es aproximada. Para un criterio de salida limpio, conviene reiniciar los contadores de un módulo al pasarlo a Sombra.

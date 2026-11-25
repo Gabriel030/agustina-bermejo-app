@@ -24,6 +24,8 @@ import { multiSelectFilter } from './multiSelectFilter';
 
 const EXPANDER_COLUMN_ID = 'expander';
 const LOADING_ROWS = 4;
+const END_FADE_MASK = 'linear-gradient(to right, black calc(100% - 36px), transparent)';
+const END_FADE_STYLE = { maskImage: END_FADE_MASK, WebkitMaskImage: END_FADE_MASK };
 const STICKY_SHADOW = 'shadow-(--sh-sticky-left)';
 const STICKY_HEAD_CLASS = `sticky left-0 z-20 bg-dialog-bg ${STICKY_SHADOW}`;
 const STICKY_CELL_CLASS = `sticky left-0 z-10 bg-dialog-bg ${STICKY_SHADOW}`;
@@ -458,6 +460,7 @@ export function DataTable({
       <div
         ref={overflow.scrollRef}
         onScroll={overflow.measure}
+        style={overflow.hasMoreToRight ? END_FADE_STYLE : undefined}
         className="max-h-[calc(100dvh-13rem)] w-full overflow-auto overscroll-x-contain rounded-xl"
       >
         {tableNode}
@@ -466,7 +469,7 @@ export function DataTable({
         aria-hidden="true"
         data-testid="overflow-indicator"
         className={cn(
-          'pointer-events-none absolute inset-y-0 right-0 flex w-9 items-center justify-end rounded-r-xl bg-gradient-to-r from-transparent to-dialog-bg pr-1.5 text-ink-soft transition-opacity motion-reduce:transition-none',
+          'pointer-events-none absolute inset-y-0 right-0 flex w-9 items-center justify-end pr-1.5 text-ink-soft transition-opacity motion-reduce:transition-none',
           overflow.hasMoreToRight ? 'opacity-100' : 'opacity-0',
         )}
       >

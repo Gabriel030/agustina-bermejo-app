@@ -13,8 +13,16 @@ export function useSlidingIndicator(activeSelector) {
     const container = containerRef.current;
     if (!container) return;
 
+    const resizeObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => medir());
+    let observado = null;
+
     function medir() {
       const activo = container.querySelector(activeSelector);
+      if (activo !== observado) {
+        if (observado) resizeObserver?.unobserve(observado);
+        if (activo) resizeObserver?.observe(activo);
+        observado = activo;
+      }
       if (activo) {
         setRect({ top: activo.offsetTop, left: activo.offsetLeft, width: activo.offsetWidth, height: activo.offsetHeight });
       }
@@ -26,6 +34,7 @@ export function useSlidingIndicator(activeSelector) {
     window.addEventListener('resize', medir);
     return () => {
       observer.disconnect();
+      resizeObserver?.disconnect();
       window.removeEventListener('resize', medir);
     };
   }, [activeSelector]);
