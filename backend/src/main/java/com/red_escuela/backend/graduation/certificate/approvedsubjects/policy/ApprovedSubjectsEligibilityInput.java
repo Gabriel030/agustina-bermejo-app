@@ -9,5 +9,5 @@ public record ApprovedSubjectsEligibilityInput(
         long issuedToday,
         int dailyIssuanceLimit,
         int approvedSubjectsCount,
-        boolean hasActiveEnrollment) {
+        boolean hasActiveProgramEnrollment) {
 }

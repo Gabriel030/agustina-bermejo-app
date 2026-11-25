@@ -10,7 +10,7 @@ public class ApprovedSubjectsEligibilityPolicy {
 
     public List<ApprovedSubjectsBlocker> blockersOf(ApprovedSubjectsEligibilityInput input) {
         Objects.requireNonNull(input, "input");
-        if (!input.hasActiveEnrollment()) {
+        if (!input.hasActiveProgramEnrollment()) {
             return List.of(ApprovedSubjectsBlocker.NO_ACTIVE_ENROLLMENT);
         }
         List<ApprovedSubjectsBlocker> blockers = new ArrayList<>();
