@@ -13,20 +13,21 @@ const OPCIONES_CADUCIDAD = [
 
 function Chip({ activo, onClick, disabled = false, children }) {
   return (
-    <button
+    <Button
       type="button"
+      variant="ghost"
       role="radio"
       aria-checked={activo}
       disabled={disabled}
       onClick={onClick}
-      className={`rounded-xl border px-3.5 py-1.5 text-size-12-5 font-bold transition-all disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
+      className={`h-auto rounded-xl border px-3.5 py-1.5 text-size-12-5 font-bold transition-all disabled:cursor-not-allowed disabled:bg-(--disabled-bg) disabled:text-(--disabled-fg) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand ${
         activo
-          ? 'border-transparent bg-brand text-on-accent'
+          ? 'border-transparent bg-brand text-on-accent hover:bg-brand hover:text-on-accent'
           : 'border-border text-ink-soft hover:border-brand hover:text-ink'
       }`}
     >
       {children}
-    </button>
+    </Button>
   );
 }
 

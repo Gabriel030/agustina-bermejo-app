@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { EnrollmentPicker } from '@/features/identity/components/EnrollmentPicker';
 import { useEnrollmentOptions } from '@/features/identity/hooks/useStudentAcademicRecord';
 import { parseEnrollmentKey } from '@/features/identity/lib/academicRecord';
-import { TabPlanDeEstudio, EquivalencesSection, EQUIVALENCES_SECTION_ID } from '@/features/workspace';
+import { TabPlanDeEstudio, EquivalencesSection, EquivalenceActionsProvider, EquivalenceMobileBar, EQUIVALENCES_SECTION_ID } from '@/features/workspace';
 import { useActiveRole } from '@/hooks/useActiveRole';
 
 export function PlanDeEstudioTab({ studentId, enrollmentKey, onEnrollmentChange, onViewGrades }) {
@@ -48,7 +48,7 @@ export function PlanDeEstudioTab({ studentId, enrollmentKey, onEnrollmentChange,
       {kind === 'course' ? (
         <EmptyState icon="📚" title="Los cursos no tienen plan de estudio" />
       ) : (
-        <>
+        <EquivalenceActionsProvider studentId={studentId} programEnrollmentId={id}>
           <TabPlanDeEstudio
             key={selected.key}
             carreraId={id}
@@ -57,7 +57,8 @@ export function PlanDeEstudioTab({ studentId, enrollmentKey, onEnrollmentChange,
             onViewEnrollment={(sectionEnrollmentId) => onViewGrades(selected.key, sectionEnrollmentId)}
           />
           <EquivalencesSection key={`equivalences-${selected.key}`} programEnrollmentId={id} readOnlyNotice={roleBase === 'preceptor'} />
-        </>
+          <EquivalenceMobileBar programEnrollmentId={id} />
+        </EquivalenceActionsProvider>
       )}
     </div>
   );

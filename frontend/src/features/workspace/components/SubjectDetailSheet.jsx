@@ -12,6 +12,9 @@ import {
   isApprovedByEquivalence,
 } from '@/features/workspace/lib/curriculumMap';
 import { CURRICULUM_STATE_TO_PLAN_STATUS, formatCredits } from '@/features/workspace/lib/curriculumPlan';
+import { EquivalenceRecordButton } from '@/features/workspace/components/EquivalenceRecordButton';
+import { useEquivalenceActions } from '@/features/workspace/hooks/EquivalenceActionsContext';
+import { canRecordFor } from '@/features/workspace/lib/equivalenceEffect';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
 import { formatDate } from '@/lib/billing';
 
@@ -43,7 +46,8 @@ function EquivalenceDetails({ equivalence }) {
   );
 }
 
-function SubjectDetailContent({ subject, relationIndex, audience, onViewEnrollment }) {
+function SubjectDetailContent({ subject, relationIndex, audience, onViewEnrollment, onRequestRecord, getReturnFocusTarget }) {
+  const actions = useEquivalenceActions();
   const staff = audience === 'staff';
   const status = CURRICULUM_STATE_TO_PLAN_STATUS[subject.state];
   const missing = subject.state === 'BLOCKED' ? describeMissingPrerequisites(subject) : [];
@@ -90,6 +94,15 @@ function SubjectDetailContent({ subject, relationIndex, audience, onViewEnrollme
           <p className="text-size-13 text-ink-faint">No es correlativa de otras materias.</p>
         )}
       </DetailSection>
+      {staff && actions?.visible && canRecordFor(subject) && (
+        <EquivalenceRecordButton
+          actions={actions}
+          variant="outline"
+          subjectId={subject.programSubjectId}
+          onBeforeOpen={onRequestRecord}
+          getTrigger={getReturnFocusTarget}
+        />
+      )}
       {subject.currentEnrollmentId != null && staff && onViewEnrollment && (
         <Button type="button" variant="outline" className="h-11 self-start" onClick={() => onViewEnrollment(subject.currentEnrollmentId)}>
           Ver cursada en Evaluación
@@ -104,7 +117,7 @@ function SubjectDetailContent({ subject, relationIndex, audience, onViewEnrollme
   );
 }
 
-export function SubjectDetailSheet({ subject, relationIndex, creditsDefined = true, audience = 'student', onViewEnrollment, open, onOpenChange, onCloseAutoFocus }) {
+export function SubjectDetailSheet({ subject, relationIndex, creditsDefined = true, audience = 'student', onViewEnrollment, getReturnFocusTarget, open, onOpenChange, onCloseAutoFocus }) {
   const compact = useMediaQuery('(max-width: 767px)');
   if (!subject) return null;
   const term = describeCurricularTerm(subject.curricularTerm);
@@ -128,7 +141,7 @@ export function SubjectDetailSheet({ subject, relationIndex, creditsDefined = tr
             <span className="sr-only">Cerrar</span>
           </Button>
         </SheetClose>
-        <SubjectDetailContent subject={subject} relationIndex={relationIndex} audience={audience} onViewEnrollment={onViewEnrollment} />
+        <SubjectDetailContent subject={subject} relationIndex={relationIndex} audience={audience} onViewEnrollment={onViewEnrollment} onRequestRecord={() => onOpenChange(false)} getReturnFocusTarget={getReturnFocusTarget} />
       </SheetContent>
     </Sheet>
   );
