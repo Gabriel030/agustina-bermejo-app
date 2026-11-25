@@ -8,6 +8,7 @@ import com.red_escuela.backend.evaluation.api.OwnExamRegistrationView;
 import com.red_escuela.backend.graduation.certificate.exam.exception.ExamCertificateBoardNotHeldException;
 import com.red_escuela.backend.graduation.certificate.exam.exception.ExamCertificateRegistrationNotEligibleException;
 import com.red_escuela.backend.graduation.documentsettings.specialist.DocumentIssuanceSettingsFinder;
+import com.red_escuela.backend.graduation.certificate.dto.CertificateDocumentType;
 import com.red_escuela.backend.graduation.certificate.dto.DocumentOrigin;
 import com.red_escuela.backend.graduation.certificate.dto.DocumentValidityStatus;
 import com.red_escuela.backend.graduation.certificate.dto.RecipientType;
@@ -23,6 +24,7 @@ import com.red_escuela.backend.graduation.certificate.exam.entity.ExamCertificat
 import com.red_escuela.backend.graduation.certificate.exam.repository.ExamCertificateRepository;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateDigest;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateVerificationUrl;
+import com.red_escuela.backend.graduation.certificate.specialist.VerifiableDocumentRegistry;
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
 import com.red_escuela.backend.identity.api.StudentFinder;
 import com.red_escuela.backend.shared.audit.AuditAction;
@@ -61,6 +63,7 @@ public class ExamCertificateIssuer {
     private final CertificateTemplateRenderSource templateSource;
     private final ExamBoardRegistrationFinder registrationFinder;
     private final ExamBoardAttendanceReader boardReader;
+    private final VerifiableDocumentRegistry verifiableDocumentRegistry;
     private final SecureRandom random = new SecureRandom();
 
     public ExamCertificateIssuer(ExamCertificateRepository repository, ExamCertificateTemplate template,
@@ -69,7 +72,8 @@ public class ExamCertificateIssuer {
                                  StudentFinder studentFinder, CurrentActorFinder currentActorFinder,
                                  DocumentIssuanceSettingsFinder settings, AuditTrail auditTrail, Clock clock,
                                  CertificateTemplateRenderSource templateSource, ExamBoardRegistrationFinder registrationFinder,
-                                 ExamBoardAttendanceReader boardReader) {
+                                 ExamBoardAttendanceReader boardReader,
+                                 VerifiableDocumentRegistry verifiableDocumentRegistry) {
         this.repository = repository;
         this.template = template;
         this.renderer = renderer;
@@ -84,6 +88,7 @@ public class ExamCertificateIssuer {
         this.templateSource = templateSource;
         this.registrationFinder = registrationFinder;
         this.boardReader = boardReader;
+        this.verifiableDocumentRegistry = verifiableDocumentRegistry;
     }
 
     @Transactional
@@ -173,6 +178,7 @@ public class ExamCertificateIssuer {
                     .renderEngineVersion(CertificatePdfRenderer.ENGINE_VERSION)
                     .pdfPath(path)
                     .build());
+            verifiableDocumentRegistry.register(CertificateDocumentType.EXAM_CERTIFICATE, saved.getId(), code);
             auditTrail.record(new AuditRecord(AuditAction.EXAM_CERTIFICATE_ISSUED, AuditEntityType.EXAM_CERTIFICATE, saved.getId(),
                     null, saved.getPdfSha256(), "examBoardId=" + saved.getExamBoardId() + ";registrationId=" + saved.getRegistrationId()));
             return saved;
