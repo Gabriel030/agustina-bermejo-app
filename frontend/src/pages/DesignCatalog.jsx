@@ -145,7 +145,7 @@ export function DesignCatalog() {
 
       <Section id="cards" title="Tarjetas">
         <div className="grid gap-4 sm:grid-cols-2">
-          <GlassCard className="p-5">Tarjeta de vidrio</GlassCard>
+          <GlassCard className="p-5">Tarjeta</GlassCard>
           <GlassCard interactive className="p-5">
             Tarjeta interactiva
           </GlassCard>

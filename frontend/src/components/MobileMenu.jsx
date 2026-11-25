@@ -10,8 +10,6 @@ import { RoleSwitcher } from '@/components/RoleSwitcher';
 import { useActiveRole } from '@/hooks/useActiveRole';
 import { useTheme } from '@/context/ThemeContext';
 
-// Mismo tratamiento del ítem activo que Sidebar.jsx (degradé + blanco, no el
-// pill pálido de antes) — ver comentario ahí.
 const NAV_ITEM_ACTIVO =
   "bg-(--nav-indicator-bg) text-(--nav-active-fg) relative font-bold before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:rounded-r-[3px] before:bg-(color:--accent) before:content-['']";
 const NAV_ITEM_BASE =
