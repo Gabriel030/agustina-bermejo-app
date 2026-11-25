@@ -3,7 +3,7 @@ package com.red_escuela.backend.academicstructure.service;
 import com.red_escuela.backend.academicstructure.events.HolidaysMissingForNextYearEvent;
 import com.red_escuela.backend.academicstructure.repository.HolidayRepository;
 import com.red_escuela.backend.shared.event.DeduplicableDomainEvent;
-import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
+import com.red_escuela.backend.shared.event.service.ProcessedEffectGuard;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;

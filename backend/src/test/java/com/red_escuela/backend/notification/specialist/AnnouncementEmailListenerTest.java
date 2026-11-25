@@ -12,7 +12,7 @@ import com.red_escuela.backend.notification.delivery.specialist.DeliveryRequest;
 import com.red_escuela.backend.notification.delivery.specialist.NotificationDeliveryEnqueuer;
 import com.red_escuela.backend.shared.event.CorrelationIds;
 import com.red_escuela.backend.shared.event.DeduplicableDomainEvent;
-import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
+import com.red_escuela.backend.shared.event.service.ProcessedEffectGuard;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;

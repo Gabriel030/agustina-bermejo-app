@@ -7,7 +7,7 @@ import com.red_escuela.backend.billing.events.PaymentReceiptApprovedEvent;
 import com.red_escuela.backend.billing.events.PaymentReceiptRejectedEvent;
 import com.red_escuela.backend.billing.events.SuspensionLiftedEvent;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
+import com.red_escuela.backend.shared.event.service.ProcessedEffectGuard;
 import jakarta.persistence.EntityManager;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.modulith.events.ApplicationModuleListener;

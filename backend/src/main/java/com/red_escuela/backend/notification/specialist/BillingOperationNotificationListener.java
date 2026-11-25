@@ -12,7 +12,7 @@ import com.red_escuela.backend.billing.events.PriceChangeDecidedEvent;
 import com.red_escuela.backend.billing.events.LatePaymentSettingsCreatedEvent;
 import com.red_escuela.backend.notification.entity.NotificationType;
 import com.red_escuela.backend.shared.event.DeduplicableDomainEvent;
-import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
+import com.red_escuela.backend.shared.event.service.ProcessedEffectGuard;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
