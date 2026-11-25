@@ -3,6 +3,7 @@ package com.red_escuela.backend.graduation.certificate.template.specialist;
 import com.red_escuela.backend.graduation.certificate.template.dto.CertificateTemplateContent;
 import com.red_escuela.backend.graduation.certificate.template.dto.CertificateTemplateSigner;
 import com.red_escuela.backend.graduation.certificate.template.exception.TemplateIncompleteException;
+import com.red_escuela.backend.graduation.certificate.template.exception.TemplateSignatureMissingException;
 import com.red_escuela.backend.graduation.certificate.template.exception.TemplateUnknownMarkerException;
 import org.springframework.stereotype.Component;
 
@@ -12,6 +13,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 @Component
 public class CertificateTemplateContentRules {
@@ -74,6 +76,15 @@ public class CertificateTemplateContentRules {
         }
         if (content.signatory2Id() == null) {
             throw new TemplateIncompleteException("el firmante 2");
+        }
+    }
+
+    public void requirePublishableDocument(CertificateTemplateContent content) {
+        require(content.title(), "el título");
+        boolean anySignature = Stream.of(content.firstSigner(), content.secondSigner())
+                .anyMatch(signer -> signer != null && signer.signatureImageId() != null);
+        if (!anySignature) {
+            throw new TemplateSignatureMissingException();
         }
     }
 

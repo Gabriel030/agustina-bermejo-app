@@ -19,7 +19,7 @@ import static org.mockito.Mockito.verify;
 class RequestRateLimitFilterTest {
 
     private final RequestRateLimitFilter filter = new RequestRateLimitFilter(
-            new JsonErrorResponseWriter(new ObjectMapper()), Clock.systemUTC(), 1000, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 1, 1);
+            new JsonErrorResponseWriter(new ObjectMapper()), Clock.systemUTC(), 1000, 2, 2, 2, 2, 2, 2, 2, 2, 3, 3, 1, 1, 1000, 1000, true);
 
     @AfterEach
     void clearContext() {
@@ -144,5 +144,59 @@ class RequestRateLimitFilterTest {
         }
 
         verify(chain, times(2)).doFilter(org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any());
+    }
+
+    private static final String TUNNEL = "/public/monitoring/tunnel";
+
+    private RequestRateLimitFilter tunnelFilter(int perIpCapacity, int globalCapacity, boolean tunnelActive) {
+        return new RequestRateLimitFilter(new JsonErrorResponseWriter(new ObjectMapper()), Clock.systemUTC(), 1000,
+                perIpCapacity, perIpCapacity, 2, 2, 2, 2, 2, 2, 3, 3, 1, 1, globalCapacity, globalCapacity, tunnelActive);
+    }
+
+    private MockHttpServletResponse callWith(RequestRateLimitFilter target, String path, String remoteAddr) throws Exception {
+        MockHttpServletRequest request = new MockHttpServletRequest("POST", path);
+        request.setRemoteAddr(remoteAddr);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        target.doFilter(request, response, mock(FilterChain.class));
+        return response;
+    }
+
+    @Test
+    void tunnelIsLimitedGloballyAcrossDistinctIpsEvenWhenNoIpExhaustedItsBucket() throws Exception {
+        RequestRateLimitFilter target = tunnelFilter(5, 3, true);
+        for (int index = 1; index <= 3; index++) {
+            assertThat(callWith(target, TUNNEL, "10.1.0." + index).getStatus()).isEqualTo(200);
+        }
+        MockHttpServletResponse limited = callWith(target, TUNNEL, "10.1.0.4");
+        assertThat(limited.getStatus()).isEqualTo(429);
+        assertThat(Long.parseLong(limited.getHeader("Retry-After"))).isPositive();
+        assertThat(limited.getContentAsString()).contains("REQUEST_RATE_LIMIT_EXCEEDED");
+    }
+
+    @Test
+    void anIpLimitedPerIpDoesNotConsumeTheGlobalBucket() throws Exception {
+        RequestRateLimitFilter target = tunnelFilter(1, 2, true);
+        assertThat(callWith(target, TUNNEL, "10.2.0.1").getStatus()).isEqualTo(200);
+        for (int attempt = 0; attempt < 10; attempt++) {
+            assertThat(callWith(target, TUNNEL, "10.2.0.1").getStatus()).isEqualTo(429);
+        }
+        assertThat(callWith(target, TUNNEL, "10.2.0.2").getStatus()).isEqualTo(200);
+        assertThat(callWith(target, TUNNEL, "10.2.0.3").getStatus()).isEqualTo(429);
+    }
+
+    @Test
+    void inactiveTunnelDoesNotConsumeTheGlobalBucket() throws Exception {
+        RequestRateLimitFilter target = tunnelFilter(50, 1, false);
+        for (int index = 1; index <= 10; index++) {
+            assertThat(callWith(target, TUNNEL, "10.3.0." + index).getStatus()).isEqualTo(200);
+        }
+    }
+
+    @Test
+    void otherPublicEndpointsAreNotAffectedByTheGlobalTunnelLimit() throws Exception {
+        RequestRateLimitFilter target = tunnelFilter(5, 1, true);
+        assertThat(callWith(target, TUNNEL, "10.4.0.1").getStatus()).isEqualTo(200);
+        assertThat(callWith(target, TUNNEL, "10.4.0.2").getStatus()).isEqualTo(429);
+        assertThat(callWith(target, "/auth/refresh", "10.4.0.3").getStatus()).isEqualTo(200);
     }
 }

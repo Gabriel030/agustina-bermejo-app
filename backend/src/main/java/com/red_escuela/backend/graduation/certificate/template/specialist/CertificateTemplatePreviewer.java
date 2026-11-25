@@ -8,6 +8,7 @@ import com.red_escuela.backend.graduation.certificate.engine.CertificateSnapshot
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificateKind;
 import com.red_escuela.backend.graduation.certificate.preview.PreviewWatermarker;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateVerificationUrl;
+import com.red_escuela.backend.graduation.certificate.template.dto.DocumentTemplateType;
 import com.red_escuela.backend.graduation.certificate.template.dto.TemplatePreviewSource;
 import com.red_escuela.backend.graduation.certificate.template.entity.CertificateTemplateVersion;
 import org.springframework.stereotype.Service;
@@ -44,12 +45,40 @@ public class CertificateTemplatePreviewer {
     }
 
     public GraduationCertificatePdf preview(GraduationCertificateKind kind, TemplatePreviewSource source) {
-        CertificateTemplateVersion version = renderSource.forPreview(kind, source);
+        return render(kind, renderSource.forPreview(kind, source), sampleSnapshot(kind));
+    }
+
+    public GraduationCertificatePdf preview(DocumentTemplateType type, TemplatePreviewSource source) {
+        return render(GraduationCertificateKind.PROGRAM, renderSource.forPreview(type, source), sampleDocumentSnapshot(type));
+    }
+
+    private GraduationCertificatePdf render(GraduationCertificateKind kind, CertificateTemplateVersion version, CertificateSnapshot sample) {
         CertificateCode code = CertificateCode.generate(random);
-        CertificateSnapshot snapshot = renderSource.snapshotWith(sampleSnapshot(kind), version);
+        CertificateSnapshot snapshot = renderSource.snapshotWith(sample, version);
         byte[] pdf = renderer.render(builtInTemplate.resolve(kind, null), snapshot, code, verificationUrl.of(code),
                 renderSource.assetsOf(version, sampleRegistryNumber()));
         return new GraduationCertificatePdf(code.value(), watermark.apply(pdf));
+    }
+
+    private CertificateSnapshot sampleDocumentSnapshot(DocumentTemplateType type) {
+        LocalDate today = LocalDate.now(clock);
+        String subject = switch (type) {
+            case REGULAR_STUDENT_CERTIFICATE, APPROVED_SUBJECTS_CERTIFICATE -> "Nombre de la carrera de ejemplo";
+            case EXAM_REGISTRATION_CERTIFICATE, EXAM_CERTIFICATE -> "Nombre de la materia de ejemplo";
+        };
+        return new CertificateSnapshot(
+                "APELLIDO, NOMBRE DE EJEMPLO",
+                "DNI",
+                "12345678",
+                "la Tecnicatura en",
+                subject,
+                null,
+                null,
+                today,
+                today,
+                DEFAULT_INSTITUTION,
+                List.of(),
+                BuiltInCertificateTemplate.BUILT_IN_V1, null);
     }
 
     private String sampleRegistryNumber() {

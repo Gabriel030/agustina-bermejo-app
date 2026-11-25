@@ -29,7 +29,8 @@ Internet --443/80--> Caddy (imagen "frontend") --/api/*--> backend:8080 --> post
 - Rate limit: lo hace el backend (Bucket4j). Caddy solo limita el tamaño del pedido (12 MB).
 
 Archivos: `docker-compose.prod.yml`, `backend/Dockerfile`, `frontend/Dockerfile`,
-`frontend/Caddyfile`, `deploy/.env.example`; para staging, `deploy/staging/`.
+`frontend/Caddyfile`, `deploy/.env.example`; para staging, `deploy/staging/`; overlay de
+GlitchTip: `deploy/glitchtip/docker-compose.glitchtip.yml`.
 
 ## Antes de empezar (una sola vez por instituto)
 
@@ -185,6 +186,7 @@ Todos viven en `deploy/.env`. Después de cambiar uno: `dc up -d` (recrea solo l
 | `BREVO_SMTP_KEY` | Sin efecto si se cambia a la vez en Brevo | Crear la clave nueva en Brevo, editar `.env`, `dc up -d backend`, revocar la vieja |
 | `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET` | Los cobros online usan el nuevo apenas reinicia | Cambiarlos en el panel de Mercado Pago y en `.env`, `dc up -d backend` |
 | `ACTUATOR_PASSWORD` | Solo afecta al monitoreo | Cambiar en `.env` y en el monitoreo |
+| `GLITCHTIP_SECRET_KEY` | Cierra las sesiones de la interfaz de GlitchTip; no afecta los DSN | Cambiar en `.env` y recrear `glitchtip` con el overlay (`docs/deploy/glitchtip.md`) |
 
 `GOOGLE_OAUTH_CLIENT_ID` / `VITE_GOOGLE_CLIENT_ID` no son secretos, pero el segundo se fija al
 construir: si cambia, `dc up -d --build`.
@@ -485,4 +487,5 @@ Ver «Síntomas típicos de correo masivo» en `docs/context/debugging.md`.
 
 - No publica imágenes en ningún registro (el CI solo las construye para validar).
 - No incluye backups ni monitoreo (viven en `deploy/backup/` y `deploy/monitoring/`).
+- No levanta GlitchTip (el reporte de errores autoalojado vive en el overlay `deploy/glitchtip/`, apagado hasta tener servidor; ver `docs/deploy/glitchtip.md`).
 - No define el proveedor de hosting ni el dominio.
