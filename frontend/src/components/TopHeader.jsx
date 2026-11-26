@@ -6,6 +6,7 @@ import { NotificationBell } from '@/features/notifications';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/context/AuthContext';
 import { useActiveRole } from '@/hooks/useActiveRole';
+import { TOP_NAV_BREAKPOINTS } from '@/components/topNavBreakpoint';
 import { usePerfilPropio, useAvatar } from '@/features/identity';
 
 function iniciales(nombre, apellido) {
@@ -22,7 +23,7 @@ function pageTitleFor(items, pathname, fallback) {
   return current?.label ?? fallback;
 }
 
-export function TopHeader({ titulo, items, groups, className }) {
+export function TopHeader({ titulo, items, groups, className, breakpoint = TOP_NAV_BREAKPOINTS.standard }) {
   const { usuario } = useAuth();
   const { pathname } = useLocation();
   const { canSwitch } = useActiveRole();
@@ -35,8 +36,8 @@ export function TopHeader({ titulo, items, groups, className }) {
       <GlassCard className="rounded-none border-0 border-b px-3 py-3 sm:px-8">
         <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between gap-2 sm:gap-3">
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-            <MobileMenu titulo={titulo} items={items} groups={groups} />
-            <div className="font-heading text-size-15 font-bold sm:text-base text-ink lg:hidden whitespace-nowrap truncate">{mobileTitle}</div>
+            <MobileMenu titulo={titulo} items={items} groups={groups} hiddenFrom={breakpoint.mobileHidden} />
+            <div className={cn('font-heading text-size-15 font-bold sm:text-base text-ink whitespace-nowrap truncate', breakpoint.mobileHidden)}>{mobileTitle}</div>
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">

@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Link, Route, Routes } from 'react-router-dom';
 import { Home } from 'lucide-react';
@@ -105,5 +105,49 @@ describe('RoleShell', () => {
     expect(screen.getByRole('navigation', { name: 'Principal' })).toBeInTheDocument();
     expect(container.firstChild).not.toHaveClass('lg:flex-row');
     expect(screen.getByRole('button', { name: 'Abrir menú' })).toBeInTheDocument();
+  });
+
+  describe('top bar width option', () => {
+    function renderTopBar(topNav) {
+      return renderWithProviders(
+        <ThemeProvider>
+          <RoleShell titulo="Preceptor" items={ITEMS} topNav={topNav} />
+        </ThemeProvider>,
+        { route: '/director/inicio' },
+      );
+    }
+
+    it('standard top bar appears from lg and the drawer header disappears from lg', () => {
+      renderTopBar(true);
+
+      expect(screen.getByRole('navigation', { name: 'Principal' }).parentElement).toHaveClass('lg:flex');
+      expect(screen.getByRole('button', { name: 'Abrir menú' })).toHaveClass('lg:hidden');
+    });
+
+    it('wide top bar appears from 1220px and keeps the drawer header until then', () => {
+      renderTopBar('wide');
+
+      const bar = screen.getByRole('navigation', { name: 'Principal' }).parentElement;
+      expect(bar).toHaveClass('min-[1220px]:flex');
+      expect(bar).not.toHaveClass('lg:flex');
+      const trigger = screen.getByRole('button', { name: 'Abrir menú' });
+      expect(trigger).toHaveClass('min-[1220px]:hidden');
+      expect(trigger).not.toHaveClass('lg:hidden');
+      expect(trigger.closest('.mx-auto.w-full.max-w-none')).toHaveClass('min-[1220px]:hidden');
+    });
+
+    it('wide top bar collapses the brand text and the user name until 2xl', () => {
+      renderTopBar('wide');
+
+      const bar = screen.getByRole('navigation', { name: 'Principal' }).parentElement;
+      expect(bar.querySelector('[class*="max-2xl"]')).not.toBeNull();
+      expect(within(bar).getAllByText('Ana Perez').some((node) => node.className.includes('2xl:inline'))).toBe(true);
+    });
+
+    it('exposes a single main navigation', () => {
+      renderTopBar('wide');
+
+      expect(screen.getAllByRole('navigation', { name: 'Principal' })).toHaveLength(1);
+    });
   });
 });

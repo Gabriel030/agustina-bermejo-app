@@ -65,7 +65,7 @@ function HamburgerIcon({ open }) {
 // docs/context/frontend.md, reemplazada acá a pedido explícito). El drawer
 // reusa radix-ui Dialog directo (no el wrapper de components/ui/dialog.jsx,
 // que centra el contenido) para poder posicionarlo pegado al borde izquierdo.
-export function MobileMenu({ titulo, items, groups }) {
+export function MobileMenu({ titulo, items, groups, hiddenFrom = 'lg:hidden' }) {
   const [open, setOpen] = useState(false);
   const { usuario, logout } = useAuth();
   const { tema, alternarTema } = useTheme();
@@ -81,7 +81,7 @@ export function MobileMenu({ titulo, items, groups }) {
         <button
           type="button"
           aria-label={open ? 'Cerrar menú' : 'Abrir menú'}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-surface text-ink lg:hidden"
+          className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-surface text-ink', hiddenFrom)}
         >
           <HamburgerIcon open={open} />
         </button>
