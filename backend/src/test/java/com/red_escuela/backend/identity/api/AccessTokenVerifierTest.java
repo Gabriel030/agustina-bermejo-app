@@ -20,7 +20,7 @@ import static org.mockito.Mockito.when;
 class AccessTokenVerifierTest {
     private static final String SECRET = "unit-test-secret-does-not-need-to-be-32-bytes";
 
-    private final JwtService jwtService = new JwtService(SECRET, 15, "agustina-bermejo-app", "agustina-bermejo-app-api");
+    private final JwtService jwtService = new JwtService(SECRET, 15, "agustina-bermejo-app", "agustina-bermejo-app-api", false);
     private final PersonRepository personRepository = mock(PersonRepository.class);
     private final AccountAccessStateCache cache = new AccountAccessStateCache(personRepository, java.time.Clock.systemUTC(), 30);
     private final AccessTokenVerifier verifier = new AccessTokenVerifier(jwtService, cache);
@@ -68,7 +68,7 @@ class AccessTokenVerifierTest {
 
     @Test
     void tokenSignedWithAnotherSecretYieldsEmpty() {
-        JwtService other = new JwtService("another-secret-with-enough-length-0123456789-abcdef", 15, "agustina-bermejo-app", "agustina-bermejo-app-api");
+        JwtService other = new JwtService("another-secret-with-enough-length-0123456789-abcdef", 15, "agustina-bermejo-app", "agustina-bermejo-app-api", false);
         Person person = new Person();
         person.setId(1L);
         person.setRoles(new HashSet<>());

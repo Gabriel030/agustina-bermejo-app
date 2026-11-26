@@ -36,7 +36,7 @@ class JwtSecretPolicyTest {
 
     @Test
     void jwtServiceRefusesToBuildWithShortSecret() {
-        assertThatThrownBy(() -> new JwtService("short", 15, "agustina-bermejo-app", "agustina-bermejo-app-api"))
+        assertThatThrownBy(() -> new JwtService("short", 15, "agustina-bermejo-app", "agustina-bermejo-app-api", false))
                 .isInstanceOf(IllegalStateException.class);
     }
 }

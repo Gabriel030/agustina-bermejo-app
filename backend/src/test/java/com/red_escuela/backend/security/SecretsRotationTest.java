@@ -49,10 +49,10 @@ class SecretsRotationTest {
 
     @Test
     void accessTokenSignedWithOldSecretIsRejectedAfterRotationButAcceptedByOldSecret() {
-        String token = new JwtService(OLD_JWT_SECRET, 15, ISSUER, "agustina-bermejo-app-api").generateAccessToken(person());
+        String token = new JwtService(OLD_JWT_SECRET, 15, ISSUER, "agustina-bermejo-app-api", false).generateAccessToken(person());
 
-        assertThat(new JwtService(OLD_JWT_SECRET, 15, ISSUER, "agustina-bermejo-app-api").validateAndParse(token).getSubject()).isEqualTo("42");
-        assertThatThrownBy(() -> new JwtService(NEW_JWT_SECRET, 15, ISSUER, "agustina-bermejo-app-api").validateAndParse(token))
+        assertThat(new JwtService(OLD_JWT_SECRET, 15, ISSUER, "agustina-bermejo-app-api", false).validateAndParse(token).getSubject()).isEqualTo("42");
+        assertThatThrownBy(() -> new JwtService(NEW_JWT_SECRET, 15, ISSUER, "agustina-bermejo-app-api", false).validateAndParse(token))
                 .isInstanceOf(SignatureException.class);
     }
 

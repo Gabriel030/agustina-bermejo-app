@@ -13,6 +13,6 @@ Rama `feature/e24-4-audit-batch-1-auth`, 26-nov-2026. Se leyeron antes `audit-20
 | H7 clave mínima | Solo se exigía largo 32: `aaaa…` (32 o más) arrancaba | **Corregido**: además se exigen al menos 10 caracteres distintos | `JwtSecretPolicyTest.secretWithFewDistinctCharactersIsRejected` |
 | H20 registro | 409 y límites por IP y por IP+usuario ya cerrados (G6, #1146); riesgos residuales aceptados por el Coordinador (opción a) | Verificado, sin cambio | `RegisterEnumerationIT`, `LoginRateLimiterTest` |
 
-Compatibilidad: al desplegar, los access tokens vigentes (15 min) sin `aud` se rechazan con 401 y el front renueva con el refresh; no cambia contrato OpenAPI. Los secretos reales (`openssl rand -base64 48`) cumplen la nueva política.
+Compatibilidad: los access tokens vigentes sin `aud` se aceptan mientras `jwt.accept-missing-audience` (`JWT_ACCEPT_MISSING_AUDIENCE`) sea `true`, el default; un token con `aud` ajeno se rechaza siempre. Pasar a `false` en el release siguiente al 24.4. El refresh token es opaco (hash en base) y no lleva `aud`: nadie se desloguea. No cambia contrato OpenAPI. Los secretos reales (`openssl rand -base64 48`) cumplen la nueva política.
 
 Pendiente no corregido: ninguno confirmado en este lote.

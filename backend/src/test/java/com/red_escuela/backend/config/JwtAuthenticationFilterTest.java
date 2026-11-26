@@ -29,7 +29,7 @@ import static org.mockito.Mockito.when;
 class JwtAuthenticationFilterTest {
     private static final String SECRET = "unit-test-secret-does-not-need-to-be-32-bytes";
 
-    private final JwtService jwtService = new JwtService(SECRET, 15, "agustina-bermejo-app", "agustina-bermejo-app-api");
+    private final JwtService jwtService = new JwtService(SECRET, 15, "agustina-bermejo-app", "agustina-bermejo-app-api", false);
     private final PersonRepository personRepository = activePersonRepository();
     private final JwtAuthenticationFilter filter = new JwtAuthenticationFilter(new AccessTokenVerifier(jwtService, new AccountAccessStateCache(personRepository, java.time.Clock.systemUTC(), 30)));
 
