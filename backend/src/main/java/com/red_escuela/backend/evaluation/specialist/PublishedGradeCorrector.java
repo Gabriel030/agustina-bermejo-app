@@ -97,7 +97,7 @@ public class PublishedGradeCorrector {
         flagGraduationRequestOutdated(target);
         eventPublisher.publishEvent(GradeCorrectedEvent.correctedFor(
                 gradeItemId, target.studentPersonId(), target.sectionName(), gradeItem.getType().displayName(),
-                SectionGradeItemPublication.sequenceKey(gradeItem.getSequenceNumber())));
+                SectionGradeItemPublication.sequenceKey(gradeItem.getSequenceNumber()), reason));
         return GradeItemAuditResponse.from(audit);
     }
 

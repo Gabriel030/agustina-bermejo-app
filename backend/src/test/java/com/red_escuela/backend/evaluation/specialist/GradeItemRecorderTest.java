@@ -1289,6 +1289,7 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
         assertThat(events).hasSize(1);
         assertThat(events.get(0).studentPersonId()).isEqualTo(item.getProgramSubjectSectionEnrollment().getStudent().getPerson().getId());
         assertThat(events.get(0).gradeTypeLabel()).isEqualTo("Parcial");
+        assertThat(events.get(0).reason()).isEqualTo("Error de carga del docente");
     }
 
     @Test

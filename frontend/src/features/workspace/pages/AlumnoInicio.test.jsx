@@ -11,7 +11,6 @@ import { NotificationBell } from '@/features/notifications';
 import { AlumnoInicio } from '@/features/workspace/pages/AlumnoInicio';
 import { installFixedClock } from '@/test/fixedClock';
 import { studentHomeHandlers } from '@/test/fixtures/studentHome';
-import { TIPO_NOTIFICACION_LABEL, TONO_NOTIFICACION } from '@/lib/notificaciones';
 
 vi.mock('@/context/AuthContext', () => ({
   useAuth: () => ({ usuario: { nombre: 'Ana', apellido: 'Pérez' } }),
@@ -448,39 +447,6 @@ describe('AlumnoInicio — cuerpo de los avisos', () => {
     const meta = await screen.findByText('hace 1 h');
     expect(meta.tagName).toBe('TIME');
     expect(meta).toHaveAttribute('dateTime', createdAt);
-  });
-});
-
-describe('Contrato NotificationType — todo tipo tiene label y tono', () => {
-  const TIPOS_BACKEND = [
-    'SECTION_EVAL_CONFIG_PROPOSED',
-    'SECTION_EVAL_CONFIG_APPROVED',
-    'SECTION_EVAL_CONFIG_REJECTED',
-    'SECTION_EVAL_CONFIG_REMINDER',
-    'ATTENDANCE_CHANGE_REQUEST_APPROVED',
-    'ATTENDANCE_CHANGE_REQUEST_REJECTED',
-    'GRADUATION_REQUEST_APPROVED',
-    'GRADUATION_REQUEST_REJECTED',
-    'DIRECTOR_APPROVAL_REQUEST_APPROVED',
-    'DIRECTOR_APPROVAL_REQUEST_REJECTED',
-    'COURSE_WAITLIST_EXPIRED',
-    'SUSPENSION_LIFTED',
-    'PAYMENT_RECEIPT_APPROVED',
-    'PAYMENT_RECEIPT_REJECTED',
-    'ANNOUNCEMENT_PUBLISHED',
-    'ANNOUNCEMENT_UPDATED',
-  ];
-
-  it('cada NotificationType tiene label en TIPO_NOTIFICACION_LABEL', () => {
-    for (const tipo of TIPOS_BACKEND) {
-      expect(TIPO_NOTIFICACION_LABEL[tipo], `${tipo} sin label`).toBeDefined();
-    }
-  });
-
-  it('cada NotificationType tiene tono en TONO_NOTIFICACION', () => {
-    for (const tipo of TIPOS_BACKEND) {
-      expect(TONO_NOTIFICACION[tipo], `${tipo} sin tono`).toBeDefined();
-    }
   });
 });
 

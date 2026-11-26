@@ -92,6 +92,7 @@ export const TIPO_NOTIFICACION_LABEL = {
   SECTION_MODIFICATION_REQUESTED: 'Pedido de cambio de horario',
   SECTION_MODIFICATION_APPROVED: 'Cambio de horario aprobado',
   SECTION_MODIFICATION_REJECTED: 'Cambio de horario rechazado',
+  EXAM_CERTIFICATE_ISSUED: 'Constancia de examen emitida',
 };
 
 export const TONO_NOTIFICACION = {
@@ -188,6 +189,7 @@ export const TONO_NOTIFICACION = {
   SECTION_MODIFICATION_REQUESTED: 'warning',
   SECTION_MODIFICATION_APPROVED: 'success',
   SECTION_MODIFICATION_REJECTED: 'danger',
+  EXAM_CERTIFICATE_ISSUED: 'success',
 };
 
 export const ETIQUETA_NOTIFICACION_DESCONOCIDA = 'Notificación';
