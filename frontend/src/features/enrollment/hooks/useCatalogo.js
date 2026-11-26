@@ -1,20 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/api/client';
 
-export function useCatalogPrograms() {
-  return useQuery({
-    queryKey: ['catalog', 'programs'],
-    queryFn: () => apiFetch('/programs?status=ACTIVE&visibleInCatalog=true'),
-  });
-}
-
-export function useCatalogCourses() {
-  return useQuery({
-    queryKey: ['catalog', 'courses'],
-    queryFn: () => apiFetch('/courses?status=ACTIVE&visibleInCatalog=true'),
-  });
-}
-
 export function usePrograma(id) {
   return useQuery({ queryKey: ['programa', id], queryFn: () => apiFetch(`/programs/${id}`), enabled: !!id });
 }
