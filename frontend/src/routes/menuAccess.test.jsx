@@ -3,6 +3,7 @@ import { screen } from '@testing-library/react';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { ROLE_CONFIG } from '@/routes/roleConfig';
+import { pagesFor } from '@/routes/roleMenu';
 import { firstRealPage, hasRealScreen, pageLabel, visibleMenuItems } from '@/routes/menuAccess';
 
 let currentRole = 'DOCENTE';
@@ -16,6 +17,7 @@ describe('menuAccess', () => {
     expect(hasRealScreen('alumno', 'inicio')).toBe(true);
     expect(hasRealScreen('docente', 'inicio')).toBe(false);
     expect(hasRealScreen('alumno', 'opciones')).toBe(true);
+    expect(pagesFor('alumno')).not.toContain('opciones');
     expect(hasRealScreen('administrativo', 'constancias')).toBe(true);
     expect(hasRealScreen('director', 'constancias')).toBe(true);
     expect(ROLE_CONFIG.director.pages).toContain('constancias');

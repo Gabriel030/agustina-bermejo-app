@@ -4,7 +4,7 @@ import { ROLE_MENU, groupMenuItems, menuGroupSlugs, menuItemsFor, pagesFor } fro
 import { roleRoutesFor } from '@/routes/featureRoutes';
 import { hasRealScreen } from '@/routes/menuAccess';
 
-const LEGACY_REDIRECT_PATHS = ['listas-de-espera'];
+const LEGACY_REDIRECT_PATHS = ['listas-de-espera', 'opciones'];
 const PENDING_SCREENS = { alumno: [], administrativo: [], director: [] };
 
 describe('role menu manifest', () => {
@@ -79,11 +79,20 @@ describe('role menu manifest', () => {
     expect(groupMenuItems('docente', menuItemsFor('docente'))).toBeNull();
   });
 
-  it('groups the student menu keeping order, the catalog link and the options entry', () => {
+  it.each(Object.keys(ROLE_MENU))('never lists an options entry in the menu of %s', (role) => {
+    const items = menuItemsFor(role);
+    const groups = groupMenuItems(role, items) ?? [];
+    const labels = [...items, ...groups.flatMap((group) => group.items)].map((item) => item.label);
+    expect(labels).not.toContain('Opciones');
+    expect([...items, ...groups.flatMap((group) => group.items)].map((item) => item.to)).not.toContain(`/${role}/opciones`);
+    expect(pagesFor(role)).not.toContain('opciones');
+  });
+
+  it('groups the student menu keeping order and the catalog link without any options entry', () => {
     const groups = groupMenuItems('alumno', menuItemsFor('alumno'));
-    expect(groups.map((group) => group.label)).toEqual([null, 'Estudios', null, null, null, null]);
+    expect(groups.map((group) => group.label)).toEqual([null, 'Estudios', null, null, null]);
     expect(groups.flatMap((group) => group.items.map((item) => item.label))).toEqual([
-      'Inicio', 'Calendario', 'Mis cursos', 'Mis carreras', 'Mis certificados', 'Pagos', 'Oferta académica', 'Reuniones informativas', 'Opciones',
+      'Inicio', 'Calendario', 'Mis cursos', 'Mis carreras', 'Mis certificados', 'Pagos', 'Oferta académica', 'Reuniones informativas',
     ]);
   });
 
@@ -95,13 +104,14 @@ describe('role menu manifest', () => {
     expect(groups.filter((group) => group.panel)).toHaveLength(1);
   });
 
-  it('gives the informative sessions entry its own group between the catalog and the account', () => {
+  it('gives the informative sessions entry its own group right after the catalog and as the last group', () => {
     const groups = groupMenuItems('alumno', menuItemsFor('alumno'));
     const ids = groups.map((group) => group.id);
     const own = groups.find((group) => group.id === 'informative-sessions');
     expect(own.items.map((item) => item.to)).toEqual(['/alumno/reuniones-informativas']);
     expect(ids.indexOf('informative-sessions')).toBe(ids.indexOf('catalog') + 1);
-    expect(ids.indexOf('informative-sessions')).toBeLessThan(ids.indexOf('account'));
+    expect(ids).not.toContain('account');
+    expect(ids.at(-1)).toBe('informative-sessions');
   });
 
   it('orders the director groups as defined with the approvals entry after the institution group', () => {
