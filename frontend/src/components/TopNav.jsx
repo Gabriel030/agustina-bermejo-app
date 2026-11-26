@@ -6,6 +6,7 @@ import { RoleSwitcher } from '@/components/RoleSwitcher';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { MENU_ROW, MenuLink, TOP_NAV_BUTTON, TOP_NAV_BUTTON_ACTIVE, TopNavMenu } from '@/components/TopNavMenu';
 import { TopNavGridPanel } from '@/components/TopNavGridPanel';
+import { TopNavCatalogPanel } from '@/features/enrollment';
 import { NotificationBell } from '@/features/notifications';
 import { useAuth } from '@/context/AuthContext';
 import { useActiveRole } from '@/hooks/useActiveRole';
@@ -21,6 +22,7 @@ function buildEntries(items, groups) {
   return groups.flatMap((group) => {
     const own = group.items;
     if (own.length === 0) return [];
+    if (group.panel === 'catalog') return [{ type: 'catalog', id: group.id, item: own[0] }];
     if (!group.label) return own.map((item) => ({ type: 'link', id: item.to, item }));
     const sections = group.sections;
     return [{ type: 'group', id: group.id, label: group.label, wide: Boolean(sections), items: own, sections }];
@@ -60,6 +62,21 @@ function GroupMenu({ entry, pathname, menus }) {
           ))}
         </ul>
       )}
+    </TopNavMenu>
+  );
+}
+
+function CatalogMenu({ entry, pathname, menus }) {
+  return (
+    <TopNavMenu
+      id={entry.id}
+      menus={menus}
+      open={menus.openId === entry.id}
+      active={isActivePath(entry.item, pathname)}
+      placement="bar"
+      trigger={entry.item.label}
+    >
+      {menus.openId === entry.id && <TopNavCatalogPanel menus={menus} />}
     </TopNavMenu>
   );
 }
@@ -122,13 +139,11 @@ export function TopNav({ titulo, items, groups, breakpoint = TOP_NAV_BREAKPOINTS
         <InstitutionBrand layout="horizontal" className={breakpoint.brandCollapsed} />
       </Link>
       <nav aria-label="Principal" className="flex min-w-0 flex-1 items-center gap-0.5">
-        {entries.map((entry) =>
-          entry.type === 'link' ? (
-            <BarLink key={entry.id} item={entry.item} />
-          ) : (
-            <GroupMenu key={entry.id} entry={entry} pathname={pathname} menus={menus} />
-          ),
-        )}
+        {entries.map((entry) => {
+          if (entry.type === 'link') return <BarLink key={entry.id} item={entry.item} />;
+          if (entry.type === 'catalog') return <CatalogMenu key={entry.id} entry={entry} pathname={pathname} menus={menus} />;
+          return <GroupMenu key={entry.id} entry={entry} pathname={pathname} menus={menus} />;
+        })}
       </nav>
       <div className="ml-auto flex shrink-0 items-center gap-1">
         <ThemeToggle />

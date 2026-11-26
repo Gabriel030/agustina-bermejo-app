@@ -25,7 +25,7 @@ export function MenuLink({ item, menus }) {
   );
 }
 
-export function TopNavMenu({ id, active, open, menus, wide = false, align = 'start', trigger, children }) {
+export function TopNavMenu({ id, active, open, menus, wide = false, align = 'start', placement = 'anchored', trigger, children }) {
   const containerRef = useRef(null);
   const triggerRef = useRef(null);
   const panelRef = useRef(null);
@@ -107,7 +107,7 @@ export function TopNavMenu({ id, active, open, menus, wide = false, align = 'sta
   return (
     <div
       ref={containerRef}
-      className="relative"
+      className={placement === 'anchored' ? 'relative' : undefined}
       onKeyDown={handleKeyDown}
       onBlur={handleBlur}
       onPointerEnter={handlePointerEnter}
@@ -138,8 +138,8 @@ export function TopNavMenu({ id, active, open, menus, wide = false, align = 'sta
         onKeyDown={handlePanelKeyDown}
         className={cn(
           'absolute top-[calc(100%+6px)] z-40 rounded-card border border-border bg-surface p-2 shadow-overlay',
-          align === 'end' ? 'right-0' : 'left-0',
-          wide ? 'w-[45rem] max-w-[calc(100vw-2rem)]' : 'min-w-60',
+          placement === 'bar' ? 'left-1/2 w-[60rem] max-w-[calc(100vw-2rem)] -translate-x-1/2' : align === 'end' ? 'right-0' : 'left-0',
+          placement === 'bar' ? undefined : wide ? 'w-[45rem] max-w-[calc(100vw-2rem)]' : 'min-w-60',
         )}
       >
         {children}

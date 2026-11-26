@@ -92,8 +92,16 @@ describe('role menu manifest', () => {
     const groups = groupMenuItems('alumno', menuItemsFor('alumno'));
     expect(groups.map((group) => group.label)).toEqual([null, 'Estudios', null, null, null]);
     expect(groups.flatMap((group) => group.items.map((item) => item.label))).toEqual([
-      'Inicio', 'Calendario', 'Mis cursos', 'Mis carreras', 'Mis certificados', 'Pagos', 'Catálogo', 'Reuniones informativas',
+      'Inicio', 'Calendario', 'Mis cursos', 'Mis carreras', 'Mis certificados', 'Pagos', 'Oferta académica', 'Reuniones informativas',
     ]);
+  });
+
+  it('marksTheStudentOfferingEntryAsAPanelPointingAtTheCatalog', () => {
+    const groups = groupMenuItems('alumno', menuItemsFor('alumno'));
+    const catalog = groups.find((group) => group.id === 'catalog');
+    expect(catalog.panel).toBe('catalog');
+    expect(catalog.items.map((item) => item.to)).toEqual(['/catalogo']);
+    expect(groups.filter((group) => group.panel)).toHaveLength(1);
   });
 
   it('gives the informative sessions entry its own group right after the catalog and as the last group', () => {
