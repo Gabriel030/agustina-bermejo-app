@@ -32,7 +32,7 @@ export function InformativeSessionCard({ session, programName }) {
           className="flex w-13 flex-none flex-col items-center rounded-control border border-border py-1 text-center leading-tight"
         >
           <b className="font-heading text-lg font-bold text-ink">{date.day}</b>
-          <span className="text-[10.5px] font-bold tracking-wider text-ink-faint uppercase">{date.monthShort}</span>
+          <span className="text-size-11 font-bold tracking-wider text-ink-faint uppercase">{date.monthShort}</span>
         </span>
         <h3 className="font-heading text-size-15 font-semibold text-ink">{session.title}</h3>
       </div>
