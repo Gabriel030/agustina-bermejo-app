@@ -17,6 +17,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
 import com.red_escuela.backend.identity.api.HistoricalPersonRecorder;
 import com.red_escuela.backend.shared.exception.HistoricalDiscardBlockedException;
+import com.red_escuela.backend.testsupport.NightlyTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -25,7 +26,9 @@ class ImportRollbackBatchIT extends AbstractDataImportIT {
     private static final int MANY = 100;
     private static final int BEYOND_ONE_CHUNK = 1005;
     private static final int BLOCKING_POSITION = 57;
+    private static final int THREE_CHUNKS = 2005;
     private static final long STATEMENTS_TO_ROLL_BACK = 14;
+    private static final long STATEMENTS_OF_THREE_CHUNKS = 18;
 
     @Autowired
     private EntityManagerFactory entityManagerFactory;
@@ -185,6 +188,19 @@ class ImportRollbackBatchIT extends AbstractDataImportIT {
         rollback(baseBatch);
         assertThat(manyStatements).isEqualTo(fewStatements);
         assertThat(manyStatements).isEqualTo(STATEMENTS_TO_ROLL_BACK);
+    }
+
+    @Test
+    @NightlyTest(reason = "Counts the statements of a rollback spanning three chunks of 1000 enrollments")
+    void rollbackStatementCountOfThreeChunksStaysAtTheKnownBudget() throws Exception {
+        HistoricalDatasetCsv csv = newDataset("ZT", 2013, THREE_CHUNKS);
+        long baseBatch = createBatch();
+        importBaseStructure(baseBatch, csv);
+
+        long statements = statementsToRollBack(csv, THREE_CHUNKS);
+
+        rollback(baseBatch);
+        assertThat(statements).isEqualTo(STATEMENTS_OF_THREE_CHUNKS);
     }
 
     @Test

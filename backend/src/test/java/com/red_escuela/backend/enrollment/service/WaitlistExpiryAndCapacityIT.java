@@ -35,6 +35,10 @@ import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
 import com.red_escuela.backend.shared.domain.StatusType;
 import jakarta.persistence.EntityManager;
+import com.red_escuela.backend.testsupport.NightlyTest;
+import jakarta.persistence.EntityManagerFactory;
+import org.hibernate.SessionFactory;
+import org.hibernate.stat.Statistics;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,6 +73,8 @@ class WaitlistExpiryAndCapacityIT extends AbstractIntegrationTest {
 
     @Autowired
     private EntityManager entityManager;
+    @Autowired
+    private EntityManagerFactory entityManagerFactory;
     @Autowired
     private CapacityChangeEvents capacityChangeEvents;
     @Autowired
@@ -108,6 +114,15 @@ class WaitlistExpiryAndCapacityIT extends AbstractIntegrationTest {
         assertThat(prioritized.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
         assertThat(oldest.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
         assertThat(middle.getStatus()).isEqualTo(EnrollmentStatus.WAITLISTED);
+    }
+
+    @Test
+    @NightlyTest(reason = "Persists 400 waitlisted students to count the promotion statements")
+    void promotionStatementCountStaysConstantWithFourHundredWaitlisted() {
+        long fewWaiting = promotionStatements(2091, 5);
+        long manyWaiting = promotionStatements(2092, 400);
+
+        assertThat(manyWaiting).isEqualTo(fewWaiting);
     }
 
     @Test
@@ -515,5 +530,24 @@ class WaitlistExpiryAndCapacityIT extends AbstractIntegrationTest {
         enrollment.setAttemptNumber(1);
         entityManager.persist(enrollment);
         return enrollment;
+    }
+
+    private long promotionStatements(int year, int waiting) {
+        Course course = course(year, 1);
+        courseEnrollment(course, EnrollmentStatus.ENROLLED, NOW, null);
+        for (int position = 1; position <= waiting; position++) {
+            courseEnrollment(course, EnrollmentStatus.WAITLISTED, NOW.plusMinutes(position), null);
+        }
+        course.setCapacity(2);
+        entityManager.flush();
+        entityManager.clear();
+        Statistics statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
+        statistics.setStatisticsEnabled(true);
+        statistics.clear();
+        capacityChangeEvents.courseChanged(course.getId(), 1, 2);
+        long count = statistics.getPrepareStatementCount();
+        statistics.setStatisticsEnabled(false);
+        entityManager.clear();
+        return count;
     }
 }

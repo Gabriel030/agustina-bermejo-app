@@ -85,3 +85,14 @@ No medí cambiar el orden en ninguno; son observaciones del catálogo y del uso.
 - No hacer: los otros 5 probados no mejoran.
 - Decidir con los dueños del código qué FKs del listado necesitan índice por integridad de borrado (`audit_log.actor_person_id` es la de mayor volumen).
 - Sacar los sin uso solo tras medir una carga de escritura y revisar jobs y pantallas no cubiertas.
+
+## E33-C: `commission_closure_student (enrollment_id)` (medición, 26-nov)
+
+Borrado del rollback de importación (`delete … where enrollment_id in (1000 ids)`), Postgres 16 en contenedor, tabla sintética de 200.000 filas con la misma forma que `commission_closure_student` (PK, `unique (closure_id, enrollment_id)`), 4 corridas por lado con caché caliente.
+
+| | Plan | Tiempos (ms) |
+|---|---|---|
+| Sin índice | Seq Scan de 200.000 filas | 46,5 / 33,9 / 33,5 / 35,8 |
+| Con `idx (enrollment_id)` | Nested Loop con Index Scan | 8,7 / 5,9 / 6,4 / 7,1 |
+
+Mejora ≈ 5× por tramo de 1.000 filas (mediana 34,7 → 6,8 ms). Limitación: no se midió con el seed perf real (no hay `PerfSeedIT` corrible en esta sesión) ni con las FKs de la tabla real; el costo absoluto por tramo es chico (200 tramos ≈ 7 s sin índice). Migración no creada: queda a decisión del líder, que además tiene que dar el número por la cola #1393.

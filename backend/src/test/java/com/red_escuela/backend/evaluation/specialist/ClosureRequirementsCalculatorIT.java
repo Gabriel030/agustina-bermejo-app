@@ -44,6 +44,7 @@ import jakarta.persistence.EntityManager;
 import jakarta.persistence.EntityManagerFactory;
 import org.hibernate.SessionFactory;
 import org.hibernate.stat.Statistics;
+import com.red_escuela.backend.testsupport.NightlyTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -66,6 +67,7 @@ class ClosureRequirementsCalculatorIT extends AbstractIntegrationTest {
 
     private static final int BIG_SECTION = 40;
     private static final int SMALL_SECTION = 4;
+    private static final int HUGE_SECTION = 400;
     private static final long QUERY_CEILING = 60;
 
     @Autowired
@@ -273,6 +275,19 @@ class ClosureRequirementsCalculatorIT extends AbstractIntegrationTest {
         long bigCount = countStatements(() -> calculator.calculate(SectionKind.PROGRAM, big.getId()));
 
         assertThat(bigCount).isEqualTo(smallCount).isLessThanOrEqualTo(QUERY_CEILING);
+    }
+
+    @Test
+    @NightlyTest(reason = "Persists 400 students with enrollments, grades and documents to count the closure statements")
+    void statementCountStaysConstantWithFourHundredStudents() {
+        SubjectSection small = persistCommission(SMALL_SECTION);
+        SubjectSection huge = persistCommission(HUGE_SECTION);
+
+        long smallCount = countStatements(() -> calculator.calculate(SectionKind.PROGRAM, small.getId()));
+        entityManager.clear();
+        long hugeCount = countStatements(() -> calculator.calculate(SectionKind.PROGRAM, huge.getId()));
+
+        assertThat(hugeCount).isEqualTo(smallCount).isLessThanOrEqualTo(QUERY_CEILING);
     }
 
     @Test
