@@ -3,6 +3,7 @@ import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 
 import com.red_escuela.backend.academicstructure.dto.CreateCourseRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateCourseRequest;
+import com.red_escuela.backend.academicstructure.entity.CatalogArea;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.StatusType;
@@ -108,9 +109,14 @@ public class CourseService {
     }
 
     public List<Course> list(StatusType status, Boolean visibleInCatalog) {
+        return list(status, visibleInCatalog, null);
+    }
+
+    public List<Course> list(StatusType status, Boolean visibleInCatalog, CatalogArea area) {
         List<Course> courses = courseRepository.findAll(Sort.by("name", "id")).stream()
                 .filter(course -> status == null || course.getIsActive() == status)
                 .filter(course -> visibleInCatalog == null || course.isVisibleInCatalog() == visibleInCatalog)
+                .filter(course -> area == null || course.getCatalogArea() == area)
                 .toList();
         Map<Long, Money> tuitions = listPriceReader.findCourseTuitions(courses.stream().map(Course::getId).toList());
         courses.forEach(course -> course.showListPrice(tuitions.get(course.getId())));

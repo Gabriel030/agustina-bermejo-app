@@ -4,6 +4,8 @@ import com.red_escuela.backend.billing.dto.ProgramPricingResponse;
 import com.red_escuela.backend.academicstructure.dto.CreateProgramRequest;
 import com.red_escuela.backend.academicstructure.dto.ProgramResponse;
 import com.red_escuela.backend.academicstructure.dto.SetCatalogVisibilityRequest;
+import com.red_escuela.backend.academicstructure.entity.CatalogArea;
+import com.red_escuela.backend.academicstructure.usecase.SetCatalogVisibilityCommand;
 import com.red_escuela.backend.academicstructure.dto.UpdateProgramRequest;
 import com.red_escuela.backend.academicstructure.service.ProgramService;
 import com.red_escuela.backend.academicstructure.usecase.SetProgramCatalogVisibilityUseCase;
@@ -68,15 +70,16 @@ public class ProgramController {
 
     @GetMapping
     public List<ProgramResponse> list(@RequestParam(required = false) StatusType status,
-            @RequestParam(required = false) Boolean visibleInCatalog) {
-        return programService.list(status, visibleInCatalog).stream().map(ProgramResponse::from).toList();
+            @RequestParam(required = false) Boolean visibleInCatalog,
+            @RequestParam(required = false) CatalogArea area) {
+        return programService.list(status, visibleInCatalog, area).stream().map(ProgramResponse::from).toList();
     }
 
     @PutMapping("/{id}/catalog-visibility")
     @RequiresPermission(code = "academicstructure.change_catalog_visibility", legacyRoles = "ROLE_ADMINISTRATIVO")
     public ProgramResponse setCatalogVisibility(@PathVariable Long id,
             @Valid @RequestBody SetCatalogVisibilityRequest request) {
-        return setCatalogVisibility.execute(id, request.visible());
+        return setCatalogVisibility.execute(new SetCatalogVisibilityCommand(id, request.visible(), request.area()));
     }
 
     @GetMapping("/{id}")

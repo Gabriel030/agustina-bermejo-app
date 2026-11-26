@@ -4,6 +4,7 @@ import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import com.red_escuela.backend.academicstructure.dto.CreateProgramRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateProgramRequest;
 import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.academicstructure.entity.CatalogArea;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.exception.OfferingListPriceNotPositiveException;
@@ -92,9 +93,14 @@ public class ProgramService {
     }
 
     public List<Program> list(StatusType status, Boolean visibleInCatalog) {
+        return list(status, visibleInCatalog, null);
+    }
+
+    public List<Program> list(StatusType status, Boolean visibleInCatalog, CatalogArea area) {
         List<Program> programs = programRepository.findAll(Sort.by("name", "id")).stream()
                 .filter(program -> status == null || program.getStatus() == status)
                 .filter(program -> visibleInCatalog == null || program.isVisibleInCatalog() == visibleInCatalog)
+                .filter(program -> area == null || program.getCatalogArea() == area)
                 .toList();
         List<Long> ids = programs.stream().map(Program::getId).toList();
         Map<Long, Money> tuitions = listPriceReader.findProgramTuitions(ids);

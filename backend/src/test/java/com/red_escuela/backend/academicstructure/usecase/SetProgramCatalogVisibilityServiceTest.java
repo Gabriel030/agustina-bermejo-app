@@ -1,6 +1,7 @@
 package com.red_escuela.backend.academicstructure.usecase;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
+import com.red_escuela.backend.academicstructure.entity.CatalogArea;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
 import jakarta.persistence.EntityManager;
@@ -26,7 +27,7 @@ class SetProgramCatalogVisibilityServiceTest extends AbstractIntegrationTest {
 
     @Test
     void nonExistentProgramThrowsProgramNotFoundException() {
-        assertThatThrownBy(() -> setCatalogVisibility.execute(999999L, true))
+        assertThatThrownBy(() -> setCatalogVisibility.execute(new SetCatalogVisibilityCommand(999999L, true, null)))
                 .isInstanceOf(ProgramNotFoundException.class);
     }
 
@@ -40,10 +41,44 @@ class SetProgramCatalogVisibilityServiceTest extends AbstractIntegrationTest {
 
         assertThat(program.isVisibleInCatalog()).isFalse();
 
-        var response = setCatalogVisibility.execute(program.getId(), true);
+        var response = setCatalogVisibility.execute(new SetCatalogVisibilityCommand(program.getId(), true, null));
         assertThat(response.isVisibleInCatalog()).isTrue();
 
-        response = setCatalogVisibility.execute(program.getId(), false);
+        response = setCatalogVisibility.execute(new SetCatalogVisibilityCommand(program.getId(), false, null));
         assertThat(response.isVisibleInCatalog()).isFalse();
+    }
+
+    @Test
+    void firstPublicationSetsCatalogPublishedAtAndRepublishingKeepsIt() {
+        Program program = new Program();
+        program.setName("Tecnicatura Primera Publicacion");
+        program.setTotalYears(3);
+        entityManager.persist(program);
+        entityManager.flush();
+
+        var hidden = setCatalogVisibility.execute(new SetCatalogVisibilityCommand(program.getId(), false, null));
+        assertThat(hidden.getCatalogPublishedAt()).isNull();
+
+        var firstPublication = setCatalogVisibility.execute(new SetCatalogVisibilityCommand(program.getId(), true, null));
+        assertThat(firstPublication.getCatalogPublishedAt()).isNotNull();
+
+        setCatalogVisibility.execute(new SetCatalogVisibilityCommand(program.getId(), false, null));
+        var republication = setCatalogVisibility.execute(new SetCatalogVisibilityCommand(program.getId(), true, null));
+        assertThat(republication.getCatalogPublishedAt()).isEqualTo(firstPublication.getCatalogPublishedAt());
+    }
+
+    @Test
+    void areaIsStoredWhenGivenAndKeptWhenOmitted() {
+        Program program = new Program();
+        program.setName("Tecnicatura Area");
+        program.setTotalYears(3);
+        entityManager.persist(program);
+        entityManager.flush();
+
+        var withArea = setCatalogVisibility.execute(new SetCatalogVisibilityCommand(program.getId(), true, CatalogArea.DESIGN));
+        assertThat(withArea.getArea()).isEqualTo("DESIGN");
+
+        var withoutArea = setCatalogVisibility.execute(new SetCatalogVisibilityCommand(program.getId(), false, null));
+        assertThat(withoutArea.getArea()).isEqualTo("DESIGN");
     }
 }
