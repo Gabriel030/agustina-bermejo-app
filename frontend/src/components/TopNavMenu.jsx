@@ -1,4 +1,5 @@
 import { useEffect, useId, useRef } from 'react';
+import { NavLink } from 'react-router-dom';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -9,6 +10,20 @@ export const TOP_NAV_BUTTON =
   'relative inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-control px-2.5 text-size-13 font-semibold text-ink-soft transition-colors motion-reduce:transition-none hover:bg-neutral-bg hover:text-ink focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring';
 export const TOP_NAV_BUTTON_ACTIVE =
   'rounded-b-none text-(--accent) border-b-2 border-b-(--accent) hover:text-(--accent)';
+
+export const MENU_ROW =
+  'flex min-h-11 w-full items-center justify-start gap-2 rounded-control px-3 text-left text-size-13 font-semibold text-ink transition-colors motion-reduce:transition-none hover:bg-neutral-bg focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring';
+export const MENU_ROW_ACTIVE = 'bg-accent-soft text-(--accent)';
+
+export function MenuLink({ item, menus }) {
+  const Icon = item.icon;
+  return (
+    <NavLink to={item.to} onClick={menus.close} className={({ isActive }) => cn(MENU_ROW, isActive && MENU_ROW_ACTIVE)}>
+      {Icon && <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />}
+      <span className="truncate">{item.label}</span>
+    </NavLink>
+  );
+}
 
 export function TopNavMenu({ id, active, open, menus, columns = 1, align = 'start', trigger, children }) {
   const containerRef = useRef(null);
@@ -124,7 +139,7 @@ export function TopNavMenu({ id, active, open, menus, columns = 1, align = 'star
         className={cn(
           'absolute top-[calc(100%+6px)] z-40 rounded-card border border-border bg-surface p-2 shadow-overlay',
           align === 'end' ? 'right-0' : 'left-0',
-          columns === 2 ? 'w-[30rem]' : 'min-w-60',
+          columns === 'grid' ? 'w-[45rem] max-w-[calc(100vw-2rem)]' : columns === 2 ? 'w-[30rem]' : 'min-w-60',
         )}
       >
         {children}

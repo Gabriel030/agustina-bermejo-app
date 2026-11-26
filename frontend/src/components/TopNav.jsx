@@ -4,17 +4,14 @@ import { Button } from '@/components/ui/button';
 import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { RoleSwitcher } from '@/components/RoleSwitcher';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { TOP_NAV_BUTTON, TOP_NAV_BUTTON_ACTIVE, TopNavMenu } from '@/components/TopNavMenu';
+import { MENU_ROW, MenuLink, TOP_NAV_BUTTON, TOP_NAV_BUTTON_ACTIVE, TopNavMenu } from '@/components/TopNavMenu';
+import { TopNavGridPanel } from '@/components/TopNavGridPanel';
 import { NotificationBell } from '@/features/notifications';
 import { useAuth } from '@/context/AuthContext';
 import { useActiveRole } from '@/hooks/useActiveRole';
 import { useTopNavMenus } from '@/hooks/useTopNavMenus';
 
 const OPTIONS_LABEL = 'Opciones';
-const MENU_ROW =
-  'flex min-h-11 w-full items-center justify-start gap-2 rounded-control px-3 text-left text-size-13 font-semibold text-ink transition-colors motion-reduce:transition-none hover:bg-neutral-bg focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring';
-const MENU_ROW_ACTIVE = 'bg-accent-soft text-(--accent)';
-
 function isActivePath(item, pathname) {
   return pathname === item.to || pathname.startsWith(`${item.to}/`);
 }
@@ -26,22 +23,13 @@ function buildEntries(items, groups) {
     const own = group.items.filter((item) => item.label !== OPTIONS_LABEL);
     if (own.length === 0) return [];
     if (!group.label) return own.map((item) => ({ type: 'link', id: item.to, item }));
-    return [{ type: 'group', id: group.id, label: group.label, columns: group.columns ?? 1, items: own }];
+    const sections = group.sections?.map((section) => ({ ...section, items: section.items.filter((item) => item.label !== OPTIONS_LABEL) }));
+    return [{ type: 'group', id: group.id, label: group.label, columns: sections ? 'grid' : (group.columns ?? 1), items: own, sections }];
   });
 }
 
 function initialsOf(user) {
   return `${user.nombre?.[0] ?? ''}${user.apellido?.[0] ?? ''}`.toUpperCase();
-}
-
-function MenuLink({ item, menus }) {
-  const Icon = item.icon;
-  return (
-    <NavLink to={item.to} onClick={menus.close} className={({ isActive }) => cn(MENU_ROW, isActive && MENU_ROW_ACTIVE)}>
-      {Icon && <Icon aria-hidden="true" className="h-4 w-4 shrink-0" />}
-      <span className="truncate">{item.label}</span>
-    </NavLink>
-  );
 }
 
 function BarLink({ item }) {
@@ -62,13 +50,17 @@ function GroupMenu({ entry, pathname, menus }) {
       columns={entry.columns}
       trigger={entry.label}
     >
-      <ul className={cn('grid gap-x-2', entry.columns === 2 && 'grid-cols-2')} aria-label={entry.label}>
-        {entry.items.map((item) => (
-          <li key={item.to}>
-            <MenuLink item={item} menus={menus} />
-          </li>
-        ))}
-      </ul>
+      {entry.sections ? (
+        menus.openId === entry.id && <TopNavGridPanel title={entry.label} sections={entry.sections} menus={menus} />
+      ) : (
+        <ul className={cn('grid gap-x-2', entry.columns === 2 && 'grid-cols-2')} aria-label={entry.label}>
+          {entry.items.map((item) => (
+            <li key={item.to}>
+              <MenuLink item={item} menus={menus} />
+            </li>
+          ))}
+        </ul>
+      )}
     </TopNavMenu>
   );
 }

@@ -51,8 +51,8 @@ describe('Financiero access by role', () => {
     await signInAs('ADMINISTRATIVO', '/administrativo/alumnos');
     await screen.findByRole('heading', { name: 'Padrón de alumnos' });
 
-    const links = await screen.findAllByRole('link', { name: 'Financiero' });
-    await userEvent.click(links[0]);
+    await userEvent.click(await screen.findByRole('button', { name: 'Facturación' }));
+    await userEvent.click(await screen.findByRole('link', { name: 'Financiero' }));
 
     expect(await screen.findByRole('heading', { name: 'Financiero' })).toBeInTheDocument();
     expect(await screen.findByText('Pago a término', { selector: 'div' })).toBeInTheDocument();
@@ -62,7 +62,7 @@ describe('Financiero access by role', () => {
     await signInAs('ADMINISTRATIVO', '/administrativo/alumnos');
 
     const nav = (await screen.findAllByRole('navigation'))[0];
-    await within(nav).findByRole('link', { name: 'Facturación' });
+    await userEvent.click(await within(nav).findByRole('button', { name: 'Facturación' }));
     const labels = within(nav).getAllByRole('link').map((link) => link.textContent.trim());
     expect(labels).toContain('Facturación');
     expect(labels).toContain('Financiero');

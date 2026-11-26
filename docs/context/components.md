@@ -22,6 +22,7 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 |---|---|---|
 | `Sidebar` [shared] | Nav lateral desktop, indicador deslizante | por rol |
 | `MobileMenu` [shared] | Drawer mobile con iconos | — |
+| `TopNavGridPanel` [shared] | Panel de grilla de un desplegable de `TopNav`: secciones con conteo a la izquierda, pantallas de la sección apuntada a la derecha; hover a 140 ms, clic fija/suelta | `title`, `sections: [{ id, label, items }]`, `menus` |
 | `TopHeader` [shared] | Cabecera con título, ítems, campana, tema | `titulo`, `items` |
 | `Breadcrumb` [shared] (+ hook `useBreadcrumb`) | Ruta jerárquica en pantallas de detalle | `items` |
 | `Tabs` `TabsList` `TabsTrigger` `TabsContent` [ui] | Pestañas de una pantalla | `TabsList variant="segmented"` (nunca `line`) |
