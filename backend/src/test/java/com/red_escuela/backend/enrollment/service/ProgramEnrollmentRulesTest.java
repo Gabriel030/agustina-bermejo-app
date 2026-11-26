@@ -4,8 +4,8 @@ import com.red_escuela.backend.academicstructure.api.AcademicReferenceFinder;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
-import com.red_escuela.backend.attendance.api.AttendanceStanding;
-import com.red_escuela.backend.attendance.api.AttendanceStandingReader;
+import com.red_escuela.backend.enrollment.api.AttendanceStandingPort;
+import com.red_escuela.backend.enrollment.api.SubjectAttendanceView;
 import com.red_escuela.backend.enrollment.api.EnrollmentDebtGuardPort;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
@@ -94,7 +94,7 @@ class ProgramEnrollmentRulesTest {
     @Mock
     private ProgramYearBillingTemplateRepository templateRepository;
     @Mock
-    private AttendanceStandingReader attendanceRiskUseCase;
+    private AttendanceStandingPort attendanceStandingPort;
     @Mock
     private EnrollmentDebtGuardPort enrollmentDebtGuard;
 
@@ -113,7 +113,7 @@ class ProgramEnrollmentRulesTest {
     void setUp() {
         service = new ProgramEnrollmentService(programEnrollmentRepository, studentFinder, studentEnrollmentEligibility,
                 academicReferenceFinder, programProgressReader, subjectSectionEnrollmentRepository, programCohortRepository,
-                templateRepository, attendanceRiskUseCase, enrollmentDebtGuard, withdrawalDateResolver, withdrawalBillingPort, documentCompletenessGuard, mock(ProgramEnrollmentSectionWithdrawer.class), CLOCK);
+                templateRepository, attendanceStandingPort, enrollmentDebtGuard, withdrawalDateResolver, withdrawalBillingPort, documentCompletenessGuard, mock(ProgramEnrollmentSectionWithdrawer.class), CLOCK);
         student = new Student();
         student.setId(7L);
         program = new Program();
@@ -417,10 +417,9 @@ class ProgramEnrollmentRulesTest {
         SubjectSectionEnrollment withAbsences = sectionEnrollment(100L, "Matematica");
         SubjectSectionEnrollment withoutData = sectionEnrollment(101L, "Historia");
         when(subjectSectionEnrollmentRepository.findWithSectionByProgramEnrollmentId(1L)).thenReturn(List.of(withAbsences, withoutData));
-        when(attendanceRiskUseCase.readProgramEnrollmentStandings(List.of(100L, 101L))).thenReturn(java.util.Map.of(
-                100L, new AttendanceStanding(8, 6, 2, 0, Percentage.ofFraction(new BigDecimal("0.25")),
-                        Percentage.ofFraction(new BigDecimal("0.75")), Percentage.ofFraction(new BigDecimal("0.30")), false, 2, 0),
-                101L, new AttendanceStanding(0, 0, 0, 0, null, null, null, false, null, null)));
+        when(attendanceStandingPort.readProgramSectionAttendance(List.of(100L, 101L))).thenReturn(java.util.Map.of(
+                100L, new SubjectAttendanceView(Percentage.ofFraction(new BigDecimal("0.75"))),
+                101L, new SubjectAttendanceView(null)));
 
         List<SubjectAttendanceSummaryResponse> summary = service.attendanceSummaryBySubject(1L);
 
