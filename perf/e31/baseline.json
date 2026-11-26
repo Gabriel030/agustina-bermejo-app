@@ -1,0 +1,302 @@
+{
+  "meta": {
+    "source": "sembrada desde report.md del 2026-11-17 (antes de 31.2); regenerar con npm run measure y node compare.mjs --update",
+    "generatedAt": "2026-11-17"
+  },
+  "screens": {
+    "Administrativo /administrativo/alumnos": {
+      "requests": 8,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Administrativo /administrativo/aprobaciones": {
+      "requests": 8,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Administrativo /administrativo/cierres-de-comision": {
+      "requests": 9,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Administrativo /administrativo/constancias": {
+      "requests": 9,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Administrativo /administrativo/corridas-de-facturacion": {
+      "requests": 8,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Administrativo /administrativo/descuentos": {
+      "requests": 11,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Administrativo /administrativo/egresos-por-verificar": {
+      "requests": 11,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Administrativo /administrativo/facturacion": {
+      "requests": 10,
+      "duplicates": 2,
+      "cascadeDepth": 5,
+      "errors": 0
+    },
+    "Administrativo /administrativo/feriados": {
+      "requests": 9,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Administrativo /administrativo/gestion-academica": {
+      "requests": 8,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Administrativo /administrativo/inicio": {
+      "requests": 8,
+      "duplicates": 2,
+      "cascadeDepth": 5,
+      "errors": 0
+    },
+    "Administrativo /administrativo/listas-de-espera": {
+      "requests": 8,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Administrativo /administrativo/mesas-de-examen": {
+      "requests": 8,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Administrativo /administrativo/periodos": {
+      "requests": 8,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Administrativo /administrativo/personal": {
+      "requests": 8,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Administrativo /administrativo/precios": {
+      "requests": 10,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Administrativo /administrativo/solicitudes-de-asistencia": {
+      "requests": 9,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Administrativo /administrativo/solicitudes-de-ingreso": {
+      "requests": 8,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Alumno /alumno/inicio": {
+      "requests": 12,
+      "duplicates": 2,
+      "cascadeDepth": 5,
+      "errors": 0
+    },
+    "Alumno /alumno/mis-carreras": {
+      "requests": 12,
+      "duplicates": 2,
+      "cascadeDepth": 6,
+      "errors": 0
+    },
+    "Alumno /alumno/mis-cursos": {
+      "requests": 8,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Alumno /alumno/pagos": {
+      "requests": 14,
+      "duplicates": 2,
+      "cascadeDepth": 5,
+      "errors": 0
+    },
+    "Alumno /alumno/pagos/estado": {
+      "requests": 7,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Alumno /alumno/pagos/notas-de-credito": {
+      "requests": 8,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Director /director/ajustes-del-instituto": {
+      "requests": 8,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Director /director/alumnos": {
+      "requests": 8,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Director /director/aprobaciones": {
+      "requests": 12,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Director /director/cierres-de-comision": {
+      "requests": 9,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Director /director/constancias": {
+      "requests": 9,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Director /director/corridas-de-facturacion": {
+      "requests": 8,
+      "duplicates": 2,
+      "cascadeDepth": 5,
+      "errors": 0
+    },
+    "Director /director/descuentos": {
+      "requests": 11,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Director /director/esquemas-evaluacion": {
+      "requests": 8,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Director /director/facturacion": {
+      "requests": 10,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Director /director/financiero": {
+      "requests": 19,
+      "duplicates": 3,
+      "cascadeDepth": 6,
+      "errors": 0
+    },
+    "Director /director/financiero/anios-lectivos": {
+      "requests": 8,
+      "duplicates": 2,
+      "cascadeDepth": 5,
+      "errors": 0
+    },
+    "Director /director/gestion-academica": {
+      "requests": 8,
+      "duplicates": 2,
+      "cascadeDepth": 5,
+      "errors": 0
+    },
+    "Director /director/importacion-inicial": {
+      "requests": 8,
+      "duplicates": 2,
+      "cascadeDepth": 5,
+      "errors": 0
+    },
+    "Director /director/inicio": {
+      "requests": 8,
+      "duplicates": 2,
+      "cascadeDepth": 5,
+      "errors": 0
+    },
+    "Director /director/listas-de-espera": {
+      "requests": 8,
+      "duplicates": 2,
+      "cascadeDepth": 5,
+      "errors": 0
+    },
+    "Director /director/mesas-de-examen": {
+      "requests": 8,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Director /director/oferta-academica": {
+      "requests": 18,
+      "duplicates": 2,
+      "cascadeDepth": 5,
+      "errors": 0
+    },
+    "Director /director/oferta-academica/calendario": {
+      "requests": 8,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Director /director/periodos": {
+      "requests": 8,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Director /director/personal": {
+      "requests": 8,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Director /director/precios": {
+      "requests": 10,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Docente /docente/inicio": {
+      "requests": 9,
+      "duplicates": 2,
+      "cascadeDepth": 5,
+      "errors": 0
+    },
+    "Docente /docente/mesas-de-examen": {
+      "requests": 8,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    },
+    "Docente /docente/mis-comisiones": {
+      "requests": 9,
+      "duplicates": 2,
+      "cascadeDepth": 5,
+      "errors": 0
+    },
+    "Docente /docente/tomar-asistencia": {
+      "requests": 9,
+      "duplicates": 2,
+      "cascadeDepth": 4,
+      "errors": 0
+    }
+  }
+}

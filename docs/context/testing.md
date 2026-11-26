@@ -394,6 +394,10 @@ quede visible en el roadmap y no se pierda en el historial de PRs.
 - `/v3/api-docs` solo existe con `springdoc.api-docs.enabled=true` (perfiles `local` y `test`); en producción la propiedad es `false` y no hay Swagger UI.
 - Los componentes de un `record` de respuesta son `required` salvo `Optional` o `@Nullable`; las clases con Lombok no reciben ese tratamiento.
 
+## Línea base de llamadas HTTP por pantalla (perf/e31)
+
+Mide con Chromium headless (4G y CPU x4) cuántas peticiones, duplicadas, niveles de cascada y errores tiene cada pantalla de cada rol, y las compara contra `perf/e31/baseline.json`. Solo mide e informa; no corrige pantallas. Corre solo en local, con el stack de `perf/README.md` (seed grande): no corre en la CI de los PR. `cd perf/e31 && npm run measure && npm run compare` (sale 1 si alguna pantalla empeora); `npm test` prueba los scripts sin navegador, incluida la cobertura contra las rutas del front. Una mejora intencional se fija con `npm run compare:update`. Detalle en `perf/e31/README.md`.
+
 ## Antes de dar una tarea por terminada
 
 El CI de GitHub corre `./mvnw clean verify` (backend) y `npm run lint`, `npm run build`,
