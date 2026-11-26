@@ -97,7 +97,7 @@ describe('flujo de login end-to-end', () => {
     await screen.findByPlaceholderText('DNI o email');
     await login();
 
-    expect(await screen.findAllByText('Otra Persona')).toHaveLength(2);
+    expect(await screen.findAllByText('Otra Persona')).toHaveLength(3);
     expect(screen.queryByText('No autorizado')).not.toBeInTheDocument();
   });
 
