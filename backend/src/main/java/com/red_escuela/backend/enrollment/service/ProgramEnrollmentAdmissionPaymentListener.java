@@ -1,7 +1,7 @@
 package com.red_escuela.backend.enrollment.service;
 
 import com.red_escuela.backend.billing.events.AdmissionInvoicePaidEvent;
-import com.red_escuela.backend.billing.service.ProgramEnrollmentBillingSetup;
+import com.red_escuela.backend.enrollment.api.ProgramAdmissionFeePort;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplicationStatus;
@@ -22,16 +22,16 @@ public class ProgramEnrollmentAdmissionPaymentListener {
     private final ProgramEnrollmentApplicationRepository applicationRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final ProgramEnrollmentService programEnrollmentService;
-    private final ProgramEnrollmentBillingSetup programEnrollmentBillingSetup;
+    private final ProgramAdmissionFeePort programAdmissionFeePort;
 
     public ProgramEnrollmentAdmissionPaymentListener(ProgramEnrollmentApplicationRepository applicationRepository,
                                                      ProgramEnrollmentRepository programEnrollmentRepository,
                                                      ProgramEnrollmentService programEnrollmentService,
-                                                     ProgramEnrollmentBillingSetup programEnrollmentBillingSetup) {
+                                                     ProgramAdmissionFeePort programAdmissionFeePort) {
         this.applicationRepository = applicationRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.programEnrollmentService = programEnrollmentService;
-        this.programEnrollmentBillingSetup = programEnrollmentBillingSetup;
+        this.programAdmissionFeePort = programAdmissionFeePort;
     }
 
     @ApplicationModuleListener
@@ -55,7 +55,7 @@ public class ProgramEnrollmentAdmissionPaymentListener {
             return;
         }
         ProgramEnrollment enrollment = programEnrollmentService.enrollApplicantAfterAdmissionPayment(application);
-        programEnrollmentBillingSetup.attachAdmissionFee(enrollment, admissionInvoiceId);
+        programAdmissionFeePort.attachAdmissionFee(enrollment.getId(), admissionInvoiceId);
         log.info("Inscripción a carrera confirmada por el pago de la matrícula de ingreso: solicitud={}, inscripcion={}, factura={}",
                 application.getId(), enrollment.getId(), admissionInvoiceId);
     }
