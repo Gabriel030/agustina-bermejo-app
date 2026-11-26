@@ -203,7 +203,7 @@ POST,/message-templates/render-preview,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DEN
 GET,/me/announcements,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/me/legal-acceptances,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/me/legal-acceptances/guardian-confirmation/resend,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
-POST,/me/announcements/{id}/read,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
+POST,/me/announcements/{id}/read,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,announcement-recipient,
 GET,/me/attendance-change-requests,DENY,DENY,ALLOW,DENY,DENY,DENY,DENY,DENY,,
 POST,/me/attendance/{id}/justify,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,attendance-student,
 GET,/me/avatar,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
