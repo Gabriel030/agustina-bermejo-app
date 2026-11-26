@@ -6,5 +6,5 @@ const ITEMS = menuItemsFor('director');
 
 export function DirectorLayout() {
   const items = useVisibleMenuItems('director', ITEMS);
-  return <RoleShell titulo="Director" items={items} groups={groupMenuItems('director', items)} />;
+  return <RoleShell titulo="Director" items={items} groups={groupMenuItems('director', items)} topNav />;
 }

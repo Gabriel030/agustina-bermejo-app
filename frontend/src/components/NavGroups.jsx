@@ -20,6 +20,21 @@ function ItemList({ items, startIndex, renderItem, ...listProps }) {
   );
 }
 
+function GroupItems({ group, startIndex, renderItem, ...listProps }) {
+  if (!group.sections) return <ItemList items={group.items} startIndex={startIndex} renderItem={renderItem} {...listProps} />;
+  const offsets = group.sections.reduce((acc, section, index) => [...acc, acc[index] + section.items.length], [startIndex]);
+  return (
+    <div role="group" className="flex flex-col gap-2" {...listProps}>
+      {group.sections.map((section, index) => (
+        <div key={section.id} className="flex flex-col gap-1">
+          <p className={cn(GROUP_HEADING, 'px-3 pt-1')}>{section.label}</p>
+          <ItemList items={section.items} startIndex={offsets[index]} renderItem={renderItem} aria-label={section.label} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function StaticGroup({ group, startIndex, renderItem }) {
   const headingId = useId();
   return (
@@ -27,7 +42,7 @@ function StaticGroup({ group, startIndex, renderItem }) {
       <p id={headingId} className={cn(GROUP_HEADING, 'px-3 pb-1 pt-1')}>
         {group.label}
       </p>
-      <ItemList items={group.items} startIndex={startIndex} renderItem={renderItem} aria-labelledby={headingId} />
+      <GroupItems group={group} startIndex={startIndex} renderItem={renderItem} aria-labelledby={headingId} />
     </div>
   );
 }
@@ -48,8 +63,8 @@ function CollapsibleGroup({ group, startIndex, renderItem, open, onToggle }) {
         {group.label}
         <ChevronDown aria-hidden="true" className={cn('h-4 w-4 transition-transform', open && 'rotate-180')} />
       </button>
-      <ItemList
-        items={group.items}
+      <GroupItems
+        group={group}
         startIndex={startIndex}
         renderItem={renderItem}
         id={listId}

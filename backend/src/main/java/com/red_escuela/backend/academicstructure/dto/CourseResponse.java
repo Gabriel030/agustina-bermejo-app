@@ -20,6 +20,8 @@ public class CourseResponse implements CatalogPriced<CourseResponse> {
     private final Integer durationMonths;
     private final String status;
     private final boolean visibleInCatalog;
+    private final String area;
+    private final LocalDateTime catalogPublishedAt;
     private final String teachingMode;
     private final LocalDateTime registrationStart;
     private final LocalDateTime registrationEnd;
@@ -58,6 +60,8 @@ public class CourseResponse implements CatalogPriced<CourseResponse> {
                 .durationMonths(course.getDurationMonths())
                 .status(course.getIsActive() == null ? null : course.getIsActive().name())
                 .visibleInCatalog(course.isVisibleInCatalog())
+                .area(course.getCatalogArea() == null ? null : course.getCatalogArea().name())
+                .catalogPublishedAt(course.getCatalogPublishedAt())
                 .teachingMode(course.getTeachingMode() == null ? null : course.getTeachingMode().name())
                 .registrationStart(course.getRegistrationStart())
                 .registrationEnd(course.getRegistrationEnd())

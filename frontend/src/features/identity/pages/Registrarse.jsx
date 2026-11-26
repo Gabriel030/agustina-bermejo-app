@@ -3,7 +3,6 @@ import { postLoginPathFor } from '@/lib/activeRole';
 import { Link, useNavigate } from 'react-router-dom';
 import { m } from 'motion/react';
 import { GlassCard } from '@/components/GlassCard';
-import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
@@ -116,8 +115,9 @@ export function Registrarse() {
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-8">
       <GlassCard className="w-full max-w-[480px] p-6 pb-7 sm:p-10 sm:pb-8">
-        <div className="mb-6">
-          <InstitutionBrand titulo="Creá tu cuenta" subtitulo="Registrate para solicitar una carrera o anotarte a un curso" />
+        <div className="mb-6 text-center">
+          <h1 className="font-heading text-lg font-bold tracking-tight text-ink">Creá tu cuenta</h1>
+          <p className="mt-0.5 text-sm text-ink-faint">Registrate para solicitar una carrera o anotarte a un curso</p>
         </div>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-3.5">

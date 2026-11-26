@@ -14,9 +14,10 @@ import com.red_escuela.backend.dataimport.importer.PrerequisiteImportDefinition;
 import com.red_escuela.backend.enrollment.api.ProgramProgressReader;
 import com.red_escuela.backend.enrollment.api.ProgramProgressView;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
+import com.red_escuela.backend.enrollment.api.CourseEnrollmentFinder;
+import com.red_escuela.backend.enrollment.api.ProgramEnrollmentFinder;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
 import org.junit.jupiter.api.Test;
@@ -124,8 +125,8 @@ class AlgorithmicComplexityBenchmarkTest {
     void b10_financialDashboardReader() {
         report("B10", "debtors and active students", 700, size -> {
             InvoiceRepository invoices = mock(InvoiceRepository.class, withSettings().stubOnly());
-            CourseEnrollmentRepository courses = mock(CourseEnrollmentRepository.class, withSettings().stubOnly());
-            ProgramEnrollmentRepository programs = mock(ProgramEnrollmentRepository.class, withSettings().stubOnly());
+            CourseEnrollmentFinder courses = mock(CourseEnrollmentFinder.class, withSettings().stubOnly());
+            ProgramEnrollmentFinder programs = mock(ProgramEnrollmentFinder.class, withSettings().stubOnly());
             Mockito.when(invoices.findStudentIdsByPaymentStatus(any())).thenReturn(LongStreamBoxed.range(size / 2));
             Mockito.when(courses.findDistinctStudentIdsByStatusIn(any())).thenReturn(LongStreamBoxed.range(size));
             Mockito.when(programs.findDistinctStudentIdsByStatusIn(any())).thenReturn(LongStreamBoxed.range(size));

@@ -19,6 +19,7 @@ import { signatoryDetail, signatoryList } from '@/test/fixtures/signatories';
 import { constanciasHandlers } from '@/test/mocks/constanciasHandlers';
 import { subjectEquivalenceHandlers } from '@/test/mocks/subjectEquivalenceHandlers';
 import { invitationWaveHandlers } from '@/test/mocks/invitationWaveHandlers';
+import { informativeSessionHandlers } from '@/test/mocks/informativeSessionHandlers';
 
 import { permissionCatalog, permissionDiscrepancy, permissionDiscrepancySummary, permissionGrid } from '@/test/fixtures/permissions';
 
@@ -680,4 +681,5 @@ export const handlers = [
   ...constanciasHandlers,
   ...subjectEquivalenceHandlers,
   ...invitationWaveHandlers,
+  ...informativeSessionHandlers,
 ];

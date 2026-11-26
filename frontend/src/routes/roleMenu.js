@@ -142,19 +142,70 @@ export function menuItemsFor(role) {
     .map(({ slug, to, label, icon }) => ({ to: to ?? `/${role}/${slug}`, label, icon }));
 }
 
+const administrativeGroups = [
+  { id: 'main', label: null, slugs: ['inicio'] },
+  { id: 'people', label: 'Personas', slugs: ['alumnos', 'personal', 'comunicaciones', 'invitaciones'] },
+  { id: 'enrollment', label: 'Inscripciones', slugs: ['solicitudes-de-ingreso', 'inscripciones/listas-de-espera'] },
+  {
+    id: 'academic',
+    label: 'Académico',
+    sections: [
+      { id: 'offering', label: 'Oferta y períodos', slugs: ['gestion-academica', 'periodos', 'feriados'] },
+      { id: 'coursework', label: 'Cursada', slugs: ['mesas-de-examen', 'cierres-de-comision', 'solicitudes-de-asistencia'] },
+      {
+        id: 'graduation',
+        label: 'Egresos y certificados',
+        slugs: ['egresos-por-verificar', 'egresos', 'plantilla-de-certificados', 'firmantes', 'constancias', 'constancias-por-excepcion'],
+      },
+    ],
+  },
+  {
+    id: 'billing',
+    label: 'Facturación',
+    slugs: ['facturacion', 'emision-mensual', 'recordatorios-de-pago', 'medios-de-pago', 'precios', 'descuentos', 'financiero'],
+  },
+  { id: 'approvals', label: null, slugs: ['aprobaciones'] },
+];
+
+const subdirectorGroups = [
+  ...administrativeGroups.map((group) =>
+    group.sections
+      ? {
+          ...group,
+          sections: group.sections.map((section) => ({
+            ...section,
+            slugs: section.slugs.filter((slug) => slug !== debtExceptionCertificates.slug),
+          })),
+        }
+      : group,
+  ),
+  { id: 'permissions', label: null, slugs: ['permisos'] },
+];
+
 const MENU_GROUPS = {
+  administrativo: administrativeGroups,
+  subdirector: subdirectorGroups,
+  alumno: [
+    { id: 'main', label: null, slugs: ['inicio'] },
+    { id: 'studies', label: 'Estudios', slugs: ['calendario', 'mis-cursos', 'mis-carreras', 'mis-certificados'] },
+    { id: 'payments', label: null, slugs: ['pagos'] },
+    { id: 'catalog', label: null, slugs: ['catalogo'] },
+    { id: 'account', label: null, slugs: ['opciones'] },
+  ],
   director: [
-    { id: 'main', label: null, slugs: ['inicio', 'aprobaciones'] },
+    { id: 'main', label: null, slugs: ['inicio'] },
     { id: 'people', label: 'Personas', slugs: ['alumnos', 'personal', 'comunicaciones', 'invitaciones'] },
     { id: 'enrollment', label: 'Inscripciones', slugs: ['inscripciones/listas-de-espera'] },
     {
       id: 'academic',
       label: 'Académico',
+      columns: 2,
       slugs: ['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'mesas-de-examen', 'cierres-de-comision', 'periodos', 'constancias', 'constancias-por-excepcion', 'egresos', 'plantilla-de-certificados', 'firmantes'],
     },
     {
       id: 'billing',
       label: 'Facturación',
+      columns: 2,
       slugs: [
         'facturacion',
         'descuentos',
@@ -167,24 +218,31 @@ const MENU_GROUPS = {
       ],
     },
     { id: 'institution', label: 'Institución', slugs: ['ajustes-del-instituto', 'importacion-inicial', 'auditoria', 'permisos', 'backups'] },
+    { id: 'approvals', label: null, slugs: ['aprobaciones'] },
   ],
 };
 
 export function menuGroupSlugs(role) {
-  return (MENU_GROUPS[role] ?? []).flatMap((group) => group.slugs);
+  return (MENU_GROUPS[role] ?? []).flatMap((group) => group.sections?.flatMap((section) => section.slugs) ?? group.slugs);
 }
 
 export function groupMenuItems(role, items) {
   const definitions = MENU_GROUPS[role];
   if (!definitions) return null;
   const prefix = `/${role}/`;
-  const slugOf = (item) => (item.to.startsWith(prefix) ? item.to.slice(prefix.length) : null);
+  const slugOf = (item) => (item.to.startsWith(prefix) ? item.to.slice(prefix.length) : item.to.replace(/^\//, ''));
   const known = new Set(menuGroupSlugs(role));
   return definitions
     .map((group, index) => {
-      const own = items.filter((item) => group.slugs.includes(slugOf(item)));
+      const pick = (slugs) => slugs.flatMap((slug) => items.filter((item) => slugOf(item) === slug));
       const unmapped = index === 0 ? items.filter((item) => !known.has(slugOf(item))) : [];
-      return { id: group.id, label: group.label, items: [...own, ...unmapped] };
+      if (group.sections) {
+        const sections = group.sections
+          .map((section) => ({ id: section.id, label: section.label, items: pick(section.slugs) }))
+          .filter((section) => section.items.length > 0);
+        return { id: group.id, label: group.label, columns: 1, sections, items: sections.flatMap((section) => section.items) };
+      }
+      return { id: group.id, label: group.label, columns: group.columns ?? 1, items: [...pick(group.slugs), ...unmapped] };
     })
     .filter((group) => group.items.length > 0);
 }

@@ -87,4 +87,23 @@ describe('RoleShell', () => {
     const heading = await screen.findByRole('heading', { name: 'Alumnos' });
     await waitFor(() => expect(heading).toHaveFocus());
   });
+  it('uses the side menu by default', () => {
+    renderShell();
+
+    expect(screen.queryByRole('navigation', { name: 'Principal' })).not.toBeInTheDocument();
+    expect(screen.getAllByRole('navigation').length).toBeGreaterThan(0);
+  });
+
+  it('replaces the side menu with the top bar when the role asks for it', () => {
+    const { container } = renderWithProviders(
+      <ThemeProvider>
+        <RoleShell titulo="Director" items={ITEMS} topNav />
+      </ThemeProvider>,
+      { route: '/director/inicio' },
+    );
+
+    expect(screen.getByRole('navigation', { name: 'Principal' })).toBeInTheDocument();
+    expect(container.firstChild).not.toHaveClass('lg:flex-row');
+    expect(screen.getByRole('button', { name: 'Abrir menú' })).toBeInTheDocument();
+  });
 });

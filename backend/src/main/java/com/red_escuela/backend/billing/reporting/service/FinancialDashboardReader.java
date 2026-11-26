@@ -6,8 +6,8 @@ import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
-import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
-import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
+import com.red_escuela.backend.enrollment.api.CourseEnrollmentFinder;
+import com.red_escuela.backend.enrollment.api.ProgramEnrollmentFinder;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Money;
 import org.springframework.stereotype.Component;
@@ -27,16 +27,16 @@ public class FinancialDashboardReader {
     private static final List<ProgramEnrollmentStatus> ACTIVE_PROGRAM_STATUSES = List.of(ProgramEnrollmentStatus.ENROLLED, ProgramEnrollmentStatus.PAUSED);
 
     private final InvoiceRepository invoiceRepository;
-    private final CourseEnrollmentRepository courseEnrollmentRepository;
-    private final ProgramEnrollmentRepository programEnrollmentRepository;
+    private final CourseEnrollmentFinder courseEnrollmentFinder;
+    private final ProgramEnrollmentFinder programEnrollmentFinder;
     private final Clock clock;
 
-    public FinancialDashboardReader(InvoiceRepository invoiceRepository, CourseEnrollmentRepository courseEnrollmentRepository,
-                                        ProgramEnrollmentRepository programEnrollmentRepository,
+    public FinancialDashboardReader(InvoiceRepository invoiceRepository, CourseEnrollmentFinder courseEnrollmentFinder,
+                                        ProgramEnrollmentFinder programEnrollmentFinder,
                                         Clock clock) {
         this.invoiceRepository = invoiceRepository;
-        this.courseEnrollmentRepository = courseEnrollmentRepository;
-        this.programEnrollmentRepository = programEnrollmentRepository;
+        this.courseEnrollmentFinder = courseEnrollmentFinder;
+        this.programEnrollmentFinder = programEnrollmentFinder;
         this.clock = clock;
     }
 
@@ -45,8 +45,8 @@ public class FinancialDashboardReader {
         Set<Long> debtorIds = new HashSet<>(invoiceRepository.findStudentIdsByPaymentStatus(InvoicePaymentStatus.OVERDUE));
         int studentsInDebt = debtorIds.size();
 
-        Set<Long> activeStudentIds = new HashSet<>(courseEnrollmentRepository.findDistinctStudentIdsByStatusIn(ACTIVE_COURSE_STATUSES));
-        activeStudentIds.addAll(programEnrollmentRepository.findDistinctStudentIdsByStatusIn(ACTIVE_PROGRAM_STATUSES));
+        Set<Long> activeStudentIds = new HashSet<>(courseEnrollmentFinder.findDistinctStudentIdsByStatusIn(ACTIVE_COURSE_STATUSES));
+        activeStudentIds.addAll(programEnrollmentFinder.findDistinctStudentIdsByStatusIn(ACTIVE_PROGRAM_STATUSES));
         activeStudentIds.removeAll(debtorIds);
         int studentsUpToDate = activeStudentIds.size();
 

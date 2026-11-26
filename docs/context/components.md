@@ -14,7 +14,8 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 | `PageContainer` [shared] | Envoltorio de toda pantalla de contenido (ancho máximo, gap); con `title`/`action` dibuja la cabecera (h1 + acción principal a la derecha) | `className`, `title`, `action` |
 | `GlassCard` [shared] | Superficie base (fondo `surface`, borde y sombra de card); base de casi todo bloque de contenido | `interactive` (clickeable: elevación + borde de marca), `className` |
 | `StickyActionBar` [shared] | Barra de acciones pegada abajo. En móvil (<768px) va a ancho completo, sin sombra y respeta la safe-area; es una región con `aria-label` (por defecto "Acciones de la página") y anuncia "Guardando…" | `summary`, `hint`, `children` (modo `row` por defecto: botones en fila y el estado en una línea; para pasos de flujo como Volver o Cancelar), `compact="menu"` con `primary` (props de `Button`, `loading`, `loadingLabel`) y `secondary` (`[{ key, label, icon, onSelect, disabled, destructive }]`): en móvil las secundarias van al menú «Más acciones» (para Descartar); en escritorio quedan como botones. `compactSummary`/`compactHint` (textos cortos visuales; el lector de pantalla sigue leyendo los completos), `busy`, `aria-label` |
-| `InstitutionBrand` [shared] | Marca de la institución en pantallas públicas | — |
+| `InstitutionBrand` [shared] | Marca de la institución (barra pública, TopNav, menú móvil) | — |
+| `PublicTopBar` [shared] | Barra mínima de las pantallas sin sesión: marca + «Iniciar sesión» / «Registrarse» según la ruta (tabla `ACTIONS_BY_PATH`); sin botones con sesión. La monta `PublicLayout` | — |
 | `layouts/*Layout` + `RoleShell` | Un layout por rol + el público (`PublicLayout`); se agregan a `ROLE_CONFIG` (`routes/roleConfig.js`) | — |
 
 ## 2. Navegación
@@ -22,6 +23,7 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 |---|---|---|
 | `Sidebar` [shared] | Nav lateral desktop, indicador deslizante | por rol |
 | `MobileMenu` [shared] | Drawer mobile con iconos | — |
+| `TopNavGridPanel` [shared] | Panel de grilla de un desplegable de `TopNav`: secciones con conteo a la izquierda, pantallas de la sección apuntada a la derecha; hover a 140 ms, clic fija/suelta | `title`, `sections: [{ id, label, items }]`, `menus` |
 | `TopHeader` [shared] | Cabecera con título, ítems, campana, tema | `titulo`, `items` |
 | `Breadcrumb` [shared] (+ hook `useBreadcrumb`) | Ruta jerárquica en pantallas de detalle | `items` |
 | `Tabs` `TabsList` `TabsTrigger` `TabsContent` [ui] | Pestañas de una pantalla | `TabsList variant="segmented"` (nunca `line`) |

@@ -60,6 +60,8 @@ Editar `deploy/.env`. Las que no se pueden dejar con el valor de ejemplo:
 | `BACKEND_BASE_URL` | `https://<dominio>/api` |
 | `POSTGRES_PASSWORD` | `openssl rand -base64 32 \| tr -d '/+='` |
 | `JWT_SECRET` | `openssl rand -base64 48 \| tr -d '\n'` |
+| `JWT_SECRET` (paso previo al release 24.4) | Antes de desplegar, verificar que el valor actual tenga al menos 32 caracteres y al menos 10 distintos (`printf %s "$JWT_SECRET" \| fold -w1 \| sort -u \| wc -l`). Si no, el backend no arranca y el log dice `jwt.secret debe tener al menos 10 caracteres distintos`; rotarlo con el procedimiento de `docs/security/secrets-rotation.md` |
+| `JWT_ACCEPT_MISSING_AUDIENCE` | Opcional, `true` por defecto. Acepta los access tokens emitidos antes de que existiera `aud` (duran 15 min). Dejarlo en `true` en el release 24.4 y pasarlo a `false` en el siguiente |
 | `BROADCAST_UNSUBSCRIBE_SECRET` | `openssl rand -base64 48 \| tr -d '\n'`, distinta de `JWT_SECRET`; sin ella el backend no arranca en prod ni en staging |
 | `BREVO_SMTP_USERNAME`, `BREVO_SMTP_KEY`, `MAIL_FROM_ADDRESS` | Los de Brevo |
 | `RESILIENCE_ENABLED` | Opcional. Circuit breakers y bulkheads de las integraciones externas; en `prod` y staging es `true` por defecto. Poner `false` solo para apagarlos ante un incidente. Límites en `docs/context/overload-protection.md` |
