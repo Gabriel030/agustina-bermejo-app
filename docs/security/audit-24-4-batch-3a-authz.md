@@ -30,3 +30,15 @@ No se encontró ningún hueco de ownership: no hay cambio de código de producci
 - `/me/course-enrollments/{id}/invoices`, `/me/program-enrollments/{id}/invoices`, `/me/exam-board-registrations/{id}/withdraw`, `/me/section-enrollments/{id}/change-section`: alumno `ALLOW` sin fila `ownership`.
 - A7: `POST /attendance/{id}/justify` y `/announcements/{id}` (seguimiento E24 ya declarado).
 - La columna `PLATFORM_ADMIN` figura en todas las filas revisadas y `AuthorizationMatrixTest` (5336 casos) pasa.
+
+## Lote 3a-2 (rama apilada sobre #1577)
+
+| endpoint | chequeo en código | resultado |
+|---|---|---|
+| `GET /me/course-enrollments/{id}/invoices` | `OwnCourseEnrollmentBillingStatusReader` (dueño, si no `NotOwnEnrollmentException` 404) | verificado, sin cambio; fila `ownership` `course-enrollment` |
+| `GET /me/program-enrollments/{id}/invoices` | `OwnProgramEnrollmentBillingStatusReader` | verificado, sin cambio; fila `program-enrollment` |
+| `POST /me/section-enrollments/{id}/change-section` | cambio de comisión del alumno | verificado, sin cambio; fila `section-enrollment` |
+
+Sabotaje: sin el chequeo de dueño en `OwnCourseEnrollmentBillingStatusReader`, `AuthorizationMatrixOwnershipTest` falla en `GET /me/course-enrollments/{id}/invoices`.
+
+Sigue pendiente (requiere tipos nuevos en `OwnershipKind` y fixtures): `POST /grade-items/{id}/recovery`, `/me/section-evaluation-configs/{sectionId}`, `POST /me/exam-board-registrations/{id}/withdraw`.
