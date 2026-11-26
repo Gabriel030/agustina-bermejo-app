@@ -31,6 +31,7 @@ import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.announcement.entity.Announcement;
 import com.red_escuela.backend.announcement.entity.AnnouncementCategory;
+import com.red_escuela.backend.announcement.entity.AnnouncementRecipient;
 import com.red_escuela.backend.announcement.entity.AnnouncementStatus;
 import com.red_escuela.backend.announcement.entity.AudienceSpec;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequest;
@@ -92,6 +93,7 @@ final class OwnershipFixtures {
     private Long attendanceId;
     private Long announcementId;
     private Long announcementToDeleteId;
+    private Long announcementToReadId;
     private Long annualUpfrontRequestId;
     private Long instructorPersonId;
     private Long examBoardId;
@@ -145,6 +147,7 @@ final class OwnershipFixtures {
             case ANNOUNCEMENT_INSTRUCTOR -> announcementId;
             case ANNOUNCEMENT_DELETE_INSTRUCTOR -> announcementToDeleteId;
             case CERTIFICATE_EXCEPTION -> certificateExceptionId;
+            case ANNOUNCEMENT_RECIPIENT -> announcementToReadId;
         };
     }
 
@@ -294,6 +297,8 @@ final class OwnershipFixtures {
         authorizationRequestId = persistAuthorizationRequest(ownerAdministrativePerson);
         announcementId = persistAnnouncement(section, instructorPerson);
         announcementToDeleteId = persistAnnouncement(section, instructorPerson);
+        announcementToReadId = persistAnnouncement(section, instructorPerson);
+        persistAnnouncementRecipient(announcementToReadId, ownerStudent);
         certificateExceptionId = persistCertificateException(ownerAdministrativePerson, ownerStudent, programEnrollment);
         courseSectionEnrollmentId = persistCourseSectionEnrollment(ownerStudent, term, instructor);
         annualUpfrontRequestId = persistAnnualUpfrontRequestAwaitingPayment(ownerStudent, ownerPerson, programEnrollment, term);
@@ -547,6 +552,15 @@ final class OwnershipFixtures {
         entityManager.persist(announcement);
         entityManager.flush();
         return announcement.getId();
+    }
+
+    private void persistAnnouncementRecipient(Long announcementId, Student student) {
+        AnnouncementRecipient recipient = AnnouncementRecipient.builder()
+                .announcement(entityManager.getReference(Announcement.class, announcementId))
+                .student(student)
+                .build();
+        entityManager.persist(recipient);
+        entityManager.flush();
     }
 
     private Long persistNotification(Person recipient) {
