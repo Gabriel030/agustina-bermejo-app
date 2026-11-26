@@ -5393,7 +5393,7 @@
             "type" : "string"
           },
           "level" : {
-            "enum" : [ "UNDERGRADUATE", "GRADUATE", "EXTENSION", "DIPLOMA" ],
+            "enum" : [ "UNDERGRADUATE", "BACHELOR", "GRADUATE", "EXTENSION", "DIPLOMA" ],
             "type" : "string"
           },
           "name" : {
@@ -17938,7 +17938,7 @@
             "type" : [ "string", "null" ]
           },
           "level" : {
-            "enum" : [ "UNDERGRADUATE", "GRADUATE", "EXTENSION", "DIPLOMA", null ],
+            "enum" : [ "UNDERGRADUATE", "BACHELOR", "GRADUATE", "EXTENSION", "DIPLOMA", null ],
             "type" : [ "string", "null" ]
           },
           "name" : {
@@ -88063,6 +88063,14 @@
           "required" : false,
           "schema" : {
             "enum" : [ "BUSINESS_ADMINISTRATION", "TECHNOLOGY", "DESIGN", "HEALTH", "SOCIAL_SCIENCES", "LANGUAGES_AND_COMMUNICATION" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "level",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "UNDERGRADUATE", "BACHELOR", "GRADUATE", "EXTENSION", "DIPLOMA" ],
             "type" : "string"
           }
         } ],

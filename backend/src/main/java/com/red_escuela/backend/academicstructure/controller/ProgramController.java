@@ -5,6 +5,7 @@ import com.red_escuela.backend.academicstructure.dto.ProgramPricingResponse;
 import com.red_escuela.backend.academicstructure.dto.ProgramResponse;
 import com.red_escuela.backend.academicstructure.dto.SetCatalogVisibilityRequest;
 import com.red_escuela.backend.academicstructure.entity.CatalogArea;
+import com.red_escuela.backend.academicstructure.entity.ProgramLevel;
 import com.red_escuela.backend.academicstructure.usecase.SetCatalogVisibilityCommand;
 import com.red_escuela.backend.academicstructure.dto.UpdateProgramRequest;
 import com.red_escuela.backend.academicstructure.service.ProgramService;
@@ -71,8 +72,9 @@ public class ProgramController {
     @GetMapping
     public List<ProgramResponse> list(@RequestParam(required = false) StatusType status,
             @RequestParam(required = false) Boolean visibleInCatalog,
-            @RequestParam(required = false) CatalogArea area) {
-        return programService.list(status, visibleInCatalog, area).stream().map(ProgramResponse::from).toList();
+            @RequestParam(required = false) CatalogArea area,
+            @RequestParam(required = false) ProgramLevel level) {
+        return programService.list(status, visibleInCatalog, area, level).stream().map(ProgramResponse::from).toList();
     }
 
     @PutMapping("/{id}/catalog-visibility")

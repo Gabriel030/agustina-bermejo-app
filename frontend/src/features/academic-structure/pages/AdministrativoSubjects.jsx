@@ -50,6 +50,7 @@ const GRADE_MODE_LABELS = {
 
 const LEVEL_LABELS = {
   UNDERGRADUATE: 'Pregrado',
+  BACHELOR: 'De grado',
   GRADUATE: 'Posgrado',
   EXTENSION: 'Extensión',
   DIPLOMA: 'Diplomatura',

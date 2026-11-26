@@ -304,7 +304,7 @@ begin
       ('price_version_status_change', 'from_status', array['CANCELLED', 'EFFECTIVE', 'EXPIRED', 'PROPOSED', 'REJECTED', 'SCHEDULED', 'SUPERSEDED', 'WITHDRAWN']),
       ('price_version_status_change', 'to_status', array['CANCELLED', 'EFFECTIVE', 'EXPIRED', 'PROPOSED', 'REJECTED', 'SCHEDULED', 'SUPERSEDED', 'WITHDRAWN']),
       ('program', 'catalog_area', array['BUSINESS_ADMINISTRATION', 'DESIGN', 'HEALTH', 'LANGUAGES_AND_COMMUNICATION', 'SOCIAL_SCIENCES', 'TECHNOLOGY']),
-      ('program', 'level', array['DIPLOMA', 'EXTENSION', 'GRADUATE', 'UNDERGRADUATE']),
+      ('program', 'level', array['BACHELOR', 'DIPLOMA', 'EXTENSION', 'GRADUATE', 'UNDERGRADUATE']),
       ('program', 'status', array['ACTIVE', 'DELETED', 'INACTIVE']),
       ('program', 'teaching_mode', array['HYBRID', 'IN_PERSON', 'ONLINE']),
       ('program_cohort', 'intake', array['FIRST', 'SECOND']),

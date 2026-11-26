@@ -258,4 +258,20 @@ class ProgramServiceIT extends AbstractIntegrationTest {
                 .contains(technology.getId())
                 .doesNotContain(design.getId(), withoutArea.getId());
     }
+
+    @Test
+    void listingFiltersByBachelorLevelAndKeepsUndergraduateSeparate() {
+        Program bachelor = createProgram("AAD de grado");
+        bachelor.setLevel(ProgramLevel.BACHELOR);
+        Program undergraduate = createProgram("AAE pregrado");
+        undergraduate.setLevel(ProgramLevel.UNDERGRADUATE);
+        entityManager.flush();
+        entityManager.clear();
+
+        List<Program> onlyBachelor = programService.list(null, null, null, ProgramLevel.BACHELOR);
+
+        assertThat(onlyBachelor).extracting(Program::getId)
+                .contains(bachelor.getId())
+                .doesNotContain(undergraduate.getId());
+    }
 }
