@@ -41,4 +41,16 @@ No se encontró ningún hueco de ownership: no hay cambio de código de producci
 
 Sabotaje: sin el chequeo de dueño en `OwnCourseEnrollmentBillingStatusReader`, `AuthorizationMatrixOwnershipTest` falla en `GET /me/course-enrollments/{id}/invoices`.
 
-Sigue pendiente (requiere tipos nuevos en `OwnershipKind` y fixtures): `POST /grade-items/{id}/recovery`, `/me/section-evaluation-configs/{sectionId}`, `POST /me/exam-board-registrations/{id}/withdraw`.
+## Lote 3a-3 (rama apilada sobre #1581)
+
+Tipos nuevos en `OwnershipKind` (`grade-item-instructor`, `exam-board-registration`) y fixtures (nota de examen, inscripción abierta a una mesa y configuración de evaluación en borrador).
+
+| endpoint | chequeo en código | resultado |
+|---|---|---|
+| `POST /grade-items/{id}/recovery` | `ExamRecoveryRecorder.requireTeaches` | verificado, sin cambio; fila `grade-item-instructor` |
+| `GET/PUT /me/section-evaluation-configs/{sectionId}`, `POST .../submit` | `SectionEvaluationConfigInstructorAccessChecker.requireAssignedToSection` | verificado, sin cambio; filas `section-instructor` |
+| `POST /me/exam-board-registrations/{id}/withdraw` | dueño en `MeExamBoardRegistrationController.withdraw` | verificado, sin cambio; fila `exam-board-registration` |
+
+Sabotaje: sin los tres chequeos, `AuthorizationMatrixOwnershipTest` falla en los cinco casos nuevos.
+
+Con este lote, 3a queda cerrado. Los pendientes de A7 (`POST /attendance/{id}/justify`, `/announcements/{id}`) siguen como seguimiento declarado.
