@@ -1,6 +1,8 @@
 package com.red_escuela.backend.billing.operation;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 public record PendingTransferApprovalOutcome(Long paymentId, List<Long> receiptItemInvoiceIds, List<Long> settledInvoiceIds, List<Long> invoicesReleasedFromReview) {
 
@@ -11,6 +13,7 @@ public record PendingTransferApprovalOutcome(Long paymentId, List<Long> receiptI
     }
 
     public boolean settledAnInvoiceOutsideTheReceipt() {
-        return settledInvoiceIds.stream().anyMatch(invoiceId -> !receiptItemInvoiceIds.contains(invoiceId));
+        Set<Long> receiptInvoiceIds = new HashSet<>(receiptItemInvoiceIds);
+        return settledInvoiceIds.stream().anyMatch(invoiceId -> !receiptInvoiceIds.contains(invoiceId));
     }
 }
