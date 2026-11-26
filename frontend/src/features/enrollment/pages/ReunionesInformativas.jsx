@@ -4,7 +4,7 @@ import { LoadErrorState } from '@/components/LoadErrorState';
 import { PageContainer } from '@/components/PageContainer';
 import { Skeleton } from '@/components/Skeleton';
 import { InformativeSessionCard } from '@/features/enrollment/components/InformativeSessionCard';
-import { useCatalogPrograms } from '@/features/enrollment/hooks/useCatalogo';
+import { useCatalogPrograms } from '@/hooks/useCatalogo';
 import { useInformativeSessions } from '@/features/enrollment/hooks/useInformativeSessions';
 
 const GRID = 'grid grid-cols-1 gap-3 md:grid-cols-2';

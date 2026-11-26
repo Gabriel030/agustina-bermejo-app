@@ -165,7 +165,7 @@ describe('flujo de registro end-to-end', { timeout: E2E_FLOW_TIMEOUT_MS }, () =>
     await registrarse(user);
 
     // Catálogo → click en la card → Detalle de carrera
-    await user.click(await screen.findByText('Diseño Gráfico'));
+    await user.click(await screen.findByRole('link', { name: 'Ver detalle de Diseño Gráfico' }));
     await user.click(await screen.findByRole('button', { name: 'Inscribirme' }));
 
     // Página de inscripción (no modal): cohorte → documentación → confirmar (D-227: la matrícula se factura al aprobar)
@@ -198,8 +198,8 @@ describe('flujo de registro end-to-end', { timeout: E2E_FLOW_TIMEOUT_MS }, () =>
     }
     await user.click(screen.getByRole('button', { name: 'Ir a mis solicitudes' }));
 
-    // Revisar la tab Mis solicitudes
-    await user.click(await screen.findByRole('tab', { name: 'Mis solicitudes' }));
+    // Revisar Mis solicitudes
+    expect(await screen.findByRole('heading', { name: 'Mis solicitudes' })).toBeInTheDocument();
 
     expect(await screen.findByText('Diseño Gráfico')).toBeInTheDocument();
     expect(screen.getByText('En revisión')).toBeInTheDocument();
