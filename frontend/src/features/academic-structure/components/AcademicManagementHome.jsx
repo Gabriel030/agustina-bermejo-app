@@ -21,9 +21,9 @@ const EVENT_PRESENTATION = {
   CLASSES_START: { label: 'Inicio de cursada', tone: 'accent' },
 };
 
-function SectionHeading({ id, children }) {
+function SectionHeading({ id, className = '', children }) {
   return (
-    <h2 id={id} className="font-heading text-size-15 font-semibold text-ink">
+    <h2 id={id} className={`font-heading text-size-15 font-semibold text-ink ${className}`}>
       {children}
     </h2>
   );
@@ -256,7 +256,7 @@ function QuickActionsPanel({ summary, onNewCohort, onViewAllPublished }) {
           Nueva cohorte
         </Button>
       </div>
-      <SectionHeading id="management-home-recent">Carreras publicadas recientemente</SectionHeading>
+      <SectionHeading id="management-home-recent" className="mt-2">Carreras publicadas recientemente</SectionHeading>
       <RecentPublishedPrograms programs={summary.recentPublishedPrograms} onViewAll={onViewAllPublished} />
     </GlassCard>
   );
