@@ -504,6 +504,7 @@ export const handlers = [
   ),
   http.get(`${API}/programs/:id/subjects`, () => HttpResponse.json([])),
   http.get(`${API}/courses`, () => HttpResponse.json([])),
+  http.get(`${API}/informative-sessions`, () => HttpResponse.json([])),
   http.get(`${API}/courses/:id`, ({ params }) =>
     HttpResponse.json({ id: Number(params.id), name: 'Curso de prueba', durationMonths: 3, registrationOpen: true, full: false }),
   ),

@@ -1,56 +1,68 @@
-import { useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
+import { Breadcrumb } from '@/components/Breadcrumb';
 import { PageContainer } from '@/components/PageContainer';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { TabCarreras } from '@/features/enrollment/components/TabCarreras';
-import { TabCursos } from '@/features/enrollment/components/TabCursos';
+import { Button } from '@/components/ui/button';
+import { NextInformativeSessionStrip } from '@/features/enrollment/components/NextInformativeSessionStrip';
+import { OfferingResults } from '@/features/enrollment/components/OfferingResults';
 import { TabMisSolicitudes } from '@/features/enrollment/components/TabMisSolicitudes';
-import { CATALOG_TABS } from '@/lib/catalog';
+import { useCatalogOffering, useProgramAdmissionBadges } from '@/features/enrollment/hooks/useCatalogOffering';
+import {
+  CATALOG_PATH,
+  describeOfferingView,
+  filterOfferingByQuery,
+  hasOfferingFilters,
+  parseOfferingFilters,
+} from '@/features/enrollment/lib/catalogOffering';
 
-// Épica 7 Fase 3: reemplaza el Catálogo de acción-directa de la Fase 2 por un
-// shell de 3 tabs (Strategy, ver spec técnica) — Carreras/Cursos ahora llevan a
-// un Detalle con wizard de inscripción en vez de disparar la acción al toque;
-// Mis solicitudes se integra acá, deja de ser un ítem de sidebar aparte.
-// Tab/búsqueda/página viven en la URL (?tab=&search=&page=) para que sea
-// recargable/compartible sin perder el estado.
-export function Catalogo() {
-  const [searchParams, setSearchParams] = useSearchParams();
-  const requestedTab = searchParams.get('tab');
-  const tab = CATALOG_TABS.includes(requestedTab) ? requestedTab : 'carreras';
-  const search = searchParams.get('search') ?? '';
-  const page = Number(searchParams.get('page') ?? '1');
+const MY_APPLICATIONS_TAB = 'mis-solicitudes';
 
-  function cambiarTab(nuevoTab) {
-    setSearchParams({ tab: nuevoTab });
-  }
+function MyApplicationsView() {
+  return (
+    <PageContainer>
+      <Breadcrumb items={[{ label: 'Oferta académica', to: CATALOG_PATH }, { label: 'Mis solicitudes' }]} />
+      <h1 className="font-heading text-2xl font-bold tracking-tight text-ink">Mis solicitudes</h1>
+      <TabMisSolicitudes />
+    </PageContainer>
+  );
+}
 
-  function cambiarSearch(nuevoSearch) {
-    setSearchParams({ tab, search: nuevoSearch, page: '1' });
-  }
-
-  function cambiarPage(nuevaPage) {
-    setSearchParams({ tab, search, page: String(nuevaPage) });
-  }
+function OfferingView({ filters }) {
+  const offering = useCatalogOffering(filters);
+  const items = filterOfferingByQuery(offering.items, filters.q);
+  const badges = useProgramAdmissionBadges(items);
+  const filtered = hasOfferingFilters(filters);
+  const { title, crumbs } = describeOfferingView(filters);
+  let status = 'ready';
+  if (offering.isLoading) status = 'loading';
+  else if (offering.isError) status = 'error';
 
   return (
     <PageContainer>
-      <div>
-        <div className="font-heading text-2xl font-bold tracking-tight text-ink">Catálogo</div>
-        <div className="mt-1 text-sm text-ink-faint">
-          Elegí una carrera o un curso para ver el detalle e inscribirte.
+      {filtered && <Breadcrumb items={crumbs} />}
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex min-w-0 flex-col gap-1">
+          <h1 className="font-heading text-2xl font-bold tracking-tight text-ink">{title}</h1>
+          {!filtered && <p className="text-sm text-ink-soft">Elegí una carrera o un curso para ver el detalle e inscribirte.</p>}
         </div>
+        <Button asChild variant="outline" className="min-h-11 sm:min-h-9">
+          <Link to={`${CATALOG_PATH}?tab=${MY_APPLICATIONS_TAB}`}>Mis solicitudes</Link>
+        </Button>
       </div>
-
-      <Tabs value={tab} onValueChange={cambiarTab}>
-        <TabsList variant="segmented">
-          <TabsTrigger value="carreras">Carreras</TabsTrigger>
-          <TabsTrigger value="cursos">Cursos</TabsTrigger>
-          <TabsTrigger value="mis-solicitudes">Mis solicitudes</TabsTrigger>
-        </TabsList>
-      </Tabs>
-
-      {tab === 'carreras' && <TabCarreras search={search} onSearchChange={cambiarSearch} page={page || 1} onPageChange={cambiarPage} />}
-      {tab === 'cursos' && <TabCursos search={search} onSearchChange={cambiarSearch} page={page || 1} onPageChange={cambiarPage} />}
-      {tab === 'mis-solicitudes' && <TabMisSolicitudes />}
+      {!filtered && status === 'ready' && <NextInformativeSessionStrip />}
+      <OfferingResults
+        status={status}
+        items={items}
+        badges={badges}
+        filtered={filtered}
+        error={offering.error}
+        onRetry={offering.refetch}
+      />
     </PageContainer>
   );
+}
+
+export function Catalogo() {
+  const [searchParams] = useSearchParams();
+  if (searchParams.get('tab') === MY_APPLICATIONS_TAB) return <MyApplicationsView />;
+  return <OfferingView filters={parseOfferingFilters(searchParams)} />;
 }
