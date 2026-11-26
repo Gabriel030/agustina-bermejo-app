@@ -5,6 +5,7 @@ import org.springframework.modulith.NamedInterface;
 @NamedInterface("model")
 public enum ProgramLevel {
     UNDERGRADUATE,
+    BACHELOR,
     GRADUATE,
     EXTENSION,
     DIPLOMA

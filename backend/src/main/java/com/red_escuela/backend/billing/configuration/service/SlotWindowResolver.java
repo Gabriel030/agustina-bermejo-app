@@ -1,8 +1,8 @@
 package com.red_escuela.backend.billing.configuration.service;
 
+import com.red_escuela.backend.academicstructure.api.AcademicReferenceFinder;
 import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.billing.planning.domain.SlotWindow;
 import com.red_escuela.backend.billing.planning.domain.YearCycle;
 import org.springframework.stereotype.Component;
@@ -15,17 +15,17 @@ import java.util.Set;
 
 @Component
 public class SlotWindowResolver {
-    private final TermRepository termRepository;
+    private final AcademicReferenceFinder academicReferenceFinder;
     private final BillingConfigurationReader configurationReader;
 
-    public SlotWindowResolver(TermRepository termRepository, BillingConfigurationReader configurationReader) {
-        this.termRepository = termRepository;
+    public SlotWindowResolver(AcademicReferenceFinder academicReferenceFinder, BillingConfigurationReader configurationReader) {
+        this.academicReferenceFinder = academicReferenceFinder;
         this.configurationReader = configurationReader;
     }
 
     public Optional<SlotWindow> windowOf(Long programId, YearCycle cycle, int slot, LocalDate today) {
         Set<TermType> irregularTypes = Set.copyOf(configurationReader.irregularTermTypesEffectiveOn(today).types());
-        return windowOfAmong(regularTerms(termRepository.findTermsOfProgram(programId), irregularTypes), cycle, slot);
+        return windowOfAmong(regularTerms(academicReferenceFinder.findTermsOfProgram(programId), irregularTypes), cycle, slot);
     }
 
     public static List<Term> regularTerms(List<Term> programTerms, Set<TermType> irregularTypes) {

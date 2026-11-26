@@ -30,3 +30,27 @@ No se encontró ningún hueco de ownership: no hay cambio de código de producci
 - `/me/course-enrollments/{id}/invoices`, `/me/program-enrollments/{id}/invoices`, `/me/exam-board-registrations/{id}/withdraw`, `/me/section-enrollments/{id}/change-section`: alumno `ALLOW` sin fila `ownership`.
 - A7: `POST /attendance/{id}/justify` y `/announcements/{id}` (seguimiento E24 ya declarado).
 - La columna `PLATFORM_ADMIN` figura en todas las filas revisadas y `AuthorizationMatrixTest` (5336 casos) pasa.
+
+## Lote 3a-2 (rama apilada sobre #1577)
+
+| endpoint | chequeo en código | resultado |
+|---|---|---|
+| `GET /me/course-enrollments/{id}/invoices` | `OwnCourseEnrollmentBillingStatusReader` (dueño, si no `NotOwnEnrollmentException` 404) | verificado, sin cambio; fila `ownership` `course-enrollment` |
+| `GET /me/program-enrollments/{id}/invoices` | `OwnProgramEnrollmentBillingStatusReader` | verificado, sin cambio; fila `program-enrollment` |
+| `POST /me/section-enrollments/{id}/change-section` | cambio de comisión del alumno | verificado, sin cambio; fila `section-enrollment` |
+
+Sabotaje: sin el chequeo de dueño en `OwnCourseEnrollmentBillingStatusReader`, `AuthorizationMatrixOwnershipTest` falla en `GET /me/course-enrollments/{id}/invoices`.
+
+## Lote 3a-3 (rama apilada sobre #1581)
+
+Tipos nuevos en `OwnershipKind` (`grade-item-instructor`, `exam-board-registration`) y fixtures (nota de examen, inscripción abierta a una mesa y configuración de evaluación en borrador).
+
+| endpoint | chequeo en código | resultado |
+|---|---|---|
+| `POST /grade-items/{id}/recovery` | `ExamRecoveryRecorder.requireTeaches` | verificado, sin cambio; fila `grade-item-instructor` |
+| `GET/PUT /me/section-evaluation-configs/{sectionId}`, `POST .../submit` | `SectionEvaluationConfigInstructorAccessChecker.requireAssignedToSection` | verificado, sin cambio; filas `section-instructor` |
+| `POST /me/exam-board-registrations/{id}/withdraw` | dueño en `MeExamBoardRegistrationController.withdraw` | verificado, sin cambio; fila `exam-board-registration` |
+
+Sabotaje: sin los tres chequeos, `AuthorizationMatrixOwnershipTest` falla en los cinco casos nuevos.
+
+Con este lote, 3a queda cerrado. Los pendientes de A7 (`POST /attendance/{id}/justify`, `/announcements/{id}`) siguen como seguimiento declarado.

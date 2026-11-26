@@ -1,6 +1,7 @@
 package com.red_escuela.backend.academicstructure.usecase;
 
 import com.red_escuela.backend.academicstructure.dto.CourseResponse;
+import com.red_escuela.backend.academicstructure.entity.CatalogArea;
 import com.red_escuela.backend.shared.domain.StatusType;
 import java.util.List;
 import com.red_escuela.backend.academicstructure.service.CourseService;
@@ -16,7 +17,7 @@ public class ListCoursesService implements ListCoursesUseCase {
     }
 
     @Override
-    public List<CourseResponse> execute(StatusType status, Boolean visibleInCatalog) {
-        return courseService.list(status, visibleInCatalog).stream().map(CourseResponse::from).toList();
+    public List<CourseResponse> execute(StatusType status, Boolean visibleInCatalog, CatalogArea area) {
+        return courseService.list(status, visibleInCatalog, area).stream().map(CourseResponse::from).toList();
     }
 }

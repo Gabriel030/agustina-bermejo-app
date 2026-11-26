@@ -37,6 +37,9 @@ import com.red_escuela.backend.announcement.entity.AudienceSpec;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequest;
 import com.red_escuela.backend.billing.operation.AuthorizationRole;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
+import com.red_escuela.backend.evaluation.entity.GradeItem;
+import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
+import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfigStatus;
 import com.red_escuela.backend.evaluation.entity.GradeItemType;
 import com.red_escuela.backend.evaluation.entity.SectionGradeItemPublication;
 import java.time.Instant;
@@ -97,6 +100,8 @@ final class OwnershipFixtures {
     private Long annualUpfrontRequestId;
     private Long instructorPersonId;
     private Long examBoardId;
+    private Long gradeItemId;
+    private Long examBoardRegistrationId;
     private Long examCertificateId;
     private Long invoiceId;
     private Long notificationId;
@@ -147,6 +152,8 @@ final class OwnershipFixtures {
             case ANNOUNCEMENT_INSTRUCTOR -> announcementId;
             case ANNOUNCEMENT_DELETE_INSTRUCTOR -> announcementToDeleteId;
             case CERTIFICATE_EXCEPTION -> certificateExceptionId;
+            case GRADE_ITEM_INSTRUCTOR -> gradeItemId;
+            case EXAM_BOARD_REGISTRATION -> examBoardRegistrationId;
             case ANNOUNCEMENT_RECIPIENT -> announcementToReadId;
         };
     }
@@ -285,6 +292,12 @@ final class OwnershipFixtures {
         entityManager.flush();
         attendanceId = absence.getId();
         examBoardId = persistExamBoard(subject, term, instructor);
+        SectionEvaluationConfig evaluationConfig = new SectionEvaluationConfig();
+        evaluationConfig.setSubjectSection(section);
+        evaluationConfig.setStatus(SectionEvaluationConfigStatus.DRAFT);
+        entityManager.persist(evaluationConfig);
+        gradeItemId = persistExamGradeItem(enrollment);
+        examBoardRegistrationId = persistOpenExamBoardRegistration(subject, term, instructor, enrollment);
         examCertificateId = persistExamCertificate(examBoardId, enrollment, ownerStudent, ownerPerson);
         closureSectionId = persistClosureSection(subject, term, scheme, instructor);
         closureId = persistClosure(closureSectionId);
@@ -334,6 +347,31 @@ final class OwnershipFixtures {
         entityManager.persist(board);
         entityManager.flush();
         return board.getId();
+    }
+
+    private Long persistExamGradeItem(SubjectSectionEnrollment enrollment) {
+        GradeItem item = new GradeItem();
+        item.setProgramSubjectSectionEnrollment(enrollment);
+        item.setType(GradeItemType.EXAM);
+        item.setSequenceNumber(1);
+        item.setWeight(1.0);
+        item.setDate(LocalDateTime.now());
+        item.setScore(Grade.of(BigDecimal.valueOf(3.0)));
+        entityManager.persist(item);
+        entityManager.flush();
+        return item.getId();
+    }
+
+    private Long persistOpenExamBoardRegistration(Subject subject, Term term, Instructor tribunalMember, SubjectSectionEnrollment enrollment) {
+        Long boardId = persistExamBoard(subject, term, tribunalMember);
+        ExamBoardRegistration registration = new ExamBoardRegistration();
+        registration.setExamBoard(entityManager.getReference(ExamBoard.class, boardId));
+        registration.setProgramSubjectSectionEnrollment(enrollment);
+        registration.setStatus(ExamBoardRegistrationStatus.REGISTERED);
+        registration.setRegisteredAt(LocalDateTime.now());
+        entityManager.persist(registration);
+        entityManager.flush();
+        return registration.getId();
     }
 
     private Long persistExamCertificate(Long boardId, SubjectSectionEnrollment enrollment, Student student, Person issuer) {
