@@ -81,7 +81,7 @@ class RetiredRegularCertificateRouteIntegrationTest extends AbstractIntegrationT
 
     @Test
     void siblingCertificateRouteIsReachableForTheSameOwnerAndEnrollment() throws Exception {
-        int httpStatus = mockMvc.perform(get("/me/program-enrollments/" + enrollmentId + "/certificates/approved-subjects")
+        int httpStatus = mockMvc.perform(get("/me/program-enrollments/" + enrollmentId + "/enrollment-fee-status")
                         .header("Authorization", "Bearer " + studentToken))
                 .andReturn().getResponse().getStatus();
 

@@ -316,6 +316,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `HOLIDAY_NOT_FOUND` | no | `HolidayNotFoundException` | academicstructure |
 | `IMPORT_BATCH_NOT_FOUND` | no | `ImportBatchNotFoundException` | dataimport |
 | `IMPORT_INSTITUTION_NOT_FOUND` | no | `ImportInstitutionNotFoundException` | dataimport |
+| `INFORMATIVE_SESSION_NOT_FOUND` | no | `InformativeSessionNotFoundException` | enrollment |
 | `INSTITUTION_NOT_FOUND` | no | `InstitutionNotFoundException` | identity |
 | `INSTRUCTOR_NOT_FOUND` | no | `InstructorNotFoundException` | academicstructure |
 | `INVALID_UNSUBSCRIBE_TOKEN` | no | `InvalidUnsubscribeTokenException` | notification |
@@ -385,6 +386,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ALREADY_ENROLLED_IN_PROGRAM` | no | `AlreadyEnrolledInProgramException` | enrollment |
 | `ALREADY_ENROLLED_IN_SUBJECT` | no | `AlreadyEnrolledInSubjectException` | enrollment |
 | `ALREADY_HAS_PENDING_APPLICATION` | no | `AlreadyHasPendingApplicationException` | enrollment |
+| `ALREADY_REGISTERED_FOR_INFORMATIVE_SESSION` | no | `AlreadyRegisteredForInformativeSessionException` | enrollment |
 | `ALREADY_REGISTERED_IN_ANOTHER_EXAM_BOARD` | no | `AlreadyRegisteredInAnotherExamBoardException` | evaluation |
 | `ALREADY_REGISTERED_IN_EXAM_BOARD` | no | `AlreadyRegisteredInExamBoardException` | evaluation |
 | `ANNOUNCEMENT_ALREADY_SENT` | no | `AnnouncementAlreadySentException` | announcement |
@@ -640,6 +642,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SECTION_SCHEDULE_CONFLICT` | no | `SectionScheduleConflictException` | academicstructure |
 | `SECTION_SCHEDULE_OVERLAP` | no | `SectionScheduleOverlapException` | enrollment |
 | `SEGMENT_NOT_AVAILABLE` | no | `SegmentNotAvailableException` | notification |
+| `SESSION_FULL` | no | `SessionFullException` | enrollment |
 | `SIGNATORY_INACTIVE` | no | `SignatoryInactiveException` | graduation |
 | `SIGNATORY_NOT_ALLOWED_FOR_DOCUMENT_TYPE` | no | `SignatoryNotAllowedForDocumentTypeException` | graduation |
 | `STAFF_PASSWORD_RESET_BLOCKED` | no | `StaffPasswordResetBlockedException` | identity |
@@ -694,6 +697,9 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `EXAM_CERTIFICATE_REGISTRATION_NOT_ELIGIBLE` | no | `ExamCertificateRegistrationNotEligibleException` | graduation |
 | `FIXED_TO_DIRECTOR_PERMISSION_NOT_EDITABLE` | no | `FixedToDirectorPermissionNotEditableException` | identity |
 | `FUTURE_DATE` | no | `FutureDateException` | enrollment |
+| `INFORMATIVE_SESSION_ALREADY_STARTED` | no | `InformativeSessionAlreadyStartedException` | enrollment |
+| `INFORMATIVE_SESSION_CAPACITY_BELOW_REGISTRATIONS` | no | `InformativeSessionCapacityBelowRegistrationsException` | enrollment |
+| `INFORMATIVE_SESSION_NOT_SCHEDULED` | no | `InformativeSessionNotScheduledException` | enrollment |
 | `INVALID_SCORE` | no | `InvalidScoreException` | enrollment |
 | `MISSING_REQUIRED_VARIABLE` | no | `MissingRequiredVariableException` | notification |
 | `PROCEDURE_NOT_ELIGIBLE` | no | `ProcedureNotEligibleException` | graduation |
@@ -921,6 +927,9 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/graduation-requests/{id}/reject` | `GraduationRequestController#reject` |
 | POST | `/graduation-requests/{id}/verify-debt` | `GraduationRequestController#verifyDebt` |
 | POST | `/holidays` | `HolidayController#create` |
+| POST | `/informative-sessions` | `InformativeSessionController#create` |
+| POST | `/informative-sessions/{id}/cancel` | `InformativeSessionController#cancel` |
+| POST | `/informative-sessions/{id}/register` | `MeInformativeSessionController#register` |
 | POST | `/institute-settings/notifications/whatsapp/templates` | `WhatsAppTemplateMappingController#createMapping` |
 | POST | `/invitation-waves` | `InvitationWaveController#createInvitationWave` |
 | POST | `/invitation-waves/{id}/cancel` | `InvitationWaveController#cancelInvitationWave` |

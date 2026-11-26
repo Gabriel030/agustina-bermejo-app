@@ -42,7 +42,7 @@ function renderMenu(role, Layout) {
   return renderWithProviders(<ThemeProvider><Layout /></ThemeProvider>, { route: '/x' });
 }
 
-const hasLink = (name) => screen.queryAllByRole('link', { name }).length > 0;
+const hasLink = (name) => screen.queryAllByRole('link', { name, hidden: true }).length > 0;
 
 describe('menu according to the institute modules', () => {
   describe.each(Object.keys(LAYOUTS))('%s', (role) => {
@@ -52,8 +52,8 @@ describe('menu according to the institute modules', () => {
       server.use(http.get(`${API}/me/modules`, () => HttpResponse.json(modulesWith('OFF'))));
       renderMenu(role, Layout);
 
-      expect((await screen.findAllByRole('link', { name: alwaysVisible })).length).toBeGreaterThan(0);
-      await waitFor(() => expect(screen.queryAllByRole('link', { name: BILLING_LABELS[role][0] })).toHaveLength(0));
+      expect((await screen.findAllByRole('link', { name: alwaysVisible, hidden: true })).length).toBeGreaterThan(0);
+      await waitFor(() => expect(screen.queryAllByRole('link', { name: BILLING_LABELS[role][0], hidden: true })).toHaveLength(0));
       BILLING_LABELS[role].forEach((label) => expect(hasLink(label)).toBe(false));
     });
 
@@ -62,7 +62,7 @@ describe('menu according to the institute modules', () => {
       renderMenu(role, Layout);
 
       for (const label of BILLING_LABELS[role]) {
-        expect((await screen.findAllByRole('link', { name: label })).length).toBeGreaterThan(0);
+        expect((await screen.findAllByRole('link', { name: label, hidden: true })).length).toBeGreaterThan(0);
       }
     });
 
@@ -76,7 +76,7 @@ describe('menu according to the institute modules', () => {
       );
       renderMenu(role, Layout);
 
-      expect((await screen.findAllByRole('link', { name: alwaysVisible })).length).toBeGreaterThan(0);
+      expect((await screen.findAllByRole('link', { name: alwaysVisible, hidden: true })).length).toBeGreaterThan(0);
       await waitFor(() => expect(answered).toBe(true));
       BILLING_LABELS[role].forEach((label) => expect(hasLink(label)).toBe(false));
     });
@@ -86,7 +86,7 @@ describe('menu according to the institute modules', () => {
     server.use(http.get(`${API}/me/modules`, () => HttpResponse.json(modulesWith('OFF'))));
     renderMenu('DIRECTOR', DirectorLayout);
 
-    expect((await screen.findAllByRole('link', { name: 'Aprobaciones' })).length).toBeGreaterThan(0);
+    expect((await screen.findAllByRole('link', { name: 'Aprobaciones', hidden: true })).length).toBeGreaterThan(0);
   });
 
   it('does not ask for the modules in a menu without billing entries', async () => {
