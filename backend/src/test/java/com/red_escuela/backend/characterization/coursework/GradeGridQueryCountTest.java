@@ -2,6 +2,8 @@ package com.red_escuela.backend.characterization.coursework;
 
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.evaluation.dto.TeacherGradeGridResponse;
 import com.red_escuela.backend.evaluation.entity.GradeItem;
@@ -86,9 +88,15 @@ class GradeGridQueryCountTest extends CourseworkCharacterizationSupport {
         for (int index = 1; index < students; index++) {
             Person person = persistPerson(key + ".extra" + index, dniBase + "9" + String.format("%03d", index), "ALUMNO");
             Student student = persistStudent(person);
+            ProgramEnrollment programEnrollment = new ProgramEnrollment();
+            programEnrollment.setStudent(student);
+            programEnrollment.setProgram(classroom.programEnrollment().getProgram());
+            programEnrollment.setStatus(ProgramEnrollmentStatus.ENROLLED);
+            programEnrollment.setEnrollmentDate(LocalDateTime.now());
+            entityManager.persist(programEnrollment);
             SubjectSectionEnrollment enrollment = new SubjectSectionEnrollment();
             enrollment.setStudent(student);
-            enrollment.setProgramEnrollment(classroom.programEnrollment());
+            enrollment.setProgramEnrollment(programEnrollment);
             enrollment.setSubjectSection(classroom.section());
             enrollment.setStatus(EnrollmentStatus.IN_PROGRESS);
             enrollment.setEnrolledAt(LocalDateTime.now());

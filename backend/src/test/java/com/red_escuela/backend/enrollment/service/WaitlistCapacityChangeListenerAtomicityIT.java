@@ -244,7 +244,7 @@ class WaitlistCapacityChangeListenerAtomicityIT extends AbstractIntegrationTest 
             entityManager.persist(section);
             CourseEnrollment parent = courseEnrollment(fixtures, course, EnrollmentStatus.ENROLLED);
             CourseSubjectSectionEnrollment waiting = new CourseSubjectSectionEnrollment();
-            waiting.setStudent(student(fixtures));
+            waiting.setStudent(parent.getStudent());
             waiting.setCourseEnrollment(parent);
             waiting.setCourseSubjectSection(section);
             waiting.setStatus(EnrollmentStatus.WAITLISTED);
