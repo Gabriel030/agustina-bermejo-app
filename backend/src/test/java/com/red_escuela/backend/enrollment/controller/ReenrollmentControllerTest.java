@@ -148,6 +148,7 @@ class ReenrollmentControllerTest extends AbstractIntegrationTest {
         enrollment.setStudent(student);
         enrollment.setProgram(program);
         enrollment.setStatus(ProgramEnrollmentStatus.WITHDRAWN);
+        enrollment.setWithdrawalEffectiveDate(java.time.LocalDate.now());
         enrollment.setEnrollmentDate(LocalDateTime.now().minusMonths(6));
         enrollment = programEnrollmentRepository.save(enrollment);
         PaymentStandingSeed.seedProgramEnrollmentStanding(entityManager, enrollment.getId(), EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
