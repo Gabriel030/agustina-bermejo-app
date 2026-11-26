@@ -74,6 +74,7 @@ export const NOTIFICATION_DESTINATIONS = {
   SECTION_CHANGED_TEACHER: [TEACHER_SECTIONS],
   REGULAR_CERTIFICATE_READY: [alumno('/alumno/mis-carreras?tab=tramites')],
   GRADUATION_CERTIFICATE_ISSUED: [alumno('/alumno/mis-carreras?tab=tramites')],
+  EXAM_CERTIFICATE_ISSUED: [alumno('/alumno/mis-carreras?tab=tramites')],
   GRADUATION_CERTIFICATE_REVOKED: [alumno('/alumno/mis-carreras?tab=tramites')],
   GRADUATION_CERTIFICATE_REISSUED: [alumno('/alumno/mis-carreras?tab=tramites')],
   REGULAR_CERTIFICATE_REJECTED: [alumno('/alumno/mis-carreras?tab=tramites')],
