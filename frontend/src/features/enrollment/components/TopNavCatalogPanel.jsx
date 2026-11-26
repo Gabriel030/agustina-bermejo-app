@@ -141,7 +141,7 @@ export function TopNavCatalogPanel({ menus }) {
   else if (axis) announcement = axis.title;
 
   return (
-    <div ref={rootRef} onKeyDown={handleKeyDown} className="grid grid-cols-1 lg:grid-cols-[14rem_15rem_1fr]">
+    <div ref={rootRef} onKeyDown={handleKeyDown} className="grid grid-cols-1 lg:grid-cols-[16rem_13.5rem_1fr]">
       <div className="border-b border-border p-2 lg:border-b-0 lg:border-r">
         <p className={cn(GRID_ZONE_TITLE, 'px-3 pb-2 pt-1')}>Áreas académicas</p>
         <div className="flex flex-col gap-0.5">
