@@ -350,10 +350,7 @@ duplicando el mismo mecanismo.
 Trámite de egreso y constancias (`GraduationRequest`, `CertificateIssuance`)
 viven en `com.red_escuela.backend.graduation.*`.
 
-**`ProgramCertificateIssuer` queda cohesivo, sin Use Case** — emitir la
-constancia de materias aprobadas es generar un documento a pedido, nunca
-persistido, para el Alumno (autoservicio vía `MeCertificateController`). La
-constancia de alumno regular ya no se emite al instante: se pide y la confirma
+**Constancias** — la constancia de alumno regular no se emite al instante: se pide y la confirma
 administración (`graduation/certificate/regular`).
 
 **`GraduationRequestService` sí es una excepción real** — mismo patrón que
