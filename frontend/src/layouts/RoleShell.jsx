@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation, useOutlet } from 'react-router-dom';
 import { AnimatePresence, m } from 'motion/react';
 import { Sidebar } from '@/components/Sidebar';
+import { topNavBreakpointFor } from '@/components/topNavBreakpoint';
 import { TopNav } from '@/components/TopNav';
 import { cn } from '@/lib/utils';
 import { Breadcrumb } from '@/components/Breadcrumb';
@@ -59,6 +60,7 @@ export function RoleShell({ titulo, items, groups, topNav = false }) {
   // motion.div terminan mostrando el mismo contenido en vez de que uno muestre
   // la pantalla vieja saliendo y el otro la nueva entrando.
   const element = useOutlet();
+  const breakpoint = topNavBreakpointFor(topNav);
   const breadcrumbItems = useBreadcrumb();
   const mainRef = useRef(null);
   const { usuario } = useAuth();
@@ -80,14 +82,14 @@ export function RoleShell({ titulo, items, groups, topNav = false }) {
     // no a una bottom tab bar — decisión revisada con el usuario (ver docs/context/frontend.md).
     <div className={cn('flex h-screen flex-col gap-(--shell-gap) overflow-hidden p-(--shell-pad)', !topNav && 'lg:flex-row')}>
       <SkipToContent />
-      {topNav ? <TopNav titulo={titulo} items={items} groups={groups} /> : <Sidebar titulo={titulo} items={items} groups={groups} />}
+      {topNav ? <TopNav titulo={titulo} items={items} groups={groups} breakpoint={breakpoint} /> : <Sidebar titulo={titulo} items={items} groups={groups} />}
       {/* Columna de contenido junto al Sidebar, en mobile y desktop por igual —
           apila TopHeader arriba de <main>. Antes este wrapper colapsaba con
           lg:contents porque solo contenía <main>; con TopHeader también
           persistiendo en desktop, colapsarlo lo deja como columna angosta
           suelta en el flex-row de arriba en vez de ocupar el resto del ancho. */}
       <div className="flex min-w-0 flex-1 flex-col gap-(--shell-gap) overflow-hidden">
-        <TopHeader titulo={titulo} items={items} groups={groups} className={topNav ? 'lg:hidden' : undefined} />
+        <TopHeader titulo={titulo} items={items} groups={groups} breakpoint={breakpoint} className={topNav ? breakpoint.mobileHidden : undefined} />
         <SystemBar />
         <LegalNoticeBanner />
         {/* min-w-0: sin esto, un flex item no se achica más allá del ancho

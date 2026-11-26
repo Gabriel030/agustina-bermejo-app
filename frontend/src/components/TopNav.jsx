@@ -10,6 +10,7 @@ import { NotificationBell } from '@/features/notifications';
 import { useAuth } from '@/context/AuthContext';
 import { useActiveRole } from '@/hooks/useActiveRole';
 import { useTopNavMenus } from '@/hooks/useTopNavMenus';
+import { TOP_NAV_BREAKPOINTS } from '@/components/topNavBreakpoint';
 
 function isActivePath(item, pathname) {
   return pathname === item.to || pathname.startsWith(`${item.to}/`);
@@ -63,7 +64,7 @@ function GroupMenu({ entry, pathname, menus }) {
   );
 }
 
-function UserMenu({ titulo, usuario, menus }) {
+function UserMenu({ titulo, usuario, menus, breakpoint }) {
   const { logout } = useAuth();
   const { canSwitch } = useActiveRole();
   return (
@@ -80,10 +81,10 @@ function UserMenu({ titulo, usuario, menus }) {
           >
             {initialsOf(usuario)}
           </span>
-          <span className="hidden max-w-40 truncate xl:inline">
+          <span className={cn('hidden max-w-40 truncate', breakpoint.nameVisible)}>
             {usuario.nombre} {usuario.apellido}
           </span>
-          <span className="sr-only xl:hidden">Mi cuenta</span>
+          <span className={cn('sr-only', breakpoint.nameHidden)}>Mi cuenta</span>
         </>
       }
     >
@@ -105,20 +106,20 @@ function UserMenu({ titulo, usuario, menus }) {
   );
 }
 
-export function TopNav({ titulo, items, groups }) {
+export function TopNav({ titulo, items, groups, breakpoint = TOP_NAV_BREAKPOINTS.standard }) {
   const { usuario } = useAuth();
   const { pathname } = useLocation();
   const menus = useTopNavMenus(pathname);
   const entries = buildEntries(items, groups);
 
   return (
-    <div className="relative z-30 hidden shrink-0 items-center gap-2 border-b border-border bg-surface px-4 lg:flex xl:px-6">
+    <div className={cn('relative z-30 hidden shrink-0 items-center gap-2 border-b border-border bg-surface px-4', breakpoint.barVisible, breakpoint.padding)}>
       <Link
         to={items[0]?.to ?? '/'}
         aria-label="Ir al inicio"
         className="mr-2 shrink-0 rounded-control py-2 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
       >
-        <InstitutionBrand layout="horizontal" className="max-xl:[&>div:last-child]:hidden" />
+        <InstitutionBrand layout="horizontal" className={breakpoint.brandCollapsed} />
       </Link>
       <nav aria-label="Principal" className="flex min-w-0 flex-1 items-center gap-0.5">
         {entries.map((entry) =>
@@ -132,7 +133,7 @@ export function TopNav({ titulo, items, groups }) {
       <div className="ml-auto flex shrink-0 items-center gap-1">
         <ThemeToggle />
         <NotificationBell />
-        {usuario && <UserMenu titulo={titulo} usuario={usuario} menus={menus} />}
+        {usuario && <UserMenu titulo={titulo} usuario={usuario} menus={menus} breakpoint={breakpoint} />}
       </div>
     </div>
   );

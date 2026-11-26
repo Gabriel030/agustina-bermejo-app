@@ -215,4 +215,28 @@ describe('role menu manifest', () => {
     const noAcademic = groupMenuItems('administrativo', without(allAcademic));
     expect(noAcademic.map((group) => group.id)).toEqual(['main', 'approvals']);
   });
+
+  it.each(['docente', 'preceptor', 'platform_admin'])('keeps %s as a flat list without groups and with unique entries', (role) => {
+    const items = menuItemsFor(role);
+
+    expect(groupMenuItems(role, items)).toBeNull();
+    expect(new Set(items.map((item) => item.to)).size).toBe(items.length);
+  });
+
+  it('keeps the preceptor entries in the agreed order', () => {
+    expect(menuItemsFor('preceptor').map((item) => item.label)).toEqual([
+      'Inicio',
+      'Alumnos',
+      'Solicitudes de ingreso',
+      'Listas de espera',
+      'Oferta académica',
+      'Mesas de examen',
+      'Solicitudes de asistencia',
+      'Períodos',
+    ]);
+  });
+
+  it('hides the platform admin home from the menu', () => {
+    expect(menuItemsFor('platform_admin').map((item) => item.label)).toEqual(['Módulos', 'Primer director', 'Auditoría', 'Backups']);
+  });
 });
