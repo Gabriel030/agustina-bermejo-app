@@ -213,6 +213,7 @@ begin
       ('configuration_version_status_change', 'event', array['APPROVE_FOR_FUTURE', 'APPROVE_FOR_TODAY', 'CANCEL', 'EXPIRE', 'PROPOSE', 'PUBLISH_FOR_FUTURE', 'PUBLISH_FOR_TODAY', 'REACH_START', 'REJECT', 'SUPERSEDE', 'WITHDRAW']),
       ('configuration_version_status_change', 'from_status', array['CANCELLED', 'EFFECTIVE', 'EXPIRED', 'PROPOSED', 'REJECTED', 'SCHEDULED', 'SUPERSEDED', 'WITHDRAWN']),
       ('configuration_version_status_change', 'to_status', array['CANCELLED', 'EFFECTIVE', 'EXPIRED', 'PROPOSED', 'REJECTED', 'SCHEDULED', 'SUPERSEDED', 'WITHDRAWN']),
+      ('course', 'catalog_area', array['BUSINESS_ADMINISTRATION', 'DESIGN', 'HEALTH', 'LANGUAGES_AND_COMMUNICATION', 'SOCIAL_SCIENCES', 'TECHNOLOGY']),
       ('course', 'status', array['ACTIVE', 'DELETED', 'INACTIVE']),
       ('course', 'teaching_mode', array['HYBRID', 'IN_PERSON', 'ONLINE']),
       ('course_enrollment', 'status', array['APPROVED', 'ENROLLED', 'FAILED', 'IN_PROGRESS', 'REGULAR', 'WAITLISTED', 'WAITLIST_EXPIRED', 'WITHDRAWN']),
@@ -302,7 +303,8 @@ begin
       ('price_version_status_change', 'event', array['APPROVE_FOR_FUTURE', 'APPROVE_FOR_TODAY', 'CANCEL', 'EXPIRE', 'PROPOSE', 'PUBLISH_FOR_FUTURE', 'PUBLISH_FOR_TODAY', 'REACH_START', 'REJECT', 'SUPERSEDE', 'WITHDRAW']),
       ('price_version_status_change', 'from_status', array['CANCELLED', 'EFFECTIVE', 'EXPIRED', 'PROPOSED', 'REJECTED', 'SCHEDULED', 'SUPERSEDED', 'WITHDRAWN']),
       ('price_version_status_change', 'to_status', array['CANCELLED', 'EFFECTIVE', 'EXPIRED', 'PROPOSED', 'REJECTED', 'SCHEDULED', 'SUPERSEDED', 'WITHDRAWN']),
-      ('program', 'level', array['DIPLOMA', 'EXTENSION', 'GRADUATE', 'UNDERGRADUATE']),
+      ('program', 'catalog_area', array['BUSINESS_ADMINISTRATION', 'DESIGN', 'HEALTH', 'LANGUAGES_AND_COMMUNICATION', 'SOCIAL_SCIENCES', 'TECHNOLOGY']),
+      ('program', 'level', array['BACHELOR', 'DIPLOMA', 'EXTENSION', 'GRADUATE', 'UNDERGRADUATE']),
       ('program', 'status', array['ACTIVE', 'DELETED', 'INACTIVE']),
       ('program', 'teaching_mode', array['HYBRID', 'IN_PERSON', 'ONLINE']),
       ('program_cohort', 'intake', array['FIRST', 'SECOND']),
@@ -500,6 +502,28 @@ from program_enrollment where status = 'WITHDRAWN' and withdrawal_effective_date
 union all
 select 'program_enrollment COMPLETED sin completion_date', count(*), min(id)
 from program_enrollment where status = 'COMPLETED' and completion_date is null;
+\endif
+
+select :current_version < 478 as run_block \gset
+\if :run_block
+\echo
+\echo [V478] Inscripciones a comision cuyo alumno difiere del de su inscripcion padre (la FK compuesta se crea NOT VALID y no aborta; corregir antes de ejecutar VALIDATE CONSTRAINT fk_subject_section_enrollment_parent_student / fk_course_section_enrollment_parent_student; no se borran datos):
+select 'subject_section_enrollment' as tbl, count(*) as violating_rows, min(sse.id) as first_id
+from subject_section_enrollment sse join program_enrollment pe on pe.id = sse.program_enrollment_id
+where sse.student_id <> pe.student_id
+union all
+select 'course_section_enrollment', count(*), min(cse.id)
+from course_section_enrollment cse join course_enrollment ce on ce.id = cse.course_enrollment_id
+where cse.student_id <> ce.student_id;
+\endif
+
+select :current_version < 479 as run_block \gset
+\if :run_block
+\echo
+\echo [V479] Bajas de curso registradas (withdrawal_registered_on no nula) sin fecha efectiva (la migracion NO aborta: el CHECK queda NOT VALID; la validacion posterior ABORTA si quedan filas; las bajas de lista de espera por staff no tienen registered_on y no cuentan; la correccion afecta recargos y resumen post-baja y es decision de producto):
+select count(*) as violating_rows, min(id) as first_id
+from course_enrollment
+where status = 'WITHDRAWN' and withdrawal_registered_on is not null and withdrawal_effective_date is null;
 \endif
 
 \echo

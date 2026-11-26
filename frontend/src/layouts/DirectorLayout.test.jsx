@@ -12,14 +12,14 @@ describe('DirectorLayout', () => {
   it('offers the billing screen in the menu', async () => {
     renderWithProviders(<ThemeProvider><DirectorLayout /></ThemeProvider>, { route: '/director/inicio' });
 
-    const links = await screen.findAllByRole('link', { name: 'Facturación' });
+    const links = await screen.findAllByRole('link', { name: 'Facturación', hidden: true });
     expect(links[0]).toHaveAttribute('href', '/director/facturacion');
   });
 
   it('offers the terms screen in the menu', () => {
     renderWithProviders(<ThemeProvider><DirectorLayout /></ThemeProvider>, { route: '/director/inicio' });
 
-    const links = screen.getAllByRole('link', { name: 'Períodos' });
+    const links = screen.getAllByRole('link', { name: 'Períodos', hidden: true });
     expect(links[0]).toHaveAttribute('href', '/director/periodos');
   });
 

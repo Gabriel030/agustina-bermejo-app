@@ -5,7 +5,7 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import com.red_escuela.backend.academicstructure.entity.Program;
-import com.red_escuela.backend.academicstructure.repository.TermRepository;
+import com.red_escuela.backend.academicstructure.api.AcademicReferenceFinder;
 import com.red_escuela.backend.billing.configuration.domain.YearBillingTerms;
 import com.red_escuela.backend.billing.configuration.service.YearCycleFactory;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentClosedWhileSuspendedEvent;
@@ -105,7 +105,7 @@ class SuspendedEnrollmentClosureServiceTest {
                 mock(com.red_escuela.backend.enrollment.service.ProgramEnrollmentSectionWithdrawer.class), clock);
         logs.start();
         closureLogger.addAppender(logs);
-        return new SuspendedEnrollmentClosureService(enrollments, templates, mock(TermRepository.class), invoices, enrollmentService, clock,
+        return new SuspendedEnrollmentClosureService(enrollments, templates, mock(AcademicReferenceFinder.class), invoices, enrollmentService, clock,
                 mock(PlatformTransactionManager.class), cycleFactory, eventPublisher, standingRepository, standingQuery);
     }
 

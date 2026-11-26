@@ -8,17 +8,7 @@ import { LoadErrorState } from '@/components/LoadErrorState';
 import { Button } from '@/components/ui/button';
 import { useProgramCohorts } from '@/features/academic-structure/hooks/useCohorts';
 import { NuevaCohortDialog } from './NuevaCohortDialog';
-
-const INTAKE_LABELS = {
-  FIRST: '1er semestre',
-  SECOND: '2do semestre',
-};
-
-function cohortTitle(cohort) {
-  const intakeLabel = INTAKE_LABELS[cohort.intake] ?? cohort.intake;
-  const year = cohort.admissionStart ? new Date(cohort.admissionStart).getFullYear() : '';
-  return `Ingreso ${intakeLabel} ${year}`;
-}
+import { cohortTitle } from '@/features/academic-structure/lib/cohorts';
 
 function admissionStatus(cohort) {
   if (!cohort.admissionEnd) return { label: 'Sin fecha', tone: 'neutral' };

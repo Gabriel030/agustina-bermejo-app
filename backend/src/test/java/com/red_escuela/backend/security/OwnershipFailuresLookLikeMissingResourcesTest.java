@@ -4,7 +4,9 @@ import com.red_escuela.backend.academicstructure.exception.NotOwnSectionExceptio
 import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
 import com.red_escuela.backend.announcement.exception.NotSectionInstructorException;
 import com.red_escuela.backend.billing.exception.NotOwnEnrollmentException;
-import com.red_escuela.backend.enrollment.exception.CourseEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.CourseEnrollmentNotFoundException;
+import com.red_escuela.backend.evaluation.exception.ExamBoardNotFoundException;
+import com.red_escuela.backend.evaluation.exception.NotExamBoardTribunalMemberException;
 import com.red_escuela.backend.shared.exception.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
@@ -38,6 +40,16 @@ class OwnershipFailuresLookLikeMissingResourcesTest {
         @GetMapping("/section-instructor")
         void sectionInstructor() {
             throw new NotSectionInstructorException(2L);
+        }
+
+        @GetMapping("/not-tribunal-member")
+        void notTribunalMember() {
+            throw new NotExamBoardTribunalMemberException(1L, 2L);
+        }
+
+        @GetMapping("/missing-exam-board")
+        void missingExamBoard() {
+            throw new ExamBoardNotFoundException(2L);
         }
 
         @GetMapping("/missing-section")
@@ -78,6 +90,15 @@ class OwnershipFailuresLookLikeMissingResourcesTest {
     void notSectionInstructorIsIndistinguishableFromMissingSection() throws Exception {
         MvcResult foreign = call("/section-instructor");
         MvcResult missing = call("/missing-section");
+
+        assertThat(foreign.getResponse().getStatus()).isEqualTo(404);
+        assertThat(foreign.getResponse().getContentAsString()).isEqualTo(missing.getResponse().getContentAsString());
+    }
+
+    @Test
+    void notTribunalMemberIsIndistinguishableFromMissingExamBoard() throws Exception {
+        MvcResult foreign = call("/not-tribunal-member");
+        MvcResult missing = call("/missing-exam-board");
 
         assertThat(foreign.getResponse().getStatus()).isEqualTo(404);
         assertThat(foreign.getResponse().getContentAsString()).isEqualTo(missing.getResponse().getContentAsString());

@@ -4486,9 +4486,16 @@
       },
       "CourseResponse" : {
         "properties" : {
+          "area" : {
+            "type" : "string"
+          },
           "capacity" : {
             "format" : "int32",
             "type" : "integer"
+          },
+          "catalogPublishedAt" : {
+            "format" : "date-time",
+            "type" : "string"
           },
           "durationMonths" : {
             "format" : "int32",
@@ -5386,7 +5393,7 @@
             "type" : "string"
           },
           "level" : {
-            "enum" : [ "UNDERGRADUATE", "GRADUATE", "EXTENSION", "DIPLOMA" ],
+            "enum" : [ "UNDERGRADUATE", "BACHELOR", "GRADUATE", "EXTENSION", "DIPLOMA" ],
             "type" : "string"
           },
           "name" : {
@@ -13726,6 +13733,13 @@
           "admissionRequirements" : {
             "type" : "string"
           },
+          "area" : {
+            "type" : "string"
+          },
+          "catalogPublishedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
           "enrollmentFeeAmount" : {
             "$ref" : "#/components/schemas/Money"
           },
@@ -16303,6 +16317,10 @@
       },
       "SetCatalogVisibilityRequest" : {
         "properties" : {
+          "area" : {
+            "enum" : [ "BUSINESS_ADMINISTRATION", "TECHNOLOGY", "DESIGN", "HEALTH", "SOCIAL_SCIENCES", "LANGUAGES_AND_COMMUNICATION", null ],
+            "type" : [ "string", "null" ]
+          },
           "visible" : {
             "type" : "boolean"
           }
@@ -17920,7 +17938,7 @@
             "type" : [ "string", "null" ]
           },
           "level" : {
-            "enum" : [ "UNDERGRADUATE", "GRADUATE", "EXTENSION", "DIPLOMA", null ],
+            "enum" : [ "UNDERGRADUATE", "BACHELOR", "GRADUATE", "EXTENSION", "DIPLOMA", null ],
             "type" : [ "string", "null" ]
           },
           "name" : {
@@ -43127,6 +43145,14 @@
           "required" : false,
           "schema" : {
             "type" : "boolean"
+          }
+        }, {
+          "in" : "query",
+          "name" : "area",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "BUSINESS_ADMINISTRATION", "TECHNOLOGY", "DESIGN", "HEALTH", "SOCIAL_SCIENCES", "LANGUAGES_AND_COMMUNICATION" ],
+            "type" : "string"
           }
         } ],
         "responses" : {
@@ -87902,6 +87928,22 @@
           "required" : false,
           "schema" : {
             "type" : "boolean"
+          }
+        }, {
+          "in" : "query",
+          "name" : "area",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "BUSINESS_ADMINISTRATION", "TECHNOLOGY", "DESIGN", "HEALTH", "SOCIAL_SCIENCES", "LANGUAGES_AND_COMMUNICATION" ],
+            "type" : "string"
+          }
+        }, {
+          "in" : "query",
+          "name" : "level",
+          "required" : false,
+          "schema" : {
+            "enum" : [ "UNDERGRADUATE", "BACHELOR", "GRADUATE", "EXTENSION", "DIPLOMA" ],
+            "type" : "string"
           }
         } ],
         "responses" : {

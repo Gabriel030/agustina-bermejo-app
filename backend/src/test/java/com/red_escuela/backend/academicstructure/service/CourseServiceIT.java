@@ -9,7 +9,7 @@ import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.exception.CourseNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.InvalidRegistrationWindowException;
 import com.red_escuela.backend.academicstructure.exception.OfferingListPriceNotPositiveException;
-import com.red_escuela.backend.academicstructure.exception.TermNotFoundException;
+import com.red_escuela.backend.academicstructure.api.TermNotFoundException;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.Currency;
@@ -248,6 +248,20 @@ class CourseServiceIT extends AbstractIntegrationTest {
     void deactivatingOrReactivatingAMissingCourseFailsWithNotFound() {
         assertThatThrownBy(() -> courseService.deactivate(MISSING_ID)).isInstanceOf(CourseNotFoundException.class);
         assertThatThrownBy(() -> courseService.reactivate(MISSING_ID)).isInstanceOf(CourseNotFoundException.class);
+    }
+
+    @Test
+    void listFiltersByCatalogArea() {
+        Course technology = createCourse("Area tecnologia");
+        technology.setCatalogArea(com.red_escuela.backend.academicstructure.entity.CatalogArea.TECHNOLOGY);
+        Course health = createCourse("Area salud");
+        health.setCatalogArea(com.red_escuela.backend.academicstructure.entity.CatalogArea.HEALTH);
+        Course withoutArea = createCourse("Area ninguna");
+        entityManager.flush();
+
+        List<Long> onlyTechnology = ids(courseService.list(null, null, com.red_escuela.backend.academicstructure.entity.CatalogArea.TECHNOLOGY));
+
+        assertThat(onlyTechnology).contains(technology.getId()).doesNotContain(health.getId(), withoutArea.getId());
     }
 
     @Test

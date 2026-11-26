@@ -8,6 +8,7 @@ import com.red_escuela.backend.identity.entity.WithdrawalReason;
 import com.red_escuela.backend.identity.exception.StudentHasActiveEnrollmentsException;
 import com.red_escuela.backend.identity.service.WithdrawStudentTransaction;
 import com.red_escuela.backend.identity.service.WithdrawStudentWithGuardTransaction;
+import com.red_escuela.backend.identity.specialist.StudentOnlyTargetPolicy;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.mockito.InOrder;
@@ -30,7 +31,7 @@ class WithdrawStudentWithEnrollmentGuardServiceTest {
     private final WithdrawStudentTransaction delegate = mock(WithdrawStudentTransaction.class);
     private final IdentityAuditRecorder auditRecorder = mock(IdentityAuditRecorder.class);
     private final WithdrawStudentWithEnrollmentGuardService service = new WithdrawStudentWithEnrollmentGuardService(
-            new WithdrawStudentWithGuardTransaction(guard, delegate, recorder, auditRecorder));
+            new WithdrawStudentWithGuardTransaction(guard, delegate, recorder, auditRecorder), mock(StudentOnlyTargetPolicy.class));
     private final WithdrawStudentCommand command = new WithdrawStudentCommand(7L, new WithdrawStudentRequest(WithdrawalReason.ABANDONO, "x"));
 
     @Test

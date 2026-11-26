@@ -76,7 +76,26 @@ describe('role menu manifest', () => {
   });
 
   it('has no grouping for roles without a definition', () => {
-    expect(groupMenuItems('alumno', menuItemsFor('alumno'))).toBeNull();
+    expect(groupMenuItems('docente', menuItemsFor('docente'))).toBeNull();
+  });
+
+  it('groups the student menu keeping order, the catalog link and the options entry', () => {
+    const groups = groupMenuItems('alumno', menuItemsFor('alumno'));
+    expect(groups.map((group) => group.label)).toEqual([null, 'Estudios', null, null, null]);
+    expect(groups.flatMap((group) => group.items.map((item) => item.label))).toEqual([
+      'Inicio', 'Calendario', 'Mis cursos', 'Mis carreras', 'Mis certificados', 'Pagos', 'Catálogo', 'Opciones',
+    ]);
+  });
+
+  it('orders the director groups as defined with the approvals entry after the institution group', () => {
+    const groups = groupMenuItems('director', menuItemsFor('director'));
+    expect(groups.map((group) => group.id)).toEqual(['main', 'people', 'enrollment', 'academic', 'billing', 'institution', 'approvals']);
+    expect(groups.find((group) => group.id === 'people').items.map((item) => item.label)).toEqual(['Alumnos', 'Personal', 'Comunicaciones', 'Invitaciones']);
+  });
+
+  it('lays the long director groups out in two columns', () => {
+    const groups = groupMenuItems('director', menuItemsFor('director'));
+    expect(groups.filter((group) => group.columns === 2).map((group) => group.id)).toEqual(['academic', 'billing']);
   });
 
   it.each(['docente', 'preceptor', 'administrativo', 'director'])('exposes the exam boards screen to %s with its route', (role) => {

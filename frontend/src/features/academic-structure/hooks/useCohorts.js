@@ -28,12 +28,16 @@ export function useBillingConfigurationAlerts() {
   });
 }
 
-export function useProgramCohorts(programId) {
-  return useQuery({
+export function programCohortsQueryOptions(programId) {
+  return {
     queryKey: ['program-cohorts', programId],
     queryFn: () => apiFetch(`/programs/${programId}/cohorts`),
     enabled: !!programId,
-  });
+  };
+}
+
+export function useProgramCohorts(programId) {
+  return useQuery(programCohortsQueryOptions(programId));
 }
 
 export function useCreateCohort() {

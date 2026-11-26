@@ -1,4 +1,5 @@
 import { Link, useLocation } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/GlassCard';
 import { MobileMenu } from '@/components/MobileMenu';
 import { NotificationBell } from '@/features/notifications';
@@ -21,7 +22,7 @@ function pageTitleFor(items, pathname, fallback) {
   return current?.label ?? fallback;
 }
 
-export function TopHeader({ titulo, items, groups }) {
+export function TopHeader({ titulo, items, groups, className }) {
   const { usuario } = useAuth();
   const { pathname } = useLocation();
   const { canSwitch } = useActiveRole();
@@ -30,7 +31,7 @@ export function TopHeader({ titulo, items, groups }) {
   const { data: avatarUrl } = useAvatar(!!perfil && !!perfil.hasAvatar);
 
   return (
-    <div className="mx-auto w-full max-w-none shrink-0">
+    <div className={cn('mx-auto w-full max-w-none shrink-0', className)}>
       <GlassCard className="rounded-none border-0 border-b px-3 py-3 sm:px-8">
         <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between gap-2 sm:gap-3">
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">

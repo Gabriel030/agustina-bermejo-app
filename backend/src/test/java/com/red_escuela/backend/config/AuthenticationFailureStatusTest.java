@@ -60,7 +60,7 @@ class AuthenticationFailureStatusTest extends AbstractIntegrationTest {
 
     @Test
     void requestWithExpiredTokenIsRejectedWithUnauthorized() throws Exception {
-        String expiredToken = new JwtService("test-secret-not-for-production-use-only-in-tests", -1, "agustina-bermejo-app")
+        String expiredToken = new JwtService("test-secret-not-for-production-use-only-in-tests", -1, "agustina-bermejo-app", "agustina-bermejo-app-api", false)
                 .generateAccessToken(personWithRole(7L, "PLATFORM_ADMIN"));
 
         mockMvc.perform(get(PROTECTED_PATH).header("Authorization", "Bearer " + expiredToken))

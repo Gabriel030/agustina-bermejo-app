@@ -538,15 +538,17 @@ rechaza lo que el código se olvide. Todo cambio que afloje una de estas reglas 
 | Una solicitud de constancia `PENDING_STAFF` por inscripción | `uq_regular_cert_request_pending_per_enrollment` (único parcial sobre `kind` y la inscripción) | V475 | `ConcurrentRegularCertificateIssueException` |
 | Una baja (`WITHDRAWN`) de carrera lleva `withdrawal_effective_date` | `ck_program_enrollment_withdrawn_has_effective_date` (CHECK `NOT VALID`) | V476 | — (lo garantiza `markWithdrawn`) |
 | Una carrera `COMPLETED` lleva `completion_date` | `ck_program_enrollment_completed_has_completion_date` (CHECK `NOT VALID`) | V476 | — |
+| Una baja de curso registrada (`withdrawal_registered_on` no nula) lleva `withdrawal_effective_date` | `ck_course_enrollment_registered_withdrawal_has_effective_date` (CHECK `NOT VALID`; exceptúa la baja de lista de espera por staff, que no registra `withdrawal_registered_on`) | V479 | — (lo garantiza `markWithdrawn`) |
+| El alumno de una inscripción a comisión es el de su inscripción padre (materia y curso) | `fk_subject_section_enrollment_parent_student` y `fk_course_section_enrollment_parent_student` (FK compuesta `NOT VALID` sobre `(id, student_id)` del padre, con `uk_program_enrollment_id_student` y `uk_course_enrollment_id_student`) | V478 | — |
 
 `time_span`, `term_period`, `occupies` y `active` de la franja los mantiene el trigger
 `trg_section_schedule_slot_occupancy`; el código no los escribe. Un IT de constraint prueba cada regla en
 ambos lados (sin la constraint el test de la versión anterior acepta el duplicado): ver
 `SectionScheduleSlotExcludeMigrationTest`, `ProgramEnrollmentActiveUniqueMigrationTest` y
 `RegularCertificateRequestPendingUniqueMigrationTest`. Los pre-chequeos de datos previos al deploy están en
-`docs/release/pre-migration-checks.sql` (bloques `[V470]`, `[V474]` a `[V476]`). Los CHECK de V476 quedan `NOT VALID`: protegen
+`docs/release/pre-migration-checks.sql` (bloques `[V470]`, `[V474]` a `[V479]`). Los CHECK de V476 y V479 quedan `NOT VALID`: protegen
 las filas nuevas y no tocan las existentes; el `VALIDATE` va en una migración aparte tras correr los pre-chequeos en
-producción (la corrección de datos violadores es decisión de producto). Pendientes: R2 de cursos (`CourseWaitlistQueue.remove` da de baja sin fecha efectiva: decisión de producto) y R5 (FK compuesta alumno-inscripción padre: requiere ajustar fixtures de tests). Informe de origen:
+producción (la corrección de datos violadores es decisión de producto). `CourseWaitlistQueue.remove` da de baja sin fecha efectiva ni `withdrawal_registered_on`: V479 lo exceptúa y no se toca, decisión de producto pendiente. Pendientes: el `VALIDATE` de R2 y de R5 (FK compuesta alumno-inscripción padre de V478, `NOT VALID`; se valida aparte tras el pre-chequeo en producción). Informe de origen:
 `docs/cell/reports/e25-b2-invariantes.md`.
 
 ## Seguridad
