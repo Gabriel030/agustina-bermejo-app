@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -8,6 +8,12 @@ import { renderWithProviders } from '@/test/renderWithProviders';
 import { installFixedClock } from '@/test/fixedClock';
 import { errorBody } from '@/test/fixtures/errors';
 import { Catalogo } from '@/features/enrollment/pages/Catalogo';
+
+const authState = vi.hoisted(() => ({ roles: ['ALUMNO'] }));
+
+vi.mock('@/context/AuthContext', () => ({
+  useAuth: () => ({ roles: authState.roles }),
+}));
 
 const API = 'http://localhost:8080';
 
@@ -248,6 +254,10 @@ describe('Catalogo', () => {
     const later = { ...upcoming, id: 6, title: 'Charla general', scheduledAt: '2026-12-10T21:00:00Z' };
     const stripName = { name: 'Próxima reunión informativa' };
 
+    beforeEach(() => {
+      authState.roles = ['ALUMNO'];
+    });
+
     function serveSessions(resolver) {
       const served = { calls: 0 };
       server.use(
@@ -275,6 +285,26 @@ describe('Catalogo', () => {
       expect(within(strip).getByText('Diseño: salida laboral')).toBeInTheDocument();
       expect(within(strip).getByText('Jueves 19 de noviembre · 18:00 h · Online')).toBeInTheDocument();
       expect(within(strip).queryByText('Charla general')).not.toBeInTheDocument();
+    });
+
+    it('links to the student informative sessions screen', async () => {
+      respondWith([designProgram]);
+      serveSessions(() => HttpResponse.json([upcoming]));
+      renderCatalogo();
+
+      const strip = await screen.findByRole('complementary', stripName);
+      expect(within(strip).getByRole('link', { name: 'Ver reuniones' })).toHaveAttribute('href', '/alumno/reuniones-informativas');
+    });
+
+    it.each([['an applicant without roles', []], ['a staff member', ['DIRECTOR']]])('is not requested nor shown to %s', async (_label, roles) => {
+      authState.roles = roles;
+      respondWith([designProgram]);
+      const served = serveSessions(() => HttpResponse.json([upcoming]));
+      renderCatalogo();
+
+      await screen.findByText('Licenciatura en Diseño Gráfico');
+      expect(served.calls).toBe(0);
+      expect(screen.queryByRole('complementary', stripName)).not.toBeInTheDocument();
     });
 
     it('is not even requested when a filter is applied', async () => {

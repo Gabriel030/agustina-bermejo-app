@@ -1,11 +1,12 @@
 import { Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/context/AuthContext';
 import { useNextInformativeSession } from '@/features/enrollment/hooks/useCatalogOffering';
 import { describeInformativeSession } from '@/features/enrollment/lib/catalogOffering';
 
-export const INFORMATIVE_SESSIONS_PATH = '/reuniones-informativas';
+export const INFORMATIVE_SESSIONS_PATH = '/alumno/reuniones-informativas';
 
-export function NextInformativeSessionStrip() {
+function UpcomingSessionStrip() {
   const session = useNextInformativeSession();
   if (!session) return null;
   return (
@@ -23,4 +24,10 @@ export function NextInformativeSessionStrip() {
       </Button>
     </aside>
   );
+}
+
+export function NextInformativeSessionStrip() {
+  const { roles } = useAuth();
+  if (!roles.includes('ALUMNO')) return null;
+  return <UpcomingSessionStrip />;
 }
