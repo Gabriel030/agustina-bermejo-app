@@ -1,3 +1,5 @@
+import { excludedRoles, parameterizedExclusion } from './screens.mjs';
+
 const kb = (bytes) => `${(bytes / 1024).toFixed(1)}`;
 const sec = (ms) => `${(ms / 1000).toFixed(1)}`;
 
@@ -5,8 +7,10 @@ export function buildReport(results) {
   const rows = [];
   for (const [role, data] of Object.entries(results.roles)) {
     for (const screen of data.screens ?? []) rows.push({ role, ...screen });
+    for (const detail of data.details ?? []) if (detail.measured) rows.push({ role, ...detail, path: `${detail.path} (${detail.name})` });
   }
   const measured = rows.filter((r) => !r.redirected && r.apiCount > 0);
+  const redirects = rows.filter((r) => r.redirected);
   const heavy = [...measured].sort((a, b) => b.apiCount - a.apiCount || b.apiBytes - a.apiBytes || a.path.localeCompare(b.path)).slice(0, 10);
   const lines = [];
   lines.push('# Épica 31 — línea base de llamadas HTTP por pantalla (31.1)', '');
@@ -17,7 +21,7 @@ export function buildReport(results) {
   lines.push('- **Cascada**: nivel de dependencia temporal. Una petición está en el nivel N+1 si empezó después de que terminó otra de nivel N. Nivel 1 = lo que salió en paralelo en la primera ola; cascada = niveles >= 2.');
   lines.push('- **Contenido útil**: LCP del navegador (primer pintado del contenido principal). **Pantalla completa**: hasta que no queda ninguna llamada a la API en vuelo durante 600 ms.');
   lines.push('- Los tiempos varían entre corridas; los conteos de peticiones, duplicadas y cascadas son los comparables.', '');
-  lines.push(`Pantallas medidas: ${measured.length} de ${rows.length} intentadas.`, '');
+  lines.push(`Pantallas medidas: ${measured.length} de ${rows.length} intentadas (incluye detalles muestreados).`, '');
   lines.push('## 10 pantallas más pesadas', '');
   lines.push('Orden: más peticiones, luego más bytes de API.', '');
   heavy.forEach((s, i) => {
@@ -44,25 +48,34 @@ export function buildReport(results) {
     const note = s.redirected ? `redirige a ${s.finalPath}` : s.loadError ? 'error de carga' : !s.networkIdle ? 'no llegó a red quieta' : '';
     lines.push(`| ${s.role} | ${s.path} | ${s.apiCount} | ${s.duplicateCount} | ${s.cascadeDepth} | ${kb(s.apiBytes)} | ${s.staticCount} / ${kb(s.staticBytes)} | ${s.errors} | ${sec(s.usefulContentMs)} | ${sec(s.fullScreenMs)} | ${note} |`);
   });
+  lines.push('', '## Redirecciones medidas en su destino final', '');
+  if (redirects.length) {
+    lines.push('| Rol | Ruta pedida | Destino final | Peticiones | Duplicadas | Niveles de cascada |');
+    lines.push('|---|---|---|---|---|---|');
+    redirects.forEach((r) => lines.push(`| ${r.role} | ${r.path} | ${r.finalPath} | ${r.apiCount} | ${r.duplicateCount} | ${r.cascadeDepth} |`));
+  } else {
+    lines.push('Ninguna ruta redirigió en esta corrida.');
+  }
   lines.push('', '## Acciones principales (lectura segura): clic → resultado visible', '');
-  lines.push('| Rol | Acción | Medida | Clic → resultado visible (s) | Peticiones | KB API |');
-  lines.push('|---|---|---|---|---|---|');
+  lines.push('| Rol | Acción | Medida | Clic → resultado visible (s) | Peticiones | KB API | Peticiones colgadas |');
+  lines.push('|---|---|---|---|---|---|---|');
   for (const [role, data] of Object.entries(results.roles)) {
     for (const a of data.actions ?? []) {
-      lines.push(a.measured && a.clickToResultMs >= 44000
-        ? `| ${role} | ${a.name} | no medible: tope de 45 s, queda una petición en vuelo que no termina (bug de la medición) | - | ${a.apiCount} | ${kb(a.apiBytes)} |`
-        : a.measured
-        ? `| ${role} | ${a.name} | sí | ${sec(a.clickToResultMs)} | ${a.apiCount} | ${kb(a.apiBytes)} |`
-        : `| ${role} | ${a.name} | no: ${a.reason} | - | - | - |`);
+      if (!a.measured) lines.push(`| ${role} | ${a.name} | no: ${a.reason} | - | - | - | - |`);
+      else if (a.capped) lines.push(`| ${role} | ${a.name} | no: llegó al tope de espera con peticiones activas | - | ${a.apiCount} | ${kb(a.apiBytes)} | ${a.hung.length} |`);
+      else lines.push(`| ${role} | ${a.name} | sí | ${sec(a.clickToResultMs)} | ${a.apiCount} | ${kb(a.apiBytes)} | ${a.hung.length ? a.hung.map((h) => `\`${h}\``).join(', ') : 0} |`);
     }
   }
-  const failed = Object.entries(results.roles).filter(([, d]) => d.loginError);
+  const detailRows = Object.entries(results.roles).flatMap(([role, data]) => (data.details ?? []).map((d) => ({ role, ...d })));
+  const unmeasuredDetails = detailRows.filter((d) => !d.measured);
   lines.push('', '## No medido', '');
-  lines.push('- Pantallas con parámetros (detalles por id), asistentes de varios pasos y acciones que modifican datos.');
-  lines.push('- Tiempo clic → resultado de las acciones: 6 de 7 llegaron al tope de 45 s por una petición que la medición ve en vuelo siempre; solo se informan sus peticiones y bytes. Pendiente de corregir en la próxima subtarea.');
-  lines.push('- Rol Preceptor y Admin de plataforma.');
+  lines.push(`- Rutas con parámetro de id fuera de los detalles muestreados: ${parameterizedExclusion}.`);
+  lines.push('- Asistentes de varios pasos y acciones que modifican datos (la medición es de solo lectura).');
+  Object.entries(excludedRoles).forEach(([role, reason]) => lines.push(`- Rol \`${role}\`: ${reason}.`));
+  Object.entries(results.roles).filter(([, d]) => d.skipped).forEach(([role, d]) => lines.push(`- ${role}: ${d.skipped}.`));
+  Object.entries(results.roles).filter(([, d]) => d.loginError).forEach(([role, d]) => lines.push(`- ${role}: login falló (${d.loginError}).`));
+  unmeasuredDetails.forEach((d) => lines.push(`- ${d.role} ${d.name} (\`${d.route}\`): ${d.reason}.`));
+  rows.filter((r) => r.redirected).forEach((r) => lines.push(`- ${r.role} \`${r.path}\`: redirigió a \`${r.finalPath}\`, excluida del ranking (se informa arriba).`));
   lines.push('- Rendimiento en dispositivo real: la CPU x4 es una emulación de Chromium, no un teléfono.');
-  failed.forEach(([role, d]) => lines.push(`- ${role}: login falló (${d.loginError}).`));
-  rows.filter((r) => r.redirected).forEach((r) => lines.push(`- ${r.role} \`${r.path}\`: redirigió a \`${r.finalPath}\` (sin permiso o sin datos), excluida del ranking.`));
   return `${lines.join('\n')}\n`;
 }
