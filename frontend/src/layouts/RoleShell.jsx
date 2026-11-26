@@ -98,7 +98,7 @@ export function RoleShell({ titulo, items, groups }) {
           ref={mainRef}
           id="main-content"
           tabIndex={-1}
-          className="flex min-w-0 flex-1 flex-col overflow-y-auto focus:outline-none px-4 py-5 sm:px-8 sm:py-6"
+          className="flex min-w-0 flex-1 flex-col overflow-y-auto scroll-pb-32 focus:outline-none px-4 py-5 sm:px-8 sm:py-6"
         >
           {/* Breadcrumb: vive acá (no en cada página) porque es el único lugar que
               todas las rutas de rol comparten — ver useBreadcrumb.js para el mapeo

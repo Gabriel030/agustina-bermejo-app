@@ -1,7 +1,7 @@
 package com.red_escuela.backend.enrollment.dto;
 
-import com.red_escuela.backend.billing.api.AdvanceEnrollmentFeeView;
-import com.red_escuela.backend.billing.service.EnrollmentFeeRequirementService;
+import com.red_escuela.backend.enrollment.api.AdvanceEnrollmentFeeView;
+import com.red_escuela.backend.enrollment.api.EnrollmentFeeObligationView;
 
 import com.red_escuela.backend.shared.domain.Money;
 
@@ -14,9 +14,9 @@ public record EnrollmentFeeObligationResponse(Long templateId, int slot, int slo
                                               LocalDate dueDate, Money remainingBalance, boolean satisfied, @Nullable AdvanceEnrollmentFeeView advance) {
 
 
-    public static EnrollmentFeeObligationResponse from(EnrollmentFeeRequirementService.Obligation obligation) {
+    public static EnrollmentFeeObligationResponse from(EnrollmentFeeObligationView obligation) {
         return new EnrollmentFeeObligationResponse(obligation.templateId(), obligation.slot(), obligation.slotCount(), obligation.periodFrom(), obligation.periodTo(),
-                obligation.statusName(), obligation.invoiceId(), obligation.dueDate(), obligation.remainingBalance(), obligation.satisfied(),
+                obligation.status(), obligation.invoiceId(), obligation.dueDate(), obligation.remainingBalance(), obligation.satisfied(),
                 obligation.advance());
     }
 }

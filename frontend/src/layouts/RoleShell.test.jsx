@@ -35,10 +35,29 @@ describe('RoleShell', () => {
     expect(screen.getByRole('main')).toHaveClass('px-4', 'py-5', 'sm:px-8', 'sm:py-6');
   });
 
+  it('main reserves scroll padding so focused fields stay clear of the sticky action bar', () => {
+    renderShell();
+
+    expect(screen.getByRole('main')).toHaveClass('scroll-pb-32');
+  });
+
   it('mobile header shows the page title', () => {
     renderShell();
 
     const title = screen.getAllByText('Inicio').find((node) => node.className.includes('lg:hidden'));
+    expect(title).toBeDefined();
+  });
+
+  it('mobile header uses the singular closure title on the closure sheet', () => {
+    const items = [{ to: '/administrativo/cierres-de-comision', label: 'Cierres de comisión', icon: Home }];
+    renderWithProviders(
+      <ThemeProvider>
+        <RoleShell titulo="Administrativo" items={items} />
+      </ThemeProvider>,
+      { route: '/administrativo/cierre-de-comision/5' },
+    );
+
+    const title = screen.getAllByText('Cierre de comisión').find((node) => node.className.includes('lg:hidden'));
     expect(title).toBeDefined();
   });
 

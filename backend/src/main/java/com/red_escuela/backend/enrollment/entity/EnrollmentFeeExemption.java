@@ -1,6 +1,5 @@
 package com.red_escuela.backend.enrollment.entity;
 
-import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.enrollment.exception.EnrollmentFeeExemptionAlreadyRevokedException;
 import com.red_escuela.backend.identity.entity.Person;
 import jakarta.persistence.*;
@@ -27,9 +26,8 @@ public class EnrollmentFeeExemption {
     @JoinColumn(name = "program_enrollment_id", nullable = false)
     private ProgramEnrollment programEnrollment;
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "template_id", nullable = false)
-    private ProgramYearBillingTemplate template;
+    @Column(name = "template_id", nullable = false)
+    private Long templateId;
 
     @Column(name = "slot", nullable = false)
     private Integer slot;

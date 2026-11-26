@@ -1,5 +1,7 @@
 package com.red_escuela.backend.academicstructure.service;
 
+import com.red_escuela.backend.academicstructure.exception.InstructorScheduleConflictException;
+import com.red_escuela.backend.academicstructure.entity.SectionScheduleSlot;
 import com.red_escuela.backend.academicstructure.dto.AssignInstructorRequest;
 import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateSectionRequest;
@@ -152,7 +154,7 @@ public class SubjectSectionService {
             throw new SectionHasActiveEnrollmentsException(id);
         }
         section.setStatus(StatusType.INACTIVE);
-        sectionRepository.save(section);
+        sectionRepository.saveAndFlush(section);
     }
 
     @Transactional
@@ -168,8 +170,8 @@ public class SubjectSectionService {
         SubjectSection section = findOrThrow(sectionId);
         Instructor instructor = instructorRepository.findById(request.instructorId())
                 .orElseThrow(() -> new InstructorNotFoundException(request.instructorId()));
-        conflictChecker.checkInstructorAvailability(
-                section.getTerm(), instructor.getId(), slotRepository.findBySubjectSectionId(sectionId));
+        List<SectionScheduleSlot> sectionSlots = slotRepository.findBySubjectSectionId(sectionId);
+        conflictChecker.checkInstructorAvailability(section.getTerm(), instructor.getId(), sectionSlots);
 
         SubjectSectionInstructor assignment = new SubjectSectionInstructor();
         assignment.setSection(section);
@@ -183,6 +185,14 @@ public class SubjectSectionService {
         try {
             return sectionInstructorRepository.saveAndFlush(assignment);
         } catch (DataIntegrityViolationException e) {
+            if (ScheduleExclusionViolation.isInstructorOverlap(e) && !sectionSlots.isEmpty()) {
+                SectionScheduleSlot slot = sectionSlots.get(0);
+                throw new InstructorScheduleConflictException(
+                        request.instructorId(), slot.getDayOfWeek(), slot.getStartTime(), slot.getEndTime());
+            }
+            if (ScheduleExclusionViolation.isInstructorOverlap(e)) {
+                throw e;
+            }
             throw new InstructorAlreadyAssignedException(request.instructorId(), sectionId);
         }
     }

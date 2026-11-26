@@ -82,7 +82,7 @@ Objects `Money`, `Percentage`, `Grade`, etc., más `StatusType` y `Address`),
   de uso de su módulo (y DTOs), nunca de `service` ni de `repository` (regla R4,
   congelada). Además, `@Transactional` ya no se declara en los casos de uso nuevos:
   vive en el especialista (`service` o `..api..`) que es el compositor más externo
-  de las escrituras; los casos de uso existentes que lo tienen quedan congelados.
+  de las escrituras; la regla R10 corre sin congelar.
   Ver `adr/0002-patron-de-modulos.md`.
 - **La persona autenticada nunca se resuelve de un id de la URL.** Se resuelve
   del `sub` del JWT vía `CurrentPersonService.resolveCurrentPerson()`
@@ -437,7 +437,7 @@ los perfiles `local` o `demo`.
 
 ## Transacciones: del caso de uso al compositor (D4, regla R10)
 
-Los casos de uso nuevos no declaran `@Transactional` (regla R10, `transactionsAreDeclaredOnlyInSpecialists`; los casos de uso existentes están congelados y la Épica 22 los migra). La transacción la abre un especialista de `service/`, `operation/`, `repository/` o `api/`.
+Los casos de uso nuevos no declaran `@Transactional` (regla R10, `transactionsAreDeclaredOnlyInSpecialists`, sin violaciones congeladas: la Épica 22 migró los casos de uso existentes). La transacción la abre un especialista de `service/`, `operation/`, `repository/` o `api/`.
 
 **Plantilla "caso de uso → compositor transaccional"** (un compositor por caso de uso que escribe en más de un lugar):
 
@@ -451,8 +451,6 @@ Los casos de uso nuevos no declaran `@Transactional` (regla R10, `transactionsAr
 **Open-in-view.** `spring.jpa.open-in-view` no está definido en `backend/src/main/resources`: rige el valor por defecto de Spring Boot (`true`), verificado por `AtomicityTestSupportIT.openInViewInterceptorIsRegisteredBecauseNoPropertyDisablesIt`. Efecto: durante una petición HTTP el `EntityManager` sigue abierto en el caso de uso y puede tapar un acceso perezoso fuera de transacción; no se apoyen en eso: los lectores devuelven records resueltos.
 
 **Test de atomicidad.** `AtomicityTestSupport` (`testsupport/`) observa un conjunto de tablas y ejecuta el flujo con un `FailingStep` que falla en el paso N; verifica con `count(*)` que el flujo falló por esa inyección y que no quedó ninguna fila nueva. El test no debe ser `@Transactional` (el soporte lo rechaza): una transacción de test esconde la falta de transacción del flujo. Ejemplo de uso en `AtomicityTestSupportIT`.
-
-**Progreso de R10.** `scripts/r10-progress` cuenta las líneas del almacén de R10 por módulo.
 
 ## Reglas de arquitectura
 

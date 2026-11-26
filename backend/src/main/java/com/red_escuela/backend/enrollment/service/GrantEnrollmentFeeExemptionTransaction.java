@@ -1,13 +1,8 @@
 package com.red_escuela.backend.enrollment.service;
 
 import org.springframework.dao.DataIntegrityViolationException;
-import com.red_escuela.backend.shared.billingterms.YearEnrollmentFeeTerms;
-import com.red_escuela.backend.shared.billingterms.YearEnrollmentFeeTermsLookup;
-import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
-import com.red_escuela.backend.billing.exception.InvalidEnrollmentFeeConfigurationException;
-import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateMismatchException;
-import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateNotFoundException;
-import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
+import com.red_escuela.backend.enrollment.api.EnrollmentFeeExemptionTermsPort;
+import com.red_escuela.backend.enrollment.api.EnrollmentFeeExemptionTermsView;
 import com.red_escuela.backend.enrollment.dto.GrantEnrollmentFeeExemptionRequest;
 import com.red_escuela.backend.enrollment.entity.EnrollmentFeeExemption;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -32,20 +27,18 @@ public class GrantEnrollmentFeeExemptionTransaction {
     private static final Logger log = LoggerFactory.getLogger(GrantEnrollmentFeeExemptionTransaction.class);
 
     private final ProgramEnrollmentRepository programEnrollmentRepository;
-    private final ProgramYearBillingTemplateRepository templateRepository;
-    private final YearEnrollmentFeeTermsLookup termsLookup;
+    private final EnrollmentFeeExemptionTermsPort exemptionTermsPort;
     private final EnrollmentFeeExemptionRepository exemptionRepository;
     private final CurrentPersonService currentPersonService;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
     public GrantEnrollmentFeeExemptionTransaction(ProgramEnrollmentRepository programEnrollmentRepository,
-                                              ProgramYearBillingTemplateRepository templateRepository, YearEnrollmentFeeTermsLookup termsLookup,
+                                              EnrollmentFeeExemptionTermsPort exemptionTermsPort,
                                               EnrollmentFeeExemptionRepository exemptionRepository, CurrentPersonService currentPersonService,
                                               ApplicationEventPublisher eventPublisher, Clock clock) {
         this.programEnrollmentRepository = programEnrollmentRepository;
-        this.templateRepository = templateRepository;
-        this.termsLookup = termsLookup;
+        this.exemptionTermsPort = exemptionTermsPort;
         this.exemptionRepository = exemptionRepository;
         this.currentPersonService = currentPersonService;
         this.eventPublisher = eventPublisher;
@@ -56,24 +49,17 @@ public class GrantEnrollmentFeeExemptionTransaction {
     public EnrollmentFeeExemption grant(Long programEnrollmentId, GrantEnrollmentFeeExemptionRequest request) {
         ProgramEnrollment enrollment = programEnrollmentRepository.findById(programEnrollmentId)
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(programEnrollmentId));
-        ProgramYearBillingTemplate template = templateRepository.findById(request.templateId())
-                .orElseThrow(() -> new ProgramYearBillingTemplateNotFoundException(request.templateId()));
-        if (!template.getProgram().getId().equals(enrollment.getProgram().getId())) {
-            throw new ProgramYearBillingTemplateMismatchException(template.getId());
-        }
-        YearEnrollmentFeeTerms terms = termsLookup.requireEnrollmentFeeTermsEffectiveOn(template.programId(), template.termId(), LocalDate.now(clock));
-        if (request.slot() > terms.enrollmentFeeCount()) {
-            throw new InvalidEnrollmentFeeConfigurationException("El año lectivo solo tiene " + terms.enrollmentFeeCount() + " matrícula(s)");
-        }
+        EnrollmentFeeExemptionTermsView terms = exemptionTermsPort.requireTermsForExemption(request.templateId(), enrollment.getProgram().getId(), request.slot(),
+                LocalDate.now(clock));
         if (!terms.blocksAnyProcedure()) {
-            throw new EnrollmentFeeExemptionNotNeededException("El año lectivo " + template.getId() + " no bloquea trámites por matrícula impaga");
+            throw new EnrollmentFeeExemptionNotNeededException("El año lectivo " + terms.templateId() + " no bloquea trámites por matrícula impaga");
         }
-        if (exemptionRepository.findByProgramEnrollmentIdAndTemplateIdAndSlotAndRevokedAtIsNull(programEnrollmentId, template.getId(), request.slot()).isPresent()) {
-            throw new EnrollmentFeeExemptionAlreadyExistsException(programEnrollmentId, template.getId(), request.slot());
+        if (exemptionRepository.findByProgramEnrollmentIdAndTemplateIdAndSlotAndRevokedAtIsNull(programEnrollmentId, terms.templateId(), request.slot()).isPresent()) {
+            throw new EnrollmentFeeExemptionAlreadyExistsException(programEnrollmentId, terms.templateId(), request.slot());
         }
         EnrollmentFeeExemption exemption = new EnrollmentFeeExemption();
         exemption.setProgramEnrollment(enrollment);
-        exemption.setTemplate(template);
+        exemption.setTemplateId(terms.templateId());
         exemption.setSlot(request.slot());
         exemption.setReason(request.reason().trim());
         exemption.setGrantedBy(currentPersonService.resolveCurrentPerson());
@@ -82,10 +68,10 @@ public class GrantEnrollmentFeeExemptionTransaction {
         try {
             saved = exemptionRepository.saveAndFlush(exemption);
         } catch (DataIntegrityViolationException e) {
-            throw new EnrollmentFeeExemptionAlreadyExistsException(programEnrollmentId, template.getId(), request.slot());
+            throw new EnrollmentFeeExemptionAlreadyExistsException(programEnrollmentId, terms.templateId(), request.slot());
         }
         log.info("Habilitación de matrícula otorgada: habilitacion={}, inscripcion={}, plantilla={}, matricula={}, por={}",
-                saved.getId(), programEnrollmentId, template.getId(), request.slot(), saved.getGrantedBy().getId());
+                saved.getId(), programEnrollmentId, terms.templateId(), request.slot(), saved.getGrantedBy().getId());
         eventPublisher.publishEvent(EnrollmentNotificationEvents.exemptionGrantOf(saved));
         return saved;
     }

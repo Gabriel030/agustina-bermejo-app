@@ -123,7 +123,7 @@ class EnrollmentTransactionBoundaryIT extends AbstractIntegrationTest {
 
             EnrollmentFeeExemption exemption = new EnrollmentFeeExemption();
             exemption.setProgramEnrollment(programEnrollment);
-            exemption.setTemplate(template);
+            exemption.setTemplateId(template.getId());
             exemption.setSlot(1);
             exemption.setReason("Habilitacion por situacion socioeconomica");
             exemption.setGrantedBy(staff);

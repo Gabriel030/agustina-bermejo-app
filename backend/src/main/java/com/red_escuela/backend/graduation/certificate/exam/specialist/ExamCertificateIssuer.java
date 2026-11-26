@@ -147,7 +147,7 @@ public class ExamCertificateIssuer {
                 command.examDate(), now.toLocalDate());
         Optional<CertificateTemplateVersion> publishedVersion = templateSource.findCurrentPublished(DocumentTemplateType.EXAM_CERTIFICATE);
         CertificateSnapshot snapshot = publishedVersion
-                .map(version -> templateSource.snapshotWith(builtInSnapshot.withExtraMarkers(extraMarkersOf(command)), version))
+                .map(version -> templateSource.snapshotWith(builtInSnapshot.withExtraMarkers(extraMarkersOf(command, expiresAt.toLocalDate())), version))
                 .orElse(builtInSnapshot);
         CertificateCode code = newUniqueCode();
         CertificateTemplateDefinition definition = template.definitionFor(snapshot, expiresAt.toLocalDate(), command.recipientType(),
@@ -192,8 +192,9 @@ public class ExamCertificateIssuer {
         return verificationUrl.of(certificate.certificateCode());
     }
 
-    private Map<String, String> extraMarkersOf(ExamCertificateIssueCommand command) {
+    private Map<String, String> extraMarkersOf(ExamCertificateIssueCommand command, LocalDate validUntil) {
         Map<String, String> markers = new HashMap<>();
+        markers.put("validUntil", validUntil.format(EXAM_DATE_FORMAT));
         markers.put("subjectName", command.subjectName());
         markers.put("examDate", command.examDate().format(EXAM_DATE_FORMAT));
         if (command.recipientText() != null) {
