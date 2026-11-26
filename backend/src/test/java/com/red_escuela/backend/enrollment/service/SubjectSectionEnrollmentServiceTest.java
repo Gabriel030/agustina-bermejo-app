@@ -45,6 +45,13 @@ import com.red_escuela.backend.enrollment.exception.EnrollmentFeeNotPaidExceptio
 import com.red_escuela.backend.identity.exception.StudentNotActiveException;
 import com.red_escuela.backend.enrollment.exception.SubjectNotInProgramPlanException;
 import com.red_escuela.backend.enrollment.exception.TermEnrollmentOverrideClosedException;
+import com.red_escuela.backend.academicstructure.entity.Instructor;
+import com.red_escuela.backend.attendance.entity.Attendance;
+import com.red_escuela.backend.attendance.entity.AttendanceStatus;
+import com.red_escuela.backend.attendance.repository.AttendanceRepository;
+import com.red_escuela.backend.evaluation.entity.GradeItem;
+import com.red_escuela.backend.evaluation.entity.GradeItemType;
+import com.red_escuela.backend.evaluation.repository.GradeItemRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -61,6 +68,7 @@ import java.time.YearMonth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 import com.red_escuela.backend.enrollment.exception.EnrollmentWindowClosedException;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
@@ -85,6 +93,12 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
 
     @Autowired
     private EntityManager entityManager;
+
+    @Autowired
+    private GradeItemRepository gradeItemRepository;
+
+    @Autowired
+    private AttendanceRepository attendanceRepository;
 
     private Institution persistInstitution() {
         Institution institution = new Institution();
@@ -1032,5 +1046,88 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         termDeactivation.deactivate(term.getId());
 
         assertThat(term.getStatus()).isEqualTo(StatusType.INACTIVE);
+    }
+
+    @Test
+    void changeSectionMidTermKeepsGradesAndAttendanceOfTheOriginSectionReadable() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("66400001", StatusType.ACTIVE, institution);
+        Subject subject = persistSubject("MateriaCambioMitadDeCuatrimestre");
+        Program program = persistProgram("CarreraCambioMitadDeCuatrimestre");
+        persistProgramSubject(program, subject);
+        Term term = persistTerm(null, null);
+        SubjectSection sectionA = persistSubjectSection(subject, term, null);
+        SubjectSection sectionB = persistSubjectSection(subject, term, null);
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
+        Instructor instructor = persistInstructor("66400002");
+        entityManager.flush();
+        SubjectSectionEnrollment origin = subjectSectionEnrollmentService.enroll(
+                programEnrollment.getId(), new CreateSectionEnrollmentRequest(sectionA.getId()));
+        GradeItem firstExam = persistExamGrade(origin, 1, "7.5");
+        GradeItem secondExam = persistExamGrade(origin, 2, "9.0");
+        Attendance present = persistAttendance(origin, instructor, LocalDate.of(2026, 4, 6), AttendanceStatus.PRESENT);
+        Attendance absent = persistAttendance(origin, instructor, LocalDate.of(2026, 4, 8), AttendanceStatus.ABSENT);
+        entityManager.flush();
+
+        SubjectSectionEnrollment destination = subjectSectionEnrollmentService.changeSection(
+                origin.getId(), new ChangeSectionRequest(sectionB.getId()),
+                EnrollmentChange.byStaff("Cambio de turno solicitado por el alumno", instructor.getPerson().getId()));
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(destination.getId()).isNotEqualTo(origin.getId());
+        assertThat(destination.getSubjectSection().getId()).isEqualTo(sectionB.getId());
+        assertThat(entityManager.find(SubjectSectionEnrollment.class, origin.getId()).getStatus()).isEqualTo(EnrollmentStatus.WITHDRAWN);
+        assertThat(gradeItemRepository.findByProgramSubjectSectionEnrollmentId(origin.getId()))
+                .extracting(GradeItem::getId, item -> item.getScore().value().doubleValue())
+                .containsExactlyInAnyOrder(
+                        tuple(firstExam.getId(), 7.5),
+                        tuple(secondExam.getId(), 9.0));
+        assertThat(attendanceRepository.findByProgramSubjectSectionEnrollmentId(origin.getId()))
+                .extracting(Attendance::getId, Attendance::getStatus)
+                .containsExactlyInAnyOrder(
+                        tuple(present.getId(), AttendanceStatus.PRESENT),
+                        tuple(absent.getId(), AttendanceStatus.ABSENT));
+        assertThat(gradeItemRepository.findByProgramSubjectSectionEnrollmentId(destination.getId())).isEmpty();
+        assertThat(attendanceRepository.findByProgramSubjectSectionEnrollmentId(destination.getId())).isEmpty();
+    }
+
+    private Instructor persistInstructor(String dni) {
+        Address address = new Address();
+        entityManager.persist(address);
+        Person person = new Person();
+        person.setName("Docente");
+        person.setLastname(dni);
+        person.setDni(dni);
+        person.setUsername(dni);
+        person.setEmail(dni + "@example.com");
+        person.setAddress(address);
+        person.setStatus(StatusType.ACTIVE);
+        entityManager.persist(person);
+        Instructor instructor = new Instructor();
+        instructor.setPerson(person);
+        entityManager.persist(instructor);
+        return instructor;
+    }
+
+    private GradeItem persistExamGrade(SubjectSectionEnrollment enrollment, int sequence, String score) {
+        GradeItem item = new GradeItem();
+        item.setProgramSubjectSectionEnrollment(enrollment);
+        item.setType(GradeItemType.EXAM);
+        item.setSequenceNumber(sequence);
+        item.setDate(LocalDateTime.of(2026, 4, 10, 10, 0));
+        item.setScore(Grade.of(new BigDecimal(score)));
+        entityManager.persist(item);
+        return item;
+    }
+
+    private Attendance persistAttendance(SubjectSectionEnrollment enrollment, Instructor instructor, LocalDate classDate, AttendanceStatus status) {
+        Attendance attendance = new Attendance();
+        attendance.setProgramSubjectSectionEnrollment(enrollment);
+        attendance.setClassDate(classDate);
+        attendance.setStatus(status);
+        attendance.setRecordedBy(instructor);
+        entityManager.persist(attendance);
+        return attendance;
     }
 }
