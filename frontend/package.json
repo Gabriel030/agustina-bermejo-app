@@ -29,7 +29,7 @@
     "@react-oauth/google": "^0.13.5",
     "@sentry/react": "11.11.0",
     "@tailwindcss/vite": "^4.3.3",
-    "@tanstack/react-query": "^5.105.2",
+    "@tanstack/react-query": "^5.108.3",
     "@tanstack/react-query-persist-client": "5.104.5",
     "@tanstack/react-table": "8.21.3",
     "class-variance-authority": "^0.7.1",
