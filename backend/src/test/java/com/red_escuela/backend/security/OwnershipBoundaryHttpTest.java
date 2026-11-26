@@ -43,7 +43,10 @@ class OwnershipBoundaryHttpTest extends AuthorizationMatrixSupport {
         INVOICE_MP_PREFERENCE(HttpMethod.POST, "/me/invoices/%d/mp-preference", OwnershipKind.INVOICE),
         INVOICE_PRICE_BREAKDOWN(HttpMethod.GET, "/me/invoices/%d/price-breakdown", OwnershipKind.INVOICE),
         NOTIFICATION_READ(HttpMethod.POST, "/me/notifications/%d/read", OwnershipKind.NOTIFICATION),
-        SESSION_REVOKE(HttpMethod.DELETE, "/me/sessions/%d", OwnershipKind.SESSION);
+        SESSION_REVOKE(HttpMethod.DELETE, "/me/sessions/%d", OwnershipKind.SESSION),
+        ANNOUNCEMENT_READ(HttpMethod.POST, "/me/announcements/%d/read", OwnershipKind.ANNOUNCEMENT_RECIPIENT),
+        COURSE_ENROLLMENT_INVOICES(HttpMethod.GET, "/me/course-enrollments/%d/invoices", OwnershipKind.COURSE_ENROLLMENT),
+        PROGRAM_ENROLLMENT_INVOICES(HttpMethod.GET, "/me/program-enrollments/%d/invoices", OwnershipKind.PROGRAM_ENROLLMENT);
 
         private final HttpMethod method;
         private final String template;

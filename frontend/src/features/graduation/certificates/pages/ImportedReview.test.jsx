@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, fireEvent, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
@@ -191,7 +191,7 @@ describe('StaffGraduationCertificates · Revisión de importados', () => {
   });
 
   it('selects rows, shows the action bar and stops at the batch limit', async () => {
-    const user = userEvent.setup({ delay: null });
+    const user = userEvent.setup();
     const many = Array.from({ length: REVIEW_BATCH_LIMIT + 1 }, (_, index) =>
       graduationCertificateReview({ graduationRequestId: 100 + index, studentFullName: `Alumno ${index + 1}` }),
     );
@@ -201,9 +201,10 @@ describe('StaffGraduationCertificates · Revisión de importados', () => {
 
     await screen.findByRole('checkbox', { name: 'Seleccionar a Alumno 1' });
     expect(screen.queryByRole('region', { name: 'Acciones sobre la selección' })).not.toBeInTheDocument();
-    for (let index = 1; index <= REVIEW_BATCH_LIMIT; index += 1) {
-      await user.click(screen.getByRole('checkbox', { name: `Seleccionar a Alumno ${index}` }));
-    }
+    const boxes = Array.from({ length: REVIEW_BATCH_LIMIT }, (_, index) => screen.getByLabelText(`Seleccionar a Alumno ${index + 1}`));
+    act(() => {
+      boxes.forEach((box) => fireEvent.click(box));
+    });
 
     const bar = screen.getByRole('region', { name: 'Acciones sobre la selección' });
     expect(within(bar).getByText(`${REVIEW_BATCH_LIMIT} seleccionados`)).toBeInTheDocument();

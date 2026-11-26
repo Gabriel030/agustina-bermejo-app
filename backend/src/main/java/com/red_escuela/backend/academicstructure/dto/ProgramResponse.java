@@ -6,6 +6,8 @@ import com.red_escuela.backend.shared.module.CatalogPriced;
 import lombok.Builder;
 import lombok.Getter;
 
+import java.time.LocalDateTime;
+
 
 @Getter
 @Builder(toBuilder = true)
@@ -19,6 +21,8 @@ public class ProgramResponse implements CatalogPriced<ProgramResponse> {
     private final Integer totalCreditsRequired;
     private final Integer totalHoursRequired;
     private final boolean visibleInCatalog;
+    private final String area;
+    private final LocalDateTime catalogPublishedAt;
     private final String teachingMode;
     private final String level;
     private final String graduationProfile;
@@ -44,6 +48,8 @@ public class ProgramResponse implements CatalogPriced<ProgramResponse> {
                 .totalCreditsRequired(program.getTotalCreditsRequired())
                 .totalHoursRequired(program.getTotalHoursRequired())
                 .visibleInCatalog(program.isVisibleInCatalog())
+                .area(program.getCatalogArea() == null ? null : program.getCatalogArea().name())
+                .catalogPublishedAt(program.getCatalogPublishedAt())
                 .teachingMode(program.getTeachingMode() == null ? null : program.getTeachingMode().name())
                 .level(program.getLevel() == null ? null : program.getLevel().name())
                 .graduationProfile(program.getGraduationProfile())
