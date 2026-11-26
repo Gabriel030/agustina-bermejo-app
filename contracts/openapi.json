@@ -10692,6 +10692,10 @@
           "available" : {
             "type" : "boolean"
           },
+          "currency" : {
+            "enum" : [ "ARS", "USD" ],
+            "type" : "string"
+          },
           "goal" : {
             "$ref" : "#/components/schemas/GoalResponse"
           },
@@ -10714,7 +10718,7 @@
             "type" : "array"
           }
         },
-        "required" : [ "available", "goal", "months", "panel", "partial", "series" ],
+        "required" : [ "available", "currency", "goal", "months", "panel", "partial", "series" ],
         "type" : "object"
       },
       "MpPreferenceResponse" : {

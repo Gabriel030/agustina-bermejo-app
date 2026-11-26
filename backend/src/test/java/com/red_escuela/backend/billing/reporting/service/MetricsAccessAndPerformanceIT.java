@@ -43,6 +43,14 @@ class MetricsAccessAndPerformanceIT extends AbstractMonthlyMetricsIT {
     }
 
     @Test
+    void everyPanelReportsTheCurrencyTheServerResolved() throws Exception {
+        for (String panel : PANELS) {
+            assertThat(metric(directorToken, panel, "currency=USD").get("currency").asString("")).as(panel).isEqualTo("USD");
+            assertThat(metric(directorToken, panel, "currency=ARS").get("currency").asString("")).as(panel).isEqualTo("ARS");
+        }
+    }
+
+    @Test
     @Tag("D-355")
     void everyPanelRejectsPreceptorAndStudent() throws Exception {
         String preceptor = newStaff("PRECEPTOR").token();
