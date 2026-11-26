@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { CheckCircle2, Loader2, XCircle } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
-import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { describeError } from '@/api/describeError';
 import { useConfirmGuardian } from '@/features/identity/hooks/useLegal';
 
@@ -26,9 +25,6 @@ export function ConfirmarResponsable() {
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center p-4">
       <div className="w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center gap-3">
-          <InstitutionBrand />
-        </div>
         <GlassCard className="flex flex-col items-center gap-4 p-8 text-center" aria-live="polite">
           {state === 'loading' && (
             <>

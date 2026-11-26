@@ -1,7 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { GlassCard } from '@/components/GlassCard';
-import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { CertificateDetails } from '@/features/graduation/certificates/components/CertificateDetails';
@@ -105,8 +104,6 @@ export function VerifyCertificate() {
   return (
     <div className="relative min-h-screen px-4 pt-7 pb-12">
       <div className="mx-auto flex max-w-[560px] flex-col gap-4">
-        <InstitutionBrand layout="horizontal" titulo="Instituto Agustina Bermejo" className="justify-center" />
-
         {certificate && !verdict.undetermined && (
           <p className="text-center text-size-12 tabular-nums [overflow-wrap:anywhere] text-ink-faint">
             verificar/{formatCertificateCode(normalized)}

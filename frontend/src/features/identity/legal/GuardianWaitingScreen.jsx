@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { MailCheck } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
-import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/AuthContext';
 import { RateLimitedError } from '@/api/client';
@@ -47,7 +46,6 @@ export function GuardianWaitingScreen() {
   return (
     <div className="relative flex min-h-screen items-center justify-center px-4 py-8">
       <GlassCard className="flex w-full max-w-[480px] flex-col items-center gap-4 p-6 text-center sm:p-10">
-        <InstitutionBrand />
         <div className="flex size-14 items-center justify-center rounded-full bg-accent-soft">
           <MailCheck className="size-7 text-brand" aria-hidden="true" />
         </div>

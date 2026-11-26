@@ -3,7 +3,6 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { m } from 'motion/react';
 import { CheckCircle2, XCircle, Loader2 } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
-import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { apiFetch } from '@/api/client';
 
 export function VerificacionEmail() {
@@ -30,9 +29,6 @@ export function VerificacionEmail() {
         transition={{ duration: 0.25 }}
         className="w-full max-w-sm"
       >
-        <div className="mb-8 flex flex-col items-center gap-3">
-          <InstitutionBrand />
-        </div>
 
         <GlassCard className="p-8 flex flex-col items-center gap-4 text-center">
           {estado === 'verificando' && (
@@ -48,7 +44,7 @@ export function VerificacionEmail() {
                 <CheckCircle2 size={36} className="text-success" />
               </div>
               <div>
-                <p className="font-heading text-lg font-bold text-ink">Email confirmado</p>
+                <h1 className="font-heading text-lg font-bold text-ink">Email confirmado</h1>
                 <p className="mt-1 text-size-13 text-ink-soft">
                   Tu email quedó confirmado. Desde ahora lo usás para ingresar.
                 </p>
@@ -65,7 +61,7 @@ export function VerificacionEmail() {
                 <XCircle size={36} className="text-danger" />
               </div>
               <div>
-                <p className="font-heading text-lg font-bold text-ink">El enlace venció o ya se usó</p>
+                <h1 className="font-heading text-lg font-bold text-ink">El enlace venció o ya se usó</h1>
                 <p className="mt-1 text-size-13 text-ink-soft">
                   Los enlaces duran 48 horas y sirven una sola vez. Si todavía no confirmaste tu email, entrá a Mi perfil y pedí un enlace nuevo; si ya lo confirmaste, no hace falta hacer nada más.
                 </p>
