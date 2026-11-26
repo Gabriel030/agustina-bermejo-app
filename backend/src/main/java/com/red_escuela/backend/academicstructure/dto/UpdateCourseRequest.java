@@ -10,5 +10,12 @@ import java.time.LocalDateTime;
 public record UpdateCourseRequest(
         String name, String schedule, @Positive Integer capacity, @NonNegativeMoney Money price,
         @Positive Integer durationMonths, TeachingMode teachingMode,
-        LocalDateTime registrationStart, LocalDateTime registrationEnd) {
+        LocalDateTime registrationStart, LocalDateTime registrationEnd,
+        @Positive(message = "La carga horaria debe ser mayor a cero") Integer durationHours) {
+
+    public UpdateCourseRequest(String name, String schedule, Integer capacity, Money price, Integer durationMonths,
+                               TeachingMode teachingMode, LocalDateTime registrationStart,
+                               LocalDateTime registrationEnd) {
+        this(name, schedule, capacity, price, durationMonths, teachingMode, registrationStart, registrationEnd, null);
+    }
 }

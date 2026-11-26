@@ -71,6 +71,9 @@ public class Course {
     @Column(name = "duration_months")
     private Integer durationMonths;
 
+    @Column(name = "duration_hours")
+    private Integer durationHours;
+
     @Column(name = "waitlist_deadline_offset_days")
     private Integer waitlistDeadlineOffsetDays;
 

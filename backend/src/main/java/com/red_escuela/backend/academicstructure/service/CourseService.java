@@ -61,6 +61,7 @@ public class CourseService {
                 .schedule(request.schedule())
                 .capacity(request.capacity())
                 .durationMonths(request.durationMonths())
+                .durationHours(request.durationHours())
                 .teachingMode(request.teachingMode())
                 .registrationStart(request.registrationStart())
                 .registrationEnd(request.registrationEnd())
@@ -87,6 +88,7 @@ public class CourseService {
         Optional.ofNullable(request.capacity()).ifPresent(course::setCapacity);
         adjustPriceIfChanged(course, request.price());
         Optional.ofNullable(request.durationMonths()).ifPresent(course::setDurationMonths);
+        Optional.ofNullable(request.durationHours()).ifPresent(course::setDurationHours);
         Optional.ofNullable(request.teachingMode()).ifPresent(course::setTeachingMode);
         Optional.ofNullable(request.registrationStart()).ifPresent(course::setRegistrationStart);
         Optional.ofNullable(request.registrationEnd()).ifPresent(course::setRegistrationEnd);
