@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-const CLOSE_DELAY_MS = 200;
+const OPEN_DELAY_MS = 90;
+const CLOSE_DELAY_MS = 220;
 
 export function useTopNavMenus(pathname) {
   const [state, setState] = useState({ id: null, pathname });
@@ -29,6 +30,10 @@ export function useTopNavMenus(pathname) {
     (id, source) => {
       cancelClose();
       openedBy.current = source;
+      if (source === 'hover') {
+        closeTimer.current = setTimeout(() => setOpenId(id), OPEN_DELAY_MS);
+        return;
+      }
       setOpenId(id);
     },
     [cancelClose, setOpenId],

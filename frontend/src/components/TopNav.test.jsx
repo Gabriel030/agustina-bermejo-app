@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { screen, waitFor, within } from '@testing-library/react';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { axe } from '@/test/axe';
@@ -71,7 +71,7 @@ describe('TopNav', () => {
     renderTopNav();
 
     await user.hover(trigger('Personas'));
-    expect(trigger('Personas')).toHaveAttribute('aria-expanded', 'true');
+    await waitFor(() => expect(trigger('Personas')).toHaveAttribute('aria-expanded', 'true'));
 
     await user.unhover(trigger('Personas'));
     expect(trigger('Personas')).toHaveAttribute('aria-expanded', 'true');
@@ -83,6 +83,7 @@ describe('TopNav', () => {
     renderTopNav();
 
     await user.hover(trigger('Personas'));
+    await waitFor(() => expect(trigger('Personas')).toHaveAttribute('aria-expanded', 'true'));
     await user.unhover(trigger('Personas'));
     await user.hover(trigger('Personas'));
     await new Promise((resolve) => setTimeout(resolve, 350));
@@ -95,6 +96,7 @@ describe('TopNav', () => {
     renderTopNav();
 
     await user.hover(trigger('Personas'));
+    await waitFor(() => expect(trigger('Personas')).toHaveAttribute('aria-expanded', 'true'));
     await user.click(trigger('Personas'));
 
     expect(trigger('Personas')).toHaveAttribute('aria-expanded', 'true');
@@ -276,5 +278,40 @@ describe('TopNav', () => {
     await user.click(trigger('Académico'));
 
     expect(await axe(container)).toHaveNoViolations();
+  });
+
+  describe('hover timing', () => {
+    afterEach(() => vi.useRealTimers());
+
+    it('opensAfter90msOfHoverAndClosesAfter220msOfGrace', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      renderTopNav();
+
+      await user.hover(trigger('Personas'));
+      act(() => vi.advanceTimersByTime(60));
+      expect(trigger('Personas')).toHaveAttribute('aria-expanded', 'false');
+      act(() => vi.advanceTimersByTime(60));
+      expect(trigger('Personas')).toHaveAttribute('aria-expanded', 'true');
+
+      await user.unhover(trigger('Personas'));
+      act(() => vi.advanceTimersByTime(180));
+      expect(trigger('Personas')).toHaveAttribute('aria-expanded', 'true');
+      act(() => vi.advanceTimersByTime(80));
+      expect(trigger('Personas')).toHaveAttribute('aria-expanded', 'false');
+    });
+
+    it('doesNotOpenWhenThePointerLeavesBeforeTheOpenDelay', async () => {
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
+      renderTopNav();
+
+      await user.hover(trigger('Personas'));
+      act(() => vi.advanceTimersByTime(20));
+      await user.unhover(trigger('Personas'));
+      act(() => vi.advanceTimersByTime(500));
+
+      expect(trigger('Personas')).toHaveAttribute('aria-expanded', 'false');
+    });
   });
 });

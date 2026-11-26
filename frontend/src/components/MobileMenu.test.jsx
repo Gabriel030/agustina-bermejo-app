@@ -22,11 +22,23 @@ const GROUPS = [
   { id: 'staff', label: 'Equipo', items: [ITEMS[2]] },
 ];
 
-async function openDrawer({ withGroups = true } = {}) {
+const SECTIONED_GROUPS = [
+  {
+    id: 'academic',
+    label: 'Académico',
+    items: [ITEMS[1], ITEMS[2]],
+    sections: [
+      { id: 'one', label: 'Primera sección', items: [ITEMS[1]] },
+      { id: 'two', label: 'Segunda sección', items: [ITEMS[2]] },
+    ],
+  },
+];
+
+async function openDrawer({ withGroups = true, groups = GROUPS } = {}) {
   render(
     <ThemeProvider>
       <MemoryRouter initialEntries={['/director/alumnos']}>
-        <MobileMenu titulo="Director" items={ITEMS} groups={withGroups ? GROUPS : undefined} />
+        <MobileMenu titulo="Director" items={ITEMS} groups={withGroups ? groups : undefined} />
       </MemoryRouter>
     </ThemeProvider>,
   );
@@ -34,6 +46,16 @@ async function openDrawer({ withGroups = true } = {}) {
 }
 
 describe('MobileMenu', () => {
+  it('shows each section of a grid group as a subtitle with its items below', async () => {
+    await openDrawer({ groups: SECTIONED_GROUPS });
+
+
+    expect(screen.getByRole('button', { name: 'Académico' })).toHaveAttribute('aria-expanded', 'true');
+    expect(screen.getByText('Primera sección')).toBeInTheDocument();
+    expect(screen.getByRole('list', { name: 'Segunda sección' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Personal' })).toBeInTheDocument();
+  });
+
   it('starts with only the group of the current page expanded', async () => {
     await openDrawer();
 
