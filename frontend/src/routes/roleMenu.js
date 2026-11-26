@@ -195,25 +195,31 @@ const MENU_GROUPS = {
   director: [
     { id: 'main', label: null, slugs: ['inicio'] },
     { id: 'people', label: 'Personas', slugs: ['alumnos', 'personal', 'comunicaciones', 'invitaciones'] },
-    { id: 'enrollment', label: 'Inscripciones', slugs: ['inscripciones/listas-de-espera'] },
+    { id: 'waitlists', label: null, slugs: ['inscripciones/listas-de-espera'] },
     {
       id: 'academic',
       label: 'Académico',
-      columns: 2,
-      slugs: ['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'mesas-de-examen', 'cierres-de-comision', 'periodos', 'constancias', 'constancias-por-excepcion', 'egresos', 'plantilla-de-certificados', 'firmantes'],
+      sections: [
+        { id: 'offering', label: 'Oferta y períodos', slugs: ['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'periodos'] },
+        { id: 'coursework', label: 'Cursada', slugs: ['mesas-de-examen', 'cierres-de-comision'] },
+        {
+          id: 'graduation',
+          label: 'Egresos y certificados',
+          slugs: ['egresos', 'plantilla-de-certificados', 'firmantes', 'constancias', 'constancias-por-excepcion'],
+        },
+      ],
     },
     {
       id: 'billing',
       label: 'Facturación',
-      columns: 2,
       slugs: [
         'facturacion',
-        'descuentos',
-        'precios',
+        'emision-mensual',
         'recordatorios-de-pago',
         'medios-de-pago',
         'terminos-del-pago-anual',
-        'emision-mensual',
+        'precios',
+        'descuentos',
         'financiero',
       ],
     },
@@ -240,9 +246,9 @@ export function groupMenuItems(role, items) {
         const sections = group.sections
           .map((section) => ({ id: section.id, label: section.label, items: pick(section.slugs) }))
           .filter((section) => section.items.length > 0);
-        return { id: group.id, label: group.label, columns: 1, sections, items: sections.flatMap((section) => section.items) };
+        return { id: group.id, label: group.label, sections, items: sections.flatMap((section) => section.items) };
       }
-      return { id: group.id, label: group.label, columns: group.columns ?? 1, items: [...pick(group.slugs), ...unmapped] };
+      return { id: group.id, label: group.label, items: [...pick(group.slugs), ...unmapped] };
     })
     .filter((group) => group.items.length > 0);
 }
