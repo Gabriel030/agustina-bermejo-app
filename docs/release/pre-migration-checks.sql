@@ -342,6 +342,8 @@ begin
       ('subject_equivalence', 'status', array['ACTIVE', 'VOIDED']),
       ('subject_section', 'status', array['ACTIVE', 'DELETED', 'INACTIVE']),
       ('subject_section_enrollment', 'status', array['APPROVED', 'ENROLLED', 'FAILED', 'IN_PROGRESS', 'REGULAR', 'WAITLISTED', 'WAITLIST_EXPIRED', 'WITHDRAWN']),
+      ('informative_session', 'modality', array['IN_PERSON', 'ONLINE']),
+      ('informative_session', 'status', array['CANCELLED', 'COMPLETED', 'SCHEDULED']),
       ('subject_section_instructor', 'role', array['ASSISTANT', 'GUEST', 'LAB', 'LEAD', 'PRACTICAL']),
       ('term', 'enrollment_override', array['CLOSED', 'OPEN']),
       ('term', 'status', array['ACTIVE', 'DELETED', 'INACTIVE']),

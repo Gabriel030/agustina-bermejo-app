@@ -64,6 +64,7 @@ class PermissionGateCoverageTest {
             ROOT + ".enrollment.controller.MeCourseEnrollmentController",
             ROOT + ".enrollment.controller.MeEnrollmentChangeController",
             ROOT + ".enrollment.controller.MeEnrollmentController",
+            ROOT + ".enrollment.controller.MeInformativeSessionController",
             ROOT + ".enrollment.controller.ProgramEnrollmentApplicationWithDocumentsController",
             ROOT + ".academicrecord.controller.MeAcademicRecordController",
             ROOT + ".academicrecord.controller.MeCalendarFeedController",
