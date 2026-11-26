@@ -131,6 +131,7 @@ describe('ReunionesInformativas', () => {
   });
 
   it('showsTheEmptyStateWhenThereAreNoSessions', async () => {
+    listSessions([]);
     renderWithProviders(<ReunionesInformativas />);
 
     expect(await screen.findByText('Todavía no hay reuniones programadas')).toBeInTheDocument();
