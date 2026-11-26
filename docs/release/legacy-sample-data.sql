@@ -22,10 +22,10 @@ overriding system value values
 insert into holiday (date, name, description, type) values ('2025-05-01', 'Dia del Trabajador', 'Dia del Trabajador', 'NATIONAL'), ('2025-07-09', 'Dia de la Independencia', 'Dia de la Independencia', 'NATIONAL');
 
 insert into program (id, currency) overriding system value values (9001, 'ARS');
-insert into program_enrollment (id, program_id, student_id, status)
+insert into program_enrollment (id, program_id, student_id, status, completion_date)
 overriding system value values
-    (9001, 9001, 9001, 'COMPLETED'),
-    (9002, 9001, 9002, 'COMPLETED');
+    (9001, 9001, 9001, 'COMPLETED', '2025-08-01 10:00:00'),
+    (9002, 9001, 9002, 'COMPLETED', '2025-08-01 10:00:00');
 
 insert into graduation_request (id, program_enrollment_id, status, requested_at, decided_by_id, decided_at)
 overriding system value values
