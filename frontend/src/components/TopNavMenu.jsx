@@ -25,7 +25,7 @@ export function MenuLink({ item, menus }) {
   );
 }
 
-export function TopNavMenu({ id, active, open, menus, columns = 1, align = 'start', trigger, children }) {
+export function TopNavMenu({ id, active, open, menus, wide = false, align = 'start', trigger, children }) {
   const containerRef = useRef(null);
   const triggerRef = useRef(null);
   const panelRef = useRef(null);
@@ -139,7 +139,7 @@ export function TopNavMenu({ id, active, open, menus, columns = 1, align = 'star
         className={cn(
           'absolute top-[calc(100%+6px)] z-40 rounded-card border border-border bg-surface p-2 shadow-overlay',
           align === 'end' ? 'right-0' : 'left-0',
-          columns === 'grid' ? 'w-[45rem] max-w-[calc(100vw-2rem)]' : columns === 2 ? 'w-[30rem]' : 'min-w-60',
+          wide ? 'w-[45rem] max-w-[calc(100vw-2rem)]' : 'min-w-60',
         )}
       >
         {children}

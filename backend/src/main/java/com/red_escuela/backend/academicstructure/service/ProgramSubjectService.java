@@ -23,7 +23,7 @@ import com.red_escuela.backend.academicstructure.exception.InvalidCorequisiteExc
 import com.red_escuela.backend.academicstructure.exception.InvalidPrerequisiteException;
 import com.red_escuela.backend.academicstructure.exception.InvalidProgramSubjectCategoryException;
 import com.red_escuela.backend.academicstructure.exception.PrerequisiteAlreadyExistsException;
-import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
+import com.red_escuela.backend.academicstructure.domain.ProgramNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.ProgramSubjectAlreadyExistsException;
 import com.red_escuela.backend.academicstructure.exception.PrerequisiteNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.ProgramSubjectNotFoundException;

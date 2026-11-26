@@ -1,7 +1,7 @@
 package com.red_escuela.backend.academicstructure.usecase;
 
 import com.red_escuela.backend.academicstructure.dto.ProgramResponse;
-import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
+import com.red_escuela.backend.academicstructure.domain.ProgramNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.academicstructure.service.OfferingListPriceReader;
 import com.red_escuela.backend.shared.UseCase;
