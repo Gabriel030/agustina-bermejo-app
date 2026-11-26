@@ -17,7 +17,7 @@ import com.red_escuela.backend.notification.repository.NotificationRepository;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.exception.EnrollmentFeeNotPaidException;
-import com.red_escuela.backend.enrollment.exception.EnrollmentFeeNotPaidForTermException;
+import com.red_escuela.backend.enrollment.api.EnrollmentFeeNotPaidForTermException;
 import com.red_escuela.backend.enrollment.service.SubjectSectionEnrollmentService;
 import com.red_escuela.backend.graduation.specialist.ProgramCertificateIssuer;
 import com.red_escuela.backend.identity.entity.Person;

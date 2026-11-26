@@ -27,7 +27,7 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.api.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
-import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
+import com.red_escuela.backend.enrollment.api.ProgramProgressReader;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -46,7 +46,7 @@ public class InvoicePlanningContextLoader {
     private final InvoiceRepository invoiceRepository;
     private final CreditNoteRepository creditNoteRepository;
     private final PaymentPlanSelectionRepository selectionRepository;
-    private final ProgramEnrollmentService programEnrollmentService;
+    private final ProgramProgressReader programProgressReader;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final YearCycleFactory cycleFactory;
     private final BillingConfigurationReader configurationReader;
@@ -55,7 +55,7 @@ public class InvoicePlanningContextLoader {
 
     public InvoicePlanningContextLoader(ProgramYearBillingTemplateRepository templateRepository, AcademicReferenceFinder academicReferenceFinder,
                                        InvoiceRepository invoiceRepository, CreditNoteRepository creditNoteRepository, PaymentPlanSelectionRepository selectionRepository,
-                                       ProgramEnrollmentService programEnrollmentService,
+                                       ProgramProgressReader programProgressReader,
                                        ProgramEnrollmentRepository programEnrollmentRepository,
                                        YearCycleFactory cycleFactory, BillingConfigurationReader configurationReader,
                                        EnrollmentPaymentStandingQuery standingQuery) {
@@ -68,7 +68,7 @@ public class InvoicePlanningContextLoader {
         this.invoiceRepository = invoiceRepository;
         this.creditNoteRepository = creditNoteRepository;
         this.selectionRepository = selectionRepository;
-        this.programEnrollmentService = programEnrollmentService;
+        this.programProgressReader = programProgressReader;
     }
 
     public record PlanningContext(ProgramInvoicePlanningFacts facts, PaymentPlanSelection selection) {
@@ -89,8 +89,8 @@ public class InvoicePlanningContextLoader {
         boolean completed = false;
         boolean onlyFinals = false;
         if (active && !suspended) {
-            completed = programEnrollmentService.calculateProgress(enrollmentId).elegibleParaCompletar();
-            onlyFinals = programEnrollmentService.hasOnlyFinalExamsLeft(enrollmentId);
+            completed = programProgressReader.calculateProgress(enrollmentId).eligibleToComplete();
+            onlyFinals = programProgressReader.hasOnlyFinalExamsLeft(enrollmentId);
         }
         List<PaymentPlanSelection> selections = selectionRepository.findByProgramEnrollmentIdOrderByEffectiveFrom(enrollmentId);
         PaymentPlanSelection selectionAtMonth = selectionRepository.findActiveForProgramEnrollment(enrollmentId, month).orElse(null);
