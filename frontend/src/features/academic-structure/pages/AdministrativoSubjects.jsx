@@ -15,6 +15,7 @@ import { LoadErrorState } from '@/components/LoadErrorState';
 import { DataTable } from '@/components/table/DataTable';
 import { matchesSearch } from '@/lib/catalog';
 import { TEACHING_MODE_LABELS } from '@/lib/teachingMode';
+import { AcademicManagementHome } from '@/features/academic-structure/components/AcademicManagementHome';
 import SubjectLifecycleAction from '@/features/academic-structure/components/SubjectLifecycleAction';
 import { useSubjects } from '@/features/academic-structure/hooks/useSubjects';
 import { usePrograms, useSetProgramCatalogVisibility } from '@/features/academic-structure/hooks/usePrograms';
@@ -505,6 +506,7 @@ export function AdministrativoSubjects() {
 
   return (
     <PageContainer title="Gestión académica" action={accionBoton}>
+      <AcademicManagementHome onViewAllPublishedPrograms={() => handleSectionChange('oferta')} />
       <GlassCard className="p-4">
         <div className="mb-4 flex flex-col gap-3">
           <Tabs value={section} onValueChange={handleSectionChange}>
