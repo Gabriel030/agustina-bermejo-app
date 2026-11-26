@@ -4,7 +4,7 @@ import { ROLE_MENU, groupMenuItems, menuGroupSlugs, menuItemsFor, pagesFor } fro
 import { roleRoutesFor } from '@/routes/featureRoutes';
 import { hasRealScreen } from '@/routes/menuAccess';
 
-const LEGACY_REDIRECT_PATHS = ['listas-de-espera'];
+const LEGACY_REDIRECT_PATHS = ['listas-de-espera', 'opciones'];
 const PENDING_SCREENS = { alumno: [], administrativo: [], director: [] };
 
 describe('role menu manifest', () => {
@@ -79,11 +79,11 @@ describe('role menu manifest', () => {
     expect(groupMenuItems('docente', menuItemsFor('docente'))).toBeNull();
   });
 
-  it('groups the student menu keeping order, the catalog link and the options entry', () => {
+  it('groups the student menu keeping order and the catalog link without any options entry', () => {
     const groups = groupMenuItems('alumno', menuItemsFor('alumno'));
-    expect(groups.map((group) => group.label)).toEqual([null, 'Estudios', null, null, null]);
+    expect(groups.map((group) => group.label)).toEqual([null, 'Estudios', null, null]);
     expect(groups.flatMap((group) => group.items.map((item) => item.label))).toEqual([
-      'Inicio', 'Calendario', 'Mis cursos', 'Mis carreras', 'Mis certificados', 'Pagos', 'Catálogo', 'Opciones',
+      'Inicio', 'Calendario', 'Mis cursos', 'Mis carreras', 'Mis certificados', 'Pagos', 'Catálogo',
     ]);
   });
 

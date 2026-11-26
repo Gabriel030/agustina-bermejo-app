@@ -11,19 +11,17 @@ import { useAuth } from '@/context/AuthContext';
 import { useActiveRole } from '@/hooks/useActiveRole';
 import { useTopNavMenus } from '@/hooks/useTopNavMenus';
 
-const OPTIONS_LABEL = 'Opciones';
 function isActivePath(item, pathname) {
   return pathname === item.to || pathname.startsWith(`${item.to}/`);
 }
 
 function buildEntries(items, groups) {
-  const visible = items.filter((item) => item.label !== OPTIONS_LABEL);
-  if (!groups) return visible.map((item) => ({ type: 'link', id: item.to, item }));
+  if (!groups) return items.map((item) => ({ type: 'link', id: item.to, item }));
   return groups.flatMap((group) => {
-    const own = group.items.filter((item) => item.label !== OPTIONS_LABEL);
+    const own = group.items;
     if (own.length === 0) return [];
     if (!group.label) return own.map((item) => ({ type: 'link', id: item.to, item }));
-    const sections = group.sections?.map((section) => ({ ...section, items: section.items.filter((item) => item.label !== OPTIONS_LABEL) }));
+    const sections = group.sections;
     return [{ type: 'group', id: group.id, label: group.label, columns: sections ? 'grid' : (group.columns ?? 1), items: own, sections }];
   });
 }
@@ -65,7 +63,7 @@ function GroupMenu({ entry, pathname, menus }) {
   );
 }
 
-function UserMenu({ titulo, usuario, optionsItem, menus }) {
+function UserMenu({ titulo, usuario, menus }) {
   const { logout } = useAuth();
   const { canSwitch } = useActiveRole();
   return (
@@ -100,7 +98,6 @@ function UserMenu({ titulo, usuario, optionsItem, menus }) {
       <Link to="/perfil" onClick={menus.close} className={MENU_ROW}>
         Mi perfil
       </Link>
-      {optionsItem && <MenuLink item={optionsItem} menus={menus} />}
       <Button type="button" variant="ghost" size="inline" onClick={logout} className={cn(MENU_ROW, 'text-ink-faint hover:text-danger')}>
         Cerrar sesión
       </Button>
@@ -113,7 +110,6 @@ export function TopNav({ titulo, items, groups }) {
   const { pathname } = useLocation();
   const menus = useTopNavMenus(pathname);
   const entries = buildEntries(items, groups);
-  const optionsItem = items.find((item) => item.label === OPTIONS_LABEL);
 
   return (
     <div className="relative z-30 hidden shrink-0 items-center gap-2 border-b border-border bg-surface px-4 lg:flex xl:px-6">
@@ -136,7 +132,7 @@ export function TopNav({ titulo, items, groups }) {
       <div className="ml-auto flex shrink-0 items-center gap-1">
         <ThemeToggle />
         <NotificationBell />
-        {usuario && <UserMenu titulo={titulo} usuario={usuario} optionsItem={optionsItem} menus={menus} />}
+        {usuario && <UserMenu titulo={titulo} usuario={usuario} menus={menus} />}
       </div>
     </div>
   );
