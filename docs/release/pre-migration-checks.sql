@@ -502,10 +502,10 @@ select 'program_enrollment COMPLETED sin completion_date', count(*), min(id)
 from program_enrollment where status = 'COMPLETED' and completion_date is null;
 \endif
 
-select :current_version < 477 as run_block \gset
+select :current_version < 478 as run_block \gset
 \if :run_block
 \echo
-\echo [V477] Inscripciones a comision cuyo alumno difiere del de su inscripcion padre (la FK compuesta se crea NOT VALID y no aborta; corregir antes de ejecutar VALIDATE CONSTRAINT fk_subject_section_enrollment_parent_student / fk_course_section_enrollment_parent_student; no se borran datos):
+\echo [V478] Inscripciones a comision cuyo alumno difiere del de su inscripcion padre (la FK compuesta se crea NOT VALID y no aborta; corregir antes de ejecutar VALIDATE CONSTRAINT fk_subject_section_enrollment_parent_student / fk_course_section_enrollment_parent_student; no se borran datos):
 select 'subject_section_enrollment' as tbl, count(*) as violating_rows, min(sse.id) as first_id
 from subject_section_enrollment sse join program_enrollment pe on pe.id = sse.program_enrollment_id
 where sse.student_id <> pe.student_id

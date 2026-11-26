@@ -18,7 +18,7 @@ class SectionEnrollmentStudentMatchesParentMigrationTest {
     private static final List<String> CHILD_TABLES = List.of("subject_section_enrollment", "course_section_enrollment");
 
     @Test
-    void subjectSectionEnrollmentOfAnotherStudentIsAcceptedBeforeV477() {
+    void subjectSectionEnrollmentOfAnotherStudentIsAcceptedBeforeV478() {
         try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("475")) {
             JdbcTemplate jdbc = isolated(new JdbcTemplate(dataSource));
             insertProgramEnrollment(jdbc, 1, 1);
@@ -28,7 +28,7 @@ class SectionEnrollmentStudentMatchesParentMigrationTest {
     }
 
     @Test
-    void courseSectionEnrollmentOfAnotherStudentIsAcceptedBeforeV477() {
+    void courseSectionEnrollmentOfAnotherStudentIsAcceptedBeforeV478() {
         try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("475")) {
             JdbcTemplate jdbc = isolated(new JdbcTemplate(dataSource));
             insertCourseEnrollment(jdbc, 1, 1);
@@ -39,7 +39,7 @@ class SectionEnrollmentStudentMatchesParentMigrationTest {
 
     @Test
     void subjectSectionEnrollmentOfAnotherStudentThanItsProgramEnrollmentIsRejected() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("477")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("478")) {
             JdbcTemplate jdbc = isolated(new JdbcTemplate(dataSource));
             insertProgramEnrollment(jdbc, 1, 1);
 
@@ -51,7 +51,7 @@ class SectionEnrollmentStudentMatchesParentMigrationTest {
 
     @Test
     void courseSectionEnrollmentOfAnotherStudentThanItsCourseEnrollmentIsRejected() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("477")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("478")) {
             JdbcTemplate jdbc = isolated(new JdbcTemplate(dataSource));
             insertCourseEnrollment(jdbc, 1, 1);
 
@@ -63,7 +63,7 @@ class SectionEnrollmentStudentMatchesParentMigrationTest {
 
     @Test
     void sectionEnrollmentsOfTheParentStudentAreAccepted() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("477")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("478")) {
             JdbcTemplate jdbc = isolated(new JdbcTemplate(dataSource));
             insertProgramEnrollment(jdbc, 1, 1);
             insertCourseEnrollment(jdbc, 1, 1);
