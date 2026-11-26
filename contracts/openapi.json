@@ -4858,7 +4858,7 @@
           "durationHours" : {
             "exclusiveMinimum" : 0,
             "format" : "int32",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "durationMonths" : {
             "exclusiveMinimum" : 0,
@@ -4892,7 +4892,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "capacity", "currency", "durationHours", "durationMonths", "name", "price", "registrationEnd", "registrationStart", "schedule", "teachingMode", "termId" ],
+        "required" : [ "capacity", "currency", "durationMonths", "name", "price", "registrationEnd", "registrationStart", "schedule", "teachingMode", "termId" ],
         "type" : "object"
       },
       "CreateCourseSubjectRequest" : {
@@ -17751,7 +17751,7 @@
           "durationHours" : {
             "exclusiveMinimum" : 0,
             "format" : "int32",
-            "type" : "integer"
+            "type" : [ "integer", "null" ]
           },
           "durationMonths" : {
             "exclusiveMinimum" : 0,
@@ -17780,7 +17780,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "capacity", "durationHours", "durationMonths", "name", "price", "registrationEnd", "registrationStart", "schedule", "teachingMode" ],
+        "required" : [ "capacity", "durationMonths", "name", "price", "registrationEnd", "registrationStart", "schedule", "teachingMode" ],
         "type" : "object"
       },
       "UpdateCourseSubjectRequest" : {
