@@ -75,6 +75,7 @@ export const ROLE_MENU = {
     { slug: 'mis-certificados', label: 'Mis certificados', icon: Award },
     { slug: 'pagos', label: 'Pagos', icon: CreditCard },
     { to: '/catalogo', label: 'Catálogo', icon: LayoutGrid },
+    { slug: 'reuniones-informativas', label: 'Reuniones informativas', icon: Megaphone },
     { slug: 'opciones', label: 'Opciones', icon: Settings },
   ],
   docente: [
@@ -190,6 +191,7 @@ const MENU_GROUPS = {
     { id: 'studies', label: 'Estudios', slugs: ['calendario', 'mis-cursos', 'mis-carreras', 'mis-certificados'] },
     { id: 'payments', label: null, slugs: ['pagos'] },
     { id: 'catalog', label: null, slugs: ['catalogo'] },
+    { id: 'informative-sessions', label: null, slugs: ['reuniones-informativas'] },
     { id: 'account', label: null, slugs: ['opciones'] },
   ],
   director: [

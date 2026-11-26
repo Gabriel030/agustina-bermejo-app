@@ -210,13 +210,13 @@ describe('TopNav', () => {
     expect(screen.queryByRole('button', { name: 'Inscripciones' })).not.toBeInTheDocument();
   });
 
-  it('showsTheStudentStudiesGroupWithPaymentsAndCatalogAsPlainLinks', async () => {
+  it('showsTheStudentStudiesGroupWithPaymentsCatalogAndInformativeSessionsAsPlainLinks', async () => {
     const user = userEvent.setup();
     authState.roles = ['ALUMNO'];
     renderTopNav({ role: 'alumno', route: '/alumno/inicio' });
 
     const bar = screen.getByRole('navigation', { name: 'Principal' });
-    expect(within(bar).getAllByRole('link').map((link) => link.textContent)).toEqual(['Inicio', 'Pagos', 'Catálogo']);
+    expect(within(bar).getAllByRole('link').map((link) => link.textContent)).toEqual(['Inicio', 'Pagos', 'Catálogo', 'Reuniones informativas']);
     expect(within(bar).getByRole('link', { name: 'Catálogo' })).toHaveAttribute('href', '/catalogo');
     await user.click(trigger('Estudios'));
     expect(within(screen.getByRole('list', { name: 'Estudios' })).getAllByRole('link').map((link) => link.textContent)).toEqual([
