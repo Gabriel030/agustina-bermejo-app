@@ -15,9 +15,17 @@ class JwtSecretPolicyTest {
 
     @Test
     void secretOf32CharactersIsAccepted() {
-        String secret = "a".repeat(32);
+        String secret = "aB3dE5gH7jK9mN1pQ3sT5vX7zA9cD1fG";
 
         assertThat(JwtSecretPolicy.requireStrong(secret)).isEqualTo(secret);
+    }
+
+    @Test
+    void secretWithFewDistinctCharactersIsRejected() {
+        assertThatThrownBy(() -> JwtSecretPolicy.requireStrong("a".repeat(48)))
+                .isInstanceOf(IllegalStateException.class);
+        assertThatThrownBy(() -> JwtSecretPolicy.requireStrong("abababababababababababababababab"))
+                .isInstanceOf(IllegalStateException.class);
     }
 
     @Test
@@ -28,7 +36,7 @@ class JwtSecretPolicyTest {
 
     @Test
     void jwtServiceRefusesToBuildWithShortSecret() {
-        assertThatThrownBy(() -> new JwtService("short", 15, "agustina-bermejo-app"))
+        assertThatThrownBy(() -> new JwtService("short", 15, "agustina-bermejo-app", "agustina-bermejo-app-api"))
                 .isInstanceOf(IllegalStateException.class);
     }
 }
