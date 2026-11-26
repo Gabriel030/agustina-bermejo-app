@@ -405,6 +405,7 @@ class FinalExamApprovedPrerequisitesTest extends ExamBoardChangeFixture {
         Setup setup = approvedByFinalThenLosingPrerequisite("75000131");
         graduationRequest(setup, GraduationRequestStatus.REQUESTED);
         setup.enrollment().getProgramEnrollment().setStatus(ProgramEnrollmentStatus.COMPLETED);
+        setup.enrollment().getProgramEnrollment().setCompletionDate(java.time.LocalDateTime.now());
         entityManager.flush();
 
         gradeItemRecorder.recalculateProgramEnrollmentCondition(setup.enrollment().getId());

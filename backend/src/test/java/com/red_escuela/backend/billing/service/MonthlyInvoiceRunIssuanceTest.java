@@ -382,7 +382,11 @@ class MonthlyInvoiceRunIssuanceTest extends AbstractIntegrationTest {
     void doesNotIssueToEnrollmentsThatAreNoLongerActive() {
         Fixture fixture = monthlyFixture("94100061");
         transactionTemplate.executeWithoutResult(tx ->
-                entityManager.find(ProgramEnrollment.class, fixture.enrollment().getId()).setStatus(ProgramEnrollmentStatus.WITHDRAWN));
+                {
+                    ProgramEnrollment withdrawn = entityManager.find(ProgramEnrollment.class, fixture.enrollment().getId());
+                    withdrawn.setStatus(ProgramEnrollmentStatus.WITHDRAWN);
+                    withdrawn.setWithdrawalEffectiveDate(java.time.LocalDate.now());
+                });
 
         job.run(MARCH);
 
