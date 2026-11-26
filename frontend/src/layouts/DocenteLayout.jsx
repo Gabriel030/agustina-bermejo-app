@@ -5,5 +5,5 @@ import { visibleMenuItems } from '@/routes/menuAccess';
 const ITEMS = menuItemsFor('docente');
 
 export function DocenteLayout() {
-  return <RoleShell titulo="Docente" items={visibleMenuItems('docente', ITEMS)} />;
+  return <RoleShell titulo="Docente" items={visibleMenuItems('docente', ITEMS)} topNav />;
 }
