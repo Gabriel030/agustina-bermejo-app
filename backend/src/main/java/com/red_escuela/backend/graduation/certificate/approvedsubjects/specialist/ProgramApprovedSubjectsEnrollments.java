@@ -3,7 +3,7 @@ package com.red_escuela.backend.graduation.certificate.approvedsubjects.speciali
 import com.red_escuela.backend.enrollment.api.ProgramEnrollmentFinder;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
-import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.OwnApprovedSubjectsEnrollments;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.OwnedEnrollment;
 import org.springframework.stereotype.Component;

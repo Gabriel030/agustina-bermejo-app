@@ -16,8 +16,8 @@ import com.red_escuela.backend.academicstructure.exception.InstructorAlreadyAssi
 import com.red_escuela.backend.academicstructure.exception.InstructorNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.SectionInstructorNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
-import com.red_escuela.backend.academicstructure.exception.SubjectNotFoundException;
-import com.red_escuela.backend.academicstructure.exception.TermNotFoundException;
+import com.red_escuela.backend.academicstructure.api.SubjectNotFoundException;
+import com.red_escuela.backend.academicstructure.api.TermNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.InstructorRepository;
 import com.red_escuela.backend.academicstructure.repository.SectionScheduleSlotRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectRepository;

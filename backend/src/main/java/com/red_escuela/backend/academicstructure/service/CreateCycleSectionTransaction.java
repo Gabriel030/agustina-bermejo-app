@@ -13,7 +13,7 @@ import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.exception.ClassroomNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.CourseSubjectNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.CycleNotFoundException;
-import com.red_escuela.backend.academicstructure.exception.SubjectNotFoundException;
+import com.red_escuela.backend.academicstructure.api.SubjectNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.AcademicOfferingCycleRepository;
 import com.red_escuela.backend.academicstructure.repository.ClassroomRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectRepository;

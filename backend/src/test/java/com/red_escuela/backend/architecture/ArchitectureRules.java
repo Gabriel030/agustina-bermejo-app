@@ -59,7 +59,7 @@ public final class ArchitectureRules {
     static final String[] V2_BILLING_SUBDOMAINS = {ROOT + ".billing.configuration", ROOT + ".billing.operation", ROOT + ".billing.authorization", ROOT + ".billing.invoice", ROOT + ".billing.account", ROOT + ".billing.note", ROOT + ".billing.collections", ROOT + ".billing.payment", ROOT + ".billing.discount", ROOT + ".billing.annualupfront"};
 
     static final String LEGACY_COUPLED_ISSUING = ROOT.replace(".", "\\.") + "\\.billing\\.invoice\\.(?:InvoicePolicySetsConfiguration"
-            + "|service\\.(?:EnrollmentBackedInvoiceIssuingContextLoader|InvoiceIssuingRequestFactory|ProgramAdmissionInvoiceIssuer|InvoiceView|InvoiceViewLoader|BankTransferReceiptResponseAssembler))(?:\\$.*)?";
+            + "|service\\.(?:EnrollmentBackedInvoiceIssuingContextLoader|InvoiceIssuingRequestFactory|ProgramAdmissionInvoiceIssuer|CourseAdmissionInvoiceIssuer|InvoiceView|InvoiceViewLoader|BankTransferReceiptResponseAssembler))(?:\\$.*)?";
 
     static final String PAYMENT_BRIDGE_UNTIL_PAYMENT_OPERATION = ROOT + ".billing.account.service.CurrentAccountAllocationService";
 

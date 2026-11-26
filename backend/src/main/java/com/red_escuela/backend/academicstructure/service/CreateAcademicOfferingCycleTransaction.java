@@ -5,7 +5,7 @@ import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleSta
 import com.red_escuela.backend.academicstructure.exception.CourseNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.CycleAlreadyInProgressException;
 import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
-import com.red_escuela.backend.academicstructure.exception.TermNotFoundException;
+import com.red_escuela.backend.academicstructure.api.TermNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.AcademicOfferingCycleRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;

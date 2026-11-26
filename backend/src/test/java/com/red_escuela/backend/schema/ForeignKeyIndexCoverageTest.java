@@ -54,6 +54,7 @@ class ForeignKeyIndexCoverageTest {
 
     private static Map<String, String> acceptedWithoutIndex() {
         Map<String, String> accepted = new TreeMap<>();
+        accepted.put("course_section_enrollment.course_enrollment_id,student_id", COMPOSITE_CONSISTENCY);
         accepted.put("invoice_line.price_version_id", PENDING_USAGE_REVIEW);
         accepted.put("invoice_line.subject_id", PENDING_USAGE_REVIEW);
         accepted.put("invoice_line.exam_board_registration_id", PENDING_USAGE_REVIEW);
@@ -232,6 +233,7 @@ class ForeignKeyIndexCoverageTest {
         accepted.put("student_status_change.actor_person_id", AUDIT_ACTOR);
         accepted.put("subject_equivalence.recorded_by_id", AUDIT_ACTOR);
         accepted.put("subject_equivalence.voided_by_id", AUDIT_ACTOR);
+        accepted.put("subject_section_enrollment.program_enrollment_id,student_id", COMPOSITE_CONSISTENCY);
         return accepted;
     }
 

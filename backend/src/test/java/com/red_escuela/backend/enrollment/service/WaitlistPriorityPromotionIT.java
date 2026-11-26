@@ -89,10 +89,10 @@ class WaitlistPriorityPromotionIT extends AbstractIntegrationTest {
     @Test
     void prioritizedModuleStudentIsPromotedBeforeTheOldestOne() {
         CourseSubjectSection section = moduleSection(2055);
-        CourseEnrollment parent = courseEnrollment(section.getCourseSubject().getCourse(), EnrollmentStatus.ENROLLED, BASE_TIME, null);
-        CourseSubjectSectionEnrollment older = moduleEnrollment(section, parent, EnrollmentStatus.WAITLISTED, BASE_TIME, null);
-        CourseSubjectSectionEnrollment prioritized = moduleEnrollment(section, parent, EnrollmentStatus.WAITLISTED, BASE_TIME.plusDays(1), BASE_TIME.plusDays(2));
-        moduleEnrollment(section, parent, EnrollmentStatus.ENROLLED, BASE_TIME, null);
+        Course course = section.getCourseSubject().getCourse();
+        CourseSubjectSectionEnrollment older = moduleEnrollment(section, courseEnrollment(course, EnrollmentStatus.ENROLLED, BASE_TIME, null), EnrollmentStatus.WAITLISTED, BASE_TIME, null);
+        CourseSubjectSectionEnrollment prioritized = moduleEnrollment(section, courseEnrollment(course, EnrollmentStatus.ENROLLED, BASE_TIME, null), EnrollmentStatus.WAITLISTED, BASE_TIME.plusDays(1), BASE_TIME.plusDays(2));
+        moduleEnrollment(section, courseEnrollment(course, EnrollmentStatus.ENROLLED, BASE_TIME, null), EnrollmentStatus.ENROLLED, BASE_TIME, null);
         entityManager.flush();
 
         waitlistPromoter.promoteNext(WaitlistKind.COURSE_SECTION, section.getId());
@@ -104,10 +104,10 @@ class WaitlistPriorityPromotionIT extends AbstractIntegrationTest {
     @Test
     void skippedModuleStudentKeepsItsPlaceAndTheNextEligibleOneIsPromoted() {
         CourseSubjectSection section = moduleSection(2056);
-        CourseEnrollment parent = courseEnrollment(section.getCourseSubject().getCourse(), EnrollmentStatus.ENROLLED, BASE_TIME, null);
-        CourseSubjectSectionEnrollment skipped = moduleEnrollment(section, parent, EnrollmentStatus.WAITLISTED, BASE_TIME, null);
-        CourseSubjectSectionEnrollment eligible = moduleEnrollment(section, parent, EnrollmentStatus.WAITLISTED, BASE_TIME.plusDays(1), null);
-        moduleEnrollment(section, parent, EnrollmentStatus.ENROLLED, BASE_TIME, null);
+        Course course = section.getCourseSubject().getCourse();
+        CourseSubjectSectionEnrollment skipped = moduleEnrollment(section, courseEnrollment(course, EnrollmentStatus.ENROLLED, BASE_TIME, null), EnrollmentStatus.WAITLISTED, BASE_TIME, null);
+        CourseSubjectSectionEnrollment eligible = moduleEnrollment(section, courseEnrollment(course, EnrollmentStatus.ENROLLED, BASE_TIME, null), EnrollmentStatus.WAITLISTED, BASE_TIME.plusDays(1), null);
+        moduleEnrollment(section, courseEnrollment(course, EnrollmentStatus.ENROLLED, BASE_TIME, null), EnrollmentStatus.ENROLLED, BASE_TIME, null);
         entityManager.flush();
         when(eligibility.evaluate(any())).thenAnswer(invocation -> {
             WaitlistCandidate candidate = invocation.getArgument(0);
@@ -177,7 +177,7 @@ class WaitlistPriorityPromotionIT extends AbstractIntegrationTest {
     private CourseSubjectSectionEnrollment moduleEnrollment(CourseSubjectSection section, CourseEnrollment parent,
                                                             EnrollmentStatus status, LocalDateTime joinedAt, LocalDateTime prioritizedAt) {
         CourseSubjectSectionEnrollment enrollment = new CourseSubjectSectionEnrollment();
-        enrollment.setStudent(student());
+        enrollment.setStudent(parent.getStudent());
         enrollment.setCourseEnrollment(parent);
         enrollment.setCourseSubjectSection(section);
         enrollment.setStatus(status);

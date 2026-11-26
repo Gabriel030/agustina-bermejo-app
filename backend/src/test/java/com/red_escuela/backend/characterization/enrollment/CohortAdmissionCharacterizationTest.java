@@ -92,7 +92,7 @@ class CohortAdmissionCharacterizationTest extends CohortP3CharacterizationSuppor
         ProgramCohort inverted = persistCohort(persistTemplate(program, today.getYear()), today.plusDays(10), today.minusDays(10));
 
         assertThatThrownBy(() -> programEnrollmentService.validateAdmissionWindow(inverted))
-                .isInstanceOf(com.red_escuela.backend.enrollment.exception.InvalidWindowConfigurationException.class);
+                .isInstanceOf(com.red_escuela.backend.enrollment.api.InvalidWindowConfigurationException.class);
     }
 
     @Test
