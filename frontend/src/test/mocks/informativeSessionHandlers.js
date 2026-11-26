@@ -57,13 +57,13 @@ export const informativeSessionHandlers = [
     ]),
   ),
   http.post(`${API}/informative-sessions`, async ({ request }) => {
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
     return HttpResponse.json(informativeSession({ ...body, id: 100, registrationCount: 0, status: 'SCHEDULED' }), {
       status: 201,
     });
   }),
   http.put(`${API}/informative-sessions/:id`, async ({ params, request }) => {
-    const body = await request.json();
+    const body = await request.json().catch(() => ({}));
     return HttpResponse.json(informativeSession({ ...body, id: Number(params.id) }));
   }),
   http.post(`${API}/informative-sessions/:id/cancel`, ({ params }) =>
