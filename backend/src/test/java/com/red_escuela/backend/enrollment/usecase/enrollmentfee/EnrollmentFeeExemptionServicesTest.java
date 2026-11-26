@@ -12,7 +12,7 @@ import com.red_escuela.backend.enrollment.exception.EnrollmentFeeExemptionAlread
 import com.red_escuela.backend.enrollment.exception.EnrollmentFeeExemptionAlreadyRevokedException;
 import com.red_escuela.backend.enrollment.exception.EnrollmentFeeExemptionNotFoundException;
 import com.red_escuela.backend.enrollment.exception.EnrollmentFeeExemptionNotNeededException;
-import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.repository.EnrollmentFeeExemptionRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.identity.entity.Person;

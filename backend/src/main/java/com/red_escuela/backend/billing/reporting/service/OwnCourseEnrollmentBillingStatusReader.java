@@ -3,7 +3,7 @@ package com.red_escuela.backend.billing.reporting.service;
 import com.red_escuela.backend.billing.dto.MeEnrollmentBillingStatusResponse;
 import com.red_escuela.backend.billing.service.InvoiceDetailLoader;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
-import com.red_escuela.backend.enrollment.exception.CourseEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.CourseEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.billing.exception.NotOwnEnrollmentException;
 import org.springframework.stereotype.Component;
