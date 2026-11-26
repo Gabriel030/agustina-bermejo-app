@@ -6,10 +6,9 @@ import com.red_escuela.backend.billing.collections.service.ExamFeeOverdueDebtGua
 import com.red_escuela.backend.billing.exception.InvalidAdHocFeeTypeException;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
-import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
 import com.red_escuela.backend.academicstructure.entity.Subject;
-import com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationNotFoundException;
-import com.red_escuela.backend.evaluation.repository.ExamBoardRegistrationRepository;
+import com.red_escuela.backend.evaluation.api.ExamBoardRegistrationFinder;
+import com.red_escuela.backend.evaluation.api.ExamBoardRegistrationView;
 import org.springframework.stereotype.Service;
 
 import java.util.EnumSet;
@@ -22,13 +21,13 @@ public class AdHocInvoiceRequestResolver {
             FeeType.EXAM_FEE, FeeType.RETAKEN_SUBJECT_FEE, FeeType.DEGREE_ISSUANCE_FEE, FeeType.ADMINISTRATIVE_FEE);
 
     private final AcademicReferenceFinder academicReferenceFinder;
-    private final ExamBoardRegistrationRepository examBoardRegistrationRepository;
+    private final ExamBoardRegistrationFinder examBoardRegistrationFinder;
     private final ExamFeeOverdueDebtGuard examFeeDebtGuard;
 
-    public AdHocInvoiceRequestResolver(AcademicReferenceFinder academicReferenceFinder, ExamBoardRegistrationRepository examBoardRegistrationRepository,
+    public AdHocInvoiceRequestResolver(AcademicReferenceFinder academicReferenceFinder, ExamBoardRegistrationFinder examBoardRegistrationFinder,
                                      ExamFeeOverdueDebtGuard examFeeDebtGuard) {
         this.academicReferenceFinder = academicReferenceFinder;
-        this.examBoardRegistrationRepository = examBoardRegistrationRepository;
+        this.examBoardRegistrationFinder = examBoardRegistrationFinder;
         this.examFeeDebtGuard = examFeeDebtGuard;
     }
 
@@ -53,11 +52,10 @@ public class AdHocInvoiceRequestResolver {
         return academicReferenceFinder.findSubject(subjectId);
     }
 
-    public ExamBoardRegistration resolveExamBoardRegistration(Long examBoardRegistrationId) {
+    public ExamBoardRegistrationView resolveExamBoardRegistration(Long examBoardRegistrationId) {
         if (examBoardRegistrationId == null) {
             return null;
         }
-        return examBoardRegistrationRepository.findById(examBoardRegistrationId)
-                .orElseThrow(() -> new ExamBoardRegistrationNotFoundException(examBoardRegistrationId));
+        return examBoardRegistrationFinder.requireById(examBoardRegistrationId);
     }
 }
