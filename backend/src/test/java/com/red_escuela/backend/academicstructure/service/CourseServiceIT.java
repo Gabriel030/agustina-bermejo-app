@@ -6,7 +6,7 @@ import com.red_escuela.backend.academicstructure.dto.UpdateCourseRequest;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.TeachingMode;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.academicstructure.exception.CourseNotFoundException;
+import com.red_escuela.backend.academicstructure.domain.CourseNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.InvalidRegistrationWindowException;
 import com.red_escuela.backend.academicstructure.exception.OfferingListPriceNotPositiveException;
 import com.red_escuela.backend.academicstructure.api.TermNotFoundException;

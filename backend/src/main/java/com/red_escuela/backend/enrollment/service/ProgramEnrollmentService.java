@@ -1,7 +1,6 @@
 package com.red_escuela.backend.enrollment.service;
 import java.time.Clock;
 import com.red_escuela.backend.shared.domain.Grade;
-import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.api.StudentEnrollmentEligibility;
 import com.red_escuela.backend.identity.api.StudentFinder;
@@ -45,7 +44,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import com.red_escuela.backend.enrollment.api.EnrollmentDebtGuardPort;
-import com.red_escuela.backend.attendance.api.AttendanceStandingReader;
+import com.red_escuela.backend.enrollment.api.AttendanceStandingPort;
 
 @Service
 public class ProgramEnrollmentService {
@@ -59,7 +58,7 @@ public class ProgramEnrollmentService {
     private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
     private final ProgramCohortRepository programCohortRepository;
     private final ProgramYearBillingTemplateRepository programYearBillingTemplateRepository;
-    private final AttendanceStandingReader attendanceStandingReader;
+    private final AttendanceStandingPort attendanceStandingPort;
     private final EnrollmentDebtGuardPort enrollmentDebtGuard;
     private final EnrollmentWithdrawalDateResolver withdrawalDateResolver;
     private final EnrollmentWithdrawalBillingPort withdrawalBillingPort;
@@ -75,7 +74,7 @@ public class ProgramEnrollmentService {
             SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
             ProgramCohortRepository programCohortRepository,
             ProgramYearBillingTemplateRepository programYearBillingTemplateRepository,
-            AttendanceStandingReader attendanceStandingReader,
+            AttendanceStandingPort attendanceStandingPort,
             EnrollmentDebtGuardPort enrollmentDebtGuard,
             EnrollmentWithdrawalDateResolver withdrawalDateResolver,
             EnrollmentWithdrawalBillingPort withdrawalBillingPort,
@@ -90,7 +89,7 @@ public class ProgramEnrollmentService {
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.programCohortRepository = programCohortRepository;
         this.programYearBillingTemplateRepository = programYearBillingTemplateRepository;
-        this.attendanceStandingReader = attendanceStandingReader;
+        this.attendanceStandingPort = attendanceStandingPort;
         this.enrollmentDebtGuard = enrollmentDebtGuard;
         this.withdrawalDateResolver = withdrawalDateResolver;
         this.withdrawalBillingPort = withdrawalBillingPort;
@@ -217,15 +216,13 @@ public class ProgramEnrollmentService {
 
     public List<SubjectAttendanceSummaryResponse> attendanceSummaryBySubject(Long programEnrollmentId) {
         var enrollments = subjectSectionEnrollmentRepository.findWithSectionByProgramEnrollmentId(programEnrollmentId);
-        var standings = attendanceStandingReader.readProgramEnrollmentStandings(
+        var standings = attendanceStandingPort.readProgramSectionAttendance(
                 enrollments.stream().map(SubjectSectionEnrollment::getId).toList());
         return enrollments.stream()
                 .map(enrollment -> {
-                    var standing = standings.get(enrollment.getId());
-                    Percentage asistencia = !standing.calculable() || standing.presencePercent() == null ? null
-                            : standing.presencePercent();
+                    var attendance = standings.get(enrollment.getId());
                     return new SubjectAttendanceSummaryResponse(
-                            enrollment.getSubjectSection().getSubject().getName(), asistencia);
+                            enrollment.getSubjectSection().getSubject().getName(), attendance.presencePercent());
                 })
                 .toList();
     }

@@ -2,7 +2,7 @@ package com.red_escuela.backend.academicstructure.usecase;
 
 import com.red_escuela.backend.academicstructure.entity.CatalogArea;
 import com.red_escuela.backend.academicstructure.entity.Course;
-import com.red_escuela.backend.academicstructure.exception.CourseNotFoundException;
+import com.red_escuela.backend.academicstructure.domain.CourseNotFoundException;
 import com.red_escuela.backend.academicstructure.CycleTestFixtures;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import jakarta.persistence.EntityManager;

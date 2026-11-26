@@ -1,7 +1,7 @@
 package com.red_escuela.backend.academicstructure.usecase;
 
 import com.red_escuela.backend.academicstructure.dto.CourseResponse;
-import com.red_escuela.backend.academicstructure.exception.CourseNotFoundException;
+import com.red_escuela.backend.academicstructure.domain.CourseNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.service.OfferingListPriceReader;
 import com.red_escuela.backend.shared.UseCase;
