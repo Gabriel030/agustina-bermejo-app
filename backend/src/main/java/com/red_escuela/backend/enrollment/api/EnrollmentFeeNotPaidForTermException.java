@@ -1,4 +1,6 @@
-package com.red_escuela.backend.enrollment.exception;
+package com.red_escuela.backend.enrollment.api;
+
+import com.red_escuela.backend.enrollment.exception.EnrollmentFeeNotPaidException;
 
 public class EnrollmentFeeNotPaidForTermException extends EnrollmentFeeNotPaidException {
     public EnrollmentFeeNotPaidForTermException(Long programEnrollmentId, Long templateId, int slot) {
