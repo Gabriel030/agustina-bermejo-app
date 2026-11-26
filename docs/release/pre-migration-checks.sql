@@ -466,6 +466,31 @@ join (select code, 'graduation_certificate' as source from graduation_certificat
 order by e.id;
 \endif
 
+select :current_version < 474 as run_block \gset
+\if :run_block
+\echo
+\echo [V474] Inscripciones a carrera activas (ENROLLED o PAUSED) duplicadas por alumno y carrera (la migracion ABORTA al crear el unico parcial): 'could not create unique index uk_program_enrollment_student_program_active'
+select student_id, program_id, count(*) as active_rows, array_agg(id order by id) as ids
+from program_enrollment
+where status in ('ENROLLED', 'PAUSED')
+group by student_id, program_id
+having count(*) > 1
+order by student_id, program_id;
+\endif
+
+select :current_version < 475 as run_block \gset
+\if :run_block
+\echo
+\echo [V475] Solicitudes de constancia PENDING_STAFF duplicadas por inscripcion (la migracion ABORTA al crear el unico parcial): 'could not create unique index uq_regular_cert_request_pending_per_enrollment'
+select kind, coalesce(program_enrollment_id, course_enrollment_id) as enrollment_id,
+       count(*) as pending_rows, array_agg(id order by id) as ids
+from regular_certificate_request
+where outcome = 'PENDING_STAFF'
+group by kind, coalesce(program_enrollment_id, course_enrollment_id)
+having count(*) > 1
+order by 1, 2;
+\endif
+
 \echo
 \echo [V470] Franjas de aula solapadas (misma aula, mismo dia y hora, periodos de termino que se pisan, ambas de comisiones ACTIVE); V470 ABORTA al crear el EXCLUDE si hay filas (corregir antes: mover una franja a otra aula u horario o desactivar la comision; no se borran datos):
 with active_slots as (

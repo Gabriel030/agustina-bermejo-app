@@ -43,12 +43,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.hibernate.exception.ConstraintViolationException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.dao.DataIntegrityViolationException;
+
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -142,7 +146,7 @@ class ProgramEnrollmentRulesTest {
     private void givenNoActiveEnrollment() {
         when(programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusIn(7L, 4L,
                 List.of(ProgramEnrollmentStatus.ENROLLED, ProgramEnrollmentStatus.PAUSED))).thenReturn(List.of());
-        when(programEnrollmentRepository.save(any(ProgramEnrollment.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(programEnrollmentRepository.saveAndFlush(any(ProgramEnrollment.class))).thenAnswer(inv -> inv.getArgument(0));
     }
 
     @Test
@@ -150,7 +154,7 @@ class ProgramEnrollmentRulesTest {
         doThrow(new IllegalStateException("debt")).when(enrollmentDebtGuard).verifyNoOutstandingDebt(7L);
 
         assertThatThrownBy(() -> service.enroll(7L, new CreateProgramEnrollmentRequest(4L))).isInstanceOf(IllegalStateException.class);
-        verify(programEnrollmentRepository, never()).save(any());
+        verify(programEnrollmentRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -201,7 +205,7 @@ class ProgramEnrollmentRulesTest {
 
         assertThatThrownBy(() -> service.enroll(7L, new CreateProgramEnrollmentRequest(4L, 9L)))
                 .isInstanceOf(CohortAdmissionWindowClosedException.class);
-        verify(programEnrollmentRepository, never()).save(any());
+        verify(programEnrollmentRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -227,7 +231,34 @@ class ProgramEnrollmentRulesTest {
 
         assertThatThrownBy(() -> service.enroll(7L, new CreateProgramEnrollmentRequest(4L)))
                 .isInstanceOf(AlreadyEnrolledInProgramException.class);
-        verify(programEnrollmentRepository, never()).save(any());
+        verify(programEnrollmentRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void enrollTranslatesTheActiveEnrollmentIndexViolationToAlreadyEnrolledInProgram() {
+        givenStudentAndProgram();
+        when(programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusIn(7L, 4L,
+                List.of(ProgramEnrollmentStatus.ENROLLED, ProgramEnrollmentStatus.PAUSED))).thenReturn(List.of());
+        when(programEnrollmentRepository.saveAndFlush(any(ProgramEnrollment.class))).thenThrow(indexViolation("uk_program_enrollment_student_program_active"));
+
+        assertThatThrownBy(() -> service.enroll(7L, new CreateProgramEnrollmentRequest(4L)))
+                .isInstanceOf(AlreadyEnrolledInProgramException.class);
+    }
+
+    @Test
+    void enrollRethrowsAnyOtherIntegrityViolation() {
+        givenStudentAndProgram();
+        when(programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusIn(7L, 4L,
+                List.of(ProgramEnrollmentStatus.ENROLLED, ProgramEnrollmentStatus.PAUSED))).thenReturn(List.of());
+        when(programEnrollmentRepository.saveAndFlush(any(ProgramEnrollment.class))).thenThrow(indexViolation("fk_other"));
+
+        assertThatThrownBy(() -> service.enroll(7L, new CreateProgramEnrollmentRequest(4L)))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    private DataIntegrityViolationException indexViolation(String constraintName) {
+        return new DataIntegrityViolationException("violation",
+                new ConstraintViolationException("violation", new SQLException("duplicate", "23505"), constraintName));
     }
 
     @Test

@@ -203,8 +203,12 @@ public class RegularCertificateIssuer {
 
     private RegularCertificateRequest pendingRequestOf(IssueRegularCertificateCommand command, Long studentId, Long actorId,
                                                        LocalDateTime now) {
-        return findPendingRequest(command).orElseGet(() -> recordRequest(command, studentId, actorId, now,
-                RegularRequestOutcome.PENDING_STAFF, List.of()));
+        try {
+            return findPendingRequest(command).orElseGet(() -> recordRequest(command, studentId, actorId, now,
+                    RegularRequestOutcome.PENDING_STAFF, List.of()));
+        } catch (DataIntegrityViolationException violation) {
+            throw new ConcurrentRegularCertificateIssueException();
+        }
     }
 
     private Optional<RegularCertificateRequest> findPendingRequest(IssueRegularCertificateCommand command) {
