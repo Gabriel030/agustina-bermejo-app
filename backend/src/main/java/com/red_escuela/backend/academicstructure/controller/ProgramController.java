@@ -1,7 +1,7 @@
 package com.red_escuela.backend.academicstructure.controller;
 
-import com.red_escuela.backend.billing.dto.ProgramPricingResponse;
 import com.red_escuela.backend.academicstructure.dto.CreateProgramRequest;
+import com.red_escuela.backend.academicstructure.dto.ProgramPricingResponse;
 import com.red_escuela.backend.academicstructure.dto.ProgramResponse;
 import com.red_escuela.backend.academicstructure.dto.SetCatalogVisibilityRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateProgramRequest;
