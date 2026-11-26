@@ -68,7 +68,7 @@ class AuthorizationMatrixOwnershipTest extends AuthorizationMatrixSupport {
         int strangerStatus = statusWithToken(endpoint, body, ownership.strangerTokenFor(kind), resourceId);
         int ownerStatus = statusWithToken(endpoint, body, ownership.ownerTokenFor(kind), resourceId);
 
-        assertThat(ownerStatus).as("dueno en %s", ownershipCase).isNotIn(403, 404);
+        assertThat(ownerStatus).as("dueno en %s %s", ownershipCase, lastResponseBody).isNotIn(403, 404);
         assertThat(strangerStatus).as("no dueno en %s", ownershipCase).isEqualTo(kind.strangerStatus());
     }
 

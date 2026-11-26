@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DataTable } from './DataTable';
 
@@ -228,11 +228,26 @@ describe('DataTable', () => {
       expect(screen.getByTestId('overflow-indicator')).toHaveClass('opacity-100');
     });
 
-    it('shows the overflow chevron without an opaque block over the last column', () => {
+    it('shows the more columns pill at the bottom right instead of a centered arrow', () => {
       stubElementWidths({ scrollWidth: 640, clientWidth: 320 });
       renderTable({ compact: true, columns: stickyColumns });
 
-      expect(screen.getByTestId('overflow-indicator')).not.toHaveClass('bg-dialog-bg');
+      const indicator = screen.getByTestId('overflow-indicator');
+      expect(indicator).toHaveTextContent('Más columnas');
+      expect(indicator).toHaveClass('bottom-2', 'right-2', 'pointer-events-none');
+      expect(indicator).not.toHaveClass('inset-y-0');
+    });
+
+    it('hides the overflow indicator once the scroll reaches the end', () => {
+      stubElementWidths({ scrollWidth: 640, clientWidth: 320 });
+      const { container } = renderTable({ compact: true, columns: stickyColumns });
+      expect(screen.getByTestId('overflow-indicator')).toHaveClass('opacity-100');
+
+      const scroller = container.querySelector('.overflow-auto');
+      scroller.scrollLeft = 320;
+      fireEvent.scroll(scroller);
+
+      expect(screen.getByTestId('overflow-indicator')).toHaveClass('opacity-0');
     });
 
     it('hides the overflow indicator when the rows fit the table container', () => {
