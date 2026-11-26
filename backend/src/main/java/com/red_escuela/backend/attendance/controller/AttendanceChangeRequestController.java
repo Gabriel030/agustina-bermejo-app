@@ -98,7 +98,7 @@ public class AttendanceChangeRequestController {
     @PostMapping("/attendance/change-requests/{id}/revert")
     @RequiresPermission(code = "attendance.review_change_request", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public AttendanceChangeRequestResponse revert(@PathVariable Long id, @Valid @RequestBody RevertAttendanceChangeRequestDecisionRequest request) {
-        return toResponse(revertAttendanceChangeRequestDecisionUseCase.revert(new RevertAttendanceChangeRequestDecisionCommand(id, request.reason())));
+        return revertAttendanceChangeRequestDecisionUseCase.revert(new RevertAttendanceChangeRequestDecisionCommand(id, request.reason()));
     }
 
     private AttendanceChangeRequestResponse toResponse(AttendanceChangeRequest request) {

@@ -401,6 +401,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `APPLICATION_DOCUMENTS_LOCKED` | no | `ApplicationDocumentsLockedException` | enrollment |
 | `APPROVED_SUBJECTS_CERTIFICATE_NOT_AVAILABLE` | no | `ApprovedSubjectsCertificateNotAvailableException` | graduation |
 | `ATTENDANCE_ALREADY_RECORDED` | no | `AttendanceAlreadyRecordedException` | attendance |
+| `ATTENDANCE_CHANGE_REQUEST_NOT_DECIDED` | no | `AttendanceChangeRequestNotDecidedException` | attendance |
+| `ATTENDANCE_DECISION_REVERT_WINDOW_EXPIRED` | no | `AttendanceDecisionRevertWindowExpiredException` | attendance |
 | `AUTHORIZATION_PENDING` | no | `AuthorizationPendingException` | billing |
 | `BILLING_CONFIGURATION_FROZEN` | no | `BillingConfigurationFrozenException` | billing |
 | `BILLING_MODE_NOT_OFF` | no | `BillingModeNotOffException` | dataimport |
@@ -805,6 +807,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/approved-subjects-certificates/{id}/revoke` | `ApprovedSubjectsCertificateController#revoke` |
 | POST | `/attendance/change-requests/{id}/approve` | `AttendanceChangeRequestController#approve` |
 | POST | `/attendance/change-requests/{id}/reject` | `AttendanceChangeRequestController#reject` |
+| POST | `/attendance/change-requests/{id}/revert` | `AttendanceChangeRequestController#revert` |
 | POST | `/attendance/{id}/approve-justification` | `AttendanceController#approveJustification` |
 | POST | `/attendance/{id}/change-requests` | `AttendanceChangeRequestController#create` |
 | POST | `/attendance/{id}/justification-proof` | `AttendanceController#submitJustificationProof` |

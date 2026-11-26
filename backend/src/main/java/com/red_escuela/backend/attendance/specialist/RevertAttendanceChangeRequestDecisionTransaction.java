@@ -1,5 +1,6 @@
 package com.red_escuela.backend.attendance.specialist;
 
+import com.red_escuela.backend.attendance.dto.AttendanceChangeRequestResponse;
 import com.red_escuela.backend.attendance.entity.Attendance;
 import com.red_escuela.backend.attendance.entity.AttendanceChangeRequest;
 import com.red_escuela.backend.attendance.entity.AttendanceChangeRequestStatus;
@@ -23,23 +24,26 @@ public class RevertAttendanceChangeRequestDecisionTransaction {
     private final AttendanceDecisionRevertPolicy revertPolicy;
     private final AuditTrail auditTrail;
     private final ApplicationEventPublisher eventPublisher;
+    private final AttendanceChangeRequestResponseAssembler responseAssembler;
 
     public RevertAttendanceChangeRequestDecisionTransaction(AttendanceChangeRequestRepository attendanceChangeRequestRepository,
                                                             AttendanceRepository attendanceRepository,
                                                             AttendanceChangeRequestFinder finder,
                                                             AttendanceDecisionRevertPolicy revertPolicy,
                                                             AuditTrail auditTrail,
-                                                            ApplicationEventPublisher eventPublisher) {
+                                                            ApplicationEventPublisher eventPublisher,
+                                                            AttendanceChangeRequestResponseAssembler responseAssembler) {
         this.attendanceChangeRequestRepository = attendanceChangeRequestRepository;
         this.attendanceRepository = attendanceRepository;
         this.finder = finder;
         this.revertPolicy = revertPolicy;
         this.auditTrail = auditTrail;
         this.eventPublisher = eventPublisher;
+        this.responseAssembler = responseAssembler;
     }
 
     @Transactional
-    public AttendanceChangeRequest revert(Long requestId, String reason) {
+    public AttendanceChangeRequestResponse revert(Long requestId, String reason) {
         AttendanceChangeRequest request = finder.findOrThrow(requestId);
         revertPolicy.requireRevertible(request);
         AttendanceChangeRequestStatus revertedDecision = request.getStatus();
@@ -54,6 +58,6 @@ public class RevertAttendanceChangeRequestDecisionTransaction {
         auditTrail.record(new AuditRecord(AuditAction.ATTENDANCE_CHANGE_DECISION_REVERTED,
                 AuditEntityType.ATTENDANCE_CHANGE_REQUEST, saved.getId(),
                 revertedDecision.name(), AttendanceChangeRequestStatus.PENDING.name(), reason.trim()));
-        return saved;
+        return responseAssembler.assemble(saved);
     }
 }

@@ -1,7 +1,7 @@
 package com.red_escuela.backend.attendance.usecase.changerequest;
 
-import com.red_escuela.backend.attendance.entity.AttendanceChangeRequest;
+import com.red_escuela.backend.attendance.dto.AttendanceChangeRequestResponse;
 
 public interface RevertAttendanceChangeRequestDecisionUseCase {
-    AttendanceChangeRequest revert(RevertAttendanceChangeRequestDecisionCommand command);
+    AttendanceChangeRequestResponse revert(RevertAttendanceChangeRequestDecisionCommand command);
 }
