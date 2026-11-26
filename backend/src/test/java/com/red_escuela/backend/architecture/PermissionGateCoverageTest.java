@@ -57,7 +57,6 @@ class PermissionGateCoverageTest {
             ROOT + ".graduation.procedure.controller.MeProcedureController",
             ROOT + ".graduation.procedure.controller.MeOwnDocumentController",
             ROOT + ".evaluation.controller.MeExamBoardRegistrationController",
-            ROOT + ".graduation.certificate.verification.controller.PublicCertificateController",
             ROOT + ".graduation.certificate.verification.controller.PublicDocumentController",
             ROOT + ".enrollment.controller.MeCourseAdmissionPreviewController",
             ROOT + ".enrollment.controller.MeCourseEnrollmentController",

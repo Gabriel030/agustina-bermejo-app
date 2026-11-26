@@ -44,18 +44,18 @@ class GraduationCertificateReissueHttpIT extends GraduationCertificateOperations
     }
 
     @Test
-    void publicVerificationShowsRevokedForTheOriginalAndValidForTheReplacement() throws Exception {
+    void publicVerificationShowsReplacedForTheOriginalAndValidForTheReplacement() throws Exception {
         Long originalId = issueCertificate(completedEnrollment());
         String originalCode = repository.findById(originalId).orElseThrow().getCode();
         MvcResult result = postJson(BASE + "/" + originalId + "/reissue", director, VALID_REASON).andExpect(status().isOk()).andReturn();
         String newCode = JsonPath.read(result.getResponse().getContentAsString(), "$.code");
 
-        mockMvc.perform(get("/public/certificates/{code}", originalCode).with(request -> {
+        mockMvc.perform(get("/public/documents/{code}", originalCode).with(request -> {
                     request.setRemoteAddr("198.51.100.202");
                     return request;
                 }))
-                .andExpect(jsonPath("$.status").value("REVOKED"));
-        mockMvc.perform(get("/public/certificates/{code}", newCode).with(request -> {
+                .andExpect(jsonPath("$.status").value("REPLACED"));
+        mockMvc.perform(get("/public/documents/{code}", newCode).with(request -> {
                     request.setRemoteAddr("198.51.100.203");
                     return request;
                 }))

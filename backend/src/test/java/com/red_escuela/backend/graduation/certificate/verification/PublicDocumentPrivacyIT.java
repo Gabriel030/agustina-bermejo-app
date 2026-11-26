@@ -28,7 +28,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest
 @ActiveProfiles("test")
-class PublicCertificateControllerIT extends AbstractIntegrationTest {
+class PublicDocumentPrivacyIT extends AbstractIntegrationTest {
 
     private static final String SNAPSHOT = "{\"holderFullName\":\"PÉREZ, ANA\",\"documentTypeLabel\":\"DNI\","
             + "\"documentNumber\":\"30123456\",\"titleKind\":\"la carrera\",\"titleName\":\"Tecnicatura en Enfermería\","
@@ -47,10 +47,12 @@ class PublicCertificateControllerIT extends AbstractIntegrationTest {
 
     private final List<String> graduationCodes = new ArrayList<>();
     private final List<String> regularCodes = new ArrayList<>();
+    private final List<String> registeredCodes = new ArrayList<>();
 
     @AfterEach
     void cleanUp() {
         MutableClock.INSTANCE.reset();
+        registeredCodes.forEach(code -> jdbc.update("delete from verifiable_document where code = ?", code));
         graduationCodes.forEach(code -> jdbc.update("delete from graduation_certificate where code = ?", code));
         regularCodes.forEach(code -> jdbc.update("delete from regular_student_certificate where code = ?", code));
     }
@@ -77,8 +79,15 @@ class PublicCertificateControllerIT extends AbstractIntegrationTest {
                     + "repeat('a', 64), 'x.pdf', ?, ?, ?, ?)", code, ThreadLocalRandom.current().nextLong(1_000_000, 9_000_000), status,
                     SNAPSHOT, registryNumber, "REVOKED".equals(status) ? java.sql.Timestamp.valueOf("2026-11-09 08:00:00") : null,
                     "REVOKED".equals(status) ? 1L : null, "REVOKED".equals(status) ? "error de carga" : null);
+            registerDocument(code, "GRADUATION_CERTIFICATE", "graduation_certificate");
         });
         return code;
+    }
+
+    private void registerDocument(String code, String documentType, String table) {
+        registeredCodes.add(code);
+        jdbc.update("insert into verifiable_document (code, document_type, source_id, registered_at) "
+                + "select code, ?, id, now() from " + table + " where code = ?", documentType, code);
     }
 
     private String insertRegular(String status, LocalDateTime expiresAt) {
@@ -95,6 +104,7 @@ class PublicCertificateControllerIT extends AbstractIntegrationTest {
                     ThreadLocalRandom.current().nextLong(1_000_000, 9_000_000), status, java.sql.Timestamp.valueOf(expiresAt), SNAPSHOT,
                     "REVOKED".equals(status) ? java.sql.Timestamp.valueOf("2026-11-09 08:00:00") : null,
                     "REVOKED".equals(status) ? "error de carga" : null);
+            registerDocument(code, "REGULAR_STUDENT_CERTIFICATE", "regular_student_certificate");
         });
         return code;
     }
@@ -103,23 +113,20 @@ class PublicCertificateControllerIT extends AbstractIntegrationTest {
     void validGraduationCertificateIsServedWithoutAuthentication() throws Exception {
         String code = insertGraduation("VALID", "1284");
 
-        mockMvc.perform(get("/public/certificates/{code}", code).with(from(freshClient())))
+        mockMvc.perform(get("/public/documents/{code}", code).with(from(freshClient())))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.documentKind").value("GRADUATION"))
+                .andExpect(jsonPath("$.documentType").value("GRADUATION_CERTIFICATE"))
                 .andExpect(jsonPath("$.status").value("VALID"))
                 .andExpect(jsonPath("$.holderFullName").value("PÉREZ, ANA"))
                 .andExpect(jsonPath("$.maskedDocument").value("*****456"))
-                .andExpect(jsonPath("$.titleName").value("Tecnicatura en Enfermería"))
-                .andExpect(jsonPath("$.graduationDate").value("2026-07-15"))
-                .andExpect(jsonPath("$.registryNumber").value("1284"))
-                .andExpect(jsonPath("$.hours").value(1860));
+                .andExpect(jsonPath("$.registryNumber").value("1284"));
     }
 
     @Test
     void revokedGraduationCertificateReturnsRevokedWithoutReason() throws Exception {
         String code = insertGraduation("REVOKED", null);
 
-        MvcResult result = mockMvc.perform(get("/public/certificates/{code}", code).with(from(freshClient())))
+        MvcResult result = mockMvc.perform(get("/public/documents/{code}", code).with(from(freshClient())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("REVOKED"))
                 .andExpect(jsonPath("$.revokedAt").value("2026-11-09T08:00:00"))
@@ -134,13 +141,13 @@ class PublicCertificateControllerIT extends AbstractIntegrationTest {
         String client = freshClient();
 
         MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 12, 5, 9, 59));
-        mockMvc.perform(get("/public/certificates/{code}", code).with(from(client)))
+        mockMvc.perform(get("/public/documents/{code}", code).with(from(client)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.documentKind").value("REGULAR"))
+                .andExpect(jsonPath("$.documentType").value("REGULAR_STUDENT_CERTIFICATE"))
                 .andExpect(jsonPath("$.status").value("VALID"));
 
         MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2026, 12, 5, 10, 1));
-        mockMvc.perform(get("/public/certificates/{code}", code).with(from(client)))
+        mockMvc.perform(get("/public/documents/{code}", code).with(from(client)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("EXPIRED"))
                 .andExpect(jsonPath("$.expiresAt").value("2026-12-05T10:00:00"));
@@ -150,7 +157,7 @@ class PublicCertificateControllerIT extends AbstractIntegrationTest {
     void revokedRegularCertificateReturnsRevokedAndNeverExposesEvidenceOrReason() throws Exception {
         String code = insertRegular("REVOKED", LocalDateTime.of(2030, 1, 1, 0, 0));
 
-        MvcResult result = mockMvc.perform(get("/public/certificates/{code}", code).with(from(freshClient())))
+        MvcResult result = mockMvc.perform(get("/public/documents/{code}", code).with(from(freshClient())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("REVOKED"))
                 .andReturn();
@@ -166,7 +173,7 @@ class PublicCertificateControllerIT extends AbstractIntegrationTest {
         String regular = insertRegular("VALID", LocalDateTime.of(2030, 1, 1, 0, 0));
 
         for (String code : new String[] {graduation, regular}) {
-            String body = mockMvc.perform(get("/public/certificates/{code}", code).with(from(freshClient())))
+            String body = mockMvc.perform(get("/public/documents/{code}", code).with(from(freshClient())))
                     .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
 
             assertThat(body).doesNotContain("30123456").contains("*****456").doesNotContainIgnoringCase("legajo")
@@ -180,10 +187,10 @@ class PublicCertificateControllerIT extends AbstractIntegrationTest {
         String code = insertGraduation("VALID", null);
         String client = freshClient();
 
-        mockMvc.perform(get("/public/certificates/{code}", code).with(from(client)))
+        mockMvc.perform(get("/public/documents/{code}", code).with(from(client)))
                 .andExpect(status().isOk())
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Cache-Control", "no-store"));
-        mockMvc.perform(get("/public/certificates/{code}", CertificateCode.generate(new SecureRandom()).value()).with(from(client)))
+        mockMvc.perform(get("/public/documents/{code}", CertificateCode.generate(new SecureRandom()).value()).with(from(client)))
                 .andExpect(status().isNotFound())
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Cache-Control", "no-store"));
     }
@@ -196,7 +203,7 @@ class PublicCertificateControllerIT extends AbstractIntegrationTest {
 
         for (String code : new String[] {CertificateCode.generate(new SecureRandom()).value(), "NOT-A-CODE", "7QK3M9XH2VBN4T8R",
                 "1284", "0".repeat(200)}) {
-            MvcResult result = mockMvc.perform(get("/public/certificates/{code}", code).with(from(client))).andReturn();
+            MvcResult result = mockMvc.perform(get("/public/documents/{code}", code).with(from(client))).andReturn();
             statuses.add(result.getResponse().getStatus());
             bodies.add(result.getResponse().getContentAsString().replaceAll("\"requestId\":\"[^\"]*\",?", ""));
         }
@@ -213,7 +220,7 @@ class PublicCertificateControllerIT extends AbstractIntegrationTest {
         String client = freshClient();
 
         for (String candidate : new String[] {"1284", String.valueOf(rowId), "N.º 1.284"}) {
-            mockMvc.perform(get("/public/certificates/{code}", candidate).with(from(client)))
+            mockMvc.perform(get("/public/documents/{code}", candidate).with(from(client)))
                     .andExpect(status().isNotFound())
                     .andExpect(jsonPath("$.code").value("CERTIFICATE_NOT_FOUND"));
         }
@@ -224,7 +231,7 @@ class PublicCertificateControllerIT extends AbstractIntegrationTest {
         String code = insertGraduation("VALID", null);
         String formatted = new CertificateCode(code).formatted().toLowerCase();
 
-        mockMvc.perform(get("/public/certificates/{code}", formatted).with(from(freshClient())))
+        mockMvc.perform(get("/public/documents/{code}", formatted).with(from(freshClient())))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("VALID"));
     }
@@ -235,16 +242,16 @@ class PublicCertificateControllerIT extends AbstractIntegrationTest {
         String client = freshClient();
 
         for (int i = 0; i < 20; i++) {
-            mockMvc.perform(get("/public/certificates/{code}", code).with(from(client))).andExpect(status().isOk());
+            mockMvc.perform(get("/public/documents/{code}", code).with(from(client))).andExpect(status().isOk());
         }
 
-        MvcResult limited = mockMvc.perform(get("/public/certificates/{code}", code).with(from(client)))
+        MvcResult limited = mockMvc.perform(get("/public/documents/{code}", code).with(from(client)))
                 .andExpect(status().isTooManyRequests())
                 .andExpect(jsonPath("$.code").value("REQUEST_RATE_LIMIT_EXCEEDED"))
                 .andReturn();
         assertThat(Long.parseLong(limited.getResponse().getHeader("Retry-After"))).isPositive();
         assertThat(limited.getResponse().getHeader("Cache-Control")).isEqualTo("no-store");
-        mockMvc.perform(get("/public/certificates/{code}", code).with(from(freshClient()))).andExpect(status().isOk());
+        mockMvc.perform(get("/public/documents/{code}", code).with(from(freshClient()))).andExpect(status().isOk());
     }
 
     @Test
@@ -252,11 +259,11 @@ class PublicCertificateControllerIT extends AbstractIntegrationTest {
         String client = freshClient();
 
         for (int i = 0; i < 7; i++) {
-            mockMvc.perform(get("/public/certificates/{code}", CertificateCode.generate(new SecureRandom()).value()).with(from(client)))
+            mockMvc.perform(get("/public/documents/{code}", CertificateCode.generate(new SecureRandom()).value()).with(from(client)))
                     .andExpect(status().isNotFound());
         }
 
-        mockMvc.perform(get("/public/certificates/{code}", CertificateCode.generate(new SecureRandom()).value()).with(from(client)))
+        mockMvc.perform(get("/public/documents/{code}", CertificateCode.generate(new SecureRandom()).value()).with(from(client)))
                 .andExpect(status().isTooManyRequests());
     }
 
@@ -271,9 +278,9 @@ class PublicCertificateControllerIT extends AbstractIntegrationTest {
             String unknown = CertificateCode.generate(new SecureRandom()).value();
             String client = freshClient();
             for (int i = 0; i < 21; i++) {
-                mockMvc.perform(get("/public/certificates/{code}", i % 2 == 0 ? code : unknown).with(from(client)));
+                mockMvc.perform(get("/public/documents/{code}", i % 2 == 0 ? code : unknown).with(from(client)));
             }
-            mockMvc.perform(get("/public/certificates/{code}", unknown).with(from(client)));
+            mockMvc.perform(get("/public/documents/{code}", unknown).with(from(client)));
             String logs = appender.list.stream().map(ch.qos.logback.classic.spi.ILoggingEvent::getFormattedMessage)
                     .collect(java.util.stream.Collectors.joining("\n"));
             assertThat(logs).contains("public_verification_rate_limited").doesNotContain(code).doesNotContain(unknown)
