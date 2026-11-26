@@ -1,9 +1,9 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.academicstructure.api.AcademicReferenceFinder;
 import com.red_escuela.backend.billing.configuration.service.YearCycleFactory;
 import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
 import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingQuery;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
 @Service
 public class InvoicePlanningContextLoader {
     private final ProgramYearBillingTemplateRepository templateRepository;
-    private final TermRepository termRepository;
+    private final AcademicReferenceFinder academicReferenceFinder;
     private final InvoiceRepository invoiceRepository;
     private final CreditNoteRepository creditNoteRepository;
     private final PaymentPlanSelectionRepository selectionRepository;
@@ -53,7 +53,7 @@ public class InvoicePlanningContextLoader {
 
     private final EnrollmentPaymentStandingQuery standingQuery;
 
-    public InvoicePlanningContextLoader(ProgramYearBillingTemplateRepository templateRepository, TermRepository termRepository,
+    public InvoicePlanningContextLoader(ProgramYearBillingTemplateRepository templateRepository, AcademicReferenceFinder academicReferenceFinder,
                                        InvoiceRepository invoiceRepository, CreditNoteRepository creditNoteRepository, PaymentPlanSelectionRepository selectionRepository,
                                        ProgramEnrollmentService programEnrollmentService,
                                        ProgramEnrollmentRepository programEnrollmentRepository,
@@ -64,7 +64,7 @@ public class InvoicePlanningContextLoader {
         this.configurationReader = configurationReader;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.templateRepository = templateRepository;
-        this.termRepository = termRepository;
+        this.academicReferenceFinder = academicReferenceFinder;
         this.invoiceRepository = invoiceRepository;
         this.creditNoteRepository = creditNoteRepository;
         this.selectionRepository = selectionRepository;
@@ -147,7 +147,7 @@ public class InvoicePlanningContextLoader {
             return windows;
         }
         Set<TermType> irregularTypes = Set.copyOf(configurationReader.irregularTermTypesEffectiveOn(today).types());
-        List<Term> terms = SlotWindowResolver.regularTerms(termRepository.findTermsOfProgram(programId), irregularTypes);
+        List<Term> terms = SlotWindowResolver.regularTerms(academicReferenceFinder.findTermsOfProgram(programId), irregularTypes);
         for (YearCycle cycle : cycles) {
             for (int slot = 1; slot <= cycle.slotCount(); slot++) {
                 final int currentSlot = slot;

@@ -143,18 +143,27 @@ export function menuItemsFor(role) {
 }
 
 const MENU_GROUPS = {
+  alumno: [
+    { id: 'main', label: null, slugs: ['inicio'] },
+    { id: 'studies', label: 'Estudios', slugs: ['calendario', 'mis-cursos', 'mis-carreras', 'mis-certificados'] },
+    { id: 'payments', label: null, slugs: ['pagos'] },
+    { id: 'catalog', label: null, slugs: ['catalogo'] },
+    { id: 'account', label: null, slugs: ['opciones'] },
+  ],
   director: [
-    { id: 'main', label: null, slugs: ['inicio', 'aprobaciones'] },
+    { id: 'main', label: null, slugs: ['inicio'] },
     { id: 'people', label: 'Personas', slugs: ['alumnos', 'personal', 'comunicaciones', 'invitaciones'] },
     { id: 'enrollment', label: 'Inscripciones', slugs: ['inscripciones/listas-de-espera'] },
     {
       id: 'academic',
       label: 'Académico',
+      columns: 2,
       slugs: ['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'mesas-de-examen', 'cierres-de-comision', 'periodos', 'constancias', 'constancias-por-excepcion', 'egresos', 'plantilla-de-certificados', 'firmantes'],
     },
     {
       id: 'billing',
       label: 'Facturación',
+      columns: 2,
       slugs: [
         'facturacion',
         'descuentos',
@@ -167,6 +176,7 @@ const MENU_GROUPS = {
       ],
     },
     { id: 'institution', label: 'Institución', slugs: ['ajustes-del-instituto', 'importacion-inicial', 'auditoria', 'permisos', 'backups'] },
+    { id: 'approvals', label: null, slugs: ['aprobaciones'] },
   ],
 };
 
@@ -178,13 +188,13 @@ export function groupMenuItems(role, items) {
   const definitions = MENU_GROUPS[role];
   if (!definitions) return null;
   const prefix = `/${role}/`;
-  const slugOf = (item) => (item.to.startsWith(prefix) ? item.to.slice(prefix.length) : null);
+  const slugOf = (item) => (item.to.startsWith(prefix) ? item.to.slice(prefix.length) : item.to.replace(/^\//, ''));
   const known = new Set(menuGroupSlugs(role));
   return definitions
     .map((group, index) => {
-      const own = items.filter((item) => group.slugs.includes(slugOf(item)));
+      const own = group.slugs.flatMap((slug) => items.filter((item) => slugOf(item) === slug));
       const unmapped = index === 0 ? items.filter((item) => !known.has(slugOf(item))) : [];
-      return { id: group.id, label: group.label, items: [...own, ...unmapped] };
+      return { id: group.id, label: group.label, columns: group.columns ?? 1, items: [...own, ...unmapped] };
     })
     .filter((group) => group.items.length > 0);
 }

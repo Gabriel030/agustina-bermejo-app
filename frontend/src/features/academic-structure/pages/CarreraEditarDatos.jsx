@@ -24,6 +24,7 @@ import { useUnsavedChangesGuard } from '@/features/academic-structure/components
 const LEVEL_OPTIONS = [
   { value: '', label: 'Sin especificar' },
   { value: 'UNDERGRADUATE', label: 'Pregrado' },
+  { value: 'BACHELOR', label: 'De grado' },
   { value: 'GRADUATE', label: 'Posgrado' },
   { value: 'EXTENSION', label: 'Extensión' },
   { value: 'DIPLOMA', label: 'Diplomatura' },
