@@ -1,9 +1,10 @@
-package com.red_escuela.backend.billing.controller;
+package com.red_escuela.backend.billing.payment.controller;
 
 import com.red_escuela.backend.billing.dto.CreateAdHocInvoiceRequest;
 import com.red_escuela.backend.billing.dto.InvoiceResponse;
 import com.red_escuela.backend.billing.usecase.invoice.CreateAdHocInvoiceForCourseEnrollmentUseCase;
 import com.red_escuela.backend.billing.usecase.invoice.CreateAdHocInvoiceForProgramEnrollmentUseCase;
+import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.shared.permission.RequiresPermission;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
+@RequiresModule(RequiresModule.BILLING)
 public class EnrollmentAdHocInvoiceController {
     private final CreateAdHocInvoiceForCourseEnrollmentUseCase createCourseAdHocInvoiceUseCase;
     private final CreateAdHocInvoiceForProgramEnrollmentUseCase createProgramAdHocInvoiceUseCase;
