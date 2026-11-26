@@ -600,7 +600,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `PENDING_BANK_TRANSFER_ON_INVOICE` | no | `PendingBankTransferOnInvoiceException` | billing |
 | `PENDING_COURSEWORK` | no | `PendingCourseworkException` | evaluation |
 | `PENDING_COURSE_ENROLLMENT_APPLICATION` | no | `PendingCourseEnrollmentApplicationException` | enrollment |
-| `PENDING_DEBT` | no | `PendingDebtException` | billing |
+| `PENDING_DEBT` | no | `PendingDebtException` | graduation |
 | `PERSON_ALREADY_ACTIVATED` | no | `PersonAlreadyActivatedException` | identity |
 | `PERSON_NOT_ELIGIBLE_FOR_ACTIVATION` | no | `PersonNotEligibleForActivationException` | identity |
 | `POSSIBLE_DUPLICATE_BANK_TRANSFER` | no | `PossibleDuplicateBankTransferException` | billing |

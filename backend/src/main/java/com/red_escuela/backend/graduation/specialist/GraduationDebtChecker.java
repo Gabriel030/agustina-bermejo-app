@@ -1,10 +1,10 @@
 package com.red_escuela.backend.graduation.specialist;
 
 import com.red_escuela.backend.billing.api.StudentDebtView;
-import com.red_escuela.backend.billing.exception.PendingDebtException;
-import com.red_escuela.backend.billing.service.InvoiceQueryService;
+import com.red_escuela.backend.billing.api.StudentOutstandingDebtQuery;
 import com.red_escuela.backend.graduation.entity.GraduationRequest;
 import com.red_escuela.backend.graduation.events.GraduationRequestDebtBlockedEvent;
+import com.red_escuela.backend.graduation.exception.PendingDebtException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -12,14 +12,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class GraduationDebtChecker {
 
     private final GraduationDebtGate graduationDebtGate;
-    private final InvoiceQueryService invoiceQueryService;
+    private final StudentOutstandingDebtQuery studentOutstandingDebtQuery;
     private final GraduationRequestFinder graduationRequestFinder;
     private final GraduationDebtBlockPublisher graduationDebtBlockPublisher;
 
-    public GraduationDebtChecker(GraduationDebtGate graduationDebtGate, InvoiceQueryService invoiceQueryService,
+    public GraduationDebtChecker(GraduationDebtGate graduationDebtGate, StudentOutstandingDebtQuery studentOutstandingDebtQuery,
                                  GraduationRequestFinder graduationRequestFinder, GraduationDebtBlockPublisher graduationDebtBlockPublisher) {
         this.graduationDebtGate = graduationDebtGate;
-        this.invoiceQueryService = invoiceQueryService;
+        this.studentOutstandingDebtQuery = studentOutstandingDebtQuery;
         this.graduationRequestFinder = graduationRequestFinder;
         this.graduationDebtBlockPublisher = graduationDebtBlockPublisher;
     }
@@ -49,10 +49,10 @@ public class GraduationDebtChecker {
     }
 
     private StudentDebtView currentDebtOf(Long studentId) {
-        if (!graduationDebtGate.mustCheckDebt() || !invoiceQueryService.hasDebt(studentId)) {
+        if (!graduationDebtGate.mustCheckDebt() || !studentOutstandingDebtQuery.hasOutstandingDebt(studentId)) {
             return StudentDebtView.none();
         }
-        return invoiceQueryService.debtOf(studentId);
+        return studentOutstandingDebtQuery.outstandingDebtOf(studentId);
     }
 
     private PendingDebtException pendingDebtOf(Long studentId, StudentDebtView debt) {

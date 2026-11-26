@@ -5,9 +5,7 @@ import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.announcement.entity.Announcement;
 import com.red_escuela.backend.announcement.entity.AnnouncementStatus;
 import com.red_escuela.backend.announcement.repository.AnnouncementRepository;
-import com.red_escuela.backend.billing.entity.BatchExecutionLog;
-import com.red_escuela.backend.billing.entity.BatchExecutionStatus;
-import com.red_escuela.backend.billing.repository.BatchExecutionLogRepository;
+import com.red_escuela.backend.billing.api.BatchExecutionLogRecorder;
 import com.red_escuela.backend.shared.scheduling.ScheduledJobFailureCounter;
 import io.micrometer.core.instrument.MeterRegistry;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -32,17 +30,17 @@ public class ScheduledAnnouncementDispatchJob {
 
     private final AnnouncementRepository announcementRepository;
     private final ScheduledAnnouncementRowDispatcher rowDispatcher;
-    private final BatchExecutionLogRepository batchExecutionLogRepository;
+    private final BatchExecutionLogRecorder batchExecutionLogRecorder;
     private final ObjectMapper objectMapper;
     private final ScheduledJobFailureCounter failureCounter;
 
     public ScheduledAnnouncementDispatchJob(AnnouncementRepository announcementRepository,
                                             ScheduledAnnouncementRowDispatcher rowDispatcher,
-                                            BatchExecutionLogRepository batchExecutionLogRepository,
+                                            BatchExecutionLogRecorder batchExecutionLogRecorder,
                                             ObjectMapper objectMapper, MeterRegistry meterRegistry) {
         this.announcementRepository = announcementRepository;
         this.rowDispatcher = rowDispatcher;
-        this.batchExecutionLogRepository = batchExecutionLogRepository;
+        this.batchExecutionLogRecorder = batchExecutionLogRecorder;
         this.objectMapper = objectMapper;
         this.failureCounter = new ScheduledJobFailureCounter(meterRegistry);
     }
@@ -95,12 +93,10 @@ public class ScheduledAnnouncementDispatchJob {
         }
 
         long durationMs = System.currentTimeMillis() - start;
-        BatchExecutionStatus status = failed == 0 ? BatchExecutionStatus.SUCCESS
-                : (processed > 0 ? BatchExecutionStatus.PARTIAL_FAILURE : BatchExecutionStatus.FAILED);
         log.info("Envío programado de avisos: vencidos={}, enviados={}, fallidos={}, duracion={}ms",
                 candidates, processed, failed, durationMs);
-        batchExecutionLogRepository.save(new BatchExecutionLog(
-                JOB_NAME, LocalDateTime.now(), candidates, processed, failed, durationMs, status, serialize(errors)));
+        batchExecutionLogRecorder.recordRun(
+                JOB_NAME, LocalDateTime.now(), candidates, processed, failed, durationMs, serialize(errors));
     }
 
     private String serialize(List<Map<String, Object>> errors) {
