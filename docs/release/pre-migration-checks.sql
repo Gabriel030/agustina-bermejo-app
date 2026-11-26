@@ -515,6 +515,15 @@ from course_section_enrollment cse join course_enrollment ce on ce.id = cse.cour
 where cse.student_id <> ce.student_id;
 \endif
 
+select :current_version < 479 as run_block \gset
+\if :run_block
+\echo
+\echo [V479] Bajas de curso registradas (withdrawal_registered_on no nula) sin fecha efectiva (la migracion NO aborta: el CHECK queda NOT VALID; la validacion posterior ABORTA si quedan filas; las bajas de lista de espera por staff no tienen registered_on y no cuentan; la correccion afecta recargos y resumen post-baja y es decision de producto):
+select count(*) as violating_rows, min(id) as first_id
+from course_enrollment
+where status = 'WITHDRAWN' and withdrawal_registered_on is not null and withdrawal_effective_date is null;
+\endif
+
 \echo
 \echo [V470] Franjas de aula solapadas (misma aula, mismo dia y hora, periodos de termino que se pisan, ambas de comisiones ACTIVE); V470 ABORTA al crear el EXCLUDE si hay filas (corregir antes: mover una franja a otra aula u horario o desactivar la comision; no se borran datos):
 with active_slots as (
