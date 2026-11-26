@@ -96,6 +96,10 @@ public class Attendance {
         status = requestedStatus;
     }
 
+    public void revertApprovedChange(AttendanceStatus previousStatus) {
+        status = previousStatus;
+    }
+
     public void record(AttendanceStatus newStatus) {
         newStatus.requireRecordableByInstructor();
         if (status != null && status != newStatus) {

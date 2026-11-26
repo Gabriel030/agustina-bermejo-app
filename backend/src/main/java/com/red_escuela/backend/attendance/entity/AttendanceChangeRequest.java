@@ -58,6 +58,13 @@ public class AttendanceChangeRequest {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    public void reopen() {
+        this.status = AttendanceChangeRequestStatus.PENDING;
+        this.approvedBy = null;
+        this.approvedAt = null;
+        this.rejectionReason = null;
+    }
+
     @PrePersist
     private void onCreate() {
         if (this.createdAt == null) {

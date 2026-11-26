@@ -4,6 +4,7 @@ import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.attendance.dto.AttendanceChangeRequestResponse;
 import com.red_escuela.backend.attendance.dto.CreateAttendanceChangeRequestRequest;
 import com.red_escuela.backend.attendance.dto.RejectAttendanceChangeRequestRequest;
+import com.red_escuela.backend.attendance.dto.RevertAttendanceChangeRequestDecisionRequest;
 import com.red_escuela.backend.attendance.entity.AttendanceChangeRequest;
 import com.red_escuela.backend.attendance.entity.AttendanceChangeRequestStatus;
 import com.red_escuela.backend.attendance.usecase.changerequest.ApproveAttendanceChangeRequestUseCase;
@@ -13,6 +14,8 @@ import com.red_escuela.backend.attendance.usecase.changerequest.RejectAttendance
 import com.red_escuela.backend.attendance.usecase.changerequest.RejectAttendanceChangeRequestUseCase;
 import com.red_escuela.backend.attendance.usecase.changerequest.RequestAttendanceChangeCommand;
 import com.red_escuela.backend.attendance.usecase.changerequest.RequestAttendanceChangeUseCase;
+import com.red_escuela.backend.attendance.usecase.changerequest.RevertAttendanceChangeRequestDecisionCommand;
+import com.red_escuela.backend.attendance.usecase.changerequest.RevertAttendanceChangeRequestDecisionUseCase;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
 import com.red_escuela.backend.shared.permission.RequiresPermission;
@@ -36,6 +39,7 @@ public class AttendanceChangeRequestController {
     private final ListMyAttendanceChangeRequestsUseCase listMyAttendanceChangeRequestsUseCase;
     private final ApproveAttendanceChangeRequestUseCase approveAttendanceChangeRequestUseCase;
     private final RejectAttendanceChangeRequestUseCase rejectAttendanceChangeRequestUseCase;
+    private final RevertAttendanceChangeRequestDecisionUseCase revertAttendanceChangeRequestDecisionUseCase;
     private final CurrentInstructorService currentInstructorService;
 
     public AttendanceChangeRequestController(
@@ -44,12 +48,14 @@ public class AttendanceChangeRequestController {
             ListMyAttendanceChangeRequestsUseCase listMyAttendanceChangeRequestsUseCase,
             ApproveAttendanceChangeRequestUseCase approveAttendanceChangeRequestUseCase,
             RejectAttendanceChangeRequestUseCase rejectAttendanceChangeRequestUseCase,
+            RevertAttendanceChangeRequestDecisionUseCase revertAttendanceChangeRequestDecisionUseCase,
             CurrentInstructorService currentInstructorService) {
         this.requestAttendanceChangeUseCase = requestAttendanceChangeUseCase;
         this.listAttendanceChangeRequestsByStatusUseCase = listAttendanceChangeRequestsByStatusUseCase;
         this.listMyAttendanceChangeRequestsUseCase = listMyAttendanceChangeRequestsUseCase;
         this.approveAttendanceChangeRequestUseCase = approveAttendanceChangeRequestUseCase;
         this.rejectAttendanceChangeRequestUseCase = rejectAttendanceChangeRequestUseCase;
+        this.revertAttendanceChangeRequestDecisionUseCase = revertAttendanceChangeRequestDecisionUseCase;
         this.currentInstructorService = currentInstructorService;
     }
 
@@ -87,6 +93,12 @@ public class AttendanceChangeRequestController {
     @RequiresPermission(code = "attendance.review_change_request", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public AttendanceChangeRequestResponse reject(@PathVariable Long id, @Valid @RequestBody RejectAttendanceChangeRequestRequest request) {
         return toResponse(rejectAttendanceChangeRequestUseCase.reject(new RejectAttendanceChangeRequestCommand(id, request.reason())));
+    }
+
+    @PostMapping("/attendance/change-requests/{id}/revert")
+    @RequiresPermission(code = "attendance.review_change_request", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
+    public AttendanceChangeRequestResponse revert(@PathVariable Long id, @Valid @RequestBody RevertAttendanceChangeRequestDecisionRequest request) {
+        return toResponse(revertAttendanceChangeRequestDecisionUseCase.revert(new RevertAttendanceChangeRequestDecisionCommand(id, request.reason())));
     }
 
     private AttendanceChangeRequestResponse toResponse(AttendanceChangeRequest request) {
