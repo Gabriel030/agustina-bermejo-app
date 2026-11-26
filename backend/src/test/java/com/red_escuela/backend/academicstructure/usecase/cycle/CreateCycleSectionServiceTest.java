@@ -25,7 +25,7 @@ import com.red_escuela.backend.academicstructure.exception.CourseSubjectNotFound
 import com.red_escuela.backend.academicstructure.exception.CycleNotEditableException;
 import com.red_escuela.backend.academicstructure.exception.CycleNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.SectionCapacityExceedsClassroomException;
-import com.red_escuela.backend.academicstructure.exception.SubjectNotFoundException;
+import com.red_escuela.backend.academicstructure.api.SubjectNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.SubjectNotOpenableForSectionsException;
 import com.red_escuela.backend.academicstructure.repository.AcademicOfferingCycleRepository;
 import com.red_escuela.backend.academicstructure.repository.ClassroomRepository;
