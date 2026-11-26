@@ -35,6 +35,12 @@ describe('RoleShell', () => {
     expect(screen.getByRole('main')).toHaveClass('px-4', 'py-5', 'sm:px-8', 'sm:py-6');
   });
 
+  it('main reserves scroll padding so focused fields stay clear of the sticky action bar', () => {
+    renderShell();
+
+    expect(screen.getByRole('main')).toHaveClass('scroll-pb-32');
+  });
+
   it('mobile header shows the page title', () => {
     renderShell();
 
