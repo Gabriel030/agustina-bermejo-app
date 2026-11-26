@@ -6,7 +6,7 @@ import com.red_escuela.backend.notification.entity.NotificationType;
 import java.util.List;
 
 public record GradeCorrectedNotification(Long gradeItemId, String sectionName, String gradeTypeLabel, int sequenceNumber,
-                                         Person student) implements DomainNotificationEvent {
+                                         String reason, Person student) implements DomainNotificationEvent {
     @Override
     public NotificationType type() {
         return NotificationType.GRADE_CORRECTED;
@@ -14,7 +14,7 @@ public record GradeCorrectedNotification(Long gradeItemId, String sectionName, S
 
     @Override
     public String message() {
-        return "Se corrigió tu nota de " + gradeTypeLabel + " " + sequenceNumber + " en " + sectionName;
+        return "Se corrigió tu nota de " + gradeTypeLabel + " " + sequenceNumber + " en " + sectionName + ". Motivo: " + reason;
     }
 
     @Override

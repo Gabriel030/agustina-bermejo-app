@@ -7,11 +7,11 @@ import com.red_escuela.backend.shared.time.ApplicationTime;
 import java.time.Instant;
 
 public record GradeCorrectedEvent(String correlationId, Instant occurredAt, Long gradeItemId, Long studentPersonId,
-                                  String sectionName, String gradeTypeLabel, int sequenceNumber) implements DomainEvent {
+                                  String sectionName, String gradeTypeLabel, int sequenceNumber, String reason) implements DomainEvent {
 
     public static GradeCorrectedEvent correctedFor(Long gradeItemId, Long studentPersonId, String sectionName, String gradeTypeLabel,
-                                                   int sequenceNumber) {
+                                                   int sequenceNumber, String reason) {
         return new GradeCorrectedEvent(CorrelationIds.current(), ApplicationTime.instant(), gradeItemId, studentPersonId, sectionName,
-                gradeTypeLabel, sequenceNumber);
+                gradeTypeLabel, sequenceNumber, reason);
     }
 }

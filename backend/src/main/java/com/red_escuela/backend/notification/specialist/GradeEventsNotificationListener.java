@@ -43,7 +43,7 @@ public class GradeEventsNotificationListener {
     public void notifyGradeCorrected(GradeCorrectedEvent event) {
         effectGuard.runEffectOnce(DerivedEventIdentity.of(event), NOTIFY_GRADE_CORRECTED_HANDLER, () -> eventPublisher.publishEvent(
                 new GradeCorrectedNotification(event.gradeItemId(), event.sectionName(), event.gradeTypeLabel(), event.sequenceNumber(),
-                        entityManager.getReference(Person.class, event.studentPersonId()))));
+                        event.reason(), entityManager.getReference(Person.class, event.studentPersonId()))));
     }
 
     @ApplicationModuleListener
