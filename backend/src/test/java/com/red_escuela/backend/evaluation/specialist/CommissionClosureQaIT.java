@@ -262,7 +262,7 @@ class CommissionClosureQaIT extends AbstractIntegrationTest {
         section.setTerm(term);
         section.setMaxAbsenceRate(Percentage.ofPoints(BigDecimal.valueOf(25)));
         section.setStatus(StatusType.ACTIVE);
-        section.setEvaluationSchemeId(scheme.getId());
+        section.setEvaluationScheme(scheme);
         entityManager.persist(section);
         Person teacherPerson = persistPerson("Docente", "Zoé", "DOCENTE");
         Instructor teacher = new Instructor();
@@ -498,7 +498,7 @@ class CommissionClosureQaIT extends AbstractIntegrationTest {
         pastSection.setTerm(past);
         pastSection.setMaxAbsenceRate(Percentage.ofPoints(BigDecimal.valueOf(25)));
         pastSection.setStatus(StatusType.ACTIVE);
-        pastSection.setEvaluationSchemeId(commission.scheme().getId());
+        pastSection.setEvaluationScheme(commission.scheme());
         entityManager.persist(pastSection);
         SubjectSectionEnrollment enrollment = new SubjectSectionEnrollment();
         enrollment.setStudent(commission.students().get(studentIndex));

@@ -149,7 +149,7 @@ class CourseworkConditionRecalculatorAtomicityIT extends AbstractIntegrationTest
             Program program = fixtures.program();
             var cycle = fixtures.programCycle(program, term, AcademicOfferingCycleStatus.APPROVED);
             SubjectSection section = fixtures.section(fixtures.subject(), term, StatusType.ACTIVE, cycle);
-            section.setEvaluationSchemeId(scheme().getId());
+            section.setEvaluationScheme(scheme());
 
             Institution institution = new Institution();
             institution.setName("Test institute");

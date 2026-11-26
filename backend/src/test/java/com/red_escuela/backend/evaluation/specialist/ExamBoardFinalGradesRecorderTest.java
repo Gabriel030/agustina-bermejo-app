@@ -87,7 +87,7 @@ class ExamBoardFinalGradesRecorderTest extends ExamBoardChangeFixture {
         scheme.setMinRegularGrade(Grade.of(BigDecimal.valueOf(4.0)));
         scheme.setMinApprovalGrade(Grade.of(BigDecimal.valueOf(6.0)));
         entityManager.persist(scheme);
-        enrollment.getSubjectSection().setEvaluationSchemeId(scheme.getId());
+        enrollment.getSubjectSection().setEvaluationScheme(scheme);
         ExamBoardRegistration registration = registration(board.board(), enrollment);
         entityManager.flush();
         return new Row(enrollment, registration);

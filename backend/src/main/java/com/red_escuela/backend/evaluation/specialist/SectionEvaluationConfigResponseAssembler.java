@@ -12,21 +12,17 @@ import org.springframework.transaction.annotation.Transactional;
 public class SectionEvaluationConfigResponseAssembler {
 
     private final SectionEvaluationConfigInstructorAccessChecker instructorAccess;
-    private final SectionEvaluationSchemeLoader schemeLoader;
     private final SectionEvaluationConfigRepository configRepository;
 
     public SectionEvaluationConfigResponseAssembler(SectionEvaluationConfigInstructorAccessChecker instructorAccess,
-                                                    SectionEvaluationSchemeLoader schemeLoader,
                                                     SectionEvaluationConfigRepository configRepository) {
         this.instructorAccess = instructorAccess;
-        this.schemeLoader = schemeLoader;
         this.configRepository = configRepository;
     }
 
     public SectionEvaluationConfigResponse assembleForStaff(SectionEvaluationConfig detachedConfig) {
         SectionEvaluationConfig config = reload(detachedConfig);
-        return SectionEvaluationConfigResponse.from(
-                config, schemeLoader.load(config.getSubjectSection()), instructorAccess.listInstructors(config.getSubjectSection().getId()));
+        return SectionEvaluationConfigResponse.from(config, instructorAccess.listInstructors(config.getSubjectSection().getId()));
     }
 
     public SectionEvaluationConfigResponse assembleForInstructor(SectionEvaluationConfig detachedConfig, Long instructorId) {
@@ -34,7 +30,7 @@ public class SectionEvaluationConfigResponseAssembler {
         Long sectionId = config.getSubjectSection().getId();
         boolean isLead = instructorAccess.isLeadInstructor(sectionId, instructorId);
         return SectionEvaluationConfigResponse.from(
-                config, schemeLoader.load(config.getSubjectSection()), instructorAccess.listInstructors(sectionId),
+                config, instructorAccess.listInstructors(sectionId),
                 isLead && config.isEditable(), isLead && config.canBeSubmitted(ApplicationTime.now()));
     }
 

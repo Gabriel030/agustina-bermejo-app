@@ -65,7 +65,7 @@ class GradeItemConcurrencyIT extends AbstractIntegrationTest {
             scheme.setMinRegularGrade(Grade.of(new BigDecimal("4")));
             scheme.setMinApprovalGrade(Grade.of(new BigDecimal("6")));
             entityManager.persist(scheme);
-            section.setEvaluationSchemeId(scheme.getId());
+            section.setEvaluationScheme(scheme);
             Instructor instructor = fixtures.cycle().instructor();
             fixtures.cycle().assignLead(section, instructor);
             ProgramEnrollment programEnrollment = fixtures.programEnrollment(program);

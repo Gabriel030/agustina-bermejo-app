@@ -4,7 +4,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import com.red_escuela.backend.shared.domain.Grade;
 
-import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
 
 import java.time.LocalDate;
@@ -25,16 +24,15 @@ public record SectionEvaluationConfigResponse(
         BigDecimal minRegularGrade, BigDecimal minApprovalGrade, BigDecimal promotionMinGrade,
         List<SectionInstructorSummary> instructors, boolean canEdit, boolean canSubmit) {
 
-    public static SectionEvaluationConfigResponse from(SectionEvaluationConfig config, EvaluationScheme scheme,
-                                                       List<SectionInstructorSummary> instructors) {
-        return from(config, scheme, instructors, false, false);
+    public static SectionEvaluationConfigResponse from(SectionEvaluationConfig config, List<SectionInstructorSummary> instructors) {
+        return from(config, instructors, false, false);
     }
 
-    public static SectionEvaluationConfigResponse from(SectionEvaluationConfig config, EvaluationScheme scheme,
-                                                       List<SectionInstructorSummary> instructors,
+    public static SectionEvaluationConfigResponse from(SectionEvaluationConfig config, List<SectionInstructorSummary> instructors,
                                                        boolean canEdit, boolean canSubmit) {
         var section = config.getSubjectSection();
         var term = section.getTerm();
+        var scheme = section.getEvaluationScheme();
         return new SectionEvaluationConfigResponse(
                 config.getId(), section.getId(), section.getSubject().getName(), section.getName(),
                 config.getStatus().name(),

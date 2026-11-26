@@ -251,7 +251,7 @@ final class OwnershipFixtures {
         section.setName("Comision matriz");
         section.setSubject(subject);
         section.setTerm(term);
-        section.setEvaluationSchemeId(scheme.getId());
+        section.setEvaluationScheme(scheme);
         section.setMaxAbsenceRate(Percentage.ofPoints(BigDecimal.valueOf(25)));
         section.setCapacity(30);
         section.setStatus(StatusType.ACTIVE);
@@ -372,7 +372,7 @@ final class OwnershipFixtures {
         section.setName("Comision cierre matriz");
         section.setSubject(subject);
         section.setTerm(term);
-        section.setEvaluationSchemeId(scheme.getId());
+        section.setEvaluationScheme(scheme);
         section.setMaxAbsenceRate(Percentage.ofPoints(BigDecimal.valueOf(25)));
         section.setCapacity(30);
         section.setStatus(StatusType.ACTIVE);
@@ -460,7 +460,7 @@ final class OwnershipFixtures {
         courseSection.setName("Comision curso matriz");
         courseSection.setCourseSubject(courseSubject);
         courseSection.setTerm(term);
-        courseSection.setEvaluationSchemeId(persistScheme().getId());
+        courseSection.setEvaluationScheme(persistScheme());
         courseSection.setStatus(StatusType.ACTIVE);
         entityManager.persist(courseSection);
         CourseSubjectSectionInstructor courseAssignment = new CourseSubjectSectionInstructor();

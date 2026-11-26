@@ -239,7 +239,7 @@ public class LoadTestSeedConfiguration {
             section.setName("Comision de carga " + index);
             section.setSubject(subject);
             section.setTerm(term);
-            section.setEvaluationSchemeId(scheme.getId());
+            section.setEvaluationScheme(scheme);
             section.setMaxAbsenceRate(Percentage.ofPoints(BigDecimal.valueOf(25)));
             section.setCapacity(rosterSize + 1);
             section.setStatus(StatusType.ACTIVE);

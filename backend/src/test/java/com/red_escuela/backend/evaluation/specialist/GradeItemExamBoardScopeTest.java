@@ -49,7 +49,7 @@ class GradeItemExamBoardScopeTest extends ExamBoardChangeFixture {
         scheme.setMinRegularGrade(Grade.of(BigDecimal.valueOf(4.0)));
         scheme.setMinApprovalGrade(Grade.of(BigDecimal.valueOf(6.0)));
         entityManager.persist(scheme);
-        enrollment.getSubjectSection().setEvaluationSchemeId(scheme.getId());
+        enrollment.getSubjectSection().setEvaluationScheme(scheme);
         return new Scenario(enrollment, subject, term);
     }
 

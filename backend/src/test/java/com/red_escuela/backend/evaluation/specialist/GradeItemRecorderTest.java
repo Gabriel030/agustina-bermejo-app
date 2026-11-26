@@ -249,7 +249,7 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
         section.setName(subject.getName() + " - Com A");
         section.setSubject(subject);
         section.setTerm(term);
-        section.setEvaluationSchemeId(scheme == null ? null : scheme.getId());
+        section.setEvaluationScheme(scheme);
         section.setStatus(StatusType.ACTIVE);
         entityManager.persist(section);
         return section;

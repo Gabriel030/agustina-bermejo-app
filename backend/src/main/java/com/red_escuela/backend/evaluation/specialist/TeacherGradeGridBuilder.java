@@ -58,8 +58,6 @@ public class TeacherGradeGridBuilder {
     private final GradeItemAuditRepository auditRepository;
     private final SectionTermEndFinder sectionTermEndFinder;
 
-    private final SectionEvaluationSchemeLoader schemeLoader;
-
     public TeacherGradeGridBuilder(SectionFinder sectionFinder,
                                    SectionTeachingFinder sectionTeachingFinder,
                                    SectionEnrollmentFinder sectionEnrollmentFinder,
@@ -68,9 +66,7 @@ public class TeacherGradeGridBuilder {
                                    SectionEvaluationConfigRepository configRepository,
                                    SectionGradeItemPublicationRepository publicationRepository,
                                    GradeItemAuditRepository auditRepository,
-                                   SectionTermEndFinder sectionTermEndFinder,
-            SectionEvaluationSchemeLoader schemeLoader) {
-        this.schemeLoader = schemeLoader;
+                                   SectionTermEndFinder sectionTermEndFinder) {
         this.sectionFinder = sectionFinder;
         this.sectionTeachingFinder = sectionTeachingFinder;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
@@ -123,7 +119,7 @@ public class TeacherGradeGridBuilder {
                         enrollment.getFinalScore(), itemsByEnrollment, freeEnrollmentIds, publications, correctedItemIds))
                 .sorted(byName())
                 .toList();
-        return response(SectionKind.PROGRAM, sectionId, schemeLoader.load(section), config.orElse(null), students, publications);
+        return response(SectionKind.PROGRAM, sectionId, section.getEvaluationScheme(), config.orElse(null), students, publications);
     }
 
     private TeacherGradeGridResponse courseGrid(CourseSubjectSection section) {
@@ -142,7 +138,7 @@ public class TeacherGradeGridBuilder {
                         enrollment.getFinalScore(), itemsByEnrollment, freeEnrollmentIds, publications, correctedItemIds))
                 .sorted(byName())
                 .toList();
-        return response(SectionKind.COURSE, sectionId, schemeLoader.load(section), null, students, publications);
+        return response(SectionKind.COURSE, sectionId, section.getEvaluationScheme(), null, students, publications);
     }
 
     private Map<String, LocalDateTime> publicationsOf(SectionKind kind, Long sectionId) {

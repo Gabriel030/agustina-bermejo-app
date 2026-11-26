@@ -69,17 +69,13 @@ public class ClosureSheetAssembler {
     private final ClosureColumnsFinder closureColumnsFinder;
     private final CommissionClosureExceptionRepository exceptionRepository;
 
-    private final SectionEvaluationSchemeLoader schemeLoader;
-
     public ClosureSheetAssembler(SectionFinder sectionFinder, SectionEnrollmentFinder sectionEnrollmentFinder,
             SectionInstructorFinder sectionInstructorFinder, SectionTermEndFinder sectionTermEndFinder,
             SectionPresencePercentFinder sectionPresencePercentFinder,
             StudentRequiredDocumentsFinder studentRequiredDocumentsFinder, GradeItemRepository gradeItemRepository,
             PublishedGradeItemSelector publishedGradeItemSelector,
             CommissionClosureStudentRepository closureStudentRepository, ClosureColumnsFinder closureColumnsFinder,
-            CommissionClosureExceptionRepository exceptionRepository,
-            SectionEvaluationSchemeLoader schemeLoader) {
-        this.schemeLoader = schemeLoader;
+            CommissionClosureExceptionRepository exceptionRepository) {
         this.sectionFinder = sectionFinder;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
         this.sectionInstructorFinder = sectionInstructorFinder;
@@ -296,7 +292,7 @@ public class ClosureSheetAssembler {
             AcademicOfferingCycle cycle = section.getAcademicOfferingCycle();
             return new SectionContext(section.getName(), section.getSubject().getName(),
                     cycle == null || cycle.getProgram() == null ? null : cycle.getProgram().getName(),
-                    section.getTerm() == null ? null : section.getTerm().getDescription(), schemeLoader.load(section),
+                    section.getTerm() == null ? null : section.getTerm().getDescription(), section.getEvaluationScheme(),
                     section.getMaxAbsenceRate(), rows, items);
         }
         CourseSubjectSection section = sectionFinder.findCourseSectionEntity(sectionId);
@@ -310,7 +306,7 @@ public class ClosureSheetAssembler {
         AcademicOfferingCycle cycle = section.getAcademicOfferingCycle();
         return new SectionContext(section.getName(), section.getCourseSubject().getName(),
                 cycle == null || cycle.getCourse() == null ? null : cycle.getCourse().getName(),
-                section.getTerm() == null ? null : section.getTerm().getDescription(), schemeLoader.load(section),
+                section.getTerm() == null ? null : section.getTerm().getDescription(), section.getEvaluationScheme(),
                 section.getMaxAbsenceRate(), rows, items);
     }
 

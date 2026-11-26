@@ -47,8 +47,6 @@ public class ExamRecoveryRecorder {
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
-    private final SectionEvaluationSchemeLoader schemeLoader;
-
     public ExamRecoveryRecorder(GradeItemRepository gradeItemRepository,
                                 SectionGradeItemPublicationRepository publicationRepository,
                                 GradeItemAuditRepository auditRepository,
@@ -58,9 +56,7 @@ public class ExamRecoveryRecorder {
                                 GradeItemRecorder gradeItemRecorder,
                                 GraduationRequestTriggerPort graduationRequestTrigger,
                                 ApplicationEventPublisher eventPublisher,
-                                Clock clock,
-            SectionEvaluationSchemeLoader schemeLoader) {
-        this.schemeLoader = schemeLoader;
+                                Clock clock) {
         this.gradeItemRepository = gradeItemRepository;
         this.publicationRepository = publicationRepository;
         this.auditRepository = auditRepository;
@@ -78,7 +74,7 @@ public class ExamRecoveryRecorder {
                                          RecordExamRecoveryRequest request) {
         GradeItem gradeItem = gradeItemRepository.findById(gradeItemId)
                 .orElseThrow(() -> new GradeItemNotFoundException(gradeItemId));
-        Target target = Target.of(gradeItem, schemeLoader);
+        Target target = Target.of(gradeItem);
         lockEnrollment(target);
         requireTeaches(target, instructorId);
         requireRecoverable(gradeItem, target);
@@ -171,17 +167,17 @@ public class ExamRecoveryRecorder {
     private record Target(SectionKind kind, Long sectionId, Long enrollmentId, Long programEnrollmentId, Long studentPersonId,
                           String sectionName, EvaluationScheme scheme) {
 
-        static Target of(GradeItem gradeItem, SectionEvaluationSchemeLoader schemeLoader) {
+        static Target of(GradeItem gradeItem) {
             if (gradeItem.getProgramSubjectSectionEnrollment() != null) {
                 var enrollment = gradeItem.getProgramSubjectSectionEnrollment();
                 return new Target(SectionKind.PROGRAM, enrollment.getSubjectSection().getId(), enrollment.getId(),
                         enrollment.getProgramEnrollment().getId(), enrollment.getStudent().getPerson().getId(),
-                        enrollment.getSubjectSection().getName(), schemeLoader.load(enrollment.getSubjectSection()));
+                        enrollment.getSubjectSection().getName(), enrollment.getSubjectSection().getEvaluationScheme());
             }
             var enrollment = gradeItem.getCourseSubjectSectionEnrollment();
             return new Target(SectionKind.COURSE, enrollment.getCourseSubjectSection().getId(), enrollment.getId(), null,
                     enrollment.getStudent().getPerson().getId(), enrollment.getCourseSubjectSection().getName(),
-                    schemeLoader.load(enrollment.getCourseSubjectSection()));
+                    enrollment.getCourseSubjectSection().getEvaluationScheme());
         }
     }
 }

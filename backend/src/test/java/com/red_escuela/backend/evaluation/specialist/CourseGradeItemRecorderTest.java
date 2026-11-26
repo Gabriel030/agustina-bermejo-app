@@ -153,7 +153,7 @@ class CourseGradeItemRecorderTest extends AbstractIntegrationTest {
         section.setName("Comision de curso");
         section.setCourseSubject(courseSubject);
         section.setTerm(term);
-        section.setEvaluationSchemeId(scheme == null ? null : scheme.getId());
+        section.setEvaluationScheme(scheme);
         section.setStatus(StatusType.ACTIVE);
         entityManager.persist(section);
         Instructor instructor = persistInstructor();

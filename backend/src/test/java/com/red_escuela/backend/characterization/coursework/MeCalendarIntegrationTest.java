@@ -382,7 +382,7 @@ class MeCalendarIntegrationTest extends CourseworkCharacterizationSupport {
             extra.setName("Comision extra " + index);
             extra.setSubject(subject);
             extra.setTerm(classroom.section().getTerm());
-            extra.setEvaluationSchemeId(classroom.section().getEvaluationSchemeId());
+            extra.setEvaluationScheme(classroom.section().getEvaluationScheme());
             extra.setMaxAbsenceRate(classroom.section().getMaxAbsenceRate());
             extra.setCapacity(30);
             extra.setStatus(StatusType.ACTIVE);
