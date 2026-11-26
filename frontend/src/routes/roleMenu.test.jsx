@@ -79,6 +79,15 @@ describe('role menu manifest', () => {
     expect(groupMenuItems('docente', menuItemsFor('docente'))).toBeNull();
   });
 
+  it.each(Object.keys(ROLE_MENU))('never lists an options entry in the menu of %s', (role) => {
+    const items = menuItemsFor(role);
+    const groups = groupMenuItems(role, items) ?? [];
+    const labels = [...items, ...groups.flatMap((group) => group.items)].map((item) => item.label);
+    expect(labels).not.toContain('Opciones');
+    expect([...items, ...groups.flatMap((group) => group.items)].map((item) => item.to)).not.toContain(`/${role}/opciones`);
+    expect(pagesFor(role)).not.toContain('opciones');
+  });
+
   it('groups the student menu keeping order and the catalog link without any options entry', () => {
     const groups = groupMenuItems('alumno', menuItemsFor('alumno'));
     expect(groups.map((group) => group.label)).toEqual([null, 'Estudios', null, null, null]);
