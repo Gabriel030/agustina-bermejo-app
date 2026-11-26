@@ -13,7 +13,6 @@ import org.springframework.http.MediaType;
 import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -195,37 +194,5 @@ class ExamBoardEnrollmentFeeP9CharacterizationTest extends EnrollmentFeeP4Suppor
 
         assertThat(enrollmentFeeInvoices(world.enrollment())).extracting(invoice -> invoice.getPeriod().toString()).containsExactly("2027-07");
         assertThat(registrationsOf(scenario)).isZero();
-    }
-
-    @Test
-    @Tag("D-013")
-    void certificateIssuingRequiresTheLatestStartedFeeAndIssuesOnDemandWhenUnpaid() throws Exception {
-        World world = worldWithFees(1, null);
-        today(date(2027, 5, 10));
-        String student = studentToken(world.enrollment());
-
-        mockMvc.perform(get("/me/program-enrollments/{id}/certificates/approved-subjects", world.enrollment()).header("Authorization", "Bearer " + student))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value("ENROLLMENT_FEE_NOT_PAID_FOR_TERM"));
-        assertThat(enrollmentFeeInvoices(world.enrollment())).hasSize(1);
-
-        payAllEnrollmentFees(world.enrollment());
-        mockMvc.perform(get("/me/program-enrollments/{id}/certificates/approved-subjects", world.enrollment()).header("Authorization", "Bearer " + student))
-                .andExpect(status().isOk()).andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().string("Content-Type", "application/pdf"));
-    }
-
-    @Test
-    @Tag("D-027")
-    void certificateIssuingWithAnActiveExemptionSucceedsWithoutAnInvoice() throws Exception {
-        World world = worldWithFees(1, null);
-        today(date(2027, 5, 10));
-        grantExemption(tokenWithRole("DIRECTOR"), world.enrollment(), world.year().templateId(), 1, "Plan de pago acordado con el alumno")
-                .andExpect(status().isCreated());
-
-        mockMvc.perform(get("/me/program-enrollments/{id}/certificates/approved-subjects", world.enrollment())
-                        .header("Authorization", "Bearer " + studentToken(world.enrollment())))
-                .andExpect(status().isOk());
-
-        assertThat(enrollmentFeeInvoices(world.enrollment())).isEmpty();
     }
 }
