@@ -251,6 +251,20 @@ class CourseServiceIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void listFiltersByCatalogArea() {
+        Course technology = createCourse("Area tecnologia");
+        technology.setCatalogArea(com.red_escuela.backend.academicstructure.entity.CatalogArea.TECHNOLOGY);
+        Course health = createCourse("Area salud");
+        health.setCatalogArea(com.red_escuela.backend.academicstructure.entity.CatalogArea.HEALTH);
+        Course withoutArea = createCourse("Area ninguna");
+        entityManager.flush();
+
+        List<Long> onlyTechnology = ids(courseService.list(null, null, com.red_escuela.backend.academicstructure.entity.CatalogArea.TECHNOLOGY));
+
+        assertThat(onlyTechnology).contains(technology.getId()).doesNotContain(health.getId(), withoutArea.getId());
+    }
+
+    @Test
     void listFiltersByStatusAndCatalogVisibility() {
         Course active = createCourse("Zeta activo visible");
         active.setVisibleInCatalog(true);
