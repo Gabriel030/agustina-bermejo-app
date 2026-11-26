@@ -237,7 +237,7 @@ class CreateCycleSectionServiceTest {
         verify(conflictChecker).checkClassroomAvailability(term, CLASSROOM_ID, DayOfWeek.MONDAY, LocalTime.of(8, 0), LocalTime.of(12, 0));
         verify(conflictChecker).checkClassroomAvailability(term, CLASSROOM_ID, DayOfWeek.TUESDAY, LocalTime.of(8, 0), LocalTime.of(12, 0));
         var captor = ArgumentCaptor.forClass(SectionScheduleSlot.class);
-        verify(slotRepository, times(2)).save(captor.capture());
+        verify(slotRepository, times(2)).saveAndFlush(captor.capture());
         assertThat(captor.getAllValues()).extracting(SectionScheduleSlot::getDayOfWeek)
                 .containsExactly(DayOfWeek.MONDAY, DayOfWeek.TUESDAY);
         assertThat(captor.getAllValues()).allSatisfy(saved -> {
@@ -282,7 +282,7 @@ class CreateCycleSectionServiceTest {
                 request("A", 1L, null, 10, List.of(slot(DayOfWeek.MONDAY)))))
                 .isInstanceOf(ClassroomNotFoundException.class);
 
-        verify(slotRepository, never()).save(any());
+        verify(slotRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -296,7 +296,7 @@ class CreateCycleSectionServiceTest {
                 request("A", 1L, null, 10, List.of(slot(DayOfWeek.MONDAY)))))
                 .isInstanceOf(SectionCapacityExceedsClassroomException.class);
 
-        verify(slotRepository, never()).save(any());
+        verify(slotRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -312,7 +312,7 @@ class CreateCycleSectionServiceTest {
                 request("A", 1L, null, 10, List.of(slot(DayOfWeek.MONDAY)))))
                 .isInstanceOf(IllegalStateException.class);
 
-        verify(slotRepository, never()).save(any());
+        verify(slotRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -362,7 +362,7 @@ class CreateCycleSectionServiceTest {
 
         verify(conflictChecker).checkClassroomAvailability(term, CLASSROOM_ID, DayOfWeek.FRIDAY, LocalTime.of(8, 0), LocalTime.of(12, 0));
         var captor = ArgumentCaptor.forClass(SectionScheduleSlot.class);
-        verify(slotRepository).save(captor.capture());
+        verify(slotRepository).saveAndFlush(captor.capture());
         var saved = captor.getValue();
         assertThat(saved.getCourseSection().getId()).isEqualTo(200L);
         assertThat(saved.getSubjectSection()).isNull();
@@ -393,7 +393,7 @@ class CreateCycleSectionServiceTest {
                 request("B", null, 3L, 18, List.of(slot(DayOfWeek.FRIDAY)))))
                 .isInstanceOf(SectionCapacityExceedsClassroomException.class);
 
-        verify(slotRepository, never()).save(any());
+        verify(slotRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -468,7 +468,7 @@ class CreateCycleSectionServiceTest {
                 .isInstanceOf(SlotOutsideShiftException.class);
 
         verify(conflictChecker, never()).checkClassroomAvailability(any(), any(), any(), any(), any());
-        verify(slotRepository, never()).save(any());
+        verify(slotRepository, never()).saveAndFlush(any());
     }
 
     private static CreateCycleSectionRequest request(String name, Long subjectId, Long courseSubjectId, Integer capacity,

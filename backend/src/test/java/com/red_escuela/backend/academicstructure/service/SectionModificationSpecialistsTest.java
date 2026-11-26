@@ -163,7 +163,7 @@ class SectionModificationSpecialistsTest {
         });
         assertThat(section.isPendingApproval()).isTrue();
         verify(slotRepository, never()).deleteAll(any());
-        verify(slotRepository, never()).save(any());
+        verify(slotRepository, never()).saveAndFlush(any());
     }
 
     @Test
