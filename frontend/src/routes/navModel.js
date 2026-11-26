@@ -1,3 +1,5 @@
+import { groupMenuItems } from '@/routes/roleMenu';
+
 export function isPathWithin(to, pathname) {
   return pathname === to || pathname.startsWith(`${to}/`);
 }
@@ -58,4 +60,21 @@ export function resolveLevelNodes(entries, path) {
     current = node.children;
   }
   return nodes;
+}
+
+export function buildTopNavEntries(items, groups) {
+  if (!groups) return items.map((item) => ({ type: 'link', kind: 'link', id: item.to, item }));
+  return groups.flatMap((group) => {
+    const own = group.items;
+    if (own.length === 0) return [];
+    if (group.panel === 'catalog') return [{ type: 'catalog', kind: 'panel', id: group.id, item: own[0] }];
+    if (!group.label) return own.map((item) => ({ type: 'link', kind: 'link', id: item.to, item }));
+    const sections = group.sections;
+    return [{ type: 'group', kind: 'menu', id: group.id, label: group.label, wide: Boolean(sections), items: own, sections }];
+  });
+}
+
+export function buildNavModel(role, items) {
+  const groups = groupMenuItems(role, items);
+  return { items, groups, entries: buildTopNavEntries(items, groups) };
 }
