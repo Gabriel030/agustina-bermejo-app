@@ -1,5 +1,8 @@
 package com.red_escuela.backend.academicstructure.service;
 
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
+import com.red_escuela.backend.academicstructure.exception.SectionScheduleConflictException;
 import com.red_escuela.backend.academicstructure.entity.SectionModificationProposal;
 import com.red_escuela.backend.academicstructure.entity.SectionModificationStatus;
 import com.red_escuela.backend.academicstructure.entity.SectionScheduleSlot;
@@ -96,7 +99,15 @@ public class SectionModificationApprover {
             slot.setDayOfWeek(proposed.getDayOfWeek());
             slot.setStartTime(proposed.getStartTime());
             slot.setEndTime(proposed.getEndTime());
-            slotRepository.save(slot);
+            try {
+                slotRepository.saveAndFlush(slot);
+            } catch (DataIntegrityViolationException e) {
+                if (ScheduleExclusionViolation.isClassroomOverlap(e)) {
+                    throw new SectionScheduleConflictException(
+                            proposed.getClassroom().getId(), proposed.getDayOfWeek(), proposed.getStartTime(), proposed.getEndTime());
+                }
+                throw e;
+            }
         }
     }
 }

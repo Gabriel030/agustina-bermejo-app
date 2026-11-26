@@ -1,31 +1,63 @@
 \set ON_ERROR_STOP off
 \pset null '(null)'
-\echo ===== Diagnostico de solo lectura previo a V111..V182 (correr sobre una base en V110) =====
-begin read only;
+set default_transaction_read_only = on;
+select to_regclass('flyway_schema_history') is not null as has_history \gset
+\if :has_history
+select coalesce(max(version::int), 0) as current_version from flyway_schema_history where success and version ~ '^[0-9]+$' \gset
+\else
+\set current_version 0
+\endif
+\echo ===== Diagnostico de solo lectura previo a las migraciones pendientes (V111 hasta la ultima) =====
+\echo Version actual de la base: :current_version
+\echo Cada bloque [V<n>] corre solo si la migracion V<n> todavia no esta aplicada (version actual < n); los bloques de migraciones ya aplicadas se omiten.
+\echo Los bloques [V470] corren siempre y van al final: los lee SectionScheduleSlotExcludeMigrationTest.
+\echo Cada consulta corre en su propia sentencia (sin transaccion): un error aislado no invalida las siguientes.
 
+select :current_version < 111 as run_block \gset
+\if :run_block
 \echo
 \echo [V111] Avisos de cobranza PROPOSED o SCHEDULED (la migracion ABORTA si hay filas): 'Hay una propuesta o version programada de Avisos de cobranza...'
 select id, scope, status from configuration_version where scope = 'COLLECTION_REMINDERS' and status in ('PROPOSED', 'SCHEDULED') order by id;
+\endif
 
+select :current_version < 123 as run_block \gset
+\if :run_block
 \echo
 \echo [V123] Asientos de cuenta corriente con payment_id que no esta en payment (la migracion ABORTA): 'V123 aborted: N current account entr(ies) point to a payment...'
 select count(*) as entries_pointing_to_legacy_payments from current_account_entry e
 where e.payment_id is not null
   and not exists (select 1 from payment p where p.id = e.payment_id and p.student_current_account_id = e.student_current_account_id);
+\endif
+
+select :current_version < 123 as run_block \gset
+\if :run_block
 \echo [V123] Pagos legacy que V123 DESCARTA (tabla legacy_payment se borra sin backfill):
 select count(*) as legacy_payment_rows, coalesce(sum(amount), 0) as legacy_payment_total from legacy_payment;
+\endif
 
+select :current_version < 130 as run_block \gset
+\if :run_block
 \echo
 \echo [V130] Comprobantes de transferencia con payment_id que no esta en payment (la migracion ABORTA): 'V130 aborted: N bank transfer receipt(s)...'
 select count(*) as receipts_pointing_to_legacy_payments from bank_transfer_receipt r
 where r.payment_id is not null and not exists (select 1 from payment p where p.id = r.payment_id);
+\endif
 
+select :current_version < 132 as run_block \gset
+\if :run_block
 \echo
 \echo [V132] Becas legacy ACTIVE (la migracion ABORTA): 'Cannot drop the legacy scholarship tables while ACTIVE legacy scholarships exist...'
 select status, count(*) as scholarships from scholarship group by status order by status;
+\endif
+
+select :current_version < 132 as run_block \gset
+\if :run_block
 \echo [V132] Becas legacy NO activas que V132 DESCARTA junto con sus cuotas:
 select count(*) as scholarship_installments from scholarship_installment;
+\endif
 
+select :current_version < 139 as run_block \gset
+\if :run_block
 \echo
 \echo [V139] Canjes de promocion con plan abierto y cuotas pendientes (la migracion ABORTA): 'Cannot drop the legacy promotion tables: N redemption(s)...'
 select count(*) as redemptions_with_pending_installments
@@ -44,21 +76,34 @@ where s.effective_to is null
                                  and i.document_status <> 'DISCARDED'
                                  and a.student_id = coalesce((select pe.student_id from program_enrollment pe where pe.id = s.program_enrollment_id),
                                                              (select ce.student_id from course_enrollment ce where ce.id = s.course_enrollment_id)));
+\endif
+
+select :current_version < 139 as run_block \gset
+\if :run_block
 \echo [V139] Promociones legacy que V139 DESCARTA:
 select (select count(*) from promotion) as promotions, (select count(*) from promotion_redemption) as redemptions;
+\endif
 
+select :current_version < 146 as run_block \gset
+\if :run_block
 \echo
 \echo [V146] CONFLICTO V132/V139 -> V146 (la migracion ABORTA): 'invoice_discount has N row(s) without student_discount_id; link or remove them before enforcing D-199'
 \echo         V132 y V139 ponen student_discount_id = null y ninguna migracion lo rellena; V146 exige NOT NULL. Cualquier fila en invoice_discount lo dispara.
 select discount_type, count(*) as rows_total, count(*) filter (where student_discount_id is null) as rows_without_student_discount
 from invoice_discount group by discount_type order by discount_type;
+\endif
 
+select :current_version < 160 as run_block \gset
+\if :run_block
 \echo
 \echo [V160] Inscripciones cuyo payment_status se copia a enrollment_payment_standing y se BORRA de la inscripcion (irreversible); last_closed_month = mes anterior a la fecha de migracion:
 select 'program_enrollment' as source, payment_status, count(*) from program_enrollment group by payment_status
 union all
 select 'course_enrollment', payment_status, count(*) from course_enrollment group by payment_status order by 1, 2;
+\endif
 
+select :current_version < 172 as run_block \gset
+\if :run_block
 \echo
 \echo [V172] Calificaciones duplicadas que V172 BORRA (conserva el id mayor) por inscripcion + tipo + secuencia:
 select 'program' as target, program_section_enrollment_id as enrollment_id, type, sequence_number,
@@ -72,6 +117,10 @@ select 'course', course_section_enrollment_id, type, sequence_number,
 from grade_item where course_section_enrollment_id is not null
 group by course_section_enrollment_id, type, sequence_number having count(*) > 1
 order by 1, 2, 3, 4;
+\endif
+
+select :current_version < 172 as run_block \gset
+\if :run_block
 \echo [V172] Total de filas de grade_item que se borraran (cero esperado):
 select coalesce(sum(copies - 1), 0) as grade_items_to_delete from (
     select count(*) as copies from grade_item where program_section_enrollment_id is not null
@@ -79,7 +128,10 @@ select coalesce(sum(copies - 1), 0) as grade_items_to_delete from (
     union all
     select count(*) from grade_item where course_section_enrollment_id is not null
     group by course_section_enrollment_id, type, coalesce(sequence_number, -1) having count(*) > 1) d;
+\endif
 
+select :current_version < 174 as run_block \gset
+\if :run_block
 \echo
 \echo [V174/V176] Periodos (term) con fechas que la migracion INVENTA (no aborta; revisar que las fechas resultantes sean aceptables):
 \echo   enrollment_start nulo -> start_date, o now() (la fecha de migracion); enrollment_end nulo o anterior al inicio -> end_date, o start_date + 1 anio.
@@ -93,15 +145,24 @@ from term
 where enrollment_start is null or enrollment_end is null or enrollment_end < enrollment_start
    or start_date is null or end_date is null or end_date < start_date
 order by id;
+\endif
 
+select :current_version < 180 as run_block \gset
+\if :run_block
 \echo
 \echo [V180] Feriados: todos quedan con type = NATIONAL y name = description (no aborta). Revisar si hay feriados provinciales o locales cargados:
 select count(*) as holidays, min(date) as first_date, max(date) as last_date from holiday;
+\endif
 
+select :current_version < 179 as run_block \gset
+\if :run_block
 \echo
 \echo [V179] Comisiones a las que se les rellena shift (segun el primer horario; sin horario queda MORNING) y code (segun tipo y anio del periodo). No aborta; son datos derivados:
 select count(*) as sections from subject_section;
+\endif
 
+select :current_version < 209 as run_block \gset
+\if :run_block
 \echo
 \echo [V209/V210] CHECK de enums (la migracion ABORTA si hay valores fuera del enum de Java; no hay filas en la salida si todo esta bien). Se omiten tablas o columnas que la base aun no tiene. Cada fila: tabla, columna, valor, cantidad:
 do $$
@@ -302,7 +363,10 @@ begin
     end loop;
   end loop;
 end $$;
+\endif
 
+select :current_version < 214 as run_block \gset
+\if :run_block
 \echo
 \echo [V214] Columnas legado de institution que V214 DESCARTA (si sms_password > 0, rotar esa credencial en el proveedor de SMS: docs/release/institution-sms-credential.md):
 select count(*) filter (where facebook is not null) as facebook,
@@ -314,11 +378,17 @@ select count(*) filter (where facebook is not null) as facebook,
        count(*) filter (where sms_usuario is not null) as sms_usuario,
        count(*) filter (where sms_password is not null) as sms_password
 from institution;
+\endif
 
+select :current_version < 215 as run_block \gset
+\if :run_block
 \echo
 \echo [V215] Filas de billing_period que V215 DESCARTA (configuracion sin efecto en la facturacion; solo informativo):
 select count(*) as billing_period_rows from billing_period;
+\endif
 
+select :current_version < 266 as run_block \gset
+\if :run_block
 \echo
 \echo [V266] Destinatarios de envios COMPLETED o CANCELLED con mas de 12 meses que BroadcastRecipientPurgeJob BORRARA (V266 no aborta; solo informativo). Los envios sin totales congelados no se borran:
 select count(*) filter (where b.sent_total is not null) as recipient_rows_to_purge,
@@ -326,7 +396,10 @@ select count(*) filter (where b.sent_total is not null) as recipient_rows_to_pur
 from broadcast_recipient r join broadcast b on b.id = r.broadcast_id
 where (b.status = 'CANCELLED' and b.cancelled_at < now() - interval '12 months')
    or (b.status = 'COMPLETED' and b.completed_at < now() - interval '12 months');
+\endif
 
+select :current_version < 272 as run_block \gset
+\if :run_block
 \echo
 \echo [V272] Alumnos con mas de una matriculacion activa (ENROLLED, IN_PROGRESS, WAITLISTED) al mismo curso; V272 crea un indice unico parcial y ABORTA si hay filas (resolver antes: retirar o fusionar las duplicadas):
 select student_id, course_id, count(*) as active_enrollments, array_agg(id order by id) as enrollment_ids
@@ -334,7 +407,10 @@ from course_enrollment
 where status in ('ENROLLED', 'IN_PROGRESS', 'WAITLISTED')
 group by student_id, course_id
 having count(*) > 1;
+\endif
 
+select :current_version < 428 as run_block \gset
+\if :run_block
 \echo
 \echo [V428] Solicitudes de pago anual adelantado cuyo payment_id no existe en payment; V428 ABORTA si hay filas (corregir antes: apuntar al pago correcto o dejar payment_id en null; no se borran datos):
 select r.id as annual_upfront_request_id, r.payment_id, r.status
@@ -342,6 +418,89 @@ from annual_upfront_request r
 where r.payment_id is not null
   and not exists (select 1 from payment p where p.id = r.payment_id)
 order by r.id;
+\endif
+
+select :current_version < 446 as run_block \gset
+\if :run_block
+\echo
+\echo [V446/V451] Egresos importados APROBADOS sin decided_by_id: V446 les reclasifica certificate_review_status (no aborta; V447 valida los CHECK y no puede fallar con estos valores). ENABLED si ya tienen un certificado de egreso VALID o REVOKED; PENDING_REVIEW si no (queda a la espera de que el Director habilite o deshabilite el certificado). Cantidad por estado resultante:
+select case when exists (select 1 from graduation_certificate gc
+                         where gc.program_enrollment_id = gr.program_enrollment_id and gc.status in ('VALID', 'REVOKED'))
+            then 'ENABLED' else 'PENDING_REVIEW' end as certificate_review_status_after_migration,
+       count(*) as graduation_requests
+from graduation_request gr
+where gr.status = 'APPROVED' and gr.decided_by_id is null
+group by 1
+order by 1;
+\endif
+
+select :current_version < 452 as run_block \gset
+\if :run_block
+\echo
+\echo [V452] Codigos de certificados repetidos entre graduation_certificate y regular_student_certificate; V452 ABORTA al poblar verifiable_document (clave primaria por code) si hay filas (corregir antes: regenerar el codigo de uno de los dos):
+select c.code, array_agg(c.source order by c.source) as sources, array_agg(c.id order by c.source) as certificate_ids
+from (select code, id, 'graduation_certificate' as source from graduation_certificate
+      union all
+      select code, id, 'regular_student_certificate' from regular_student_certificate) c
+group by c.code
+having count(*) > 1
+order by c.code;
+\endif
+
+select :current_version < 463 as run_block \gset
+\if :run_block
+\echo
+\echo [V463] Franjas horarias que V463 recalcula (term_period, occupies, time_span) con un UPDATE que dispara el trigger; V470 vuelve a recalcularlas y crea la proyeccion por docente (no aborta; solo informativo, dimensiona el tiempo del UPDATE):
+select count(*) as section_schedule_slots from section_schedule_slot;
+\endif
+
+select :current_version < 465 as run_block \gset
+\if :run_block
+\echo
+\echo [V465] Constancias de inscripcion a examen cuyo codigo ya existe en el registro verificable (V465 no aborta pero las OMITE del registro: queda sin verificacion publica). El registro se puebla antes con los codigos de graduation_certificate y regular_student_certificate (V452):
+select e.id as exam_registration_certificate_id, e.code, other.source as code_already_used_by
+from exam_registration_certificate e
+join (select code, 'graduation_certificate' as source from graduation_certificate
+      union all
+      select code, 'regular_student_certificate' from regular_student_certificate) other on other.code = e.code
+order by e.id;
+\endif
+
+select :current_version < 474 as run_block \gset
+\if :run_block
+\echo
+\echo [V474] Inscripciones a carrera activas (ENROLLED o PAUSED) duplicadas por alumno y carrera (la migracion ABORTA al crear el unico parcial): 'could not create unique index uk_program_enrollment_student_program_active'
+select student_id, program_id, count(*) as active_rows, array_agg(id order by id) as ids
+from program_enrollment
+where status in ('ENROLLED', 'PAUSED')
+group by student_id, program_id
+having count(*) > 1
+order by student_id, program_id;
+\endif
+
+select :current_version < 475 as run_block \gset
+\if :run_block
+\echo
+\echo [V475] Solicitudes de constancia PENDING_STAFF duplicadas por inscripcion (la migracion ABORTA al crear el unico parcial): 'could not create unique index uq_regular_cert_request_pending_per_enrollment'
+select kind, coalesce(program_enrollment_id, course_enrollment_id) as enrollment_id,
+       count(*) as pending_rows, array_agg(id order by id) as ids
+from regular_certificate_request
+where outcome = 'PENDING_STAFF'
+group by kind, coalesce(program_enrollment_id, course_enrollment_id)
+having count(*) > 1
+order by 1, 2;
+\endif
+
+select :current_version < 476 as run_block \gset
+\if :run_block
+\echo
+\echo [V476] Bajas sin fecha efectiva y carreras COMPLETED sin fecha de finalizacion (la migracion NO aborta: los CHECK quedan NOT VALID y las filas existentes siguen; la validacion posterior ABORTA si quedan filas; la correccion afecta recargos y resumen post-baja y es decision de producto):
+select 'program_enrollment WITHDRAWN sin withdrawal_effective_date' as violation, count(*) as violating_rows, min(id) as first_id
+from program_enrollment where status = 'WITHDRAWN' and withdrawal_effective_date is null
+union all
+select 'program_enrollment COMPLETED sin completion_date', count(*), min(id)
+from program_enrollment where status = 'COMPLETED' and completion_date is null;
+\endif
 
 \echo
 \echo [V470] Franjas de aula solapadas (misma aula, mismo dia y hora, periodos de termino que se pisan, ambas de comisiones ACTIVE); V470 ABORTA al crear el EXCLUDE si hay filas (corregir antes: mover una franja a otra aula u horario o desactivar la comision; no se borran datos):
@@ -387,5 +546,4 @@ join instructor_slots b on a.slot_id < b.slot_id and a.instructor_id = b.instruc
     and a.term_period && b.term_period
 order by a.instructor_id, a.slot_id;
 
-rollback;
 \echo ===== fin =====

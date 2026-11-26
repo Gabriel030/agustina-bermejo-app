@@ -262,6 +262,12 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         enrollment.setProgram(program);
         enrollment.setStatus(status);
         enrollment.setEnrollmentDate(LocalDateTime.now());
+        if (status == ProgramEnrollmentStatus.WITHDRAWN) {
+            enrollment.setWithdrawalEffectiveDate(java.time.LocalDate.now());
+        }
+        if (status == ProgramEnrollmentStatus.COMPLETED) {
+            enrollment.setCompletionDate(java.time.LocalDateTime.now());
+        }
         entityManager.persist(enrollment);
         return enrollment;
     }

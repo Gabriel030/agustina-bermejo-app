@@ -34,7 +34,7 @@ class CourseSectionDeactivationGuardTest {
         assertThatThrownBy(() -> service.deactivate(5L)).isInstanceOf(SectionHasActiveEnrollmentsException.class);
 
         assertThat(section.getStatus()).isEqualTo(StatusType.ACTIVE);
-        verify(repository, never()).save(any());
+        verify(repository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -47,6 +47,6 @@ class CourseSectionDeactivationGuardTest {
         service.deactivate(5L);
 
         assertThat(section.getStatus()).isEqualTo(StatusType.INACTIVE);
-        verify(repository).save(section);
+        verify(repository).saveAndFlush(section);
     }
 }

@@ -1,4 +1,4 @@
-package com.red_escuela.backend.billing.api;
+package com.red_escuela.backend.enrollment.api;
 
 import com.red_escuela.backend.shared.domain.Money;
 

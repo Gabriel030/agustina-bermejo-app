@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.Map;
 
 @Component
@@ -32,12 +33,14 @@ public class RegularCertificateTemplate {
                 base.institutionName(), base.signatories(), REGULAR_BUILT_IN_V1, null);
     }
 
-    public Map<String, String> extraMarkersOf(String recipientLabel) {
-        if (recipientLabel == null) {
-            return Map.of();
+    public Map<String, String> extraMarkersOf(String recipientLabel, LocalDate validUntil) {
+        Map<String, String> markers = new HashMap<>();
+        markers.put("validUntil", validUntil.format(DATE_FORMAT));
+        if (recipientLabel != null) {
+            int separator = recipientLabel.indexOf(RECIPIENT_SEPARATOR);
+            markers.put("recipient", separator < 0 ? recipientLabel : recipientLabel.substring(separator + RECIPIENT_SEPARATOR.length()));
         }
-        int separator = recipientLabel.indexOf(RECIPIENT_SEPARATOR);
-        return Map.of("recipient", separator < 0 ? recipientLabel : recipientLabel.substring(separator + RECIPIENT_SEPARATOR.length()));
+        return Map.copyOf(markers);
     }
 
     public CertificateTemplateDefinition definitionFor(CertificateSnapshot snapshot, LocalDate validUntil) {

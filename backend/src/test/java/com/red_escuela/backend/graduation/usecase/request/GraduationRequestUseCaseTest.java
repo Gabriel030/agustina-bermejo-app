@@ -331,6 +331,7 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
         GraduationRequest request = requestAndVerify(enrollment, "ADMIN80000009");
 
         enrollment.setStatus(ProgramEnrollmentStatus.WITHDRAWN);
+        enrollment.setWithdrawalEffectiveDate(java.time.LocalDate.now());
         entityManager.flush();
         authenticateAsPerson("DIRECTOR80000009");
 

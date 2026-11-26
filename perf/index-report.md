@@ -78,6 +78,17 @@ No medí cambiar el orden en ninguno; son observaciones del catálogo y del uso.
 | `ix_notification_recipient_created_at (recipient_id, created_at DESC)` y `ix_notification_recipient_unread (recipient_id) WHERE read = false` | Orden correcto; se usaron (222 scans, `unread-count` a 0,7 ms). Se solapan solo en `recipient_id` | Sin acción |
 | `uk_attendance_program_date (program_section_enrollment_id, class_date)` parcial | Es el único índice usable de `attendance` por inscripción (88.386 scans); el orden es correcto para el informe de ausencias | Sin acción |
 
+## E33-C: `commission_closure_student (enrollment_id)` (26-nov)
+
+Borrado del rollback de importación (`delete … where enrollment_id in (1000 ids)`) sobre el esquema real (todas las migraciones aplicadas, Postgres 16), 200.000 filas, 4 corridas por lado con caché caliente. Ninguna tabla referencia a `commission_closure_student` y `enrollment_id` no tiene FK: las FKs reales no intervienen en este borrado. El seed perf (`seed-large.sql`) no carga esta tabla; se cargó por SQL.
+
+| | Plan | Tiempos (ms) |
+|---|---|---|
+| Sin índice | Seq Scan de 200.000 filas | 36,4 / 35,1 / 45,0 / 43,9 |
+| Con `idx_commission_closure_student_enrollment` | Index Scan por cada id | 12,1 / 8,8 / 9,1 / 9,9 |
+
+Mejora ≈ 4× por tramo de 1.000 filas (mediana 40 → 9,5 ms) sobre el umbral de 2×: se crea el índice en V473.
+
 ## Qué queda para 33.3a/33.3b
 
 - Candidato claro: `subject_section_enrollment (program_section_id, status)` (−45 % en lista de espera).
@@ -85,3 +96,14 @@ No medí cambiar el orden en ninguno; son observaciones del catálogo y del uso.
 - No hacer: los otros 5 probados no mejoran.
 - Decidir con los dueños del código qué FKs del listado necesitan índice por integridad de borrado (`audit_log.actor_person_id` es la de mayor volumen).
 - Sacar los sin uso solo tras medir una carga de escritura y revisar jobs y pantallas no cubiertas.
+
+## E33-C: `commission_closure_student (enrollment_id)` (medición, 26-nov)
+
+Borrado del rollback de importación (`delete … where enrollment_id in (1000 ids)`), Postgres 16 en contenedor, tabla sintética de 200.000 filas con la misma forma que `commission_closure_student` (PK, `unique (closure_id, enrollment_id)`), 4 corridas por lado con caché caliente.
+
+| | Plan | Tiempos (ms) |
+|---|---|---|
+| Sin índice | Seq Scan de 200.000 filas | 46,5 / 33,9 / 33,5 / 35,8 |
+| Con `idx (enrollment_id)` | Nested Loop con Index Scan | 8,7 / 5,9 / 6,4 / 7,1 |
+
+Mejora ≈ 5× por tramo de 1.000 filas (mediana 34,7 → 6,8 ms). Limitación: no se midió con el seed perf real (no hay `PerfSeedIT` corrible en esta sesión) ni con las FKs de la tabla real; el costo absoluto por tramo es chico (200 tramos ≈ 7 s sin índice). Migración no creada: queda a decisión del líder, que además tiene que dar el número por la cola #1393.

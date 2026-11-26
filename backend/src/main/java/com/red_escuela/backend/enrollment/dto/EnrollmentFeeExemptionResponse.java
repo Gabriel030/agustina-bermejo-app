@@ -10,7 +10,7 @@ public record EnrollmentFeeExemptionResponse(Long id, Long templateId, Integer s
                                              @Schema(nullable = true) String revokedByName, @Schema(nullable = true) LocalDateTime revokedAt, @Schema(nullable = true) String revocationNotes, boolean active) {
 
     public static EnrollmentFeeExemptionResponse from(EnrollmentFeeExemption exemption) {
-        return new EnrollmentFeeExemptionResponse(exemption.getId(), exemption.getTemplate().getId(), exemption.getSlot(), exemption.getReason(),
+        return new EnrollmentFeeExemptionResponse(exemption.getId(), exemption.getTemplateId(), exemption.getSlot(), exemption.getReason(),
                 name(exemption.getGrantedBy()), exemption.getGrantedAt(), name(exemption.getRevokedBy()), exemption.getRevokedAt(),
                 exemption.getRevocationNotes(), exemption.isActive());
     }

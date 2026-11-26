@@ -379,6 +379,7 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
     private void withdrawCourseEnrollmentOn(LocalDate date) {
         enrollment.setStatus(EnrollmentStatus.WITHDRAWN);
         enrollment.setCompletionDate(date.atTime(10, 0));
+        enrollment.setWithdrawalEffectiveDate(date);
         courseEnrollmentRepository.save(enrollment);
     }
 
@@ -881,6 +882,7 @@ class LateFeeAccrualIT extends AbstractIntegrationTest {
         Invoice origin = programInstallmentDueOn(programEnrollment, d(2120, 3, 11));
         programEnrollment.setStatus(ProgramEnrollmentStatus.WITHDRAWN);
         programEnrollment.setCompletionDate(LocalDateTime.of(2120, 3, 20, 9, 0));
+        programEnrollment.setWithdrawalEffectiveDate(LocalDate.of(2120, 3, 20));
         programEnrollmentRepository.save(programEnrollment);
 
         reconcile(origin, d(2120, 6, 1));

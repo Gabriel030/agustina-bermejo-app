@@ -32,6 +32,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
@@ -116,6 +117,12 @@ class SegmentStrategiesIT extends AbstractIntegrationTest {
         programEnrollment.setProgram(program);
         programEnrollment.setStatus(status);
         programEnrollment.setEnrollmentDate(LocalDateTime.now(MutableClock.INSTANCE));
+        if (status == ProgramEnrollmentStatus.COMPLETED) {
+            programEnrollment.setCompletionDate(LocalDateTime.now(MutableClock.INSTANCE));
+        }
+        if (status == ProgramEnrollmentStatus.WITHDRAWN) {
+            programEnrollment.setWithdrawalEffectiveDate(LocalDate.now(MutableClock.INSTANCE));
+        }
         entityManager.persist(programEnrollment);
     }
 

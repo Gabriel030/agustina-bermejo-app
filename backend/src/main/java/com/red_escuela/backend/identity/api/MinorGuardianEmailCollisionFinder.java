@@ -11,13 +11,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @Component
 public class MinorGuardianEmailCollisionFinder {
-
-    private static final int LOOKUP_CHUNK_SIZE = 500;
 
     private final PersonRepository personRepository;
     private final StudentRepository studentRepository;
@@ -33,12 +30,11 @@ public class MinorGuardianEmailCollisionFinder {
         if (distinctIds.length == 0) {
             return Set.of();
         }
-        List<Long> minorIds = List.of(findMinorPersonIds(distinctIds));
-        Set<Long> colliding = new HashSet<>();
-        for (int from = 0; from < minorIds.size(); from += LOOKUP_CHUNK_SIZE) {
-            colliding.addAll(studentRepository.findPersonIdsWithEmailEqualToAnyGuardianEmail(minorIds.subList(from, Math.min(from + LOOKUP_CHUNK_SIZE, minorIds.size()))));
+        Long[] minorIds = findMinorPersonIds(distinctIds);
+        if (minorIds.length == 0) {
+            return Set.of();
         }
-        return colliding;
+        return new HashSet<>(studentRepository.findPersonIdsWithEmailEqualToAnyGuardianEmail(minorIds));
     }
 
     private Long[] findMinorPersonIds(Long[] ids) {

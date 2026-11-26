@@ -4,7 +4,7 @@ import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.entity.BankTransferReceiptStatus;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingReason;
-import com.red_escuela.backend.billing.api.AdvanceEnrollmentFeeView;
+import com.red_escuela.backend.enrollment.api.AdvanceEnrollmentFeeView;
 import com.red_escuela.backend.billing.advanceenrollmentfee.service.AdvanceEnrollmentFeeAvailabilityReader;
 import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeObligationStatus;
 import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeRequirementScope;

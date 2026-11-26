@@ -2,14 +2,9 @@ package com.red_escuela.backend.enrollment.usecase.enrollmentfee;
 
 import com.red_escuela.backend.enrollment.service.GrantEnrollmentFeeExemptionTransaction;
 import com.red_escuela.backend.enrollment.service.RevokeEnrollmentFeeExemptionTransaction;
-import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.entity.Program;
-import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
-import com.red_escuela.backend.billing.exception.InvalidEnrollmentFeeConfigurationException;
-import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateMismatchException;
-import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateNotFoundException;
-import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
+import com.red_escuela.backend.enrollment.api.EnrollmentFeeExemptionTermsPort;
+import com.red_escuela.backend.enrollment.api.EnrollmentFeeExemptionTermsView;
 import com.red_escuela.backend.enrollment.dto.GrantEnrollmentFeeExemptionRequest;
 import com.red_escuela.backend.enrollment.entity.EnrollmentFeeExemption;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -23,8 +18,6 @@ import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.specialist.CurrentPersonService;
-import com.red_escuela.backend.shared.billingterms.YearEnrollmentFeeTerms;
-import com.red_escuela.backend.shared.billingterms.YearEnrollmentFeeTermsLookup;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,9 +51,7 @@ class EnrollmentFeeExemptionServicesTest {
     @Mock
     private ProgramEnrollmentRepository programEnrollmentRepository;
     @Mock
-    private ProgramYearBillingTemplateRepository templateRepository;
-    @Mock
-    private YearEnrollmentFeeTermsLookup termsLookup;
+    private EnrollmentFeeExemptionTermsPort exemptionTermsPort;
     @Mock
     private EnrollmentFeeExemptionRepository exemptionRepository;
     @Mock
@@ -71,13 +62,12 @@ class EnrollmentFeeExemptionServicesTest {
     private GrantEnrollmentFeeExemptionService grantService;
     private RevokeEnrollmentFeeExemptionService revokeService;
     private ProgramEnrollment enrollment;
-    private ProgramYearBillingTemplate template;
     private Person director;
 
     @BeforeEach
     void setUp() {
         grantService = new GrantEnrollmentFeeExemptionService(new GrantEnrollmentFeeExemptionTransaction(
-                programEnrollmentRepository, templateRepository, termsLookup,
+                programEnrollmentRepository, exemptionTermsPort,
                 exemptionRepository, currentPersonService, eventPublisher, CLOCK));
         revokeService = new RevokeEnrollmentFeeExemptionService(new RevokeEnrollmentFeeExemptionTransaction(
                 exemptionRepository, currentPersonService, eventPublisher, CLOCK));
@@ -91,12 +81,6 @@ class EnrollmentFeeExemptionServicesTest {
         enrollment.setId(10L);
         enrollment.setProgram(program);
         enrollment.setStudent(student);
-        Term term = TermFixtures.newTerm();
-        term.setId(3L);
-        template = new ProgramYearBillingTemplate();
-        template.setId(20L);
-        template.setProgram(program);
-        template.setTerm(term);
         director = new Person();
         director.setId(99L);
     }
@@ -107,19 +91,18 @@ class EnrollmentFeeExemptionServicesTest {
 
     private void givenEnrollmentAndTemplate() {
         when(programEnrollmentRepository.findById(10L)).thenReturn(Optional.of(enrollment));
-        when(templateRepository.findById(20L)).thenReturn(Optional.of(template));
     }
 
-    private void givenTerms(int feeCount, boolean blocksEnrollment) {
-        when(termsLookup.requireEnrollmentFeeTermsEffectiveOn(7L, 3L, LocalDate.of(2026, 3, 10)))
-                .thenReturn(new YearEnrollmentFeeTerms(feeCount, blocksEnrollment, false, false));
+    private void givenTerms(int slot, boolean blocksEnrollment) {
+        when(exemptionTermsPort.requireTermsForExemption(20L, 7L, slot, LocalDate.of(2026, 3, 10)))
+                .thenReturn(new EnrollmentFeeExemptionTermsView(20L, blocksEnrollment));
     }
 
     private EnrollmentFeeExemption activeExemption() {
         EnrollmentFeeExemption exemption = new EnrollmentFeeExemption();
         exemption.setId(5L);
         exemption.setProgramEnrollment(enrollment);
-        exemption.setTemplate(template);
+        exemption.setTemplateId(20L);
         exemption.setSlot(1);
         exemption.setReason(REASON);
         exemption.setGrantedBy(director);
@@ -154,39 +137,9 @@ class EnrollmentFeeExemptionServicesTest {
     }
 
     @Test
-    void grantFailsWhenTemplateDoesNotExist() {
-        when(programEnrollmentRepository.findById(10L)).thenReturn(Optional.of(enrollment));
-        when(templateRepository.findById(20L)).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> grantService.grant(10L, request(1))).isInstanceOf(ProgramYearBillingTemplateNotFoundException.class);
-        verify(exemptionRepository, never()).saveAndFlush(any());
-    }
-
-    @Test
-    void grantFailsWhenTemplateBelongsToAnotherProgram() {
-        Program otherProgram = new Program();
-        otherProgram.setId(8L);
-        template.setProgram(otherProgram);
-        givenEnrollmentAndTemplate();
-
-        assertThatThrownBy(() -> grantService.grant(10L, request(1))).isInstanceOf(ProgramYearBillingTemplateMismatchException.class);
-        verify(exemptionRepository, never()).saveAndFlush(any());
-    }
-
-    @Test
-    void grantFailsWhenSlotExceedsEnrollmentFeesOfTheTerm() {
-        givenEnrollmentAndTemplate();
-        givenTerms(1, true);
-
-        assertThatThrownBy(() -> grantService.grant(10L, request(2)))
-                .isInstanceOf(InvalidEnrollmentFeeConfigurationException.class);
-        verify(exemptionRepository, never()).saveAndFlush(any());
-    }
-
-    @Test
     void grantFailsWhenTermDoesNotBlockAnyProcedure() {
         givenEnrollmentAndTemplate();
-        givenTerms(2, false);
+        givenTerms(1, false);
 
         assertThatThrownBy(() -> grantService.grant(10L, request(1))).isInstanceOf(EnrollmentFeeExemptionNotNeededException.class);
         verify(exemptionRepository, never()).saveAndFlush(any());
@@ -195,7 +148,7 @@ class EnrollmentFeeExemptionServicesTest {
     @Test
     void grantFailsWhenAnActiveExemptionAlreadyExistsForTheSameSlot() {
         givenEnrollmentAndTemplate();
-        givenTerms(2, true);
+        givenTerms(1, true);
         when(exemptionRepository.findByProgramEnrollmentIdAndTemplateIdAndSlotAndRevokedAtIsNull(10L, 20L, 1))
                 .thenReturn(Optional.of(activeExemption()));
 
@@ -206,7 +159,7 @@ class EnrollmentFeeExemptionServicesTest {
     @Test
     void grantTranslatesUniqueConstraintRaceIntoAlreadyExists() {
         givenEnrollmentAndTemplate();
-        givenTerms(2, true);
+        givenTerms(1, true);
         when(exemptionRepository.findByProgramEnrollmentIdAndTemplateIdAndSlotAndRevokedAtIsNull(10L, 20L, 1)).thenReturn(Optional.empty());
         when(currentPersonService.resolveCurrentPerson()).thenReturn(director);
         when(exemptionRepository.saveAndFlush(any(EnrollmentFeeExemption.class))).thenThrow(new DataIntegrityViolationException("dup"));

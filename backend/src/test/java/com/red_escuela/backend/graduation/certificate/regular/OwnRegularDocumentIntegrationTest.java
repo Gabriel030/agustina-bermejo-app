@@ -294,6 +294,16 @@ class OwnRegularDocumentIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void certificateIssuedWithThePublishedTemplatePrintsItsValidityDate() throws Exception {
+        long id = idOf(generate(studentToken, "{}").andExpect(status().isCreated()), "$.id");
+
+        LocalDate expiresOn = jdbc.queryForObject("select expires_at from regular_student_certificate where id = ?", java.sql.Timestamp.class, id)
+                .toLocalDateTime().toLocalDate();
+
+        assertThat(pdfTextOf(id)).contains("válida hasta el " + expiresOn.format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")));
+    }
+
+    @Test
     void certificateWithoutTemplateVersionRegeneratesTheBuiltInDesignWithTheSameHash() throws Exception {
         long id = idOf(generate(studentToken, "{}").andExpect(status().isCreated()), "$.id");
         RegularStudentCertificate stored = certificateRepository.findById(id).orElseThrow();

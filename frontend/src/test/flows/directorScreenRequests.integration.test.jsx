@@ -55,10 +55,10 @@ describe('director screens request profile', () => {
     server.use(
       http.get(`${API}/me`, () => HttpResponse.json(profileFixture({ roles: ['DIRECTOR'] }))),
       ...EMPTY_LISTS.map((path) => http.get(`${API}${path}`, () => HttpResponse.json(contractList(path, [])))),
-      http.get(`${API}/financial-dashboard`, () => HttpResponse.json({ studentsInDebt: 0, studentsUpToDate: 0, totalsByCurrency: [] })),
+      http.get(`${API}/financial-dashboard`, () => HttpResponse.json({ studentsInDebt: 0, studentsUpToDate: 0, totalsByCurrency: [{ totalDebt: { amount: '0.00', currency: 'ARS' }, monthlyProjected: { amount: '0.00', currency: 'ARS' }, monthlyCollected: { amount: '0.00', currency: 'ARS' }, monthlyDebt: { amount: '0.00', currency: 'ARS' } }] })),
       http.get(`${API}/financial-dashboard/debtors/page`, () => HttpResponse.json({ items: [], page: 0, size: 25, totalElements: 0 })),
       http.get(`${API}/billing/metrics/first-month`, () => HttpResponse.json({ month: null })),
-      http.get(`${API}/billing/metrics/:panel`, ({ params }) => HttpResponse.json(emptyMetric(params.panel))),
+      http.get(`${API}/billing/metrics/:panel`, ({ params }) => HttpResponse.json({ ...emptyMetric(params.panel), currency: 'ARS' })),
       http.get(`${API}/notification-metrics/collection-reminders`, () => HttpResponse.json(emptyMetric('collection-reminders'))),
     );
     tracker = recordApiRequests();

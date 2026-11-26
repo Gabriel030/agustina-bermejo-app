@@ -33,7 +33,7 @@ class DocumentTemplateMarkersParityTest {
     @Test
     void everyAllowedMarkerTakesItsValueFromTheSnapshot() {
         CertificateSnapshot withExtras = snapshot.withExtraMarkers(Map.of(
-                "recipient", "r", "average", "a", "completionPercent", "c", "subjectName", "s", "examDate", "e"));
+                "recipient", "r", "average", "a", "completionPercent", "c", "subjectName", "s", "examDate", "e", "validUntil", "v"));
         for (DocumentTemplateType type : DocumentTemplateType.values()) {
             for (String marker : markers.allowedFor(type)) {
                 String literal = "{" + marker + "}";
@@ -48,12 +48,12 @@ class DocumentTemplateMarkersParityTest {
     @Test
     void markersAreFilteredByType() {
         assertThat(markers.allowedFor(DocumentTemplateType.REGULAR_STUDENT_CERTIFICATE))
-                .contains("recipient").doesNotContain("average", "completionPercent", "subjectName", "examDate");
+                .contains("recipient", "validUntil").doesNotContain("average", "completionPercent", "subjectName", "examDate");
         assertThat(markers.allowedFor(DocumentTemplateType.APPROVED_SUBJECTS_CERTIFICATE))
                 .contains("average", "completionPercent").doesNotContain("recipient", "subjectName", "examDate");
         assertThat(markers.allowedFor(DocumentTemplateType.EXAM_CERTIFICATE))
-                .contains("subjectName", "examDate", "recipient").doesNotContain("average", "completionPercent");
+                .contains("subjectName", "examDate", "recipient", "validUntil").doesNotContain("average", "completionPercent");
         assertThat(markers.allowedFor(DocumentTemplateType.EXAM_REGISTRATION_CERTIFICATE))
-                .contains("subjectName", "examDate", "recipient").doesNotContain("average", "completionPercent");
+                .contains("subjectName", "examDate", "recipient").doesNotContain("average", "completionPercent", "validUntil");
     }
 }

@@ -29,6 +29,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.YearMonth;
 
@@ -139,6 +140,12 @@ class MonthlyInstallmentPayerCounterIT extends AbstractIntegrationTest {
         enrollment.setProgram(ofProgram);
         enrollment.setStatus(status);
         enrollment.setEnrollmentDate(LocalDateTime.of(2027, 3, 1, 10, 0));
+        if (status == ProgramEnrollmentStatus.WITHDRAWN) {
+            enrollment.setWithdrawalEffectiveDate(LocalDate.of(2027, 3, 1));
+        }
+        if (status == ProgramEnrollmentStatus.COMPLETED) {
+            enrollment.setCompletionDate(LocalDateTime.of(2027, 3, 1, 10, 0));
+        }
         entityManager.persist(enrollment);
         PaymentStandingSeed.seedProgramEnrollmentStanding(entityManager, enrollment.getId(), payment);
         if (option != null) {
@@ -158,6 +165,9 @@ class MonthlyInstallmentPayerCounterIT extends AbstractIntegrationTest {
         enrollment.setCourse(ofCourse);
         enrollment.setStatus(status);
         enrollment.setEnrollmentDate(LocalDateTime.of(2027, 3, 1, 10, 0));
+        if (status == EnrollmentStatus.WITHDRAWN) {
+            enrollment.setWithdrawalEffectiveDate(LocalDate.of(2027, 3, 1));
+        }
         entityManager.persist(enrollment);
         PaymentStandingSeed.seedCourseEnrollmentStanding(entityManager, enrollment.getId(), payment);
         PaymentPlanSelection selection = new PaymentPlanSelection();
