@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.academicstructure.api.AcademicReferenceFinder;
 import com.red_escuela.backend.billing.configuration.service.YearCycleFactory;
-import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.billing.entity.BillingConfigurationAlert;
 import com.red_escuela.backend.billing.planning.domain.YearCycle;
 import com.red_escuela.backend.billing.planning.domain.YearCycles;
@@ -25,17 +25,17 @@ public class BillingConfigurationAlertService {
 
     private final BillingConfigurationAlertRepository alertRepository;
     private final ProgramYearBillingTemplateRepository templateRepository;
-    private final ProgramRepository programRepository;
+    private final AcademicReferenceFinder academicReferenceFinder;
     private final YearCycleFactory cycleFactory;
     private final Clock clock;
 
     public BillingConfigurationAlertService(BillingConfigurationAlertRepository alertRepository,
                                             ProgramYearBillingTemplateRepository templateRepository,
-                                            ProgramRepository programRepository, YearCycleFactory cycleFactory, Clock clock) {
+                                            AcademicReferenceFinder academicReferenceFinder, YearCycleFactory cycleFactory, Clock clock) {
         this.cycleFactory = cycleFactory;
         this.alertRepository = alertRepository;
         this.templateRepository = templateRepository;
-        this.programRepository = programRepository;
+        this.academicReferenceFinder = academicReferenceFinder;
         this.clock = clock;
     }
 
@@ -61,7 +61,7 @@ public class BillingConfigurationAlertService {
         }
         if (alert == null) {
             alert = new BillingConfigurationAlert();
-            alert.setProgram(programRepository.getReferenceById(programId));
+            alert.setProgram(academicReferenceFinder.getProgramReference(programId));
             alert.setPeriod(month);
             alert.setReason(reason);
             alert.setDetectedAt(now);
