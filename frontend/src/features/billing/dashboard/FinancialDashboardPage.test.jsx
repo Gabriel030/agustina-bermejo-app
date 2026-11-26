@@ -164,11 +164,13 @@ function install({ currencies = ['ARS'], serverCurrencies = currencies, onTime =
       }
       requests.push(new URL(request.url));
       if (failing.includes(params.panel)) return new HttpResponse(null, { status: 500 });
-      if (params.panel === 'on-time-payment') return HttpResponse.json(onTimeMetric(request.url, onTime));
-      if (params.panel === 'issued-invoices') return HttpResponse.json(issuedMetric(request.url));
-      if (params.panel === 'discounts' && discounts) return HttpResponse.json(discounts(request.url));
-      if (params.panel === 'late-fees') return HttpResponse.json(lateFeesMetric(request.url, lateFeesAvailable));
-      return HttpResponse.json(emptyMetric(params.panel, request.url));
+      const currency = new URL(request.url).searchParams.get('currency') ?? serverCurrencies[0];
+      const respond = (body) => HttpResponse.json({ ...body, currency });
+      if (params.panel === 'on-time-payment') return respond(onTimeMetric(request.url, onTime));
+      if (params.panel === 'issued-invoices') return respond(issuedMetric(request.url));
+      if (params.panel === 'discounts' && discounts) return respond(discounts(request.url));
+      if (params.panel === 'late-fees') return respond(lateFeesMetric(request.url, lateFeesAvailable));
+      return respond(emptyMetric(params.panel, request.url));
     }),
   );
 }
@@ -214,16 +216,17 @@ describe('FinancialDashboardPage', () => {
     await screen.findByText('Alumnos al día');
   });
 
-  it('requests each metric with the currency of the loaded dashboard, once per currency', async () => {
+  it('e31 does not request again the currency metrics when the first answer already carries the chosen currency', async () => {
     const requests = [];
     install({ requests });
     renderWithProviders(<FinancialDashboardPage />, { route: '/director/financiero' });
 
     await screen.findByText('Alumnos al día');
-    await waitFor(() => expect(requests.some((url) => url.pathname.endsWith('/on-time-payment') && url.searchParams.get('currency') === 'ARS')).toBe(true));
-    const withCurrency = billingMetricRequests(requests).filter((url) => url.searchParams.get('currency') === 'ARS');
-    const keys = withCurrency.map((url) => `${url.pathname}${url.search}`);
+    await screen.findAllByText(/Por debajo de la meta/);
+    const metricRequests = billingMetricRequests(requests).filter((url) => !url.pathname.endsWith('/first-month'));
+    const keys = metricRequests.map((url) => `${url.pathname}${url.search}`);
     expect(new Set(keys).size).toBe(keys.length);
+    expect(metricRequests.filter((url) => url.searchParams.has('currency'))).toEqual([]);
   });
 
   it('does not stay on a skeleton when the server needs a currency the dashboard did not list', async () => {
