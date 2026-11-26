@@ -1,6 +1,5 @@
 package com.red_escuela.backend.billing.service;
-import com.red_escuela.backend.identity.exception.StudentNotFoundException;
-import com.red_escuela.backend.identity.repository.StudentRepository;
+import com.red_escuela.backend.identity.api.StudentFinder;
 
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
@@ -19,13 +18,13 @@ import org.springframework.transaction.annotation.Transactional;
 public class PaymentReceiptPersister {
     private final InvoiceRepository invoiceRepository;
     private final BankTransferReceiptRepository bankTransferReceiptRepository;
-    private final StudentRepository studentRepository;
+    private final StudentFinder studentFinder;
 
     public PaymentReceiptPersister(InvoiceRepository invoiceRepository, BankTransferReceiptRepository bankTransferReceiptRepository,
-                                    StudentRepository studentRepository) {
+                                    StudentFinder studentFinder) {
         this.invoiceRepository = invoiceRepository;
         this.bankTransferReceiptRepository = bankTransferReceiptRepository;
-        this.studentRepository = studentRepository;
+        this.studentFinder = studentFinder;
     }
 
     @Transactional(readOnly = true)
@@ -48,8 +47,7 @@ public class PaymentReceiptPersister {
         receipt.setInvoice(invoice);
         receipt.setFilePath(filePath);
         receipt.setStatus(BankTransferReceiptStatus.PENDING_REVIEW);
-        receipt.setUploadedBy(studentRepository.findById(studentId)
-                .orElseThrow(() -> new StudentNotFoundException(studentId)).getPerson());
+        receipt.setUploadedBy(studentFinder.requireById(studentId).getPerson());
         return bankTransferReceiptRepository.save(receipt);
     }
 
