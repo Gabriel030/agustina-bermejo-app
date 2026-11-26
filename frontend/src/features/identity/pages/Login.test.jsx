@@ -31,6 +31,12 @@ async function submitLogin(user) {
 }
 
 describe('Login', () => {
+  it('exposesSignInAsTheSingleH1', () => {
+    renderLogin();
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+    expect(screen.getByRole('heading', { level: 1, name: 'Ingresá a tu cuenta' })).toBeInTheDocument();
+  });
+
   afterEach(() => {
     vi.useRealTimers();
   });

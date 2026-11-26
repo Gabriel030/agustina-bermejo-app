@@ -61,6 +61,7 @@ describe('Financiero access by role', () => {
   it('d2-02 keeps the administrative menu with a single Facturación entry and no billing sub-menu (D-355)', async () => {
     await signInAs('ADMINISTRATIVO', '/administrativo/alumnos');
 
+    await screen.findByRole('heading', { name: 'Padrón de alumnos' });
     const nav = (await screen.findAllByRole('navigation'))[0];
     await within(nav).findByRole('link', { name: 'Facturación' });
     const labels = within(nav).getAllByRole('link').map((link) => link.textContent.trim());

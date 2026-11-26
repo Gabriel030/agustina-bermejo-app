@@ -3,7 +3,6 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { m } from 'motion/react';
 import { CheckCircle2, Clock, Mail, Shield, TriangleAlert, WifiOff, XCircle } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
-import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { apiFetch } from '@/api/client';
@@ -125,9 +124,6 @@ export function ReviewEmailChangePage({ mode = 'review' }) {
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center p-4">
       <m.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className="w-full max-w-sm">
-        <div className="mb-8 flex flex-col items-center gap-3">
-          <InstitutionBrand />
-        </div>
 
         <GlassCard
           ref={messageRef}
@@ -166,7 +162,7 @@ export function ReviewEmailChangePage({ mode = 'review' }) {
             <>
               <StepDots current={1} />
               <div>
-                <p className="font-heading text-lg font-bold text-ink">¿Cambiamos tu email?</p>
+                <h1 className="font-heading text-lg font-bold text-ink">¿Cambiamos tu email?</h1>
                 <p className="mt-1 text-size-13 leading-snug text-ink-soft">
                   Lo pidió {roleLabel(preview.requestedByRole)} el {requestedMoment(preview.requestedAt)}.
                   <br />
