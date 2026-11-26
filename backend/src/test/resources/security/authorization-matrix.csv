@@ -95,19 +95,19 @@ POST,/course-section-enrollments/{id}/withdraw,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,
 GET,/course-sections/{id},DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 PUT,/course-sections/{id},DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
 POST,/course-sections/{id}/activate,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
-POST,/course-sections/{id}/attendance,DENY,DENY,ALLOW,DENY,DENY,DENY,DENY,DENY,,
+POST,/course-sections/{id}/attendance,DENY,DENY,OWNER,DENY,DENY,DENY,DENY,DENY,course-section-instructor,
 GET,/course-sections/{id}/attendance/absence-report,DENY,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,course-section-instructor,
 GET,/course-sections/{id}/attendance/export,DENY,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,course-section-instructor,
 GET,/course-sections/{id}/attendance/history,DENY,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,course-section-instructor,
-GET,/course-sections/{id}/class-sessions/{date},DENY,DENY,ALLOW,DENY,DENY,DENY,DENY,DENY,,
-POST,/course-sections/{id}/class-sessions/{date}/cancel,DENY,DENY,ALLOW,DENY,DENY,DENY,DENY,DENY,,
+GET,/course-sections/{id}/class-sessions/{date},DENY,DENY,OWNER,DENY,DENY,DENY,DENY,DENY,course-section-instructor,
+POST,/course-sections/{id}/class-sessions/{date}/cancel,DENY,DENY,OWNER,DENY,DENY,DENY,DENY,DENY,course-section-instructor,
 POST,/course-sections/{id}/deactivate,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
 GET,/course-sections/{id}/instructors,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/course-sections/{id}/instructors,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
 DELETE,/course-sections/{id}/instructors/{assignmentId},DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
-GET,/course-sections/{id}/grade-grid,DENY,DENY,ALLOW,DENY,DENY,DENY,DENY,DENY,,
-POST,/course-sections/{id}/grade-items/publish,DENY,DENY,ALLOW,DENY,DENY,DENY,DENY,DENY,,"{""gradeType"":""EXAM"",""sequenceNumber"":1}"
-GET,/course-sections/{id}/roster,DENY,DENY,ALLOW,DENY,DENY,DENY,DENY,DENY,,
+GET,/course-sections/{id}/grade-grid,DENY,DENY,OWNER,DENY,DENY,DENY,DENY,DENY,course-section-instructor,
+POST,/course-sections/{id}/grade-items/publish,DENY,DENY,OWNER,DENY,DENY,DENY,DENY,DENY,course-section-instructor,"{""gradeType"":""EXAM"",""sequenceNumber"":1}"
+GET,/course-sections/{id}/roster,DENY,DENY,OWNER,DENY,DENY,DENY,DENY,DENY,course-section-instructor,
 GET,/course-sections/{sectionId}/announcements,DENY,DENY,OWNER,DENY,DENY,DENY,ALLOW,DENY,course-section-instructor,
 GET,/course-sections/{sectionId}/announcements/read-receipts,DENY,DENY,DENY,ALLOW,DENY,DENY,ALLOW,DENY,,
 POST,/course-sections/{sectionId}/announcements,DENY,DENY,OWNER,DENY,DENY,DENY,ALLOW,DENY,course-section-instructor,"{""title"":""x"",""body"":""x"",""category"":""REMINDER"",""urgent"":false}"
@@ -155,7 +155,7 @@ POST,/exam-boards,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
 GET,/exam-boards/{id},DENY,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,exam-board-tribunal,
 POST,/exam-boards/{id}/cancel,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,"{""reason"":""Motivo suficiente""}"
 POST,/exam-boards/{id}/close,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
-PUT,/exam-boards/{id}/final-grades,DENY,DENY,ALLOW,DENY,DENY,DENY,DENY,DENY,,"{""items"":[{""registrationId"":1,""absent"":true}]}"
+PUT,/exam-boards/{id}/final-grades,DENY,DENY,OWNER,DENY,DENY,DENY,DENY,DENY,exam-board-tribunal,"{""items"":[{""registrationId"":1,""absent"":true}]}"
 GET,/exam-boards/{id}/registrations,DENY,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,exam-board-tribunal,
 POST,/exam-boards/{id}/registrations,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
 POST,/exam-boards/{id}/reschedule,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
@@ -557,9 +557,9 @@ GET,/program-sections/{id}/closure-sheet,DENY,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW
 GET,/course-sections/{id}/closure-sheet,DENY,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/commission-closures,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/program-sections/{id}/closure/confirm,DENY,DENY,OWNER,DENY,DENY,DENY,DENY,DENY,section-instructor,
-POST,/course-sections/{id}/closure/confirm,DENY,DENY,ALLOW,DENY,DENY,DENY,DENY,DENY,,
+POST,/course-sections/{id}/closure/confirm,DENY,DENY,OWNER,DENY,DENY,DENY,DENY,DENY,course-section-instructor,
 PUT,/program-sections/{id}/closure/students/{enrollmentId}/observation,DENY,DENY,OWNER,DENY,DENY,DENY,DENY,DENY,section-instructor,
-PUT,/course-sections/{id}/closure/students/{enrollmentId}/observation,DENY,DENY,ALLOW,DENY,DENY,DENY,DENY,DENY,,
+PUT,/course-sections/{id}/closure/students/{enrollmentId}/observation,DENY,DENY,OWNER,DENY,DENY,DENY,DENY,DENY,course-section-instructor,
 GET,/commission-closures/{closureId}/students/{enrollmentId}/prerequisites,DENY,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/program-sections/{id}/closure/approve,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,"{""book"":""Libro 1"",""folio"":""Folio 1"",""closeWithoutTeacherConfirmation"":false}"
 POST,/program-sections/{id}/closure/reopen,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,"{""reason"":""Motivo suficiente""}"
