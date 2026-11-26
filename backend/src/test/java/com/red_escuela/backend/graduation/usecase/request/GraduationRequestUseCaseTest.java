@@ -33,7 +33,7 @@ import com.red_escuela.backend.graduation.exception.GraduationRequestAlreadyActi
 import com.red_escuela.backend.graduation.exception.GraduationRequirementsNotMetException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentRequiredException;
 import com.red_escuela.backend.graduation.exception.NotEligibleForGraduationException;
-import com.red_escuela.backend.billing.exception.PendingDebtException;
+import com.red_escuela.backend.graduation.exception.PendingDebtException;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;

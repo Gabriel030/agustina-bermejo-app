@@ -1,9 +1,11 @@
 package com.red_escuela.backend.evaluation.usecase.sectionconfig;
 
 import com.red_escuela.backend.evaluation.dto.SectionEvaluationConfigResponse;
+import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
 import com.red_escuela.backend.evaluation.specialist.SectionEvaluationConfigDueDaysReader;
 import com.red_escuela.backend.evaluation.specialist.SectionEvaluationConfigFinder;
 import com.red_escuela.backend.evaluation.specialist.SectionEvaluationConfigInstructorAccessChecker;
+import com.red_escuela.backend.evaluation.specialist.SectionEvaluationConfigResponseAssembler;
 import com.red_escuela.backend.identity.api.InstitutionAcademicSettings;
 import com.red_escuela.backend.identity.api.InstitutionAcademicSettingsReader;
 import org.junit.jupiter.api.Test;
@@ -27,14 +29,19 @@ class MySectionEvaluationConfigDeadlineTest {
     }
 
     @Test
-    void useCaseReadsTheInstitutionDueDays() {
+    void useCaseAppliesTheInstitutionDueDaysToTheResponse() {
         when(reader.read()).thenReturn(new InstitutionAcademicSettings(5, 40, false));
+        var finder = mock(SectionEvaluationConfigFinder.class);
+        var assembler = mock(SectionEvaluationConfigResponseAssembler.class);
+        var config = mock(SectionEvaluationConfig.class);
+        when(finder.findOrThrow(2L)).thenReturn(config);
+        when(assembler.assembleForInstructor(config, 7L)).thenReturn(responseStartingAt(LocalDateTime.of(2026, 3, 2, 18, 30)));
 
-        int dueDays = new GetMySectionEvaluationConfigService(
-                mock(SectionEvaluationConfigFinder.class), mock(SectionEvaluationConfigInstructorAccessChecker.class), dueDaysReader)
-                .evaluationConfigDueDays();
+        var response = new GetMySectionEvaluationConfigService(
+                finder, mock(SectionEvaluationConfigInstructorAccessChecker.class), dueDaysReader, assembler)
+                .get(new GetMySectionEvaluationConfigCommand(2L, 7L));
 
-        assertThat(dueDays).isEqualTo(40);
+        assertThat(response.evaluationConfigDeadline()).isEqualTo(LocalDate.of(2026, 4, 11));
     }
 
     @Test
