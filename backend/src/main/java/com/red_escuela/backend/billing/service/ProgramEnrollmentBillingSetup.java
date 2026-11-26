@@ -4,11 +4,12 @@ import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
+import com.red_escuela.backend.enrollment.api.ProgramAdmissionFeePort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class ProgramEnrollmentBillingSetup {
+public class ProgramEnrollmentBillingSetup implements ProgramAdmissionFeePort {
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final InvoiceRepository invoiceRepository;
 
@@ -23,6 +24,12 @@ public class ProgramEnrollmentBillingSetup {
             enrollment.setCurrentBillingTemplate(enrollment.getProgramCohort().getTemplate());
             programEnrollmentRepository.save(enrollment);
         }
+    }
+
+    @Override
+    @Transactional
+    public void attachAdmissionFee(Long programEnrollmentId, Long admissionInvoiceId) {
+        attachAdmissionFee(programEnrollmentRepository.findById(programEnrollmentId).orElseThrow(), admissionInvoiceId);
     }
 
     @Transactional
