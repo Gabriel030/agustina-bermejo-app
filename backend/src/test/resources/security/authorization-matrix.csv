@@ -282,7 +282,7 @@ GET,/me/section-enrollments,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/me/section-enrollments,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/me/section-enrollments/{id}/attendance,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,section-enrollment,
 GET,/me/section-enrollments/{id}/attendance/risk,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,section-enrollment,
-POST,/me/section-enrollments/{id}/change-section,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,section-enrollment,
+POST,/me/section-enrollments/{id}/change-section,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,section-enrollment,"{""newSectionId"":${sectionId}}"
 GET,/me/section-enrollments/{id}/grade-items,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,section-enrollment,
 POST,/me/section-enrollments/{id}/withdraw,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,section-enrollment,
 GET,/me/section-evaluation-configs,DENY,DENY,ALLOW,DENY,DENY,DENY,DENY,DENY,,
