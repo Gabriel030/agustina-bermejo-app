@@ -539,15 +539,16 @@ rechaza lo que el código se olvide. Todo cambio que afloje una de estas reglas 
 | Un docente no está en dos franjas activas que se pisan | `ex_schedule_slot_instructor_overlap` sobre la proyección `section_schedule_slot_instructor` (triggers) | V470 | `SectionScheduleConflictException` (23P01) |
 | Una inscripción a carrera `ENROLLED` o `PAUSED` por alumno y carrera | `uk_program_enrollment_student_program_active` (único parcial) | V474 | `AlreadyEnrolledInProgramException` |
 | Una solicitud de constancia `PENDING_STAFF` por inscripción | `uq_regular_cert_request_pending_per_enrollment` (único parcial sobre `kind` y la inscripción) | V475 | `ConcurrentRegularCertificateIssueException` |
+| El alumno de una inscripción a comisión es el de su inscripción padre (materia y curso) | `fk_subject_section_enrollment_parent_student` y `fk_course_section_enrollment_parent_student` (FK compuesta `NOT VALID` sobre `(id, student_id)` del padre, con `uk_program_enrollment_id_student` y `uk_course_enrollment_id_student`) | V477 | — |
 
 `time_span`, `term_period`, `occupies` y `active` de la franja los mantiene el trigger
 `trg_section_schedule_slot_occupancy`; el código no los escribe. Un IT de constraint prueba cada regla en
 ambos lados (sin la constraint el test de la versión anterior acepta el duplicado): ver
 `SectionScheduleSlotExcludeMigrationTest`, `ProgramEnrollmentActiveUniqueMigrationTest` y
 `RegularCertificateRequestPendingUniqueMigrationTest`. Los pre-chequeos de datos previos al deploy están en
-`docs/release/pre-migration-checks.sql` (bloques `[V470]`, `[V474]`, `[V475]`). Pendientes del informe
-`docs/cell/reports/e25-b2-invariantes.md`: R2, R3 y R5 (CHECK y FK compuesta `NOT VALID`, validación aparte tras
-el chequeo de producción).
+`docs/release/pre-migration-checks.sql` (bloques `[V470]`, `[V474]`, `[V475]`, `[V477]`). Pendientes del informe
+`docs/cell/reports/e25-b2-invariantes.md`: R2 y R3 (CHECK `NOT VALID`) y el `VALIDATE` de R5, aparte y tras el
+chequeo de producción.
 
 ## Seguridad
 

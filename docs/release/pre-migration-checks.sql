@@ -491,6 +491,19 @@ having count(*) > 1
 order by 1, 2;
 \endif
 
+select :current_version < 477 as run_block \gset
+\if :run_block
+\echo
+\echo [V477] Inscripciones a comision cuyo alumno difiere del de su inscripcion padre (la FK compuesta se crea NOT VALID y no aborta; corregir antes de ejecutar VALIDATE CONSTRAINT fk_subject_section_enrollment_parent_student / fk_course_section_enrollment_parent_student; no se borran datos):
+select 'subject_section_enrollment' as tbl, count(*) as violating_rows, min(sse.id) as first_id
+from subject_section_enrollment sse join program_enrollment pe on pe.id = sse.program_enrollment_id
+where sse.student_id <> pe.student_id
+union all
+select 'course_section_enrollment', count(*), min(cse.id)
+from course_section_enrollment cse join course_enrollment ce on ce.id = cse.course_enrollment_id
+where cse.student_id <> ce.student_id;
+\endif
+
 \echo
 \echo [V470] Franjas de aula solapadas (misma aula, mismo dia y hora, periodos de termino que se pisan, ambas de comisiones ACTIVE); V470 ABORTA al crear el EXCLUDE si hay filas (corregir antes: mover una franja a otra aula u horario o desactivar la comision; no se borran datos):
 with active_slots as (
