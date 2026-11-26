@@ -105,7 +105,7 @@ public class ExamRecoveryRecorder {
         flagGraduationRequestOutdated(target);
         eventPublisher.publishEvent(GradeCorrectedEvent.correctedFor(
                 gradeItemId, target.studentPersonId(), target.sectionName(), gradeItem.getType().displayName(),
-                SectionGradeItemPublication.sequenceKey(gradeItem.getSequenceNumber())));
+                SectionGradeItemPublication.sequenceKey(gradeItem.getSequenceNumber()), RECOVERY_REASON));
         return GradeItemAuditResponse.from(audit);
     }
 
