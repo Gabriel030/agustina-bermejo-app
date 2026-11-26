@@ -25,6 +25,7 @@ import java.util.Map;
 @Transactional(readOnly = true)
 public class CertificateTemplatePreviewer {
 
+    private static final int SAMPLE_VALIDITY_DAYS = 30;
     private static final DateTimeFormatter EXAM_DATE_FORMAT = DateTimeFormatter.ofPattern("dd/MM/yyyy");
     private static final String DEFAULT_INSTITUTION = "INSTITUTO AGUSTINA BERMEJO";
 
@@ -86,11 +87,18 @@ public class CertificateTemplatePreviewer {
 
     private Map<String, String> sampleExtraMarkers(DocumentTemplateType type) {
         return switch (type) {
-            case REGULAR_STUDENT_CERTIFICATE -> Map.of("recipient", "A quien corresponda");
+            case REGULAR_STUDENT_CERTIFICATE -> Map.of("recipient", "A quien corresponda", "validUntil", sampleValidUntil());
             case APPROVED_SUBJECTS_CERTIFICATE -> Map.of("average", "8,50", "completionPercent", "75");
-            case EXAM_REGISTRATION_CERTIFICATE, EXAM_CERTIFICATE -> Map.of("recipient", "A quien corresponda",
+            case EXAM_REGISTRATION_CERTIFICATE -> Map.of("recipient", "A quien corresponda",
                     "subjectName", "Nombre de la materia de ejemplo", "examDate", LocalDate.now(clock).format(EXAM_DATE_FORMAT));
+            case EXAM_CERTIFICATE -> Map.of("recipient", "A quien corresponda",
+                    "subjectName", "Nombre de la materia de ejemplo", "examDate", LocalDate.now(clock).format(EXAM_DATE_FORMAT),
+                    "validUntil", sampleValidUntil());
         };
+    }
+
+    private String sampleValidUntil() {
+        return LocalDate.now(clock).plusDays(SAMPLE_VALIDITY_DAYS).format(EXAM_DATE_FORMAT);
     }
 
     private String sampleRegistryNumber() {
