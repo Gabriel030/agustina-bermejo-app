@@ -169,6 +169,22 @@ class AnnualUpfrontCashPaymentIT extends AbstractAnnualUpfrontRequestIT {
     }
 
     @Test
+    void chargingTheRequestUnderAnotherStudentIsNotFoundAndChargesNothing() throws Exception {
+        JsonNode requested = requestTheYear();
+        MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2027, 3, 3, 11, 0));
+        var stranger = factory.newLearner(offering, null);
+
+        String body = mockMvc.perform(post("/students/" + stranger.studentId() + "/annual-upfront-requests/" + requested.get("id").asLong() + "/cash-payment")
+                        .header("Authorization", "Bearer " + directorToken()).header("Idempotency-Key", "cash-x-" + System.nanoTime()).contentType("application/json")
+                        .content("{\"amount\":{\"amount\":" + totalOf(requested) + ",\"currency\":\"ARS\"},\"receiptNumber\":\"R-1\"}"))
+                .andExpect(status().isNotFound()).andReturn().getResponse().getContentAsString();
+
+        assertThat(body).contains("ANNUAL_UPFRONT_REQUEST_NOT_FOUND");
+        assertThat(requestStatus(requested)).isEqualTo("AWAITING_PAYMENT");
+        assertThat(cashPaymentsOf(requested.get("invoiceId").asLong())).isZero();
+    }
+
+    @Test
     void onlyDirectorAndAdministrativeStaffCanChargeTheCash() throws Exception {
         JsonNode requested = requestTheYear();
         MutableClock.INSTANCE.setDateTime(LocalDateTime.of(2027, 3, 3, 11, 0));
