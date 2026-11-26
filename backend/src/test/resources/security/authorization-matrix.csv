@@ -95,7 +95,7 @@ POST,/course-section-enrollments/{id}/withdraw,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,
 GET,/course-sections/{id},DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 PUT,/course-sections/{id},DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
 POST,/course-sections/{id}/activate,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
-POST,/course-sections/{id}/attendance,DENY,DENY,OWNER,DENY,DENY,DENY,DENY,DENY,course-section-instructor,
+POST,/course-sections/{id}/attendance,DENY,DENY,OWNER,DENY,DENY,DENY,DENY,DENY,course-section-instructor,"{""classDate"":""2026-03-02"",""entries"":[{""enrollmentId"":${courseSectionEnrollmentId},""status"":""PRESENT""}],""topic"":""t"",""observations"":""o""}"
 GET,/course-sections/{id}/attendance/absence-report,DENY,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,course-section-instructor,
 GET,/course-sections/{id}/attendance/export,DENY,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,course-section-instructor,
 GET,/course-sections/{id}/attendance/history,DENY,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,course-section-instructor,
