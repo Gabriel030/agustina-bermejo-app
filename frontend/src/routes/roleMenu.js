@@ -1,4 +1,4 @@
-import { PenLine, Megaphone, History, BadgeDollarSign, BellRing, BookMarked, BookOpen, CalendarCheck, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, ClipboardCheck, ClipboardList, CreditCard, FileCheck2, FileSignature, FileText, GraduationCap, Home, LayoutGrid, Receipt, Settings, ShieldCheck, Tag, UserCog, UserPlus, Users, BarChart2, Puzzle, SlidersHorizontal, Wallet, ScrollText, Upload, ListOrdered, DatabaseBackup, KeyRound, Award, FileKey, MailPlus } from 'lucide-react';
+import { PenLine, Megaphone, History, BadgeDollarSign, BellRing, BookMarked, BookOpen, CalendarCheck, CalendarClock, CalendarDays, CalendarRange, CheckCircle2, ClipboardCheck, ClipboardList, CreditCard, FileCheck2, FileSignature, FileText, GraduationCap, Home, LayoutGrid, Receipt, ShieldCheck, Tag, UserCog, UserPlus, Users, BarChart2, Puzzle, SlidersHorizontal, Wallet, ScrollText, Upload, ListOrdered, DatabaseBackup, KeyRound, Award, FileKey, MailPlus } from 'lucide-react';
 
 const inicio = { slug: 'inicio', label: 'Inicio', icon: Home };
 const alumnos = { slug: 'alumnos', label: 'Alumnos', icon: Users };
@@ -76,7 +76,6 @@ export const ROLE_MENU = {
     { slug: 'pagos', label: 'Pagos', icon: CreditCard },
     { to: '/catalogo', label: 'Catálogo', icon: LayoutGrid },
     { slug: 'reuniones-informativas', label: 'Reuniones informativas', icon: Megaphone },
-    { slug: 'opciones', label: 'Opciones', icon: Settings },
   ],
   docente: [
     inicio,
@@ -192,7 +191,6 @@ const MENU_GROUPS = {
     { id: 'payments', label: null, slugs: ['pagos'] },
     { id: 'catalog', label: null, slugs: ['catalogo'] },
     { id: 'informative-sessions', label: null, slugs: ['reuniones-informativas'] },
-    { id: 'account', label: null, slugs: ['opciones'] },
   ],
   director: [
     { id: 'main', label: null, slugs: ['inicio'] },

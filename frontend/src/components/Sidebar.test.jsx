@@ -14,7 +14,6 @@ vi.mock('@/context/AuthContext', () => ({
 const ITEMS = [
   { to: '/director/inicio', label: 'Inicio', icon: Home },
   { to: '/director/alumnos', label: 'Alumnos', icon: Users },
-  { to: '/director/opciones', label: 'Opciones', icon: Users },
 ];
 
 const GROUPS = [
@@ -62,11 +61,5 @@ describe('Sidebar', () => {
 
     const people = screen.getByRole('list', { name: 'Personas' });
     expect(within(people).getByRole('link', { name: 'Alumnos' })).toBeInTheDocument();
-  });
-
-  it('does not render the options entry', () => {
-    renderSidebar({ groups: GROUPS });
-
-    expect(screen.queryByRole('link', { name: 'Opciones' })).not.toBeInTheDocument();
   });
 });

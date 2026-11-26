@@ -72,7 +72,6 @@ export function MobileMenu({ titulo, items, groups, hiddenFrom = 'lg:hidden' }) 
   const { pathname } = useLocation();
   const { canSwitch } = useActiveRole();
 
-  const principales = items.filter((item) => item.label !== 'Opciones');
   const dark = tema === 'dark';
 
   return (
@@ -122,7 +121,7 @@ export function MobileMenu({ titulo, items, groups, hiddenFrom = 'lg:hidden' }) 
                 renderItem={(item, index) => <ItemNav {...item} index={index} onNavigate={() => setOpen(false)} />}
               />
             ) : (
-              principales.map((item, index) => (
+              items.map((item, index) => (
                 <ItemNav key={item.to} {...item} index={index} onNavigate={() => setOpen(false)} />
               ))
             )}

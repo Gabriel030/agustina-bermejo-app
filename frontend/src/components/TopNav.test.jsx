@@ -253,7 +253,7 @@ describe('TopNav', () => {
     ]);
   });
 
-  it('putsOptionsInTheUserMenuAndNotInTheBar', async () => {
+  it('hasNoOptionsEntryInTheBarNorInTheUserMenuForTheStudent', async () => {
     const user = userEvent.setup();
     authState.roles = ['ALUMNO'];
     renderTopNav({ role: 'alumno', route: '/alumno/inicio' });
@@ -261,7 +261,9 @@ describe('TopNav', () => {
     const bar = screen.getByRole('navigation', { name: 'Principal' });
     expect(within(bar).queryByRole('link', { name: 'Opciones' })).not.toBeInTheDocument();
     await user.click(trigger(/Mi cuenta/));
-    expect(screen.getByRole('link', { name: 'Opciones' })).toHaveAttribute('href', '/alumno/opciones');
+    expect(screen.queryByRole('link', { name: 'Opciones' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Mi perfil' })).toHaveAttribute('href', '/perfil');
+    expect(screen.getByRole('button', { name: 'Cerrar sesión' })).toBeInTheDocument();
   });
 
   it('showsTheUserNameRoleAndLogoutInTheUserMenu', async () => {
@@ -286,6 +288,9 @@ describe('TopNav', () => {
     const roles = screen.getByRole('list', { name: 'Cambiar de rol' });
     expect(within(roles).getByRole('link', { name: /Alumno/ })).toHaveAttribute('href', '/alumno/inicio');
     expect(within(roles).getByRole('link', { name: /Director/ })).toHaveAttribute('aria-current', 'true');
+    expect(screen.queryByRole('link', { name: 'Opciones' })).not.toBeInTheDocument();
+    expect(screen.getByRole('link', { name: 'Mi perfil' })).toHaveAttribute('href', '/perfil');
+    expect(screen.getByRole('button', { name: 'Cerrar sesión' })).toBeInTheDocument();
   });
 
   it('hasNoRoleSwitcherForASingleRole', async () => {
