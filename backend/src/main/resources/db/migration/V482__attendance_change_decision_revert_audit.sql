@@ -16,3 +16,6 @@ begin
     execute 'alter table audit_log add constraint ck_audit_log_entity_type check (entity_type in (' || entity_type_literals
         || ', ''ATTENDANCE_CHANGE_REQUEST'')) not valid';
 end $$;
+
+alter table audit_log validate constraint ck_audit_log_action;
+alter table audit_log validate constraint ck_audit_log_entity_type;
