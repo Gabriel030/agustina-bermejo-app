@@ -74,7 +74,7 @@ export const ROLE_MENU = {
     { slug: 'mis-carreras', label: 'Mis carreras', icon: GraduationCap },
     { slug: 'mis-certificados', label: 'Mis certificados', icon: Award },
     { slug: 'pagos', label: 'Pagos', icon: CreditCard },
-    { to: '/catalogo', label: 'Catálogo', icon: LayoutGrid },
+    { to: '/catalogo', label: 'Oferta académica', icon: LayoutGrid },
     { slug: 'reuniones-informativas', label: 'Reuniones informativas', icon: Megaphone },
   ],
   docente: [
@@ -189,7 +189,7 @@ const MENU_GROUPS = {
     { id: 'main', label: null, slugs: ['inicio'] },
     { id: 'studies', label: 'Estudios', slugs: ['calendario', 'mis-cursos', 'mis-carreras', 'mis-certificados'] },
     { id: 'payments', label: null, slugs: ['pagos'] },
-    { id: 'catalog', label: null, slugs: ['catalogo'] },
+    { id: 'catalog', label: null, slugs: ['catalogo'], panel: 'catalog' },
     { id: 'informative-sessions', label: null, slugs: ['reuniones-informativas'] },
   ],
   director: [
@@ -248,7 +248,7 @@ export function groupMenuItems(role, items) {
           .filter((section) => section.items.length > 0);
         return { id: group.id, label: group.label, sections, items: sections.flatMap((section) => section.items) };
       }
-      return { id: group.id, label: group.label, items: [...pick(group.slugs), ...unmapped] };
+      return { id: group.id, label: group.label, panel: group.panel, items: [...pick(group.slugs), ...unmapped] };
     })
     .filter((group) => group.items.length > 0);
 }

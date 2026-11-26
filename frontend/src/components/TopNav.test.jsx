@@ -236,14 +236,16 @@ describe('TopNav', () => {
     expect(screen.queryByRole('link', { name: 'Listas de espera' })).not.toBeInTheDocument();
   });
 
-  it('showsTheStudentStudiesGroupWithPaymentsCatalogAndInformativeSessionsAsPlainLinks', async () => {
+  it('showsTheStudentStudiesGroupAndTheOfferingPanelBetweenPaymentsAndInformativeSessions', async () => {
     const user = userEvent.setup();
     authState.roles = ['ALUMNO'];
     renderTopNav({ role: 'alumno', route: '/alumno/inicio' });
 
     const bar = screen.getByRole('navigation', { name: 'Principal' });
-    expect(within(bar).getAllByRole('link').map((link) => link.textContent)).toEqual(['Inicio', 'Pagos', 'Catálogo', 'Reuniones informativas']);
-    expect(within(bar).getByRole('link', { name: 'Catálogo' })).toHaveAttribute('href', '/catalogo');
+    expect(within(bar).getAllByRole('link').map((link) => link.textContent)).toEqual(['Inicio', 'Pagos', 'Reuniones informativas']);
+    expect(within(bar).getAllByRole('button').map((button) => button.textContent)).toEqual(['Estudios', 'Oferta académica']);
+    expect(within(bar).queryByRole('link', { name: 'Catálogo' })).not.toBeInTheDocument();
+    expect(trigger('Oferta académica')).toHaveAttribute('aria-haspopup', 'true');
     await user.click(trigger('Estudios'));
     expect(within(screen.getByRole('list', { name: 'Estudios' })).getAllByRole('link').map((link) => link.textContent)).toEqual([
       'Calendario',
