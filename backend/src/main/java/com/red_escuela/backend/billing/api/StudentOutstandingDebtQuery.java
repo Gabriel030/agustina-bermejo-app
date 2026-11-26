@@ -17,4 +17,8 @@ public class StudentOutstandingDebtQuery {
     public boolean hasOutstandingDebt(Long studentId) {
         return invoiceQueryService.hasDebt(studentId);
     }
+
+    public StudentDebtView outstandingDebtOf(Long studentId) {
+        return invoiceQueryService.debtOf(studentId);
+    }
 }

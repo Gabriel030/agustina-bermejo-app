@@ -19,7 +19,7 @@ import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
 import com.red_escuela.backend.billing.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
-import com.red_escuela.backend.billing.exception.PendingDebtException;
+import com.red_escuela.backend.graduation.exception.PendingDebtException;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
