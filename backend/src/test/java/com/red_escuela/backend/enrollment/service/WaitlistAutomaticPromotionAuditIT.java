@@ -256,7 +256,7 @@ class WaitlistAutomaticPromotionAuditIT extends AbstractIntegrationTest {
 
     private CourseSubjectSectionEnrollment moduleEnrollment(CourseSubjectSection section, CourseEnrollment parent, EnrollmentStatus status) {
         CourseSubjectSectionEnrollment enrollment = new CourseSubjectSectionEnrollment();
-        enrollment.setStudent(student());
+        enrollment.setStudent(parent.getStudent());
         enrollment.setCourseEnrollment(parent);
         enrollment.setCourseSubjectSection(section);
         enrollment.setStatus(status);
