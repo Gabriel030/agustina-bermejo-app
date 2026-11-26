@@ -6,7 +6,7 @@ import com.red_escuela.backend.enrollment.policy.GraduationProjectionInput.Proje
 import com.red_escuela.backend.enrollment.policy.GraduationProjectionInput.ProjectionSubject;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
-import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.policy.GraduationProjectionInput;
 import com.red_escuela.backend.enrollment.policy.GraduationProjectionPolicy;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
