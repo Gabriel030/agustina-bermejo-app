@@ -1,9 +1,9 @@
 package com.red_escuela.backend.evaluation.specialist;
 
-import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeRequirementScope;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import java.time.Clock;
-import com.red_escuela.backend.billing.service.EnrollmentFeeRequirementService;
+import com.red_escuela.backend.enrollment.api.EnrollmentFeeRequirementPort;
+import com.red_escuela.backend.enrollment.api.EnrollmentFeeRequirementPurpose;
 import com.red_escuela.backend.enrollment.api.LateExamApprovalChecker;
 import com.red_escuela.backend.enrollment.api.SectionEnrollmentFinder;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
@@ -42,7 +42,7 @@ public class ExamBoardRegistrationManager {
     private final LateExamApprovalChecker lateExamApprovalChecker;
     private final FinalExamEligibilityEvaluator finalExamEligibilityEvaluator;
     private final FinalExamPrerequisiteChecker finalExamPrerequisiteChecker;
-    private final EnrollmentFeeRequirementService enrollmentFeeRequirementService;
+    private final EnrollmentFeeRequirementPort enrollmentFeeRequirementPort;
     private final Clock clock;
 
     public ExamBoardRegistrationManager(ExamBoardRegistrationRepository examBoardRegistrationRepository,
@@ -51,9 +51,9 @@ public class ExamBoardRegistrationManager {
             LateExamApprovalChecker lateExamApprovalChecker,
             FinalExamEligibilityEvaluator finalExamEligibilityEvaluator,
             FinalExamPrerequisiteChecker finalExamPrerequisiteChecker,
-            EnrollmentFeeRequirementService enrollmentFeeRequirementService,
+            EnrollmentFeeRequirementPort enrollmentFeeRequirementPort,
             Clock clock) {
-        this.enrollmentFeeRequirementService = enrollmentFeeRequirementService;
+        this.enrollmentFeeRequirementPort = enrollmentFeeRequirementPort;
         this.examBoardRegistrationRepository = examBoardRegistrationRepository;
         this.examBoardRepository = examBoardRepository;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
@@ -66,10 +66,10 @@ public class ExamBoardRegistrationManager {
     private void requireEnrollmentFeeOfCourseTerm(SubjectSectionEnrollment enrollment) {
         Term term = enrollment.getSubjectSection().getTerm();
         if (term == null) {
-            enrollmentFeeRequirementService.requireForCurrentPeriod(enrollment.getProgramEnrollment(), EnrollmentFeeRequirementScope.EXAM_REGISTRATION);
+            enrollmentFeeRequirementPort.requireForCurrentPeriod(enrollment.getProgramEnrollment().getId(), EnrollmentFeeRequirementPurpose.EXAM_REGISTRATION);
             return;
         }
-        enrollmentFeeRequirementService.requireForTerm(enrollment.getProgramEnrollment(), term, EnrollmentFeeRequirementScope.EXAM_REGISTRATION);
+        enrollmentFeeRequirementPort.requireForTerm(enrollment.getProgramEnrollment().getId(), term.getId(), EnrollmentFeeRequirementPurpose.EXAM_REGISTRATION);
     }
 
     @Transactional

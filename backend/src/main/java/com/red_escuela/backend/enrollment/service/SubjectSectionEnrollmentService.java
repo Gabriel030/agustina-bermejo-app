@@ -5,7 +5,8 @@ import com.red_escuela.backend.enrollment.api.FinalExamEligibilityResolver;
 import com.red_escuela.backend.enrollment.dto.ChangeSectionRequest;
 import com.red_escuela.backend.enrollment.dto.CreateSectionEnrollmentRequest;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.billing.service.EnrollmentFeeRequirementService;
+import com.red_escuela.backend.enrollment.api.EnrollmentFeeRequirementPort;
+import com.red_escuela.backend.enrollment.api.EnrollmentFeeRequirementPurpose;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
@@ -64,7 +65,7 @@ public class SubjectSectionEnrollmentService {
     private final ProgramCurriculumFinder programCurriculumFinder;
     private final InvoiceRepository invoiceRepository;
     private final ProgramPrerequisiteEvaluator prerequisiteEvaluator;
-    private final EnrollmentFeeRequirementService enrollmentFeeRequirementService;
+    private final EnrollmentFeeRequirementPort enrollmentFeeRequirementPort;
     private final StudentEnrollmentEligibility studentEnrollmentEligibility;
     private final SectionWaitlistPromoter waitlistPromoter;
     private final SubjectRetakeGuard subjectRetakeGuard;
@@ -82,7 +83,7 @@ public class SubjectSectionEnrollmentService {
             ProgramCurriculumFinder programCurriculumFinder,
             InvoiceRepository invoiceRepository,
             ProgramPrerequisiteEvaluator prerequisiteEvaluator,
-            EnrollmentFeeRequirementService enrollmentFeeRequirementService,
+            EnrollmentFeeRequirementPort enrollmentFeeRequirementPort,
             StudentEnrollmentEligibility studentEnrollmentEligibility,
             SectionWaitlistPromoter waitlistPromoter,
             SubjectRetakeGuard subjectRetakeGuard,
@@ -96,7 +97,7 @@ public class SubjectSectionEnrollmentService {
         this.changeEventPublisher = changeEventPublisher;
         this.subjectRetakeGuard = subjectRetakeGuard;
         this.finalExamEligibilityResolver = finalExamEligibilityResolver;
-        this.enrollmentFeeRequirementService = enrollmentFeeRequirementService;
+        this.enrollmentFeeRequirementPort = enrollmentFeeRequirementPort;
         this.studentEnrollmentEligibility = studentEnrollmentEligibility;
         this.waitlistPromoter = waitlistPromoter;
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
@@ -119,7 +120,7 @@ public class SubjectSectionEnrollmentService {
 
         ProgramSectionView section = sectionFinder.findOpenProgramSection(request.sectionId());
         validateEnrollmentWindow(section.termId());
-        enrollmentFeeRequirementService.requireForTerm(programEnrollment, academicReferenceFinder.findTerm(section.termId()));
+        enrollmentFeeRequirementPort.requireForTerm(programEnrollment.getId(), section.termId(), EnrollmentFeeRequirementPurpose.SUBJECT_ENROLLMENT);
 
         programEnrollment = lockProgramEnrollmentOrThrow(programEnrollmentId);
         validateActiveProgramEnrollment(programEnrollment);
