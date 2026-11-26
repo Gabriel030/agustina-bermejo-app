@@ -71,9 +71,6 @@ public class Course {
     @Column(name = "duration_months")
     private Integer durationMonths;
 
-    @Column(name = "duration_hours")
-    private Integer durationHours;
-
     @Column(name = "waitlist_deadline_offset_days")
     private Integer waitlistDeadlineOffsetDays;
 
@@ -146,4 +143,7 @@ public class Course {
         LocalDate deadline = waitlistDeadline();
         return deadline != null && !today.isBefore(deadline);
     }
+
+    @Column(name = "duration_hours")
+    private Integer durationHours;
 }
