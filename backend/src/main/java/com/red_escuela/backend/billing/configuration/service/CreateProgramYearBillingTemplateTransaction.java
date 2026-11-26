@@ -1,15 +1,12 @@
 package com.red_escuela.backend.billing.configuration.service;
 
+import com.red_escuela.backend.academicstructure.api.AcademicReferenceFinder;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
-import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
-import com.red_escuela.backend.academicstructure.api.TermNotFoundException;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.specialist.CurrentPersonService;
-import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
-import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.billing.configuration.domain.AnnualUpfrontSettings;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic;
 import com.red_escuela.backend.billing.configuration.domain.YearBillingTerms;
@@ -27,8 +24,7 @@ public class CreateProgramYearBillingTemplateTransaction {
     private static final int INITIAL_PAYMENT_DEADLINE_HOURS = 48;
 
     private final ProgramYearBillingTemplateRepository templateRepository;
-    private final ProgramRepository programRepository;
-    private final TermRepository termRepository;
+    private final AcademicReferenceFinder academicReferenceFinder;
     private final CurrentPersonService currentPersonService;
     private final YearBillingTermsOverlay termsOverlay;
     private final ApplicationEventPublisher eventPublisher;
@@ -38,8 +34,8 @@ public class CreateProgramYearBillingTemplateTransaction {
     private final DirectConfigurationPublisher publisher;
     private final Clock clock;
 
-    public CreateProgramYearBillingTemplateTransaction(ProgramYearBillingTemplateRepository templateRepository, ProgramRepository programRepository,
-                                                     TermRepository termRepository, CurrentPersonService currentPersonService,
+    public CreateProgramYearBillingTemplateTransaction(ProgramYearBillingTemplateRepository templateRepository, AcademicReferenceFinder academicReferenceFinder,
+                                                     CurrentPersonService currentPersonService,
                                                      YearBillingTermsOverlay termsOverlay, ApplicationEventPublisher eventPublisher,
                                                      YearBillingConfigurationChangeLoader changeLoader, ConfigurationPolicyEvaluator policyEvaluator,
                                                      YearBillingConfigurationDefaults configurationDefaults, DirectConfigurationPublisher publisher, Clock clock) {
@@ -51,15 +47,14 @@ public class CreateProgramYearBillingTemplateTransaction {
         this.termsOverlay = termsOverlay;
         this.eventPublisher = eventPublisher;
         this.templateRepository = templateRepository;
-        this.programRepository = programRepository;
-        this.termRepository = termRepository;
+        this.academicReferenceFinder = academicReferenceFinder;
         this.currentPersonService = currentPersonService;
     }
 
     @Transactional
     public ProgramYearBillingTemplate create(Long programId, Long termId, Integer requestedInstallmentsCount, YearBillingConfigurationRequest configuration) {
-        Program program = programRepository.findById(programId).orElseThrow(() -> new ProgramNotFoundException(programId));
-        Term term = termRepository.findById(termId).orElseThrow(() -> new TermNotFoundException(termId));
+        Program program = academicReferenceFinder.findProgram(programId);
+        Term term = academicReferenceFinder.findTerm(termId);
         Person actor = currentPersonService.resolveCurrentPerson();
         Integer recurringFeeInvoicesCount = requestedInstallmentsCount != null ? requestedInstallmentsCount : configurationDefaults.defaultInstallmentsCount(term);
         YearBillingConfigurationRequest effectiveConfiguration = configurationDefaults.completeForCreation(term.getStartDate(), configuration);
