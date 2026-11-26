@@ -8,7 +8,7 @@ const FOCUSABLE = 'a[href], button:not([disabled])';
 export const TOP_NAV_BUTTON =
   'relative inline-flex min-h-11 items-center gap-1.5 whitespace-nowrap rounded-control px-2.5 text-size-13 font-semibold text-ink-soft transition-colors motion-reduce:transition-none hover:bg-neutral-bg hover:text-ink focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring';
 export const TOP_NAV_BUTTON_ACTIVE =
-  'rounded-b-none text-(--accent) shadow-[inset_0_-2px_0_var(--accent)] hover:text-(--accent)';
+  'rounded-b-none text-(--accent) border-b-2 border-b-(--accent) hover:text-(--accent)';
 
 export function TopNavMenu({ id, active, open, menus, columns = 1, align = 'start', trigger, children }) {
   const containerRef = useRef(null);

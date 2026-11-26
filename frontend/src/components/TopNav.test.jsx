@@ -156,8 +156,8 @@ describe('TopNav', () => {
     const user = userEvent.setup();
     renderTopNav({ route: '/director/gestion-academica' });
 
-    expect(trigger('Académico')).toHaveClass('shadow-[inset_0_-2px_0_var(--accent)]');
-    expect(trigger('Personas')).not.toHaveClass('shadow-[inset_0_-2px_0_var(--accent)]');
+    expect(trigger('Académico')).toHaveClass('border-b-(--accent)');
+    expect(trigger('Personas')).not.toHaveClass('border-b-(--accent)');
 
     await user.click(trigger('Académico'));
     expect(screen.getByRole('link', { name: 'Gestión académica' })).toHaveAttribute('aria-current', 'page');
@@ -169,7 +169,7 @@ describe('TopNav', () => {
     renderTopNav({ route: '/director/aprobaciones' });
 
     expect(screen.getByRole('link', { name: 'Aprobaciones' })).toHaveAttribute('aria-current', 'page');
-    expect(trigger('Académico')).not.toHaveClass('shadow-[inset_0_-2px_0_var(--accent)]');
+    expect(trigger('Académico')).not.toHaveClass('border-b-(--accent)');
   });
 
   it('lays the long menus out in two columns and the short ones in one', async () => {
