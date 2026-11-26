@@ -1,0 +1,38 @@
+{
+  "ci": {
+    "collect": {
+      "startServerCommand": "npx vite preview --outDir dist-mock --port 4174 --strictPort",
+      "startServerReadyPattern": "Local",
+      "url": [
+        "http://localhost:4174/alumno/inicio?role=alumno",
+        "http://localhost:4174/docente/tomar-asistencia?role=docente"
+      ],
+      "numberOfRuns": 3,
+      "settings": {
+        "onlyCategories": ["performance", "pwa"],
+        "chromeFlags": "--headless=new --no-sandbox --disable-gpu"
+      }
+    },
+    "assert": {
+      "assertMatrix": [
+        {
+          "matchingUrlPattern": ".*/alumno/inicio.*",
+          "assertions": {
+            "largest-contentful-paint": ["error", { "maxNumericValue": 17590, "aggregationMethod": "pessimistic" }],
+            "cumulative-layout-shift": ["error", { "maxNumericValue": 0.266, "aggregationMethod": "pessimistic" }],
+            "total-blocking-time": ["error", { "maxNumericValue": 396, "aggregationMethod": "pessimistic" }]
+          }
+        },
+        {
+          "matchingUrlPattern": ".*/docente/tomar-asistencia.*",
+          "assertions": {
+            "largest-contentful-paint": ["error", { "maxNumericValue": 14237, "aggregationMethod": "pessimistic" }],
+            "cumulative-layout-shift": ["error", { "maxNumericValue": 0.01, "aggregationMethod": "pessimistic" }],
+            "total-blocking-time": ["error", { "maxNumericValue": 281, "aggregationMethod": "pessimistic" }]
+          }
+        }
+      ]
+    },
+    "upload": { "target": "filesystem", "outputDir": ".lighthouseci/report" }
+  }
+}

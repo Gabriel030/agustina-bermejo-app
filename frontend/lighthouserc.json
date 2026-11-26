@@ -1,0 +1,23 @@
+{
+  "ci": {
+    "collect": {
+      "startServerCommand": "npx vite preview --port 4173 --strictPort",
+      "startServerReadyPattern": "Local",
+      "url": ["http://localhost:4173/login"],
+      "numberOfRuns": 3,
+      "settings": {
+        "onlyCategories": ["performance", "pwa"],
+        "chromeFlags": "--headless=new --no-sandbox --disable-gpu"
+      }
+    },
+    "assert": {
+      "assertions": {
+        "categories:pwa": ["error", { "minScore": 0.9, "aggregationMethod": "pessimistic" }],
+        "largest-contentful-paint": ["error", { "maxNumericValue": 5332, "aggregationMethod": "pessimistic" }],
+        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.01, "aggregationMethod": "pessimistic" }],
+        "total-blocking-time": ["error", { "maxNumericValue": 235, "aggregationMethod": "pessimistic" }]
+      }
+    },
+    "upload": { "target": "filesystem", "outputDir": ".lighthouseci/report" }
+  }
+}

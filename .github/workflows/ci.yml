@@ -641,6 +641,39 @@ jobs:
           python3 perf/test_check_budget.py
           python3 perf/check_budget.py
 
+  frontend-lighthouse:
+    runs-on: ubuntu-latest
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true' && needs.changes.outputs.reuse_frontend != 'true' && (github.event_name != 'pull_request' || github.event.pull_request.draft == false)
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: frontend
+        run: npm ci --no-audit --no-fund --prefer-offline
+
+      - name: Check the mobile performance and PWA budget
+        working-directory: frontend
+        env:
+          CHROME_PATH: /usr/bin/google-chrome
+        run: npm run lighthouse
+
+      - name: Upload the Lighthouse reports
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: lighthouse-reports
+          path: frontend/.lighthouseci
+          if-no-files-found: ignore
+
   secret-scan-pr:
     runs-on: ubuntu-latest
     if: github.event_name == 'pull_request' && github.event.pull_request.draft == false
