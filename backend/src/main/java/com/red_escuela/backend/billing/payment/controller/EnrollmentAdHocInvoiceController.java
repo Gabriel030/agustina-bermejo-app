@@ -4,6 +4,7 @@ import com.red_escuela.backend.billing.dto.CreateAdHocInvoiceRequest;
 import com.red_escuela.backend.billing.dto.InvoiceResponse;
 import com.red_escuela.backend.billing.usecase.invoice.CreateAdHocInvoiceForCourseEnrollmentUseCase;
 import com.red_escuela.backend.billing.usecase.invoice.CreateAdHocInvoiceForProgramEnrollmentUseCase;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.shared.permission.RequiresPermission;
 import io.swagger.v3.oas.annotations.Operation;
@@ -33,6 +34,7 @@ public class EnrollmentAdHocInvoiceController {
     @ResponseStatus(HttpStatus.CREATED)
     @Tag(name = "course-enrollment-controller")
     @Operation(operationId = "CourseEnrollment_createAdHocInvoice")
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @RequiresPermission(code = "enrollment.create_ad_hoc_invoice", legacyRoles = "ROLE_ADMINISTRATIVO")
     public InvoiceResponse createCourseAdHocInvoice(@PathVariable Long id, @Valid @RequestBody CreateAdHocInvoiceRequest request,
                                                     @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
@@ -44,6 +46,7 @@ public class EnrollmentAdHocInvoiceController {
     @ResponseStatus(HttpStatus.CREATED)
     @Tag(name = "program-enrollment-controller")
     @Operation(operationId = "ProgramEnrollment_createAdHocInvoice")
+    @RequiresModule(value = RequiresModule.BILLING, minMode = BillingMode.FULL)
     @RequiresPermission(code = "enrollment.create_ad_hoc_invoice", legacyRoles = "ROLE_ADMINISTRATIVO")
     public InvoiceResponse createProgramAdHocInvoice(@PathVariable Long id, @Valid @RequestBody CreateAdHocInvoiceRequest request,
                                                      @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
