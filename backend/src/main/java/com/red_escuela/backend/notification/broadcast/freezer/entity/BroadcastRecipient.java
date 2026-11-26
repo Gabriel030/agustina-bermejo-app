@@ -49,9 +49,6 @@ public class BroadcastRecipient {
     @Column(name = "delivery_id")
     private Long deliveryId;
 
-    @Column(name = "anonymized_at")
-    private Instant anonymizedAt;
-
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
 
