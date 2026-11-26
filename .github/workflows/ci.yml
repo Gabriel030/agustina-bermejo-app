@@ -671,6 +671,7 @@ jobs:
         uses: actions/upload-artifact@v7
         with:
           name: lighthouse-reports
+          include-hidden-files: true
           path: frontend/.lighthouseci
           if-no-files-found: ignore
 

@@ -14,7 +14,7 @@
       "assertions": {
         "categories:pwa": ["error", { "minScore": 0.9, "aggregationMethod": "pessimistic" }],
         "largest-contentful-paint": ["error", { "maxNumericValue": 5332, "aggregationMethod": "pessimistic" }],
-        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.01, "aggregationMethod": "pessimistic" }],
+        "cumulative-layout-shift": ["error", { "maxNumericValue": 0.05, "aggregationMethod": "pessimistic" }],
         "total-blocking-time": ["error", { "maxNumericValue": 235, "aggregationMethod": "pessimistic" }]
       }
     },

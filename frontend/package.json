@@ -17,7 +17,7 @@
     "audit:prod": "npm audit --omit=dev --audit-level=high",
     "audit:all": "npm audit",
     "build:lighthouse": "VITE_ENABLE_MSW=true vite build --outDir dist-mock",
-    "lighthouse": "npm run build && npm run build:lighthouse && lhci autorun --config=lighthouserc.json && lhci autorun --config=lighthouserc.screens.json"
+    "lighthouse": "npm run build && npm run build:lighthouse && (lhci autorun --config=lighthouserc.json; login=$?; lhci autorun --config=lighthouserc.screens.json; screens=$?; exit $((login + screens)))"
   },
   "overrides": {
     "eslint-plugin-react": {
