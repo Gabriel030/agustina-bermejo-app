@@ -44,7 +44,7 @@ public class GetMonthlyBillingMetricsService implements GetMonthlyBillingMetrics
                 command.courseId(), command.invoiceType());
         Timer.Sample sample = Timer.start(meterRegistry);
         try {
-            return queriesByPanel.get(panel).findSeries(filter);
+            return queriesByPanel.get(panel).findSeries(filter).withCurrency(filter.currency());
         } catch (RuntimeException failure) {
             log.error("Falla al calcular el panel {} con el filtro {}", panel.path(), filter, failure);
             throw failure;

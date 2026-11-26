@@ -11,14 +11,16 @@ import com.red_escuela.backend.billing.reporting.domain.MetricValue;
 import com.red_escuela.backend.billing.reporting.domain.MonthlyMetric;
 import com.red_escuela.backend.billing.reporting.domain.PercentValue;
 
+import com.red_escuela.backend.shared.domain.Currency;
+
 import java.math.BigDecimal;
 import java.util.List;
 
-public record MonthlyMetricResponse(String panel, boolean available, boolean partial, List<String> months, List<SeriesResponse> series,
+public record MonthlyMetricResponse(String panel, Currency currency, boolean available, boolean partial, List<String> months, List<SeriesResponse> series,
                                     @JsonInclude(JsonInclude.Include.NON_NULL) GoalResponse goal) {
 
     public static MonthlyMetricResponse from(MonthlyMetric metric) {
-        return new MonthlyMetricResponse(metric.panel().path(), metric.available(), metric.partial(),
+        return new MonthlyMetricResponse(metric.panel().path(), metric.currency(), metric.available(), metric.partial(),
                 metric.months().stream().map(Object::toString).toList(),
                 metric.series().stream().map(SeriesResponse::from).toList(),
                 metric.goalEvaluation().map(evaluation -> GoalResponse.from(metric.goal(), evaluation)).orElse(null));

@@ -41,7 +41,7 @@ const EMPTY_LISTS = [
   '/staff',
 ];
 
-const emptyMetric = (panel) => ({ panel, available: true, partial: false, months: [], series: [] });
+const emptyMetric = (panel) => ({ panel, currency: 'ARS', available: true, partial: false, months: [], series: [] });
 
 const SCREEN_ROWS_FILE = globalThis.process.env.PERF_SCREENS_OUT;
 const screenRows = {};

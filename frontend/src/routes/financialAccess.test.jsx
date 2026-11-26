@@ -36,7 +36,7 @@ async function signInAs(role, path) {
     http.get(`${API}/students`, () => HttpResponse.json({ items: [], page: 0, size: 25, totalElements: 0 })),
     http.get(`${API}/financial-dashboard`, () => HttpResponse.json({ studentsInDebt: 1, studentsUpToDate: 2, totalsByCurrency: [] })),
     http.get(`${API}/billing/metrics/:panel`, ({ params }) =>
-      HttpResponse.json({ panel: params.panel, available: true, partial: false, months: ['2026-10'], series: [] }),
+      HttpResponse.json({ panel: params.panel, currency: 'ARS', available: true, partial: false, months: ['2026-10'], series: [] }),
     ),
   );
   renderApp(path);
