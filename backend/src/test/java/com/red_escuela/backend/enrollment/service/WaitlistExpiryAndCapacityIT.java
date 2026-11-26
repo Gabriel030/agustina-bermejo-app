@@ -210,7 +210,7 @@ class WaitlistExpiryAndCapacityIT extends AbstractIntegrationTest {
         CourseEnrollment parent = courseEnrollment(moduleCourse, EnrollmentStatus.ENROLLED, NOW.minusDays(10), null);
         CourseSubjectSectionEnrollment moduleWaiting = moduleEnrollment(section, parent, EnrollmentStatus.WAITLISTED);
         SubjectSectionEnrollment programEnrolled = programEntry(programWaiting.getSubjectSection(), programWaiting.getProgramEnrollment().getProgram(), EnrollmentStatus.ENROLLED);
-        CourseSubjectSectionEnrollment moduleEnrolled = moduleEnrollment(section, parent, EnrollmentStatus.ENROLLED);
+        CourseSubjectSectionEnrollment moduleEnrolled = moduleEnrollment(moduleSection(moduleCourse), parent, EnrollmentStatus.ENROLLED);
         entityManager.flush();
 
         new CourseEnrollmentWaitlistExpiryJob(courseCatalogFinder, courseWaitlistExpiration, FIXED_CLOCK).expireWaitlists();
@@ -284,7 +284,7 @@ class WaitlistExpiryAndCapacityIT extends AbstractIntegrationTest {
         CourseSubjectSection section = moduleSection(course);
         CourseEnrollment parent = courseEnrollment(course, EnrollmentStatus.ENROLLED, NOW.minusDays(10), null);
         moduleEnrollment(section, parent, EnrollmentStatus.ENROLLED);
-        CourseSubjectSectionEnrollment waiting = moduleEnrollment(section, parent, EnrollmentStatus.WAITLISTED);
+        CourseSubjectSectionEnrollment waiting = moduleEnrollment(section, courseEnrollment(course, EnrollmentStatus.ENROLLED, NOW.minusDays(10), null), EnrollmentStatus.WAITLISTED);
         entityManager.flush();
 
         courseSectionService.update(section.getId(), new UpdateSectionRequest(null, null, 2, null));
@@ -522,7 +522,7 @@ class WaitlistExpiryAndCapacityIT extends AbstractIntegrationTest {
 
     private CourseSubjectSectionEnrollment moduleEnrollment(CourseSubjectSection section, CourseEnrollment parent, EnrollmentStatus status) {
         CourseSubjectSectionEnrollment enrollment = new CourseSubjectSectionEnrollment();
-        enrollment.setStudent(student());
+        enrollment.setStudent(parent.getStudent());
         enrollment.setCourseEnrollment(parent);
         enrollment.setCourseSubjectSection(section);
         enrollment.setStatus(status);

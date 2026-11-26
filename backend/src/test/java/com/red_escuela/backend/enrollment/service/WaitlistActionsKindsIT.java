@@ -62,7 +62,7 @@ class WaitlistActionsKindsIT extends AbstractIntegrationTest {
         CourseEnrollment entry = courseEnrollment(course, EnrollmentStatus.WAITLISTED, BASE_TIME.plusHours(1));
         CourseSubjectSection section = moduleSection(course);
         CourseSubjectSectionEnrollment waitingModule = moduleEnrollment(section, entry, EnrollmentStatus.WAITLISTED, BASE_TIME);
-        CourseSubjectSectionEnrollment enrolledModule = moduleEnrollment(section, entry, EnrollmentStatus.ENROLLED, BASE_TIME);
+        CourseSubjectSectionEnrollment enrolledModule = moduleEnrollment(moduleSection(course), entry, EnrollmentStatus.ENROLLED, BASE_TIME);
         entityManager.flush();
 
         actions.remove(WaitlistKind.COURSE, entry.getId(), REASON);
@@ -111,9 +111,9 @@ class WaitlistActionsKindsIT extends AbstractIntegrationTest {
     @Test
     void courseSectionPromoteEnrollsTheEntryAndDoublePromoteFails() {
         CourseSubjectSection section = moduleSection(course(2062, 2));
-        CourseEnrollment parent = courseEnrollment(section.getCourseSubject().getCourse(), EnrollmentStatus.ENROLLED, BASE_TIME);
-        moduleEnrollment(section, parent, EnrollmentStatus.ENROLLED, BASE_TIME);
-        CourseSubjectSectionEnrollment entry = moduleEnrollment(section, parent, EnrollmentStatus.WAITLISTED, BASE_TIME.plusHours(1));
+        Course course = section.getCourseSubject().getCourse();
+        moduleEnrollment(section, courseEnrollment(course, EnrollmentStatus.ENROLLED, BASE_TIME), EnrollmentStatus.ENROLLED, BASE_TIME);
+        CourseSubjectSectionEnrollment entry = moduleEnrollment(section, courseEnrollment(course, EnrollmentStatus.ENROLLED, BASE_TIME), EnrollmentStatus.WAITLISTED, BASE_TIME.plusHours(1));
         entityManager.flush();
 
         actions.promote(WaitlistKind.COURSE_SECTION, entry.getId());
@@ -128,9 +128,9 @@ class WaitlistActionsKindsIT extends AbstractIntegrationTest {
     void courseSectionPromoteWithoutFreeSeatFails() {
         CourseSubjectSection section = moduleSection(course(2063, 2));
         section.setCapacity(1);
-        CourseEnrollment parent = courseEnrollment(section.getCourseSubject().getCourse(), EnrollmentStatus.ENROLLED, BASE_TIME);
-        moduleEnrollment(section, parent, EnrollmentStatus.ENROLLED, BASE_TIME);
-        CourseSubjectSectionEnrollment entry = moduleEnrollment(section, parent, EnrollmentStatus.WAITLISTED, BASE_TIME.plusHours(1));
+        Course course = section.getCourseSubject().getCourse();
+        moduleEnrollment(section, courseEnrollment(course, EnrollmentStatus.ENROLLED, BASE_TIME), EnrollmentStatus.ENROLLED, BASE_TIME);
+        CourseSubjectSectionEnrollment entry = moduleEnrollment(section, courseEnrollment(course, EnrollmentStatus.ENROLLED, BASE_TIME), EnrollmentStatus.WAITLISTED, BASE_TIME.plusHours(1));
         entityManager.flush();
 
         assertThatThrownBy(() -> actions.promote(WaitlistKind.COURSE_SECTION, entry.getId())).isInstanceOf(WaitlistNoFreeSeatException.class);
@@ -155,9 +155,9 @@ class WaitlistActionsKindsIT extends AbstractIntegrationTest {
     @Test
     void courseSectionLastPrioritizedEntryIsFirst() {
         CourseSubjectSection section = moduleSection(course(2065, 2));
-        CourseEnrollment parent = courseEnrollment(section.getCourseSubject().getCourse(), EnrollmentStatus.ENROLLED, BASE_TIME);
-        CourseSubjectSectionEnrollment older = moduleEnrollment(section, parent, EnrollmentStatus.WAITLISTED, BASE_TIME);
-        CourseSubjectSectionEnrollment newer = moduleEnrollment(section, parent, EnrollmentStatus.WAITLISTED, BASE_TIME.plusHours(1));
+        Course course = section.getCourseSubject().getCourse();
+        CourseSubjectSectionEnrollment older = moduleEnrollment(section, courseEnrollment(course, EnrollmentStatus.ENROLLED, BASE_TIME), EnrollmentStatus.WAITLISTED, BASE_TIME);
+        CourseSubjectSectionEnrollment newer = moduleEnrollment(section, courseEnrollment(course, EnrollmentStatus.ENROLLED, BASE_TIME), EnrollmentStatus.WAITLISTED, BASE_TIME.plusHours(1));
         entityManager.flush();
 
         actions.prioritize(WaitlistKind.COURSE_SECTION, older.getId(), REASON);
@@ -219,7 +219,7 @@ class WaitlistActionsKindsIT extends AbstractIntegrationTest {
     private CourseSubjectSectionEnrollment moduleEnrollment(CourseSubjectSection section, CourseEnrollment parent,
                                                             EnrollmentStatus status, LocalDateTime joinedAt) {
         CourseSubjectSectionEnrollment enrollment = new CourseSubjectSectionEnrollment();
-        enrollment.setStudent(student());
+        enrollment.setStudent(parent.getStudent());
         enrollment.setCourseEnrollment(parent);
         enrollment.setCourseSubjectSection(section);
         enrollment.setStatus(status);

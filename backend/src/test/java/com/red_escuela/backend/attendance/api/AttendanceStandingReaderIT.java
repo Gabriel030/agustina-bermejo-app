@@ -4,6 +4,7 @@ import com.red_escuela.backend.academicstructure.CycleTestFixtures;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
+import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.attendance.dto.RosterEntryResponse;
@@ -59,7 +60,7 @@ class AttendanceStandingReaderIT extends AbstractIntegrationTest {
     private CycleTestFixtures fixtures;
     private SubjectSection section;
     private Instructor recorder;
-    private ProgramEnrollment programEnrollment;
+    private Program program;
     private SubjectSectionEnrollment onTheLimit;
     private SubjectSectionEnrollment overTheLimit;
     private SubjectSectionEnrollment withoutClasses;
@@ -75,14 +76,8 @@ class AttendanceStandingReaderIT extends AbstractIntegrationTest {
         Institution institution = new Institution();
         institution.setName("Instituto de prueba");
         entityManager.persist(institution);
-        programEnrollment = new ProgramEnrollment();
-        Student first = student(institution);
-        programEnrollment.setStudent(first);
-        programEnrollment.setProgram(fixtures.program());
-        programEnrollment.setStatus(ProgramEnrollmentStatus.ENROLLED);
-        programEnrollment.setEnrollmentDate(LocalDateTime.now());
-        entityManager.persist(programEnrollment);
-        onTheLimit = enrollmentOf(first);
+        program = fixtures.program();
+        onTheLimit = enrollmentOf(student(institution));
         overTheLimit = enrollmentOf(student(institution));
         withoutClasses = enrollmentOf(student(institution));
         record(onTheLimit, AttendanceStatus.PRESENT, AttendanceStatus.PRESENT, AttendanceStatus.LATE,
@@ -174,6 +169,12 @@ class AttendanceStandingReaderIT extends AbstractIntegrationTest {
     }
 
     private SubjectSectionEnrollment enrollmentOf(Student student) {
+        ProgramEnrollment programEnrollment = new ProgramEnrollment();
+        programEnrollment.setStudent(student);
+        programEnrollment.setProgram(program);
+        programEnrollment.setStatus(ProgramEnrollmentStatus.ENROLLED);
+        programEnrollment.setEnrollmentDate(LocalDateTime.now());
+        entityManager.persist(programEnrollment);
         SubjectSectionEnrollment enrollment = new SubjectSectionEnrollment();
         enrollment.setStudent(student);
         enrollment.setProgramEnrollment(programEnrollment);
