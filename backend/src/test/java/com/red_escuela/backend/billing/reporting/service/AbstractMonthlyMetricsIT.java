@@ -163,9 +163,14 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
     }
 
     protected void enrollInvoiceStudentInProgram(Long invoiceId, Long programId) {
-        Long enrollmentId = jdbc.queryForObject("insert into program_enrollment (student_id, program_id, status, enrollment_date) values (?, ?, 'ENROLLED', now()) returning id",
-                Long.class, studentOf(invoiceId), programId);
-        seededProgramEnrollmentIds.add(enrollmentId);
+        Long studentId = studentOf(invoiceId);
+        Long enrollmentId = jdbc.queryForList("select id from program_enrollment where student_id = ? and program_id = ? and status = 'ENROLLED'",
+                Long.class, studentId, programId).stream().findFirst().orElse(null);
+        if (enrollmentId == null) {
+            enrollmentId = jdbc.queryForObject("insert into program_enrollment (student_id, program_id, status, enrollment_date) values (?, ?, 'ENROLLED', now()) returning id",
+                    Long.class, studentId, programId);
+            seededProgramEnrollmentIds.add(enrollmentId);
+        }
         linkInvoiceLines(invoiceId, "program_enrollment_id", enrollmentId);
     }
 

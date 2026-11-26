@@ -327,7 +327,7 @@ class SubjectEquivalenceControllerIT extends AbstractIntegrationTest {
     void voidingUnknownEquivalenceOrFromAnotherEnrollmentReturns404() throws Exception {
         String token = token("ADMINISTRATIVO");
         voidEquivalence(token, 987654321L, REASON).andExpect(status().isNotFound());
-        ProgramEnrollment otherEnrollment = persistEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
+        ProgramEnrollment otherEnrollment = persistEnrollment(student, program, ProgramEnrollmentStatus.COMPLETED);
         entityManager.flush();
         record(token, body(subject.getId(), null, LocalDate.now(), REASON)).andExpect(status().isCreated());
         Long id = equivalenceRepository.findByProgramEnrollmentIdOrderByRecognizedOnDescIdDesc(enrollment.getId()).get(0).getId();

@@ -78,6 +78,17 @@ No medí cambiar el orden en ninguno; son observaciones del catálogo y del uso.
 | `ix_notification_recipient_created_at (recipient_id, created_at DESC)` y `ix_notification_recipient_unread (recipient_id) WHERE read = false` | Orden correcto; se usaron (222 scans, `unread-count` a 0,7 ms). Se solapan solo en `recipient_id` | Sin acción |
 | `uk_attendance_program_date (program_section_enrollment_id, class_date)` parcial | Es el único índice usable de `attendance` por inscripción (88.386 scans); el orden es correcto para el informe de ausencias | Sin acción |
 
+## E33-C: `commission_closure_student (enrollment_id)` (26-nov)
+
+Borrado del rollback de importación (`delete … where enrollment_id in (1000 ids)`) sobre el esquema real (todas las migraciones aplicadas, Postgres 16), 200.000 filas, 4 corridas por lado con caché caliente. Ninguna tabla referencia a `commission_closure_student` y `enrollment_id` no tiene FK: las FKs reales no intervienen en este borrado. El seed perf (`seed-large.sql`) no carga esta tabla; se cargó por SQL.
+
+| | Plan | Tiempos (ms) |
+|---|---|---|
+| Sin índice | Seq Scan de 200.000 filas | 36,4 / 35,1 / 45,0 / 43,9 |
+| Con `idx_commission_closure_student_enrollment` | Index Scan por cada id | 12,1 / 8,8 / 9,1 / 9,9 |
+
+Mejora ≈ 4× por tramo de 1.000 filas (mediana 40 → 9,5 ms) sobre el umbral de 2×: se crea el índice en V473.
+
 ## Qué queda para 33.3a/33.3b
 
 - Candidato claro: `subject_section_enrollment (program_section_id, status)` (−45 % en lista de espera).

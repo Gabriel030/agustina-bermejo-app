@@ -35,6 +35,8 @@ import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,6 +49,8 @@ import com.red_escuela.backend.attendance.api.AttendanceStandingReader;
 
 @Service
 public class ProgramEnrollmentService {
+    private static final String ACTIVE_PROGRAM_ENROLLMENT_INDEX = "uk_program_enrollment_student_program_active";
+
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final StudentFinder studentFinder;
     private final StudentEnrollmentEligibility studentEnrollmentEligibility;
@@ -145,7 +149,19 @@ public class ProgramEnrollmentService {
         enrollment.setAdmissionApplication(admissionApplication);
         enrollment.setStatus(ProgramEnrollmentStatus.ENROLLED);
         enrollment.setEnrollmentDate(now);
-        return programEnrollmentRepository.save(enrollment);
+        try {
+            return programEnrollmentRepository.saveAndFlush(enrollment);
+        } catch (DataIntegrityViolationException violation) {
+            if (!violatesActiveProgramEnrollmentIndex(violation)) {
+                throw violation;
+            }
+            throw new AlreadyEnrolledInProgramException(studentId, program.getId());
+        }
+    }
+
+    private static boolean violatesActiveProgramEnrollmentIndex(DataIntegrityViolationException violation) {
+        return violation.getCause() instanceof ConstraintViolationException constraint
+                && ACTIVE_PROGRAM_ENROLLMENT_INDEX.equals(constraint.getConstraintName());
     }
 
     @Transactional

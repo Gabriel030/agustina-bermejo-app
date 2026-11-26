@@ -527,6 +527,28 @@ pide ACCESS EXCLUSIVE hasta el COMMIT de su archivo, y la app corre con `lock_ti
 (`application.properties:151`): desplegar estas migraciones con la app parada, o al menos sin transacciones
 largas ni el job nocturno vivo, o el `ADD` fallará por timeout.
 
+### Invariantes de horarios e inscripciones en la base (E25 B2)
+
+Segunda red de integridad: el código sigue validando y traduce la violación a su excepción de dominio; la base
+rechaza lo que el código se olvide. Todo cambio que afloje una de estas reglas necesita migración y decisión.
+
+| Regla | Constraint | Migración | Excepción de dominio |
+|---|---|---|---|
+| Una franja `section_schedule_slot` tiene `end_time > start_time` | `chk_schedule_slot_valid_range` | V62 | — |
+| Un aula no aloja dos franjas activas que se pisan en el mismo período | `ex_schedule_slot_classroom_overlap` (EXCLUDE gist sobre `classroom_id`, `time_span`, `term_period`, solo `active`) | V463, V470 | `SectionScheduleConflictException` (SQLState 23P01) |
+| Un docente no está en dos franjas activas que se pisan | `ex_schedule_slot_instructor_overlap` sobre la proyección `section_schedule_slot_instructor` (triggers) | V470 | `SectionScheduleConflictException` (23P01) |
+| Una inscripción a carrera `ENROLLED` o `PAUSED` por alumno y carrera | `uk_program_enrollment_student_program_active` (único parcial) | V474 | `AlreadyEnrolledInProgramException` |
+| Una solicitud de constancia `PENDING_STAFF` por inscripción | `uq_regular_cert_request_pending_per_enrollment` (único parcial sobre `kind` y la inscripción) | V475 | `ConcurrentRegularCertificateIssueException` |
+
+`time_span`, `term_period`, `occupies` y `active` de la franja los mantiene el trigger
+`trg_section_schedule_slot_occupancy`; el código no los escribe. Un IT de constraint prueba cada regla en
+ambos lados (sin la constraint el test de la versión anterior acepta el duplicado): ver
+`SectionScheduleSlotExcludeMigrationTest`, `ProgramEnrollmentActiveUniqueMigrationTest` y
+`RegularCertificateRequestPendingUniqueMigrationTest`. Los pre-chequeos de datos previos al deploy están en
+`docs/release/pre-migration-checks.sql` (bloques `[V470]`, `[V474]`, `[V475]`). Pendientes del informe
+`docs/cell/reports/e25-b2-invariantes.md`: R2, R3 y R5 (CHECK y FK compuesta `NOT VALID`, validación aparte tras
+el chequeo de producción).
+
 ## Seguridad
 
 `SecurityConfig.java`: todo exige JWT salvo `/auth/**` y `POST /prospects`
