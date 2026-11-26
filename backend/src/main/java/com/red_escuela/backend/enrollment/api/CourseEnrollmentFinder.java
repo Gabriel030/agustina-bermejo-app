@@ -1,6 +1,7 @@
 package com.red_escuela.backend.enrollment.api;
 
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
+import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.api.CourseEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import org.springframework.stereotype.Component;
@@ -50,5 +51,21 @@ public class CourseEnrollmentFinder {
 
     public List<Long> findIdsByStudentId(Long studentId) {
         return courseEnrollmentRepository.findByStudentId(studentId).stream().map(CourseEnrollment::getId).toList();
+    }
+
+    public Optional<CourseEnrollment> findById(Long id) {
+        return courseEnrollmentRepository.findById(id);
+    }
+
+    public List<CourseEnrollment> findByStudent(Long studentId) {
+        return courseEnrollmentRepository.findByStudentId(studentId);
+    }
+
+    public List<CourseEnrollment> findAllWithStudentAndCourseByIds(Collection<Long> ids) {
+        return courseEnrollmentRepository.findAllWithStudentAndCourseByIdIn(ids);
+    }
+
+    public List<Long> findDistinctStudentIdsByStatusIn(Collection<EnrollmentStatus> statuses) {
+        return courseEnrollmentRepository.findDistinctStudentIdsByStatusIn(statuses);
     }
 }

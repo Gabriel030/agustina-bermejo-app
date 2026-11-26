@@ -9,8 +9,8 @@ import com.red_escuela.backend.billing.dto.BankTransferReceiptResponse;
 import com.red_escuela.backend.billing.invoice.service.BankTransferReceiptResponseAssembler;
 import com.red_escuela.backend.billing.dto.PriceBreakdownResponse;
 import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingView;
-import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
-import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
+import com.red_escuela.backend.enrollment.api.CourseEnrollmentFinder;
+import com.red_escuela.backend.enrollment.api.ProgramEnrollmentFinder;
 import com.red_escuela.backend.billing.service.InvoiceQueryService;
 import com.red_escuela.backend.billing.dto.MpPreferenceResponse;
 import com.red_escuela.backend.billing.usecase.paymentgateway.CreateMpPreferenceUseCase;
@@ -41,15 +41,15 @@ public class MeInvoiceController {
     private final CurrentStudentService currentStudentService;
     private final UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
     private final FindOwnPaymentReceiptsUseCase findOwnPaymentReceiptsUseCase;
-    private final CourseEnrollmentRepository courseEnrollmentRepository;
-    private final ProgramEnrollmentRepository programEnrollmentRepository;
+    private final CourseEnrollmentFinder courseEnrollmentFinder;
+    private final ProgramEnrollmentFinder programEnrollmentFinder;
     private final CreateMpPreferenceUseCase createMpPreferenceUseCase;
     private final GetOwnCourseEnrollmentBillingStatusUseCase getOwnCourseEnrollmentBillingStatusUseCase;
     private final GetOwnProgramEnrollmentBillingStatusUseCase getOwnProgramEnrollmentBillingStatusUseCase;
 
     public MeInvoiceController(InvoiceQueryService invoiceQueryService, CurrentStudentService currentStudentService,
                                 UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase, FindOwnPaymentReceiptsUseCase findOwnPaymentReceiptsUseCase,
-                                CourseEnrollmentRepository courseEnrollmentRepository, ProgramEnrollmentRepository programEnrollmentRepository,
+                                CourseEnrollmentFinder courseEnrollmentFinder, ProgramEnrollmentFinder programEnrollmentFinder,
                                 CreateMpPreferenceUseCase createMpPreferenceUseCase,
                                 GetOwnCourseEnrollmentBillingStatusUseCase getOwnCourseEnrollmentBillingStatusUseCase,
                                 GetOwnProgramEnrollmentBillingStatusUseCase getOwnProgramEnrollmentBillingStatusUseCase,
@@ -59,8 +59,8 @@ public class MeInvoiceController {
         this.currentStudentService = currentStudentService;
         this.uploadPaymentReceiptUseCase = uploadPaymentReceiptUseCase;
         this.findOwnPaymentReceiptsUseCase = findOwnPaymentReceiptsUseCase;
-        this.courseEnrollmentRepository = courseEnrollmentRepository;
-        this.programEnrollmentRepository = programEnrollmentRepository;
+        this.courseEnrollmentFinder = courseEnrollmentFinder;
+        this.programEnrollmentFinder = programEnrollmentFinder;
         this.createMpPreferenceUseCase = createMpPreferenceUseCase;
         this.getOwnCourseEnrollmentBillingStatusUseCase = getOwnCourseEnrollmentBillingStatusUseCase;
         this.getOwnProgramEnrollmentBillingStatusUseCase = getOwnProgramEnrollmentBillingStatusUseCase;
@@ -114,9 +114,9 @@ public class MeInvoiceController {
 
     private List<EnrollmentPaymentStatusResponse> paymentStatusOf(Long studentId) {
         return Stream.concat(
-                courseEnrollmentRepository.findByStudentId(studentId).stream()
+                courseEnrollmentFinder.findByStudent(studentId).stream()
                         .map(enrollment -> enrollmentPaymentStatusResponse("CourseEnrollment", enrollment.getId(), invoiceQueryService.courseStanding(enrollment.getId()))),
-                programEnrollmentRepository.findByStudentId(studentId).stream()
+                programEnrollmentFinder.findByStudent(studentId).stream()
                         .map(enrollment -> enrollmentPaymentStatusResponse("ProgramEnrollment", enrollment.getId(), invoiceQueryService.programStanding(enrollment.getId()))))
                 .toList();
     }

@@ -1,6 +1,7 @@
 package com.red_escuela.backend.enrollment.api;
 
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.api.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import org.springframework.stereotype.Component;
@@ -8,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @Transactional(readOnly = true)
@@ -54,5 +56,17 @@ public class ProgramEnrollmentFinder {
 
     public List<ProgramEnrollment> findAllById(Collection<Long> ids) {
         return programEnrollmentRepository.findAllById(ids);
+    }
+
+    public Optional<ProgramEnrollment> findById(Long id) {
+        return programEnrollmentRepository.findById(id);
+    }
+
+    public List<ProgramEnrollment> findAllWithStudentAndProgramByIds(Collection<Long> ids) {
+        return programEnrollmentRepository.findAllWithStudentAndProgramByIdIn(ids);
+    }
+
+    public List<Long> findDistinctStudentIdsByStatusIn(Collection<ProgramEnrollmentStatus> statuses) {
+        return programEnrollmentRepository.findDistinctStudentIdsByStatusIn(statuses);
     }
 }
