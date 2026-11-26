@@ -24,7 +24,7 @@ function buildEntries(items, groups) {
     if (own.length === 0) return [];
     if (!group.label) return own.map((item) => ({ type: 'link', id: item.to, item }));
     const sections = group.sections?.map((section) => ({ ...section, items: section.items.filter((item) => item.label !== OPTIONS_LABEL) }));
-    return [{ type: 'group', id: group.id, label: group.label, columns: sections ? 'grid' : (group.columns ?? 1), items: own, sections }];
+    return [{ type: 'group', id: group.id, label: group.label, wide: Boolean(sections), items: own, sections }];
   });
 }
 
@@ -47,13 +47,13 @@ function GroupMenu({ entry, pathname, menus }) {
       menus={menus}
       open={menus.openId === entry.id}
       active={entry.items.some((item) => isActivePath(item, pathname))}
-      columns={entry.columns}
+      wide={entry.wide}
       trigger={entry.label}
     >
       {entry.sections ? (
         menus.openId === entry.id && <TopNavGridPanel title={entry.label} sections={entry.sections} menus={menus} />
       ) : (
-        <ul className={cn('grid gap-x-2', entry.columns === 2 && 'grid-cols-2')} aria-label={entry.label}>
+        <ul aria-label={entry.label}>
           {entry.items.map((item) => (
             <li key={item.to}>
               <MenuLink item={item} menus={menus} />

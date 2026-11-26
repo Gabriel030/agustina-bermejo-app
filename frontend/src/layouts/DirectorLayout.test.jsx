@@ -1,5 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { ThemeProvider } from '@/context/ThemeContext';
 import { DirectorLayout } from '@/layouts/DirectorLayout';
@@ -16,11 +17,13 @@ describe('DirectorLayout', () => {
     expect(links[0]).toHaveAttribute('href', '/director/facturacion');
   });
 
-  it('offers the terms screen in the menu', () => {
+  it('offers the terms screen in the menu', async () => {
+    const user = userEvent.setup();
     renderWithProviders(<ThemeProvider><DirectorLayout /></ThemeProvider>, { route: '/director/inicio' });
 
-    const links = screen.getAllByRole('link', { name: 'Períodos', hidden: true });
-    expect(links[0]).toHaveAttribute('href', '/director/periodos');
+    await user.click(screen.getByRole('button', { name: 'Académico' }));
+    await user.click(screen.getByRole('button', { name: /Oferta y períodos/ }));
+    expect(screen.getByRole('link', { name: 'Períodos' })).toHaveAttribute('href', '/director/periodos');
   });
 
   it('shows the closure sheet title in the mobile header on the closure sheet route', async () => {
