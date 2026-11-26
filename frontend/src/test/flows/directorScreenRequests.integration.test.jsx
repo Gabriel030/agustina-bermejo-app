@@ -41,7 +41,7 @@ const EMPTY_LISTS = [
   '/staff',
 ];
 
-const emptyMetric = (panel) => ({ panel, currency: 'ARS', available: true, partial: false, months: [], series: [] });
+const emptyMetric = (panel) => ({ panel, available: true, partial: false, months: [], series: [] });
 
 const SCREEN_ROWS_FILE = globalThis.process.env.PERF_SCREENS_OUT;
 const screenRows = {};
@@ -58,7 +58,7 @@ describe('director screens request profile', () => {
       http.get(`${API}/financial-dashboard`, () => HttpResponse.json({ studentsInDebt: 0, studentsUpToDate: 0, totalsByCurrency: [] })),
       http.get(`${API}/financial-dashboard/debtors/page`, () => HttpResponse.json({ items: [], page: 0, size: 25, totalElements: 0 })),
       http.get(`${API}/billing/metrics/first-month`, () => HttpResponse.json({ month: null })),
-      http.get(`${API}/billing/metrics/:panel`, ({ params }) => HttpResponse.json(emptyMetric(params.panel))),
+      http.get(`${API}/billing/metrics/:panel`, ({ params }) => HttpResponse.json({ ...emptyMetric(params.panel), currency: 'ARS' })),
       http.get(`${API}/notification-metrics/collection-reminders`, () => HttpResponse.json(emptyMetric('collection-reminders'))),
     );
     tracker = recordApiRequests();
