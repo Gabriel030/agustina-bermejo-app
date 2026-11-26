@@ -15,7 +15,10 @@ import {
 const ITEM_BASE =
   'flex min-h-11 items-center justify-between gap-2 rounded-control px-3 text-sm font-medium text-ink-soft transition-colors hover:bg-neutral-bg hover:text-ink';
 
-function RoleLinks({ choices, activeRole, onNavigate, asMenuItem }) {
+const LIST_ROW =
+  'flex min-h-12 items-center justify-between gap-2 rounded-control px-3 text-sm font-medium text-ink transition-colors hover:bg-(--row-hover)';
+
+function RoleLinks({ choices, activeRole, onNavigate, asMenuItem, listRows }) {
   return choices.map((role) => {
     const active = role === activeRole;
     const link = (
@@ -23,7 +26,12 @@ function RoleLinks({ choices, activeRole, onNavigate, asMenuItem }) {
         to={rolePath(role)}
         aria-current={active ? 'true' : undefined}
         onClick={onNavigate}
-        className={cn(!asMenuItem && ITEM_BASE, asMenuItem && 'flex w-full items-center justify-between gap-2', active && 'font-bold text-ink')}
+        className={cn(
+          !asMenuItem && !listRows && ITEM_BASE,
+          listRows && LIST_ROW,
+          asMenuItem && 'flex w-full items-center justify-between gap-2',
+          active && (listRows ? 'bg-accent-soft font-bold text-(--accent) hover:bg-accent-soft' : 'font-bold text-ink'),
+        )}
       >
         <span>{roleLabel(role)}</span>
         {active && <Check aria-hidden="true" className="h-4 w-4 shrink-0" />}
@@ -83,9 +91,18 @@ function InlineSwitcher({ choices, activeRole, onNavigate }) {
   );
 }
 
+function ListSwitcher({ choices, activeRole, onNavigate }) {
+  return (
+    <ul aria-label="Cambiar de rol" className="flex flex-col gap-1">
+      <RoleLinks choices={choices} activeRole={activeRole} onNavigate={onNavigate} listRows />
+    </ul>
+  );
+}
+
 export function RoleSwitcher({ variant = 'menu', onNavigate }) {
   const { activeRole, choices, canSwitch } = useActiveRole();
   if (!canSwitch) return null;
+  if (variant === 'list') return <ListSwitcher choices={choices} activeRole={activeRole} onNavigate={onNavigate} />;
   if (variant === 'inline') return <InlineSwitcher choices={choices} activeRole={activeRole} onNavigate={onNavigate} />;
   return <MenuSwitcher choices={choices} activeRole={activeRole} />;
 }
