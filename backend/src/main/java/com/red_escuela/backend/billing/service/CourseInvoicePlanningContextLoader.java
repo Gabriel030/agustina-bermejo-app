@@ -12,7 +12,7 @@ import com.red_escuela.backend.billing.repository.PaymentPlanSelectionRepository
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.enrollment.exception.CourseEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.CourseEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import org.springframework.stereotype.Service;
 

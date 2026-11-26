@@ -3,7 +3,7 @@ package com.red_escuela.backend.enrollment.api;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.SubjectEquivalence;
 import com.red_escuela.backend.enrollment.entity.SubjectEquivalenceStatus;
-import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.repository.ApprovedCourseworkGradeRepository;
 import com.red_escuela.backend.enrollment.repository.ApprovedCourseworkGradeRepository.ApprovedCourseworkGradeRow;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;

@@ -5,7 +5,7 @@ import com.red_escuela.backend.academicstructure.dto.UpdateSubjectRequest;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectStatus;
 import com.red_escuela.backend.academicstructure.exception.SubjectAlreadyExistsException;
-import com.red_escuela.backend.academicstructure.exception.SubjectNotFoundException;
+import com.red_escuela.backend.academicstructure.api.SubjectNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.SubjectRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
