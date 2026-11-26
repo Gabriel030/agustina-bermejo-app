@@ -7,7 +7,7 @@ import com.red_escuela.backend.enrollment.entity.SubjectEquivalence;
 import com.red_escuela.backend.enrollment.entity.SubjectEquivalenceStatus;
 import com.red_escuela.backend.enrollment.events.SubjectEquivalenceVoidedEvent;
 import com.red_escuela.backend.enrollment.exception.EquivalenceAlreadyVoidedException;
-import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.exception.SubjectEquivalenceNotFoundException;
 import com.red_escuela.backend.enrollment.policy.SubjectEquivalencePolicy;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
