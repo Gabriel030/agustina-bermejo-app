@@ -509,7 +509,9 @@ final class OwnershipFixtures {
 
     String resolvePlaceholders(String body) {
         return body.replace("${programPlanOptionId}", String.valueOf(programPlanOptionId))
-                .replace("${coursePlanOptionId}", String.valueOf(coursePlanOptionId));
+                .replace("${coursePlanOptionId}", String.valueOf(coursePlanOptionId))
+                .replace("${sectionId}", String.valueOf(sectionId))
+                .replace("${courseSectionEnrollmentId}", String.valueOf(courseSectionEnrollmentId));
     }
 
     private Course courseOfEnrollment() {
