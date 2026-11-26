@@ -456,24 +456,27 @@ export function DataTable({
   }
 
   return (
-    <div className="relative">
-      <div
-        ref={overflow.scrollRef}
-        onScroll={overflow.measure}
-        style={overflow.hasMoreToRight ? END_FADE_STYLE : undefined}
-        className="max-h-[calc(100dvh-13rem)] w-full overflow-auto overscroll-x-contain rounded-xl"
-      >
-        {tableNode}
-      </div>
-      <div
-        aria-hidden="true"
-        data-testid="overflow-indicator"
-        className={cn(
-          'pointer-events-none absolute inset-y-0 right-0 flex w-9 items-center justify-end pr-1.5 text-ink-soft transition-opacity motion-reduce:transition-none',
-          overflow.hasMoreToRight ? 'opacity-100' : 'opacity-0',
-        )}
-      >
-        <ChevronRight className="size-5" />
+    <div>
+      <div className="relative">
+        <div
+          ref={overflow.scrollRef}
+          onScroll={overflow.measure}
+          style={overflow.hasMoreToRight ? END_FADE_STYLE : undefined}
+          className="max-h-[calc(100dvh-13rem)] w-full overflow-auto overscroll-x-contain rounded-xl"
+        >
+          {tableNode}
+        </div>
+        <div
+          aria-hidden="true"
+          data-testid="overflow-indicator"
+          className={cn(
+            'pointer-events-none absolute right-2 bottom-2 flex items-center gap-0.5 rounded-full border border-border bg-surface px-2.5 py-1 text-xs text-ink-soft transition-opacity motion-reduce:transition-none',
+            overflow.hasMoreToRight ? 'opacity-100' : 'opacity-0',
+          )}
+        >
+          Más columnas
+          <ChevronRight className="size-3.5" />
+        </div>
       </div>
       {pager}
     </div>

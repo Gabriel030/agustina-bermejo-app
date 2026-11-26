@@ -242,4 +242,36 @@ class ProgramServiceIT extends AbstractIntegrationTest {
         assertThat(onlyVisible).extracting(Program::getId).contains(visible.getId()).doesNotContain(hidden.getId());
         assertThat(all).extracting(Program::getId).containsSubsequence(visible.getId(), hidden.getId());
     }
+
+    @Test
+    void listingFiltersByCatalogArea() {
+        Program technology = createProgram("AAA tecnologia");
+        technology.setCatalogArea(com.red_escuela.backend.academicstructure.entity.CatalogArea.TECHNOLOGY);
+        Program design = createProgram("AAB diseno");
+        design.setCatalogArea(com.red_escuela.backend.academicstructure.entity.CatalogArea.DESIGN);
+        Program withoutArea = createProgram("AAC sin area");
+        entityManager.flush();
+
+        List<Program> onlyTechnology = programService.list(null, null, com.red_escuela.backend.academicstructure.entity.CatalogArea.TECHNOLOGY);
+
+        assertThat(onlyTechnology).extracting(Program::getId)
+                .contains(technology.getId())
+                .doesNotContain(design.getId(), withoutArea.getId());
+    }
+
+    @Test
+    void listingFiltersByBachelorLevelAndKeepsUndergraduateSeparate() {
+        Program bachelor = createProgram("AAD de grado");
+        bachelor.setLevel(ProgramLevel.BACHELOR);
+        Program undergraduate = createProgram("AAE pregrado");
+        undergraduate.setLevel(ProgramLevel.UNDERGRADUATE);
+        entityManager.flush();
+        entityManager.clear();
+
+        List<Program> onlyBachelor = programService.list(null, null, null, ProgramLevel.BACHELOR);
+
+        assertThat(onlyBachelor).extracting(Program::getId)
+                .contains(bachelor.getId())
+                .doesNotContain(undergraduate.getId());
+    }
 }
