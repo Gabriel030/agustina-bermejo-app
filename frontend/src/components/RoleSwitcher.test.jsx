@@ -103,41 +103,37 @@ describe('RoleSwitcher on desktop', () => {
 });
 
 describe('RoleSwitcher in the drawer', () => {
-  it('shows the section open by default with the active role marked', async () => {
+  it('opens the role level from the footer with the active role marked', async () => {
     const user = userEvent.setup();
     renderAt('/docente/inicio', <MobileMenu titulo="Docente" items={ITEMS} />);
 
     await user.click(screen.getByRole('button', { name: 'Abrir menú' }));
+    await user.click(screen.getByRole('button', { name: /Cambiar de rol/ }));
 
-    const toggle = screen.getByRole('button', { name: /Rol activo: Docente/ });
-    expect(toggle).toHaveAttribute('aria-expanded', 'true');
     expect(screen.getByRole('link', { name: 'Docente' })).toHaveAttribute('aria-current', 'true');
     expect(screen.getByRole('link', { name: 'Preceptor' }).getAttribute('href')).toBe('/preceptor/inicio');
   });
 
-  it('collapses the section and closes the drawer after choosing a role', async () => {
+  it('goes to the new role and closes the drawer after choosing it', async () => {
     const user = userEvent.setup();
     renderAt('/docente/inicio', <MobileMenu titulo="Docente" items={ITEMS} />);
     await user.click(screen.getByRole('button', { name: 'Abrir menú' }));
+    await user.click(screen.getByRole('button', { name: /Cambiar de rol/ }));
 
-    await user.click(screen.getByRole('button', { name: /Rol activo: Docente/ }));
-    expect(screen.queryByRole('link', { name: 'Preceptor' })).not.toBeInTheDocument();
-
-    await user.click(screen.getByRole('button', { name: /Rol activo: Docente/ }));
     await user.click(screen.getByRole('link', { name: 'Preceptor' }));
 
     expect(screen.getByTestId('location')).toHaveTextContent('/preceptor/inicio');
     expect(screen.queryByRole('link', { name: 'Preceptor' })).not.toBeInTheDocument();
   });
 
-  it('renders no role section with a single role', async () => {
+  it('renders no role entry with a single role', async () => {
     const user = userEvent.setup();
     currentUser = { id: 5, nombre: 'Ana', apellido: 'Perez', roles: ['DOCENTE'] };
     renderAt('/docente/inicio', <MobileMenu titulo="Docente" items={ITEMS} />);
 
     await user.click(screen.getByRole('button', { name: 'Abrir menú' }));
 
-    expect(screen.queryByRole('button', { name: /Rol activo/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Cambiar de rol/ })).not.toBeInTheDocument();
   });
 });
 

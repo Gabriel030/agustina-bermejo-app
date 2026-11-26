@@ -61,12 +61,13 @@ describe('RoleShell', () => {
     expect(title).toBeDefined();
   });
 
-  it('theme toggle moves into the drawer on mobile', async () => {
+  it('keeps the theme toggle out of the drawer', async () => {
     renderShell();
 
     await userEvent.click(screen.getByRole('button', { name: 'Abrir menú' }));
 
-    expect(await screen.findByRole('button', { name: 'Tema oscuro' })).toBeInTheDocument();
+    expect(await screen.findByRole('dialog')).toBeInTheDocument();
+    expect(within(screen.getByRole('dialog')).queryByRole('button', { name: /Tema/ })).not.toBeInTheDocument();
   });
 
   it('moves focus to the page heading after navigating', async () => {
