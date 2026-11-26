@@ -8,7 +8,7 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationNotFoundException;
-import com.red_escuela.backend.academicstructure.exception.SubjectNotFoundException;
+import com.red_escuela.backend.academicstructure.api.SubjectNotFoundException;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRegistrationRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectRepository;
 import org.springframework.stereotype.Service;

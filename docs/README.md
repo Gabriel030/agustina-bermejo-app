@@ -39,6 +39,7 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [handoffs/1103-piloto.md](cell/handoffs/1103-piloto.md) | Handoff del piloto por capas de #1103: horas de merge de P0 a P15, denegaciones del clasificador, choques y qué queda | vigente |
 | [plans/e22-11-12.md](cell/plans/e22-11-12.md) | E22 22.11 y 22.12: eventos síncronos entre módulos (síncronos a propósito, probados; billing con compuerta) | vigente |
 | [reports/e18-violaciones.md](cell/reports/e18-violaciones.md) | E18 M0: violaciones de Modulith medidas, ciclos, dependencias hacia arriba y procesos a cortar | vigente |
+| [reports/e18-m5-billing.md](cell/reports/e18-m5-billing.md) | E18 M5: plan por etapas para bajar billing→enrollment y billing→academicstructure, con medición y primera rebanada | vigente |
 | [reports/e25-b2-invariantes.md](cell/reports/e25-b2-invariantes.md) | E25 B2 S1: invariantes que solo protege el código, candidatas a único parcial o CHECK, con queries de verificación | vigente |
 | `cell/progress/` | Estado de cada subtarea de la célula; se genera por rama y no se lista uno por uno | vigente |
 | [progress/921-1.md](cell/progress/921-1.md) | Estado de la subtarea 921#1 (listas de espera, consulta del personal) | vigente |
@@ -61,6 +62,7 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [security/pentest-informe-2026-11.md](security/pentest-informe-2026-11.md) | Informe final del pentest interno (E29 G7-d): alcance, método, resultados L1 a L6, hallazgos con su remediación (#1400, #1403) y riesgos abiertos | vigente |
 | [security/secrets-rotation.md](security/secrets-rotation.md) | Procedimiento de rotación de secretos de producción (JWT, base, backups, proveedores): impacto, pasos, verificación, rollback y checklist de ensayo en staging | vigente |
 | [security/audit-24-4-batch-1-auth.md](security/audit-24-4-batch-1-auth.md) | Auditoría 24.4 lote 1 (identidad: H6 login, H7 JWT, H20 registro): qué se verificó sin cambio y qué se corrigió (audiencia del JWT, clave con caracteres distintos) | vigente |
+| [security/audit-24-4-batch-2-inputs.md](security/audit-24-4-batch-2-inputs.md) | Auditoría 24.4 lote 2 (H8 subidas, H17 LIKE, H18 webhook de Mercado Pago): un hallazgo corregido en la búsqueda de firmantes y el resto verificado sin cambio | vigente |
 | [legal/derechos-de-las-personas.md](legal/derechos-de-las-personas.md) | Procedimiento para pedidos de acceso, rectificación y supresión de datos personales (Épica 29, C5): inventario de datos, qué no se puede borrar, plantillas y paquetes futuros; pendiente de abogado | borrador |
 | [deploy/backup-and-restore.md](deploy/backup-and-restore.md) | Backups de Postgres, runbook de restauración, prueba automática de restauración, RPO/RTO y variables | vigente |
 | [deploy/monitoring.md](deploy/monitoring.md) | Alerta de caída (uptime-check), perfil Prometheus/Alertmanager/Grafana y qué hacer ante una caída | vigente |

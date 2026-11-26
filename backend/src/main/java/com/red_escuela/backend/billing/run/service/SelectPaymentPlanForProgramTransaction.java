@@ -13,7 +13,7 @@ import com.red_escuela.backend.billing.service.PaymentPlanOptionFinder;
 import com.red_escuela.backend.billing.service.PaymentPlanSelectionGuard;
 import com.red_escuela.backend.billing.service.ProgramEnrollmentBillingSetup;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
-import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import org.springframework.stereotype.Service;
