@@ -48,6 +48,19 @@ describe('RoleShell', () => {
     expect(title).toBeDefined();
   });
 
+  it('mobile header uses the singular closure title on the closure sheet', () => {
+    const items = [{ to: '/administrativo/cierres-de-comision', label: 'Cierres de comisión', icon: Home }];
+    renderWithProviders(
+      <ThemeProvider>
+        <RoleShell titulo="Administrativo" items={items} />
+      </ThemeProvider>,
+      { route: '/administrativo/cierre-de-comision/5' },
+    );
+
+    const title = screen.getAllByText('Cierre de comisión').find((node) => node.className.includes('lg:hidden'));
+    expect(title).toBeDefined();
+  });
+
   it('theme toggle moves into the drawer on mobile', async () => {
     renderShell();
 
