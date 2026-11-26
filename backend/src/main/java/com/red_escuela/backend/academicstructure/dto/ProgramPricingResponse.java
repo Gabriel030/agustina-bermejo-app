@@ -1,4 +1,4 @@
-package com.red_escuela.backend.billing.dto;
+package com.red_escuela.backend.academicstructure.dto;
 
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.module.CatalogPriced;

@@ -16,7 +16,6 @@ com.red_escuela.backend.billing.dto.AdminInvoiceResponse
 com.red_escuela.backend.billing.dto.AdvanceBillingYearRequest
 com.red_escuela.backend.billing.dto.BankTransferReceiptResponse
 com.red_escuela.backend.billing.dto.BillingConfigurationAlertResponse
-com.red_escuela.backend.billing.dto.CoursePricingResponse
 com.red_escuela.backend.billing.dto.CreateAdHocInvoiceRequest
 com.red_escuela.backend.billing.dto.CreateLatePaymentSettingsRequest
 com.red_escuela.backend.billing.dto.CreatePaymentPlanOptionRequest
@@ -43,7 +42,6 @@ com.red_escuela.backend.billing.dto.PriceBreakdownResponse
 com.red_escuela.backend.billing.dto.ProductRef
 com.red_escuela.backend.billing.dto.ProgramCohortCatalogResponse
 com.red_escuela.backend.billing.dto.ProgramCohortResponse
-com.red_escuela.backend.billing.dto.ProgramPricingResponse
 com.red_escuela.backend.billing.dto.ProgramYearBillingTemplateResponse
 com.red_escuela.backend.billing.dto.RejectPaymentReceiptRequest
 com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest
