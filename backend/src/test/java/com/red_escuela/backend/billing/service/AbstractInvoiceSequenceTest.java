@@ -263,7 +263,16 @@ abstract class AbstractInvoiceSequenceTest extends AbstractIntegrationTest {
     }
 
     protected void setStatus(Long enrollmentId, ProgramEnrollmentStatus statusValue) {
-        transactionTemplate.executeWithoutResult(status -> entityManager.find(ProgramEnrollment.class, enrollmentId).setStatus(statusValue));
+        transactionTemplate.executeWithoutResult(status -> {
+            ProgramEnrollment enrollment = entityManager.find(ProgramEnrollment.class, enrollmentId);
+            enrollment.setStatus(statusValue);
+            if (statusValue == ProgramEnrollmentStatus.WITHDRAWN) {
+                enrollment.setWithdrawalEffectiveDate(java.time.LocalDate.now());
+            }
+            if (statusValue == ProgramEnrollmentStatus.COMPLETED) {
+                enrollment.setCompletionDate(java.time.LocalDateTime.now());
+            }
+        });
     }
 
     protected void setStanding(Long enrollmentId, EnrollmentPaymentStatus standing) {

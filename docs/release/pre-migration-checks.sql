@@ -491,6 +491,17 @@ having count(*) > 1
 order by 1, 2;
 \endif
 
+select :current_version < 476 as run_block \gset
+\if :run_block
+\echo
+\echo [V476] Bajas sin fecha efectiva y carreras COMPLETED sin fecha de finalizacion (la migracion NO aborta: los CHECK quedan NOT VALID y las filas existentes siguen; la validacion posterior ABORTA si quedan filas; la correccion afecta recargos y resumen post-baja y es decision de producto):
+select 'program_enrollment WITHDRAWN sin withdrawal_effective_date' as violation, count(*) as violating_rows, min(id) as first_id
+from program_enrollment where status = 'WITHDRAWN' and withdrawal_effective_date is null
+union all
+select 'program_enrollment COMPLETED sin completion_date', count(*), min(id)
+from program_enrollment where status = 'COMPLETED' and completion_date is null;
+\endif
+
 select :current_version < 477 as run_block \gset
 \if :run_block
 \echo

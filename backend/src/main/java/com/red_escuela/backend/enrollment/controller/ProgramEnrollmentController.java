@@ -1,9 +1,6 @@
 package com.red_escuela.backend.enrollment.controller;
 
 import com.red_escuela.backend.billing.dto.AdvanceBillingYearRequest;
-import com.red_escuela.backend.billing.dto.CreateAdHocInvoiceRequest;
-import com.red_escuela.backend.billing.dto.InvoiceResponse;
-import com.red_escuela.backend.billing.usecase.invoice.CreateAdHocInvoiceForProgramEnrollmentUseCase;
 import com.red_escuela.backend.enrollment.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.enrollment.dto.ProgramEnrollmentResponse;
 import com.red_escuela.backend.enrollment.dto.ProgramProgressResponse;
@@ -17,7 +14,6 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -27,12 +23,10 @@ import java.util.List;
 public class ProgramEnrollmentController {
     private final ProgramEnrollmentService programEnrollmentService;
     private final CurrentPersonService currentPersonService;
-    private final CreateAdHocInvoiceForProgramEnrollmentUseCase createAdHocInvoiceUseCase;
 
-    public ProgramEnrollmentController(ProgramEnrollmentService programEnrollmentService, CurrentPersonService currentPersonService, CreateAdHocInvoiceForProgramEnrollmentUseCase createAdHocInvoiceUseCase) {
+    public ProgramEnrollmentController(ProgramEnrollmentService programEnrollmentService, CurrentPersonService currentPersonService) {
         this.programEnrollmentService = programEnrollmentService;
         this.currentPersonService = currentPersonService;
-        this.createAdHocInvoiceUseCase = createAdHocInvoiceUseCase;
     }
 
     @PostMapping("/students/{id}/program-enrollments")
@@ -70,14 +64,5 @@ public class ProgramEnrollmentController {
     @RequiresPermission(code = "enrollment.advance_billing_year", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public ProgramEnrollmentResponse advanceAcademicYear(@PathVariable Long id, @Valid @RequestBody AdvanceBillingYearRequest request) {
         return ProgramEnrollmentResponse.from(programEnrollmentService.advanceAcademicYear(id, request.templateId()));
-    }
-
-    @PostMapping("/program-enrollments/{id}/invoices/ad-hoc")
-    @ResponseStatus(HttpStatus.CREATED)
-    @RequiresPermission(code = "enrollment.create_ad_hoc_invoice", legacyRoles = "ROLE_ADMINISTRATIVO")
-    public InvoiceResponse createAdHocInvoice(@PathVariable Long id, @Valid @RequestBody CreateAdHocInvoiceRequest request,
-                                          @RequestHeader(value = "Idempotency-Key", required = false) String idempotencyKey) {
-        return InvoiceResponse.from(idempotencyKey == null || idempotencyKey.isBlank()
-                ? createAdHocInvoiceUseCase.create(id, request) : createAdHocInvoiceUseCase.create(id, request, idempotencyKey));
     }
 }

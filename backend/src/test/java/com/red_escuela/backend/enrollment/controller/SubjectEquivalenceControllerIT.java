@@ -261,6 +261,7 @@ class SubjectEquivalenceControllerIT extends AbstractIntegrationTest {
         record(token, body(subject.getId(), null, LocalDate.now(), REASON)).andExpect(status().isCreated());
         Long id = equivalenceRepository.findByProgramEnrollmentIdOrderByRecognizedOnDescIdDesc(enrollment.getId()).get(0).getId();
         enrollment.setStatus(ProgramEnrollmentStatus.COMPLETED);
+        enrollment.setCompletionDate(LocalDateTime.now());
         entityManager.flush();
         voidEquivalence(token, id, REASON).andExpect(status().isOk());
     }
@@ -515,6 +516,9 @@ class SubjectEquivalenceControllerIT extends AbstractIntegrationTest {
         created.setProgram(target);
         created.setStatus(status);
         created.setEnrollmentDate(LocalDateTime.now());
+        if (status == ProgramEnrollmentStatus.COMPLETED) {
+            created.setCompletionDate(LocalDateTime.now());
+        }
         entityManager.persist(created);
         return created;
     }
