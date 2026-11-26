@@ -773,7 +773,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 |---|---|---|
 | POST | `/academic-offering-cycles/{id}/approve` | `AcademicOfferingCycleController#approve` |
 | POST | `/academic-offering-cycles/{id}/reject` | `AcademicOfferingCycleController#reject` |
-| POST | `/course-enrollments/{id}/invoices/ad-hoc` | `CourseEnrollmentController#createAdHocInvoice` |
+| POST | `/course-enrollments/{id}/invoices/ad-hoc` | `EnrollmentAdHocInvoiceController#createCourseAdHocInvoice` |
 | POST | `/invoices/{invoiceId}/credit-notes` | `CreditNoteController#issueOrRequestCreditNote` |
 | POST | `/me/bank-transfer-receipts` | `BankTransferReceiptSubmissionController#submitOwnReceipt` |
 | POST | `/me/course-enrollments` | `MeEnrollmentController#enrollInCourse` |
@@ -781,7 +781,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/platform/provisioning/first-director` | `PlatformProvisioningController#provisionFirstDirector` |
 | POST | `/program-enrollment-applications/{id}/approve` | `ProgramEnrollmentApplicationController#approve` |
 | POST | `/program-enrollment-applications/{id}/reject` | `ProgramEnrollmentApplicationController#reject` |
-| POST | `/program-enrollments/{id}/invoices/ad-hoc` | `ProgramEnrollmentController#createAdHocInvoice` |
+| POST | `/program-enrollments/{id}/invoices/ad-hoc` | `EnrollmentAdHocInvoiceController#createProgramAdHocInvoice` |
 | POST | `/students/{studentId}/annual-upfront-requests/{requestId}/cash-payment` | `AnnualUpfrontCashPaymentController#registerAnnualUpfrontCashPayment` |
 | POST | `/students/{studentId}/bank-transfer-receipts` | `BankTransferReceiptSubmissionController#submitReceiptOnBehalfOfStudent` |
 | POST | `/students/{studentId}/cash-payments` | `StudentPaymentController#registerCashPayment` |
