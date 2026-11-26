@@ -21,9 +21,9 @@ import com.red_escuela.backend.enrollment.exception.AdmissionWindowClosedExcepti
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInCourseException;
 import com.red_escuela.backend.enrollment.exception.AmbiguousSectionException;
 import com.red_escuela.backend.enrollment.exception.CannotWithdrawException;
-import com.red_escuela.backend.enrollment.exception.CourseEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.CourseEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.exception.IncompleteSectionSetupException;
-import com.red_escuela.backend.enrollment.exception.InvalidWindowConfigurationException;
+import com.red_escuela.backend.enrollment.api.InvalidWindowConfigurationException;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.CourseSubjectSectionEnrollmentRepository;
 import org.springframework.stereotype.Service;

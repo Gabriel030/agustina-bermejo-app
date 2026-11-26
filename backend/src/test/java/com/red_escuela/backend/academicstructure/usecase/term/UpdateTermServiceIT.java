@@ -5,7 +5,7 @@ import com.red_escuela.backend.academicstructure.dto.UpdateTermRequest;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.exception.InvalidTermDatesException;
 import com.red_escuela.backend.shared.domain.TermEnrollmentWindowRequiredException;
-import com.red_escuela.backend.academicstructure.exception.TermNotFoundException;
+import com.red_escuela.backend.academicstructure.api.TermNotFoundException;
 import com.red_escuela.backend.shared.domain.InvalidDateRangeException;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import jakarta.persistence.EntityManager;

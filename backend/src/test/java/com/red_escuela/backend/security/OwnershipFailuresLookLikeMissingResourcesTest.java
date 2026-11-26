@@ -4,7 +4,7 @@ import com.red_escuela.backend.academicstructure.exception.NotOwnSectionExceptio
 import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
 import com.red_escuela.backend.announcement.exception.NotSectionInstructorException;
 import com.red_escuela.backend.billing.exception.NotOwnEnrollmentException;
-import com.red_escuela.backend.enrollment.exception.CourseEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.CourseEnrollmentNotFoundException;
 import com.red_escuela.backend.shared.exception.GlobalExceptionHandler;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
