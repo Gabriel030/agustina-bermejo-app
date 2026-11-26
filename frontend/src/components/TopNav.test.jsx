@@ -162,6 +162,7 @@ describe('TopNav', () => {
     expect(trigger('Personas')).not.toHaveClass('border-b-(--accent)');
 
     await user.click(trigger('Académico'));
+    await user.click(screen.getByRole('button', { name: /Oferta y períodos/ }));
     expect(screen.getByRole('link', { name: 'Gestión académica' })).toHaveAttribute('aria-current', 'page');
     expect(screen.getByRole('link', { name: 'Gestión académica' })).toHaveClass('bg-accent-soft');
     expect(screen.getByRole('link', { name: 'Oferta académica' })).not.toHaveAttribute('aria-current');
@@ -174,14 +175,39 @@ describe('TopNav', () => {
     expect(trigger('Académico')).not.toHaveClass('border-b-(--accent)');
   });
 
-  it('lays the long menus out in two columns and the short ones in one', async () => {
+  it('showsTheDirectorBarEntriesInOrder', () => {
+    renderTopNav();
+
+    const nav = screen.getByRole('navigation', { name: 'Principal' });
+    const order = [...nav.children].map((node) => (node.matches('a') ? node : node.querySelector('button')).textContent);
+    expect(order).toEqual(['Inicio', 'Personas', 'Listas de espera', 'Académico', 'Facturación', 'Institución', 'Aprobaciones']);
+  });
+
+  it('opensTheDirectorAcademicGridWithThreeSectionsAndElevenItems', async () => {
+    const user = userEvent.setup();
+    renderTopNav();
+
+    await user.click(trigger('Académico'));
+    const panel = document.getElementById(trigger('Académico').getAttribute('aria-controls'));
+    const rows = within(panel).getAllByRole('button', { pressed: false });
+    expect(rows.map((row) => row.textContent)).toEqual(['Oferta y períodos(4)', 'Cursada(2)', 'Egresos y certificados(5)']);
+    expect(rows.reduce((total, row) => total + Number(/\((\d+)\)/.exec(row.textContent)[1]), 0)).toBe(11);
+    await user.click(within(panel).getByRole('button', { name: /Egresos y certificados/ }));
+    expect(within(panel).getAllByRole('link').map((link) => link.textContent)).toEqual([
+      'Egresos', 'Plantilla de certificados', 'Firmantes', 'Constancias', 'Emitir por excepción',
+    ]);
+  });
+
+  it('opensTheDirectorBillingAndInstitutionAsPlainLists', async () => {
     const user = userEvent.setup();
     renderTopNav();
 
     await user.click(trigger('Facturación'));
-    expect(screen.getByRole('list', { name: 'Facturación' })).toHaveClass('grid-cols-2');
-    await user.click(trigger('Personas'));
-    expect(screen.getByRole('list', { name: 'Personas' })).not.toHaveClass('grid-cols-2');
+    expect(within(screen.getByRole('list', { name: 'Facturación' })).getAllByRole('link').map((node) => node.textContent)).toEqual([
+      'Facturación', 'Emisión mensual', 'Recordatorios de pago', 'Medios de pago', 'Términos del pago anual', 'Precios', 'Descuentos', 'Financiero',
+    ]);
+    await user.click(trigger('Institución'));
+    expect(within(screen.getByRole('list', { name: 'Institución' })).getAllByRole('link')).toHaveLength(5);
   });
 
   it('closesTheMenuWhenAnItemIsChosen', async () => {
@@ -207,16 +233,16 @@ describe('TopNav', () => {
   it('dropsAGroupWhoseItemsWereAllHidden', () => {
     renderTopNav({ filter: (item) => !item.to.endsWith('/inscripciones/listas-de-espera') });
 
-    expect(screen.queryByRole('button', { name: 'Inscripciones' })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: 'Listas de espera' })).not.toBeInTheDocument();
   });
 
-  it('showsTheStudentStudiesGroupWithPaymentsAndCatalogAsPlainLinks', async () => {
+  it('showsTheStudentStudiesGroupWithPaymentsCatalogAndInformativeSessionsAsPlainLinks', async () => {
     const user = userEvent.setup();
     authState.roles = ['ALUMNO'];
     renderTopNav({ role: 'alumno', route: '/alumno/inicio' });
 
     const bar = screen.getByRole('navigation', { name: 'Principal' });
-    expect(within(bar).getAllByRole('link').map((link) => link.textContent)).toEqual(['Inicio', 'Pagos', 'Catálogo']);
+    expect(within(bar).getAllByRole('link').map((link) => link.textContent)).toEqual(['Inicio', 'Pagos', 'Catálogo', 'Reuniones informativas']);
     expect(within(bar).getByRole('link', { name: 'Catálogo' })).toHaveAttribute('href', '/catalogo');
     await user.click(trigger('Estudios'));
     expect(within(screen.getByRole('list', { name: 'Estudios' })).getAllByRole('link').map((link) => link.textContent)).toEqual([

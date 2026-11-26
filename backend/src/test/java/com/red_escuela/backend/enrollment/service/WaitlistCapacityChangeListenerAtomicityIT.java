@@ -11,7 +11,7 @@ import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.TeachingMode;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.events.CourseCapacityChangedEvent;
-import com.red_escuela.backend.academicstructure.exception.CourseNotFoundException;
+import com.red_escuela.backend.academicstructure.domain.CourseNotFoundException;
 import com.red_escuela.backend.academicstructure.events.CourseSectionCapacityChangedEvent;
 import com.red_escuela.backend.academicstructure.events.SectionCapacityChangedEvent;
 import com.red_escuela.backend.config.AbstractIntegrationTest;

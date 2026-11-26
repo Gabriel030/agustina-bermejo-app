@@ -1,5 +1,6 @@
 import { useLocation, useOutlet } from "react-router-dom";
 import { AnimatePresence, m } from "motion/react";
+import { PublicTopBar } from "@/components/PublicTopBar";
 import { SkipToContent } from "@/components/SkipToContent";
 import { SystemBar } from "@/pwa/SystemBar";
 
@@ -15,6 +16,7 @@ export function PublicLayout() {
     <>
       <SkipToContent />
       <SystemBar />
+      <PublicTopBar />
       <main id="main-content" tabIndex={-1} className="focus:outline-none">
         <AnimatePresence mode="popLayout" initial={false}>
           <m.div

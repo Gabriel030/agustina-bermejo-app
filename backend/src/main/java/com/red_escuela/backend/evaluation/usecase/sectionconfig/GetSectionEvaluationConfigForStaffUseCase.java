@@ -1,7 +1,7 @@
 package com.red_escuela.backend.evaluation.usecase.sectionconfig;
 
-import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
+import com.red_escuela.backend.evaluation.dto.SectionEvaluationConfigResponse;
 
 public interface GetSectionEvaluationConfigForStaffUseCase {
-    SectionEvaluationConfig get(Long sectionId);
+    SectionEvaluationConfigResponse get(Long sectionId);
 }

@@ -270,7 +270,7 @@ describe('AppRouter', () => {
     await signIn(userEvent.setup());
 
     expect(await screen.findByText('Página no encontrada')).toBeInTheDocument();
-    expect(screen.getAllByText('Oferta académica').length).toBeGreaterThan(0);
+    expect(screen.getAllByText('Aprobaciones').length).toBeGreaterThan(0);
   });
 
   it('sendsAnAnonymousVisitorOnAnUnknownPathToLoginInsteadOfTheNotFoundPage', async () => {

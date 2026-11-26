@@ -2,7 +2,6 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { m } from 'motion/react';
 import { CheckCircle2, XCircle, Loader2, AlertTriangle } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
-import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { Button } from '@/components/ui/button';
 import { useConfirmUnsubscribe, useUnsubscribeLink } from '@/features/identity/hooks/useUnsubscribeLink';
 import { CONSENT_CATEGORY_PLURAL_LABELS, CONSENT_CHANNEL_LABELS } from '@/features/identity/lib/contactConsentLabels';
@@ -26,9 +25,6 @@ export function BajaComunicaciones() {
         transition={{ duration: 0.25 }}
         className="w-full max-w-sm"
       >
-        <div className="mb-8 flex flex-col items-center gap-3">
-          <InstitutionBrand />
-        </div>
 
         <GlassCard className="flex flex-col items-center gap-4 p-8 text-center">
           {state === 'loading' && (
@@ -41,7 +37,7 @@ export function BajaComunicaciones() {
           {state === 'ready' && (
             <>
               <div>
-                <p className="font-heading text-lg font-bold text-ink">Darte de baja</p>
+                <h1 className="font-heading text-lg font-bold text-ink">Darte de baja</h1>
                 <p className="mt-1 text-size-13 text-ink-soft">
                   Vas a dejar de recibir comunicaciones {categoryLabel} por {channelLabel}.
                 </p>
@@ -71,7 +67,7 @@ export function BajaComunicaciones() {
                 <CheckCircle2 size={36} className="text-success" />
               </div>
               <div>
-                <p className="font-heading text-lg font-bold text-ink">Listo, te diste de baja</p>
+                <h1 className="font-heading text-lg font-bold text-ink">Listo, te diste de baja</h1>
                 <p className="mt-1 text-size-13 text-ink-soft">
                   Podés volver a activarlo cuando quieras desde Mi perfil.
                 </p>
@@ -88,7 +84,7 @@ export function BajaComunicaciones() {
                 <XCircle size={36} className="text-danger" />
               </div>
               <div>
-                <p className="font-heading text-lg font-bold text-ink">Este enlace no es válido</p>
+                <h1 className="font-heading text-lg font-bold text-ink">Este enlace no es válido</h1>
                 <p className="mt-1 text-size-13 text-ink-soft">
                   Si querés cambiar tus preferencias de contacto, entrá a Mi perfil.
                 </p>
