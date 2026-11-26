@@ -1,14 +1,19 @@
 package com.red_escuela.backend.academicstructure.controller;
 
-import com.red_escuela.backend.billing.dto.CoursePricingResponse;
+import com.red_escuela.backend.academicstructure.dto.CoursePricingResponse;
 import com.red_escuela.backend.academicstructure.dto.CourseResponse;
 import com.red_escuela.backend.academicstructure.dto.CreateCourseRequest;
 import com.red_escuela.backend.academicstructure.dto.SetCatalogVisibilityRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateCourseRequest;
 import com.red_escuela.backend.shared.domain.StatusType;
-import com.red_escuela.backend.academicstructure.service.CourseService;
+import com.red_escuela.backend.academicstructure.usecase.CreateCourseUseCase;
+import com.red_escuela.backend.academicstructure.usecase.DeactivateCourseUseCase;
+import com.red_escuela.backend.academicstructure.usecase.GetCourseUseCase;
+import com.red_escuela.backend.academicstructure.usecase.GetCoursePricingUseCase;
+import com.red_escuela.backend.academicstructure.usecase.ListCoursesUseCase;
+import com.red_escuela.backend.academicstructure.usecase.ReactivateCourseUseCase;
 import com.red_escuela.backend.academicstructure.usecase.SetCourseCatalogVisibilityUseCase;
-import com.red_escuela.backend.enrollment.service.CourseEnrollmentService;
+import com.red_escuela.backend.academicstructure.usecase.UpdateCourseUseCase;
 import com.red_escuela.backend.shared.module.HidesPricesWhenBillingOff;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -30,49 +35,64 @@ import java.util.List;
 @RequestMapping("/courses")
 public class CourseController {
 
-    private final CourseService courseService;
+    private final CreateCourseUseCase createCourse;
+    private final UpdateCourseUseCase updateCourse;
+    private final DeactivateCourseUseCase deactivateCourse;
+    private final ReactivateCourseUseCase reactivateCourse;
+    private final ListCoursesUseCase listCourses;
+    private final GetCourseUseCase getCourse;
+    private final GetCoursePricingUseCase getCoursePricing;
     private final SetCourseCatalogVisibilityUseCase setCatalogVisibility;
-    private final CourseEnrollmentService courseEnrollmentService;
 
-    public CourseController(CourseService courseService,
-            SetCourseCatalogVisibilityUseCase setCatalogVisibility,
-            CourseEnrollmentService courseEnrollmentService) {
-        this.courseService = courseService;
+    public CourseController(CreateCourseUseCase createCourse,
+            UpdateCourseUseCase updateCourse,
+            DeactivateCourseUseCase deactivateCourse,
+            ReactivateCourseUseCase reactivateCourse,
+            ListCoursesUseCase listCourses,
+            GetCourseUseCase getCourse,
+            GetCoursePricingUseCase getCoursePricing,
+            SetCourseCatalogVisibilityUseCase setCatalogVisibility) {
+        this.createCourse = createCourse;
+        this.updateCourse = updateCourse;
+        this.deactivateCourse = deactivateCourse;
+        this.reactivateCourse = reactivateCourse;
+        this.listCourses = listCourses;
+        this.getCourse = getCourse;
+        this.getCoursePricing = getCoursePricing;
         this.setCatalogVisibility = setCatalogVisibility;
-        this.courseEnrollmentService = courseEnrollmentService;
     }
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @RequiresPermission(code = "academicstructure.manage_courses", legacyRoles = "ROLE_ADMINISTRATIVO")
     public CourseResponse create(@Valid @RequestBody CreateCourseRequest request) {
-        return CourseResponse.from(courseService.create(request));
+        return createCourse.execute(request);
     }
 
     @PutMapping("/{id}")
     @RequiresPermission(code = "academicstructure.manage_courses", legacyRoles = "ROLE_ADMINISTRATIVO")
     public CourseResponse update(@PathVariable Long id, @Valid @RequestBody UpdateCourseRequest request) {
-        return CourseResponse.from(courseService.update(id, request));
+        return updateCourse.execute(id, request);
     }
 
     @PostMapping("/{id}/deactivate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @RequiresPermission(code = "academicstructure.change_course_status", legacyRoles = "ROLE_ADMINISTRATIVO")
     public void deactivate(@PathVariable Long id) {
-        courseService.deactivate(id);
+        deactivateCourse.execute(id);
     }
 
     @PostMapping("/{id}/activate")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     @RequiresPermission(code = "academicstructure.change_course_status", legacyRoles = "ROLE_ADMINISTRATIVO")
     public void reactivate(@PathVariable Long id) {
-        courseService.reactivate(id);
+        reactivateCourse.execute(id);
     }
 
     @GetMapping
     public List<CourseResponse> list(@RequestParam(required = false) StatusType status,
             @RequestParam(required = false) Boolean visibleInCatalog) {
-        return courseService.list(status, visibleInCatalog).stream().map(CourseResponse::from).toList();
+        return listCourses.execute(status, visibleInCatalog);
     }
 
     @PutMapping("/{id}/catalog-visibility")
@@ -84,12 +104,11 @@ public class CourseController {
 
     @GetMapping("/{id}")
     public CourseResponse get(@PathVariable Long id) {
-        return CourseResponse.from(courseService.get(id), courseEnrollmentService.countOccupiedSeats(id));
+        return getCourse.execute(id);
     }
 
     @GetMapping("/{id}/pricing")
     public CoursePricingResponse getPricing(@PathVariable Long id) {
-        var course = courseService.get(id);
-        return new CoursePricingResponse(id, course.priceAsMoney());
+        return getCoursePricing.execute(id);
     }
 }

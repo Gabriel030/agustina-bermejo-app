@@ -1,7 +1,7 @@
 package com.red_escuela.backend.graduation.specialist;
 
 import com.red_escuela.backend.enrollment.api.ProgramEnrollmentFinder;
-import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.ProgramEnrollmentNotFoundException;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

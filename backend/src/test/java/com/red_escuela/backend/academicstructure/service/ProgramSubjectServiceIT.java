@@ -32,7 +32,7 @@ import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundExcept
 import com.red_escuela.backend.academicstructure.exception.ProgramSubjectAlreadyExistsException;
 import com.red_escuela.backend.academicstructure.exception.ProgramSubjectNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.SubjectNotAssignableToPlanException;
-import com.red_escuela.backend.academicstructure.exception.SubjectNotFoundException;
+import com.red_escuela.backend.academicstructure.api.SubjectNotFoundException;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Grade;
 import com.red_escuela.backend.shared.domain.StatusType;

@@ -11,7 +11,7 @@ import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ExceptionType;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
-import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.exception.SubjectNotInProgramPlanException;
 import com.red_escuela.backend.enrollment.policy.PrerequisiteStanding;
 import com.red_escuela.backend.enrollment.repository.DirectorApprovalRequestRepository;

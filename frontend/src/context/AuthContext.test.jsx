@@ -507,7 +507,7 @@ describe('session restore failures', () => {
     await screen.findByText('pending');
     resetCircuits.mockClear();
 
-    restoreNetwork();
+    resetCircuits.mockImplementationOnce(restoreNetwork);
     await act(async () => {
       window.dispatchEvent(new Event('online'));
     });

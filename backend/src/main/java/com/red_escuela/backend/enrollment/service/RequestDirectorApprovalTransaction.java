@@ -6,7 +6,7 @@ import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequest;
 import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequestStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.exception.DirectorApprovalRequestAlreadyActiveException;
-import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.repository.DirectorApprovalRequestRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.identity.specialist.CurrentPersonService;
