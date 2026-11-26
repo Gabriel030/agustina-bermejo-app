@@ -375,6 +375,16 @@ class RegularCertificateIssuerTest {
     }
 
     @Test
+    void pendingRequestConflictIsReportedAsConcurrentIssue() {
+        when(standingGate.requiresStaffConfirmation()).thenReturn(true);
+        when(requestRepository.findFirstByProgramEnrollmentIdAndOutcomeOrderByRequestedAtDesc(ENROLLMENT_ID, RegularRequestOutcome.PENDING_STAFF))
+                .thenReturn(Optional.empty());
+        when(requestRepository.saveAndFlush(any())).thenThrow(new DataIntegrityViolationException("uq_regular_cert_request_pending_per_enrollment"));
+
+        assertThatThrownBy(() -> issuer(30).submitFromPortal(command)).isInstanceOf(ConcurrentRegularCertificateIssueException.class);
+    }
+
+    @Test
     void uniqueIndexConflictRemovesTheStoredFileAndReportsConcurrentIssue() {
         when(certificateRepository.saveAndFlush(any(RegularStudentCertificate.class))).thenThrow(new DataIntegrityViolationException("uq"));
 
