@@ -29,7 +29,7 @@ public class UpdateInformativeSessionTransaction {
     @Transactional
     public InformativeSessionResponse update(Long sessionId, SaveInformativeSessionRequest request) {
         InformativeSession session = informativeSessionFinder.findForUpdateOrThrow(sessionId);
-        session.assertScheduled();
+        informativeSessionFinder.requireScheduled(session);
         Optional.ofNullable(request.relatedProgramId()).ifPresent(academicReferenceFinder::findProgram);
         long registrations = registrationRepository.countBySessionId(sessionId);
         Optional.ofNullable(request.capacity())

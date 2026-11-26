@@ -21,7 +21,8 @@ public class CancelInformativeSessionTransaction {
     @Transactional
     public InformativeSessionResponse cancel(Long sessionId) {
         InformativeSession session = informativeSessionFinder.findForUpdateOrThrow(sessionId);
-        session.cancel();
+        informativeSessionFinder.requireScheduled(session);
+        session.markAsCancelled();
         return InformativeSessionResponse.from(session, registrationRepository.countBySessionId(sessionId), false);
     }
 }

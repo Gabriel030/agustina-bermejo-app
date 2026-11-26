@@ -1,6 +1,7 @@
 package com.red_escuela.backend.enrollment.controller;
 
 import com.red_escuela.backend.enrollment.dto.InformativeSessionResponse;
+import com.red_escuela.backend.enrollment.dto.ListInformativeSessionsQuery;
 import com.red_escuela.backend.enrollment.entity.InformativeSessionStatus;
 import com.red_escuela.backend.enrollment.usecase.informativesession.ListInformativeSessionsUseCase;
 import com.red_escuela.backend.enrollment.usecase.informativesession.RegisterForInformativeSessionUseCase;
@@ -32,7 +33,7 @@ public class MeInformativeSessionController {
     public List<InformativeSessionResponse> list(
             @RequestParam(required = false) InformativeSessionStatus status,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from) {
-        return listInformativeSessionsUseCase.list(status, from);
+        return listInformativeSessionsUseCase.list(new ListInformativeSessionsQuery(status, from));
     }
 
     @PostMapping("/{id}/register")

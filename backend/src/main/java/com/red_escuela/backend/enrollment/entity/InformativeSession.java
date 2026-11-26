@@ -1,7 +1,5 @@
 package com.red_escuela.backend.enrollment.entity;
 
-import com.red_escuela.backend.enrollment.exception.InformativeSessionAlreadyStartedException;
-import com.red_escuela.backend.enrollment.exception.InformativeSessionNotScheduledException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -69,24 +67,19 @@ public class InformativeSession {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
-    public void assertScheduled() {
-        if (status != InformativeSessionStatus.SCHEDULED) {
-            throw new InformativeSessionNotScheduledException(id);
-        }
+    public boolean isScheduled() {
+        return status == InformativeSessionStatus.SCHEDULED;
     }
 
-    public void assertNotStarted(LocalDateTime now) {
-        if (!scheduledAt.isAfter(now)) {
-            throw new InformativeSessionAlreadyStartedException(id);
-        }
+    public boolean hasStartedBy(LocalDateTime now) {
+        return !scheduledAt.isAfter(now);
     }
 
     public boolean hasRoomFor(long registrations) {
         return capacity == null || registrations < capacity;
     }
 
-    public void cancel() {
-        assertScheduled();
+    public void markAsCancelled() {
         status = InformativeSessionStatus.CANCELLED;
     }
 }

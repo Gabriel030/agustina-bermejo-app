@@ -1,11 +1,10 @@
 package com.red_escuela.backend.enrollment.usecase.informativesession;
 
 import com.red_escuela.backend.enrollment.dto.InformativeSessionResponse;
-import com.red_escuela.backend.enrollment.entity.InformativeSessionStatus;
+import com.red_escuela.backend.enrollment.dto.ListInformativeSessionsQuery;
 
-import java.time.LocalDate;
 import java.util.List;
 
 public interface ListInformativeSessionsUseCase {
-    List<InformativeSessionResponse> list(InformativeSessionStatus status, LocalDate from);
+    List<InformativeSessionResponse> list(ListInformativeSessionsQuery query);
 }

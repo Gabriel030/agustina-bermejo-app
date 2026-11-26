@@ -6,6 +6,7 @@ import com.red_escuela.backend.enrollment.entity.InformativeSessionRegistration;
 import com.red_escuela.backend.enrollment.exception.AlreadyRegisteredForInformativeSessionException;
 import com.red_escuela.backend.enrollment.exception.SessionFullException;
 import com.red_escuela.backend.enrollment.repository.InformativeSessionRegistrationRepository;
+import com.red_escuela.backend.identity.api.CurrentActorFinder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -17,22 +18,25 @@ public class RegisterForInformativeSessionTransaction {
 
     private final InformativeSessionFinder informativeSessionFinder;
     private final InformativeSessionRegistrationRepository registrationRepository;
+    private final CurrentActorFinder currentActorFinder;
     private final Clock clock;
 
     public RegisterForInformativeSessionTransaction(InformativeSessionFinder informativeSessionFinder,
                                                     InformativeSessionRegistrationRepository registrationRepository,
-                                                    Clock clock) {
+                                                    CurrentActorFinder currentActorFinder, Clock clock) {
         this.informativeSessionFinder = informativeSessionFinder;
         this.registrationRepository = registrationRepository;
+        this.currentActorFinder = currentActorFinder;
         this.clock = clock;
     }
 
     @Transactional
-    public InformativeSessionResponse register(Long sessionId, Long personId) {
+    public InformativeSessionResponse register(Long sessionId) {
+        Long personId = currentActorFinder.currentPersonId();
         LocalDateTime now = LocalDateTime.now(clock);
         InformativeSession session = informativeSessionFinder.findForUpdateOrThrow(sessionId);
-        session.assertScheduled();
-        session.assertNotStarted(now);
+        informativeSessionFinder.requireScheduled(session);
+        informativeSessionFinder.requireNotStarted(session, now);
         if (registrationRepository.existsBySessionIdAndPersonId(sessionId, personId)) {
             throw new AlreadyRegisteredForInformativeSessionException(sessionId, personId);
         }
