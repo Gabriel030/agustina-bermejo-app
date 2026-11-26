@@ -42,13 +42,6 @@ public class BroadcastEmailDispatchJob {
     private final Clock clock;
     private final ScheduledJobFailureCounter failureCounter;
 
-    public BroadcastEmailDispatchJob(NotificationDeliveryRepository deliveryRepository, EmailDeliveryChannel emailChannel,
-                                     BroadcastConsentRecheck consentRecheck, BroadcastProgressTracker progressTracker,
-                                     BroadcastDispatchSettings settings, Clock clock, MeterRegistry meterRegistry) {
-        this(deliveryRepository, emailChannel, consentRecheck, progressTracker, settings, new SharedDailyEmailQuota(deliveryRepository, clock),
-                TransactionOperations.withoutTransaction(), clock, meterRegistry);
-    }
-
     @Autowired
     public BroadcastEmailDispatchJob(NotificationDeliveryRepository deliveryRepository, EmailDeliveryChannel emailChannel,
                                      BroadcastConsentRecheck consentRecheck, BroadcastProgressTracker progressTracker,
