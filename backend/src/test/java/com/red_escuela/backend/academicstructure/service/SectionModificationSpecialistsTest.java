@@ -340,7 +340,7 @@ class SectionModificationSpecialistsTest {
         verify(conflictChecker).checkClassroomAvailabilityIgnoringSlots(term, CLASSROOM_ID, DayOfWeek.TUESDAY, LocalTime.of(10, 0), LocalTime.of(12, 0), Set.of(5L));
         verify(slotRepository).deleteAll(List.of(oldSlot));
         var saved = ArgumentCaptor.forClass(SectionScheduleSlot.class);
-        verify(slotRepository).save(saved.capture());
+        verify(slotRepository).saveAndFlush(saved.capture());
         assertThat(saved.getValue().getSubjectSection()).isSameAs(section);
         assertThat(saved.getValue().getClassroom()).isSameAs(classroom);
         assertThat(saved.getValue().getDayOfWeek()).isEqualTo(DayOfWeek.TUESDAY);
