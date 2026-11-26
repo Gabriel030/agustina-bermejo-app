@@ -6,8 +6,15 @@ import com.red_escuela.backend.academicstructure.api.BusinessDayCalendar;
 import com.red_escuela.backend.academicstructure.api.ProgramCurriculumFinder;
 import com.red_escuela.backend.academicstructure.api.ProgramSubjectView;
 import com.red_escuela.backend.academicstructure.entity.Program;
+import com.red_escuela.backend.academicstructure.api.HistoricalProgramRecorder;
 import com.red_escuela.backend.billing.operation.PendingTransferApprovalOutcome;
+import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
+import com.red_escuela.backend.billing.reporting.service.FinancialDashboardReader;
+import com.red_escuela.backend.dataimport.importer.PrerequisiteImportDefinition;
 import com.red_escuela.backend.enrollment.api.ProgramProgressReader;
+import com.red_escuela.backend.enrollment.api.ProgramProgressView;
+import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
+import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
@@ -40,7 +47,7 @@ import static org.mockito.Mockito.withSettings;
 class AlgorithmicComplexityBenchmarkTest {
 
     private static final int[] FACTORS = {1, 10, 100};
-    private static final int RUNS = 5;
+    private static final int RUNS = 9;
 
     private static long medianNanos(IntConsumer work, int size) {
         for (int i = 0; i < 3; i++) {
@@ -84,11 +91,57 @@ class AlgorithmicComplexityBenchmarkTest {
         });
     }
 
+    @Test
+    void b1b_justificationDeadlinesMidSizeSeries() {
+        BusinessDayCalendar calendar = date -> date.getDayOfWeek() != DayOfWeek.SATURDAY && date.getDayOfWeek() != DayOfWeek.SUNDAY;
+        report("B1b", "distinct class dates", 20, size -> {
+            LocalDate start = LocalDate.of(2026, 3, 1);
+            Map<LocalDate, LocalDate> deadlines = IntStream.range(0, size).mapToObj(start::plusDays).distinct()
+                    .collect(Collectors.toMap(d -> d, d -> calendar.nthBusinessDayAfter(d, 5)));
+            if (deadlines.isEmpty()) {
+                throw new IllegalStateException();
+            }
+        });
+    }
+
+    @Test
+    void b9_prerequisiteCycleDetectionAcrossRows() {
+        report("B9", "prerequisite rows in one chain", 50, size -> {
+            PrerequisiteImportDefinition definition = new PrerequisiteImportDefinition(
+                    Mockito.mock(HistoricalProgramRecorder.class, withSettings().stubOnly()));
+            List<Map<String, String>> payloads = new ArrayList<>();
+            for (int i = 0; i < size; i++) {
+                payloads.add(Map.of("programName", "P", "subjectCode", String.format("%04d", i),
+                        "prerequisiteCode", String.format("%04d", i + 1)));
+            }
+            if (!definition.validateAcrossRows(payloads).isEmpty()) {
+                throw new IllegalStateException();
+            }
+        });
+    }
+
+    @Test
+    void b10_financialDashboardReader() {
+        report("B10", "debtors and active students", 700, size -> {
+            InvoiceRepository invoices = mock(InvoiceRepository.class, withSettings().stubOnly());
+            CourseEnrollmentRepository courses = mock(CourseEnrollmentRepository.class, withSettings().stubOnly());
+            ProgramEnrollmentRepository programs = mock(ProgramEnrollmentRepository.class, withSettings().stubOnly());
+            Mockito.when(invoices.findStudentIdsByPaymentStatus(any())).thenReturn(LongStreamBoxed.range(size / 2));
+            Mockito.when(courses.findDistinctStudentIdsByStatusIn(any())).thenReturn(LongStreamBoxed.range(size));
+            Mockito.when(programs.findDistinctStudentIdsByStatusIn(any())).thenReturn(LongStreamBoxed.range(size));
+            FinancialDashboardReader reader = new FinancialDashboardReader(invoices, courses, programs,
+                    java.time.Clock.systemDefaultZone());
+            if (reader.readFinancialDashboard().studentsUpToDate() != size - size / 2) {
+                throw new IllegalStateException();
+            }
+        });
+    }
+
     private static final class ProgressFixture {
         final AtomicInteger repositoryCalls = new AtomicInteger();
         final ProgramProgressReader reader;
 
-        ProgressFixture(int entries) {
+        ProgressFixture(int entries, EnrollmentStatus status) {
             ProgramEnrollmentRepository enrollmentRepository = mock(ProgramEnrollmentRepository.class, withSettings().stubOnly());
             SubjectSectionEnrollmentRepository sectionRepository = mock(SubjectSectionEnrollmentRepository.class, withSettings().stubOnly());
             ProgramCurriculumFinder curriculumFinder = mock(ProgramCurriculumFinder.class, withSettings().stubOnly());
@@ -105,12 +158,19 @@ class AlgorithmicComplexityBenchmarkTest {
             }
             Mockito.when(curriculumFinder.findProgramSubjects(anyLong())).thenReturn(views);
             Mockito.when(curriculumFinder.findElectiveGroupRequirements(anyLong())).thenReturn(List.of());
-            SubjectSectionEnrollment found = mock(SubjectSectionEnrollment.class, withSettings().stubOnly());
-            Mockito.when(sectionRepository.findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(any(), any(), any()))
-                    .thenAnswer(invocation -> {
-                        repositoryCalls.incrementAndGet();
-                        return List.of(found);
-                    });
+            List<SubjectSectionEnrollmentRepository.PrerequisiteStatusRow> rows = new ArrayList<>();
+            for (long i = 1; i <= entries; i++) {
+                SubjectSectionEnrollmentRepository.PrerequisiteStatusRow row = mock(
+                        SubjectSectionEnrollmentRepository.PrerequisiteStatusRow.class, withSettings().stubOnly());
+                Mockito.when(row.getProgramEnrollmentId()).thenReturn(1L);
+                Mockito.when(row.getSubjectId()).thenReturn(i);
+                Mockito.when(row.getStatus()).thenReturn(status);
+                rows.add(row);
+            }
+            Mockito.when(sectionRepository.findPrerequisiteStatusRows(any(), any(), any())).thenAnswer(invocation -> {
+                repositoryCalls.incrementAndGet();
+                return rows;
+            });
             Mockito.when(sectionRepository.findByProgramEnrollmentId(any())).thenReturn(List.of());
             Mockito.when(sectionRepository.existsByProgramEnrollmentIdAndStatusIn(any(), any())).thenReturn(false);
             reader = new ProgramProgressReader(enrollmentRepository, sectionRepository, curriculumFinder,
@@ -122,8 +182,11 @@ class AlgorithmicComplexityBenchmarkTest {
     void b2_programProgressCalculateProgress() {
         AtomicInteger calls = new AtomicInteger();
         report("B2", "curriculum entries (all approved)", 40, size -> {
-            ProgressFixture fixture = new ProgressFixture(size);
-            fixture.reader.calculateProgress(1L);
+            ProgressFixture fixture = new ProgressFixture(size, EnrollmentStatus.APPROVED);
+            ProgramProgressView view = fixture.reader.calculateProgress(1L);
+            if (!view.pendingMandatorySubjects().isEmpty()) {
+                throw new IllegalStateException();
+            }
             calls.set(fixture.repositoryCalls.get());
         });
         System.out.println("BENCH B2 repository calls at last size=" + calls.get());
@@ -133,29 +196,13 @@ class AlgorithmicComplexityBenchmarkTest {
     void b3_programProgressHasOnlyFinalExamsLeft() {
         AtomicInteger calls = new AtomicInteger();
         report("B3", "curriculum entries (all coursed)", 40, size -> {
-            ProgressFixture fixture = new ProgressFixture(size);
-            fixture.reader.hasOnlyFinalExamsLeft(1L);
+            ProgressFixture fixture = new ProgressFixture(size, EnrollmentStatus.REGULAR);
+            if (!fixture.reader.hasOnlyFinalExamsLeft(1L)) {
+                throw new IllegalStateException();
+            }
             calls.set(fixture.repositoryCalls.get());
         });
         System.out.println("BENCH B3 repository calls at last size=" + calls.get());
-    }
-
-    @Test
-    void b4_courseProgressPendingModulesNoneMatch() {
-        report("B4", "course modules (none approved)", 10, size -> {
-            List<long[]> modules = new ArrayList<>();
-            List<long[]> enrollments = new ArrayList<>();
-            for (long i = 0; i < size; i++) {
-                modules.add(new long[]{i});
-                enrollments.add(new long[]{i + size, 0});
-            }
-            List<long[]> pending = modules.stream()
-                    .filter(module -> enrollments.stream().noneMatch(e -> e[0] == module[0] && e[1] == 1))
-                    .toList();
-            if (pending.size() != size) {
-                throw new IllegalStateException();
-            }
-        });
     }
 
     private record Slot(DayOfWeek day, LocalTime start, LocalTime end) {}
