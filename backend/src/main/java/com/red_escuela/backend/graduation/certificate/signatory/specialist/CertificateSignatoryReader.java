@@ -11,6 +11,7 @@ import com.red_escuela.backend.graduation.certificate.signatory.exception.Signat
 import com.red_escuela.backend.graduation.certificate.signatory.repository.CertificateSignatoryRepository;
 import com.red_escuela.backend.graduation.certificate.signatory.repository.CertificateSignatorySignatureRepository;
 import com.red_escuela.backend.graduation.certificate.template.specialist.CertificateTemplateSignatoryUsages;
+import com.red_escuela.backend.shared.persistence.LikePatterns;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -79,9 +80,9 @@ public class CertificateSignatoryReader {
                 predicates.add(builder.equal(root.get("active"), filter.active()));
             }
             if (filter.query() != null && !filter.query().isBlank()) {
-                String like = "%" + filter.query().strip().toLowerCase() + "%";
-                predicates.add(builder.or(builder.like(builder.lower(root.get("name")), like),
-                        builder.like(builder.lower(root.get("role")), like)));
+                String like = LikePatterns.contains(filter.query().strip().toLowerCase());
+                predicates.add(builder.or(builder.like(builder.lower(root.get("name")), like, LikePatterns.ESCAPE_CHARACTER),
+                        builder.like(builder.lower(root.get("role")), like, LikePatterns.ESCAPE_CHARACTER)));
             }
             if (filter.documentType() != null) {
                 predicates.add(builder.isMember(filter.documentType(), root.get("allowedDocumentTypes")));
