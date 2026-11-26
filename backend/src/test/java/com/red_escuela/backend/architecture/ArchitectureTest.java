@@ -334,18 +334,18 @@ class ArchitectureTest {
     @Test
     @Tag("D-051")
     void academicStructureDoesNotDependOnBilling() {
-        FreezingArchRule.freeze(ArchitectureRules.academicStructureDoesNotDependOnBilling()).check(MAIN_CLASSES);
+        ArchitectureRules.academicStructureDoesNotDependOnBilling().check(MAIN_CLASSES);
     }
 
     @Test
     @Tag("D-051")
     void academicStructureRuleDetectsABillingDependency() {
         JavaClasses academicStructureToBilling = new ClassFileImporter()
-                .importClasses(com.red_escuela.backend.academicstructure.controller.ProgramController.class);
+                .importClasses(com.red_escuela.backend.academicstructure.AcademicStructureBillingDependencyFixture.class);
 
         assertThatThrownBy(() -> ArchitectureRules.academicStructureDoesNotDependOnBilling().check(academicStructureToBilling))
                 .isInstanceOf(AssertionError.class)
-                .hasMessageContaining("ProgramController");
+                .hasMessageContaining("AcademicStructureBillingDependencyFixture");
     }
 
     @Test

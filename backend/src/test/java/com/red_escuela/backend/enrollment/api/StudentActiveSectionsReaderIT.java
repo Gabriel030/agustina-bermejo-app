@@ -143,7 +143,7 @@ class StudentActiveSectionsReaderIT extends AbstractIntegrationTest {
     @Test
     void aStudentNeverSeesTheSectionsOfAnotherStudent() {
         programEnrollmentIn(otherStudent, otherProgramEnrollment, EnrollmentStatus.ENROLLED);
-        courseEnrollmentIn(otherStudent, courseEnrollment, EnrollmentStatus.ENROLLED);
+        courseEnrollmentIn(otherStudent, courseEnrollment(otherStudent), EnrollmentStatus.ENROLLED);
         entityManager.flush();
         entityManager.clear();
 
