@@ -24,7 +24,6 @@ const MONEY_MONO_PENDING = [
 const ARBITRARY_RADIUS_PENDING = [
   '/src/components/InstitutionBrand.jsx',
   '/src/features/billing/components/MonthPicker.jsx',
-  '/src/components/MobileMenu.jsx',
   '/src/components/Sidebar.jsx',
   '/src/features/evaluation/pages/PreceptorMesaExamen.jsx',
 ];
