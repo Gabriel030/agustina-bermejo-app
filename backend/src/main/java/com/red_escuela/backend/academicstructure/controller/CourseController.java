@@ -1,6 +1,6 @@
 package com.red_escuela.backend.academicstructure.controller;
 
-import com.red_escuela.backend.billing.dto.CoursePricingResponse;
+import com.red_escuela.backend.academicstructure.dto.CoursePricingResponse;
 import com.red_escuela.backend.academicstructure.dto.CourseResponse;
 import com.red_escuela.backend.academicstructure.dto.CreateCourseRequest;
 import com.red_escuela.backend.academicstructure.dto.SetCatalogVisibilityRequest;
