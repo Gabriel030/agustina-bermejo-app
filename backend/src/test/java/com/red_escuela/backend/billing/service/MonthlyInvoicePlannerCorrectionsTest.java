@@ -17,7 +17,7 @@ import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.usecase.paymentplan.SelectPaymentPlanForProgramUseCase;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
-import com.red_escuela.backend.enrollment.exception.EnrollmentFeeNotPaidForTermException;
+import com.red_escuela.backend.enrollment.api.EnrollmentFeeNotPaidForTermException;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.identity.entity.Person;
 import org.junit.jupiter.api.AfterEach;
