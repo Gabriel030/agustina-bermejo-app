@@ -23,10 +23,10 @@ describe('DirectorLayout', () => {
     expect(links[0]).toHaveAttribute('href', '/director/periodos');
   });
 
-  it('shows the closure list title in the mobile header on the closure sheet route', async () => {
+  it('shows the closure sheet title in the mobile header on the closure sheet route', async () => {
     renderWithProviders(<ThemeProvider><DirectorLayout /></ThemeProvider>, { route: '/director/cierre-de-comision/abc' });
 
-    const title = await screen.findAllByText('Cierres de comisión');
+    const title = await screen.findAllByText('Cierre de comisión');
     expect(title.some((node) => node.className.includes('lg:hidden'))).toBe(true);
   });
 });

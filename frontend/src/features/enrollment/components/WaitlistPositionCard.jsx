@@ -31,7 +31,9 @@ function ExpiryHelp() {
           ¿Qué pasa si vence?
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="start">{EXPIRY_HELP_TEXT}</PopoverContent>
+      <PopoverContent align="start" collisionPadding={16} className="max-w-[calc(100vw-2rem)]">
+        {EXPIRY_HELP_TEXT}
+      </PopoverContent>
     </Popover>
   );
 }

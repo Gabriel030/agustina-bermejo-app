@@ -88,6 +88,13 @@ describe('OwnWaitlistPosition', () => {
     expect(container).toBeEmptyDOMElement();
   });
 
+  it('expiryHelpPopoverNeverExceedsTheViewportWidth', async () => {
+    renderWithProviders(<WaitlistPositionCard entry={entry({ expiresOn: isoDaysFromNow(5) })} />);
+    await userEvent.click(screen.getByRole('button', { name: /Qué pasa si vence/ }));
+    const content = document.querySelector('[data-slot="popover-content"]');
+    expect(content).toHaveClass('max-w-[calc(100vw-2rem)]');
+  });
+
   it('showsOnlyTheMatchingEntry', async () => {
     server.use(http.get(`${API}/me/waitlist-positions`, () => HttpResponse.json([entry({ enrollmentId: 99, queueName: 'Otra' }), entry()])));
     renderWithProviders(<OwnWaitlistPosition kind="COURSE" enrollmentId={7} />);
