@@ -18,6 +18,7 @@ public class CourseResponse implements CatalogPriced<CourseResponse> {
     private final Integer capacity;
     private final Money price;
     private final Integer durationMonths;
+    private final Integer durationHours;
     private final String status;
     private final boolean visibleInCatalog;
     private final String area;
@@ -58,6 +59,7 @@ public class CourseResponse implements CatalogPriced<CourseResponse> {
                 .capacity(course.getCapacity())
                 .price(price)
                 .durationMonths(course.getDurationMonths())
+                .durationHours(course.getDurationHours())
                 .status(course.getIsActive() == null ? null : course.getIsActive().name())
                 .visibleInCatalog(course.isVisibleInCatalog())
                 .area(course.getCatalogArea() == null ? null : course.getCatalogArea().name())

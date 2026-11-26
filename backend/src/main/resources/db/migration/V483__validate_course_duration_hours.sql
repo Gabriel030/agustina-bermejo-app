@@ -1,0 +1,1 @@
+alter table course validate constraint course_duration_hours_positive;

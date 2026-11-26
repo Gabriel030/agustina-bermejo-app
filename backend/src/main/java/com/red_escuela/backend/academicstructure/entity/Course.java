@@ -143,4 +143,7 @@ public class Course {
         LocalDate deadline = waitlistDeadline();
         return deadline != null && !today.isBefore(deadline);
     }
+
+    @Column(name = "duration_hours")
+    private Integer durationHours;
 }
