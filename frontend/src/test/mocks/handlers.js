@@ -511,6 +511,7 @@ export const handlers = [
   http.get(`${API}/courses/:id/subjects`, () => HttpResponse.json([])),
   http.get(`${API}/me/program-enrollment-applications`, () => HttpResponse.json([])),
   http.get(`${API}/me/waitlist-positions`, () => HttpResponse.json([])),
+  http.get(`${API}/informative-sessions`, () => HttpResponse.json([])),
   http.get(`${API}/waitlists`, () => HttpResponse.json({ items: [], page: 0, size: 20, totalElements: 0 })),
   http.get(`${API}/waitlists/:kind/:id`, () => HttpResponse.json({ code: 'WAITLIST_QUEUE_NOT_FOUND', requestId: 'req-test-0001', retryable: false, violations: [] }, { status: 404 })),
   http.post(`${API}/waitlists/:kind/entries/:enrollmentId/promote`, () => HttpResponse.json({})),

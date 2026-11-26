@@ -75,6 +75,7 @@ export const ROLE_MENU = {
     { slug: 'mis-certificados', label: 'Mis certificados', icon: Award },
     { slug: 'pagos', label: 'Pagos', icon: CreditCard },
     { to: '/catalogo', label: 'Catálogo', icon: LayoutGrid },
+    { slug: 'reuniones-informativas', label: 'Reuniones informativas', icon: Megaphone },
     { slug: 'opciones', label: 'Opciones', icon: Settings },
   ],
   docente: [
