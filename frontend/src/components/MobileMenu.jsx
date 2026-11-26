@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { RoleSwitcher } from '@/components/RoleSwitcher';
 import { DRAWER_ROW, DrawerBackRow, DrawerEntryList } from '@/components/MobileDrawerLevel';
-import { buildDrawerEntries, findCurrentTarget, resolveLevelNodes } from '@/components/mobileDrawerLevels';
+import { buildDrawerEntries, findCurrentTarget, resolveLevelNodes } from '@/routes/navModel';
 import { useAuth } from '@/context/AuthContext';
 import { useActiveRole } from '@/hooks/useActiveRole';
 import { roleLabel } from '@/lib/activeRole';

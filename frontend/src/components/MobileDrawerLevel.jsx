@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { containsTarget, countLinks } from '@/components/mobileDrawerLevels';
+import { containsTarget, countLinks } from '@/routes/navModel';
 
 export const DRAWER_ROW =
   'flex min-h-12 w-full items-center gap-3 rounded-control px-3 text-left text-sm font-medium text-ink transition-colors hover:bg-(--row-hover) focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring';

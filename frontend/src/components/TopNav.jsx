@@ -12,22 +12,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useActiveRole } from '@/hooks/useActiveRole';
 import { useTopNavMenus } from '@/hooks/useTopNavMenus';
 import { TOP_NAV_BREAKPOINTS } from '@/components/topNavBreakpoint';
-
-function isActivePath(item, pathname) {
-  return pathname === item.to || pathname.startsWith(`${item.to}/`);
-}
-
-function buildEntries(items, groups) {
-  if (!groups) return items.map((item) => ({ type: 'link', id: item.to, item }));
-  return groups.flatMap((group) => {
-    const own = group.items;
-    if (own.length === 0) return [];
-    if (group.panel === 'catalog') return [{ type: 'catalog', id: group.id, item: own[0] }];
-    if (!group.label) return own.map((item) => ({ type: 'link', id: item.to, item }));
-    const sections = group.sections;
-    return [{ type: 'group', id: group.id, label: group.label, wide: Boolean(sections), items: own, sections }];
-  });
-}
+import { buildTopNavEntries, isPathWithin } from '@/routes/navModel';
 
 function initialsOf(user) {
   return `${user.nombre?.[0] ?? ''}${user.apellido?.[0] ?? ''}`.toUpperCase();
@@ -47,7 +32,7 @@ function GroupMenu({ entry, pathname, menus }) {
       id={entry.id}
       menus={menus}
       open={menus.openId === entry.id}
-      active={entry.items.some((item) => isActivePath(item, pathname))}
+      active={entry.items.some((item) => isPathWithin(item.to, pathname))}
       wide={entry.wide}
       trigger={entry.label}
     >
@@ -72,7 +57,7 @@ function CatalogMenu({ entry, pathname, menus }) {
       id={entry.id}
       menus={menus}
       open={menus.openId === entry.id}
-      active={isActivePath(entry.item, pathname)}
+      active={isPathWithin(entry.item.to, pathname)}
       placement="bar"
       trigger={entry.item.label}
     >
@@ -127,7 +112,7 @@ export function TopNav({ titulo, items, groups, breakpoint = TOP_NAV_BREAKPOINTS
   const { usuario } = useAuth();
   const { pathname } = useLocation();
   const menus = useTopNavMenus(pathname);
-  const entries = buildEntries(items, groups);
+  const entries = buildTopNavEntries(items, groups);
 
   return (
     <div className={cn('relative z-30 hidden shrink-0 items-center gap-2 border-b border-border bg-surface px-4', breakpoint.barVisible, breakpoint.padding)}>
