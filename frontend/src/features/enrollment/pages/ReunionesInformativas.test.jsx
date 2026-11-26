@@ -101,7 +101,7 @@ describe('ReunionesInformativas', () => {
 
     await user.click(await screen.findByRole('button', { name: 'Reservar lugar' }));
 
-    expect(await screen.findByText('Esta reunión ya no tiene lugares disponibles.')).toBeInTheDocument();
+    expect(await screen.findByText('La charla no tiene lugares disponibles.')).toBeInTheDocument();
   });
 
   it('showsRetryInsideTheCardWhenRegisteringFailsAndRecoversOnRetry', async () => {

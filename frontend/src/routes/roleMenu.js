@@ -149,6 +149,7 @@ const MENU_GROUPS = {
     { id: 'studies', label: 'Estudios', slugs: ['calendario', 'mis-cursos', 'mis-carreras', 'mis-certificados'] },
     { id: 'payments', label: null, slugs: ['pagos'] },
     { id: 'catalog', label: null, slugs: ['catalogo'] },
+    { id: 'informative-sessions', label: null, slugs: ['reuniones-informativas'] },
     { id: 'account', label: null, slugs: ['opciones'] },
   ],
   director: [

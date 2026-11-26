@@ -81,10 +81,19 @@ describe('role menu manifest', () => {
 
   it('groups the student menu keeping order, the catalog link and the options entry', () => {
     const groups = groupMenuItems('alumno', menuItemsFor('alumno'));
-    expect(groups.map((group) => group.label)).toEqual([null, 'Estudios', null, null, null]);
+    expect(groups.map((group) => group.label)).toEqual([null, 'Estudios', null, null, null, null]);
     expect(groups.flatMap((group) => group.items.map((item) => item.label))).toEqual([
-      'Inicio', 'Calendario', 'Mis cursos', 'Mis carreras', 'Mis certificados', 'Pagos', 'Catálogo', 'Opciones',
+      'Inicio', 'Calendario', 'Mis cursos', 'Mis carreras', 'Mis certificados', 'Pagos', 'Catálogo', 'Reuniones informativas', 'Opciones',
     ]);
+  });
+
+  it('gives the informative sessions entry its own group between the catalog and the account', () => {
+    const groups = groupMenuItems('alumno', menuItemsFor('alumno'));
+    const ids = groups.map((group) => group.id);
+    const own = groups.find((group) => group.id === 'informative-sessions');
+    expect(own.items.map((item) => item.to)).toEqual(['/alumno/reuniones-informativas']);
+    expect(ids.indexOf('informative-sessions')).toBe(ids.indexOf('catalog') + 1);
+    expect(ids.indexOf('informative-sessions')).toBeLessThan(ids.indexOf('account'));
   });
 
   it('orders the director groups as defined with the approvals entry after the institution group', () => {
