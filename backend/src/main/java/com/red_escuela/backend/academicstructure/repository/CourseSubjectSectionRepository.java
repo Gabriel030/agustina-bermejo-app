@@ -31,14 +31,14 @@ public interface CourseSubjectSectionRepository extends JpaRepository<CourseSubj
 
     boolean existsByEvaluationSchemeId(Long evaluationSchemeId);
 
-    @Query("select s.evaluationScheme.id from CourseSubjectSection s where s.id = :id")
+    @Query("select s.evaluationSchemeId from CourseSubjectSection s where s.id = :id")
     Optional<Long> findEvaluationSchemeIdById(@Param("id") Long id);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from CourseSubjectSection s where s.id = :id")
     Optional<CourseSubjectSection> findByIdForUpdate(@Param("id") Long id);
 
-    @Query("select s from CourseSubjectSection s left join fetch s.evaluationScheme left join fetch s.term "
+    @Query("select s from CourseSubjectSection s left join fetch s.term "
             + "left join fetch s.academicOfferingCycle c left join fetch c.term where s.id = :id")
     Optional<CourseSubjectSection> findByIdWithSchemeAndTerms(@Param("id") Long id);
 }

@@ -1,7 +1,3 @@
-academicstructure<->attendance
-academicstructure<->billing
-academicstructure<->enrollment
-academicstructure<->evaluation
 attendance<->billing
 attendance<->enrollment
 attendance<->evaluation

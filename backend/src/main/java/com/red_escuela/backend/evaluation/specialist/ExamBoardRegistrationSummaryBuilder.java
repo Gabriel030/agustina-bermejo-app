@@ -27,8 +27,12 @@ public class ExamBoardRegistrationSummaryBuilder {
     private final GradeItemRepository gradeItemRepository;
     private final FinalExamEligibilityResolver finalExamEligibilityResolver;
 
+    private final SectionEvaluationSchemeLoader schemeLoader;
+
     public ExamBoardRegistrationSummaryBuilder(
-            GradeItemRepository gradeItemRepository, FinalExamEligibilityResolver finalExamEligibilityResolver) {
+            GradeItemRepository gradeItemRepository, FinalExamEligibilityResolver finalExamEligibilityResolver,
+            SectionEvaluationSchemeLoader schemeLoader) {
+        this.schemeLoader = schemeLoader;
         this.gradeItemRepository = gradeItemRepository;
         this.finalExamEligibilityResolver = finalExamEligibilityResolver;
     }
@@ -54,7 +58,7 @@ public class ExamBoardRegistrationSummaryBuilder {
         FinalExamEligibilityResponse eligibility;
         if (program) {
             var enrollment = registration.getProgramSubjectSectionEnrollment();
-            scheme = enrollment.getSubjectSection().getEvaluationScheme();
+            scheme = schemeLoader.load(enrollment.getSubjectSection());
             regular = enrollment.hasRegularCoursework();
             eligibility = finalExamEligibilityResolver.resolve(enrollment);
             enrollmentId = enrollment.getId();
@@ -63,7 +67,7 @@ public class ExamBoardRegistrationSummaryBuilder {
             person = enrollment.getStudent().getPerson();
         } else {
             var enrollment = registration.getCourseSubjectSectionEnrollment();
-            scheme = enrollment.getCourseSubjectSection().getEvaluationScheme();
+            scheme = schemeLoader.load(enrollment.getCourseSubjectSection());
             regular = enrollment.hasRegularCoursework();
             eligibility = finalExamEligibilityResolver.resolve(enrollment);
             enrollmentId = enrollment.getId();

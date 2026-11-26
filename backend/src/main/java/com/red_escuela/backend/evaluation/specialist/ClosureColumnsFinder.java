@@ -20,7 +20,11 @@ public class ClosureColumnsFinder {
     private final SectionGradeItemPublicationRepository publicationRepository;
     private final SectionFinder sectionFinder;
 
-    public ClosureColumnsFinder(SectionGradeItemPublicationRepository publicationRepository, SectionFinder sectionFinder) {
+    private final SectionEvaluationSchemeLoader schemeLoader;
+
+    public ClosureColumnsFinder(SectionGradeItemPublicationRepository publicationRepository, SectionFinder sectionFinder,
+            SectionEvaluationSchemeLoader schemeLoader) {
+        this.schemeLoader = schemeLoader;
         this.publicationRepository = publicationRepository;
         this.sectionFinder = sectionFinder;
     }
@@ -28,8 +32,8 @@ public class ClosureColumnsFinder {
     @Transactional(readOnly = true)
     public List<ClosureSheetColumnResponse> findColumns(SectionKind kind, Long sectionId) {
         EvaluationScheme scheme = kind == SectionKind.PROGRAM
-                ? sectionFinder.findProgramSectionEntity(sectionId).getEvaluationScheme()
-                : sectionFinder.findCourseSectionEntity(sectionId).getEvaluationScheme();
+                ? schemeLoader.load(sectionFinder.findProgramSectionEntity(sectionId))
+                : schemeLoader.load(sectionFinder.findCourseSectionEntity(sectionId));
         if (scheme == null) {
             return List.of();
         }

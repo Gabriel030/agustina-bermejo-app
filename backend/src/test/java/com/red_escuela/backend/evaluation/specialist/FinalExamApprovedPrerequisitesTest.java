@@ -87,7 +87,7 @@ class FinalExamApprovedPrerequisitesTest extends ExamBoardChangeFixture {
         ExamBoard board = examBoard(subject, term, examDate);
         Instructor tribunal = tribunalMember(board, dni);
         SubjectSectionEnrollment enrollment = regularEnrollment(subject, term, dni + "1", "Carrera " + dni);
-        enrollment.getSubjectSection().setEvaluationScheme(scheme(dni));
+        enrollment.getSubjectSection().setEvaluationSchemeId(scheme(dni).getId());
         Program program = enrollment.getProgramEnrollment().getProgram();
         Subject prerequisite = subject(PREREQUISITE_NAME, null);
         ProgramSubject target = programSubject(program, subject);

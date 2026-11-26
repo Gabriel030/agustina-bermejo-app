@@ -5,7 +5,6 @@ import com.red_escuela.backend.academicstructure.entity.SectionScheduleSlot;
 import com.red_escuela.backend.academicstructure.dto.AssignInstructorRequest;
 import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateSectionRequest;
-import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.entity.Subject;
@@ -24,7 +23,6 @@ import com.red_escuela.backend.academicstructure.repository.SubjectRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
-import jakarta.persistence.EntityManager;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -42,7 +40,6 @@ public class SubjectSectionService {
     private final TermRepository termRepository;
     private final SubjectSectionInstructorRepository sectionInstructorRepository;
     private final InstructorRepository instructorRepository;
-    private final EntityManager entityManager;
     private final SectionEvaluationSetupPort evaluationSetupPort;
     private final SectionIdentityAssigner identityAssigner;
     private final SectionConflictChecker conflictChecker;
@@ -57,7 +54,6 @@ public class SubjectSectionService {
             TermRepository termRepository,
             SubjectSectionInstructorRepository sectionInstructorRepository,
             InstructorRepository instructorRepository,
-            EntityManager entityManager,
             SectionEvaluationSetupPort evaluationSetupPort,
             SectionIdentityAssigner identityAssigner,
             SectionConflictChecker conflictChecker,
@@ -72,7 +68,6 @@ public class SubjectSectionService {
         this.termRepository = termRepository;
         this.sectionInstructorRepository = sectionInstructorRepository;
         this.instructorRepository = instructorRepository;
-        this.entityManager = entityManager;
         this.evaluationSetupPort = evaluationSetupPort;
         this.identityAssigner = identityAssigner;
         this.conflictChecker = conflictChecker;
@@ -100,7 +95,8 @@ public class SubjectSectionService {
         section.setCreatedAt(LocalDateTime.now());
         identityAssigner.identifyNewSubjectSection(section, request.shift(), request.description());
         if (request.evaluationSchemeId() != null) {
-            section.setEvaluationScheme(resolveEvaluationScheme(request.evaluationSchemeId()));
+            evaluationSetupPort.requireEvaluationSchemeExists(request.evaluationSchemeId());
+            section.setEvaluationSchemeId(request.evaluationSchemeId());
         }
         SubjectSection guardada = sectionRepository.save(section);
         evaluationSetupPort.createInitialEvaluationDraft(guardada);
@@ -127,7 +123,8 @@ public class SubjectSectionService {
             identityAssigner.changeSubjectSectionShift(section, request.shift());
         }
         if (request.evaluationSchemeId() != null) {
-            section.setEvaluationScheme(resolveEvaluationScheme(request.evaluationSchemeId()));
+            evaluationSetupPort.requireEvaluationSchemeExists(request.evaluationSchemeId());
+            section.setEvaluationSchemeId(request.evaluationSchemeId());
         }
         if (request.maxAbsencePercent() != null) {
             section.setMaxAbsenceRate(request.maxAbsencePercent());
@@ -211,10 +208,5 @@ public class SubjectSectionService {
 
     private SubjectSection findOrThrow(Long id) {
         return sectionRepository.findById(id).orElseThrow(() -> new SectionNotFoundException(id));
-    }
-
-    private EvaluationScheme resolveEvaluationScheme(Long id) {
-        evaluationSetupPort.requireEvaluationSchemeExists(id);
-        return entityManager.find(EvaluationScheme.class, id);
     }
 }

@@ -165,7 +165,7 @@ class CommissionClosureApprovalIT extends AbstractIntegrationTest {
         section.setTerm(term);
         section.setMaxAbsenceRate(Percentage.ofPoints(BigDecimal.valueOf(25)));
         section.setStatus(StatusType.ACTIVE);
-        section.setEvaluationScheme(scheme);
+        section.setEvaluationSchemeId(scheme.getId());
         entityManager.persist(section);
         Person teacherPerson = persistPerson();
         teacherPersonId = teacherPerson.getId();

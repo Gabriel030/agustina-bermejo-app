@@ -199,7 +199,7 @@ class TeacherGradeGridCharacterizationTest extends CourseworkCharacterizationSup
         section.setCourseSubject(courseSubject);
         section.setTerm(term);
         section.setStatus(StatusType.ACTIVE);
-        section.setEvaluationScheme(scheme);
+        section.setEvaluationSchemeId(scheme.getId());
         entityManager.persist(section);
         CourseSubjectSectionInstructor assignment = new CourseSubjectSectionInstructor();
         assignment.setSection(section);

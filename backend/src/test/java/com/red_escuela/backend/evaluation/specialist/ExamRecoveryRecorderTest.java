@@ -136,7 +136,7 @@ class ExamRecoveryRecorderTest extends AbstractIntegrationTest {
         section.setName(subject.getName() + " - Com A");
         section.setSubject(subject);
         section.setTerm(term);
-        section.setEvaluationScheme(scheme);
+        section.setEvaluationSchemeId(scheme.getId());
         section.setStatus(StatusType.ACTIVE);
         entityManager.persist(section);
         SubjectSectionInstructor assignment = new SubjectSectionInstructor();
