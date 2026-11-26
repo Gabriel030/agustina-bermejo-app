@@ -99,6 +99,8 @@ const TEXT_PAIRS = [
   ['--nav-active-fg', '--accent-soft'],
   ['--ink', '--table-head-bg'],
   ['--ink-soft', '--table-head-bg'],
+  ['--ink-soft', '--accent-soft'],
+  ['--seg-active-fg', '--seg-indicator-bg'],
 ];
 
 const NON_TEXT_PAIRS = [
@@ -114,6 +116,9 @@ const NON_TEXT_PAIRS = [
   ['--disabled-fg', '--control-bg'],
   ['--popover-edge', '--surface'],
   ['--popover-edge', '--dialog-bg'],
+  ['--ink-faint', '--neutral-bg'],
+  ['--ink-soft', '--neutral-bg'],
+  ['--ink-faint', '--control-bg'],
 ];
 
 const DISTINCT_PAIRS = [
@@ -160,6 +165,14 @@ describe('design tokens', () => {
       expect(weak).toEqual([]);
     });
   }
+
+  it('every text color token is covered by at least one text pair', () => {
+    const textTokens = Object.keys(lightTokens).filter(
+      (name) => /^--(?:ink|[a-z]+-ink|[a-z-]+-fg)(?:-[a-z]+)?$/.test(name) && name !== '--disabled-fg',
+    );
+    const covered = new Set(TEXT_PAIRS.map(([fg]) => fg));
+    expect(textTokens.filter((name) => !covered.has(name))).toEqual([]);
+  });
 
   it('every oklch color falls inside sRGB without clipping', () => {
     const outOfGamut = [...tokensCss.matchAll(OKLCH_ANY)]
