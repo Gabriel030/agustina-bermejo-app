@@ -1,5 +1,7 @@
 package com.red_escuela.backend.academicstructure.service;
 
+import org.springframework.dao.DataIntegrityViolationException;
+import com.red_escuela.backend.academicstructure.exception.SectionScheduleConflictException;
 import com.red_escuela.backend.academicstructure.domain.SectionShift;
 import com.red_escuela.backend.academicstructure.dto.ScheduleSlotRequest;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycle;
@@ -152,7 +154,7 @@ public class CreateCycleSectionTransaction {
             slot.setDayOfWeek(slotReq.dayOfWeek());
             slot.setStartTime(slotReq.startTime());
             slot.setEndTime(slotReq.endTime());
-            slotRepository.save(slot);
+            saveSlot(slot, slotReq);
         }
     }
 
@@ -167,7 +169,19 @@ public class CreateCycleSectionTransaction {
             slot.setDayOfWeek(slotReq.dayOfWeek());
             slot.setStartTime(slotReq.startTime());
             slot.setEndTime(slotReq.endTime());
-            slotRepository.save(slot);
+            saveSlot(slot, slotReq);
+        }
+    }
+
+    private void saveSlot(SectionScheduleSlot slot, ScheduleSlotRequest slotReq) {
+        try {
+            slotRepository.saveAndFlush(slot);
+        } catch (DataIntegrityViolationException e) {
+            if (ScheduleExclusionViolation.isClassroomOverlap(e)) {
+                throw new SectionScheduleConflictException(
+                        slotReq.classroomId(), slotReq.dayOfWeek(), slotReq.startTime(), slotReq.endTime());
+            }
+            throw e;
         }
     }
 }
