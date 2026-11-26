@@ -3,6 +3,7 @@ import { mkdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { roles } from './screens.mjs';
 import { buildReport } from './report.mjs';
+import { activeRequests, stalledRequests } from './inflight.mjs';
 
 const FRONT = process.env.E31_FRONT ?? 'http://localhost:5173';
 const API = process.env.E31_API ?? 'http://localhost:8461';
@@ -11,6 +12,7 @@ const ONLY = process.env.E31_ROLES?.split(',');
 const OUT = process.env.E31_OUT ?? fileURLToPath(new URL('./out/', import.meta.url));
 const SETTLE_MS = 1500;
 const MAX_WAIT_MS = 45000;
+const HUNG_MS = 10000;
 const NETWORK = { offline: false, latency: 150, downloadThroughput: (1.6 * 1024 * 1024) / 8, uploadThroughput: (750 * 1024) / 8 };
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -33,7 +35,7 @@ async function newThrottledPage(browser, username) {
   const requests = new Map();
   cdp.on('Network.requestWillBeSent', (e) => {
     if (e.redirectResponse) return;
-    requests.set(e.requestId, { method: e.request.method, url: e.request.url, type: e.type, start: e.timestamp * 1000, end: null, bytes: 0, status: null });
+    requests.set(e.requestId, { method: e.request.method, url: e.request.url, type: e.type, start: e.timestamp * 1000, seenAt: Date.now(), end: null, bytes: 0, status: null });
   });
   cdp.on('Network.responseReceived', (e) => {
     const r = requests.get(e.requestId);
@@ -50,12 +52,14 @@ async function newThrottledPage(browser, username) {
   return { context, page, requests };
 }
 
+const inFlight = (requests, ignored = null) => activeRequests(requests, { api: API, ignored, hungMs: HUNG_MS });
+const hungRequests = (requests, ignored = null) => stalledRequests(requests, { api: API, ignored, hungMs: HUNG_MS });
+
 async function waitForIdle(page, requests) {
   const deadline = Date.now() + MAX_WAIT_MS;
   let quietSince = Date.now();
   while (Date.now() < deadline) {
-    const pending = [...requests.values()].some((r) => r.end === null && r.url.startsWith(API));
-    if (pending) quietSince = Date.now();
+    if (inFlight(requests).length > 0) quietSince = Date.now();
     else if (Date.now() - quietSince >= SETTLE_MS) return true;
     await sleep(100);
   }
@@ -138,31 +142,48 @@ async function measureAction(browser, username, prefix, action) {
   await waitForIdle(page, requests);
   const target = page.locator(action.click).first();
   const visible = await target.waitFor({ state: 'visible', timeout: 15000 }).then(() => true).catch(() => false);
-  if (!visible) { await context.close(); return { name: action.name, from: action.from, measured: false, reason: 'elemento no visible (sin datos o selector distinto)' }; }
+  if (!visible) {
+    await context.close();
+    return { name: action.name, from: action.from, measured: false, reason: `elemento no visible con el selector \`${action.click}\` (sin datos en el seed o selector distinto)` };
+  }
   const before = page.url();
-  const startCount = requests.size;
+  const beforeClick = new Set(requests.keys());
   const marker = Date.now();
   await target.click();
-  let lastActivity = Date.now();
+  let lastActivity = marker;
   const deadline = marker + MAX_WAIT_MS;
   while (Date.now() < deadline) {
-    const pending = [...requests.values()].some((r) => r.end === null && r.url.startsWith(API));
-    if (pending || page.url() !== before) lastActivity = Date.now();
+    if (inFlight(requests, beforeClick).length > 0 || page.url() !== before) lastActivity = Date.now();
     if (Date.now() - lastActivity >= SETTLE_MS) break;
     await sleep(50);
   }
   const resultMs = lastActivity - marker;
-  const urlChangeMs = null;
-  const fresh = [...requests.values()].slice(startCount);
-  const api = fresh.filter((r) => r.url.startsWith(API) && r.method !== 'OPTIONS');
+  const fresh = [...requests.entries()].filter(([id]) => !beforeClick.has(id)).map(([, r]) => r);
+  const api = fresh.filter((r) => r.url.startsWith(API) && r.method !== 'OPTIONS' && r.type !== 'Preflight');
+  const hung = hungRequests(requests, beforeClick);
   await context.close();
-  return { name: action.name, from: action.from, measured: true, navigated: page.url() !== before, urlChangeMs, clickToResultMs: resultMs, apiCount: api.length, apiBytes: api.reduce((s, r) => s + r.bytes, 0) };
+  return { name: action.name, from: action.from, measured: true, navigated: page.url() !== before, clickToResultMs: resultMs, capped: resultMs >= MAX_WAIT_MS - SETTLE_MS, apiCount: api.length, apiBytes: api.reduce((sum, r) => sum + r.bytes, 0), hung };
 }
 
-const browser = await chromium.launch({ headless: true });
-const results = { generatedAt: new Date().toISOString(), network: '4G simulada: 150 ms RTT, 1,6 Mbps bajada, 750 kbps subida', cpu: 'x4', roles: {} };
-for (const [roleName, role] of Object.entries(roles)) {
-  if (ONLY && !ONLY.includes(roleName)) continue;
+async function discoverDetailPath(browser, username, prefix, detail) {
+  const { context, page, requests } = await newThrottledPage(browser, username);
+  await page.goto(`${FRONT}${prefix}/${detail.from}`, { waitUntil: 'load', timeout: MAX_WAIT_MS }).catch(() => {});
+  await waitForIdle(page, requests);
+  const target = page.locator(detail.click).first();
+  const visible = await target.waitFor({ state: 'visible', timeout: 15000 }).then(() => true).catch(() => false);
+  if (!visible) {
+    await context.close();
+    return { reason: `elemento no visible con el selector \`${detail.click}\` (sin datos en el seed o selector distinto)` };
+  }
+  const before = new URL(page.url()).pathname;
+  await target.click();
+  await page.waitForURL((url) => url.pathname !== before, { timeout: 15000 }).catch(() => {});
+  const found = new URL(page.url()).pathname;
+  await context.close();
+  return found === before ? { reason: 'el clic no navegó a un detalle' } : { path: found };
+}
+
+async function measureRole(browser, roleName, role) {
   console.log(`[${roleName}] login ${role.login}`);
   const screens = [];
   for (const screen of role.screens) {
@@ -170,9 +191,37 @@ for (const [roleName, role] of Object.entries(roles)) {
     console.log(`  ${r.path}: ${r.apiCount} peticiones, ${r.duplicateCount} dup, cascada ${r.cascadeDepth}, ${r.fullScreenMs} ms${r.redirected ? ` -> ${r.finalPath}` : ''}`);
     screens.push(r);
   }
+  const details = [];
+  for (const detail of role.details) {
+    const discovered = await discoverDetailPath(browser, role.login, role.prefix, detail);
+    if (!discovered.path) {
+      details.push({ name: detail.name, route: detail.route, measured: false, reason: discovered.reason });
+      continue;
+    }
+    const r = await measureScreen(browser, role.login, discovered.path);
+    console.log(`  ${detail.name} ${r.path}: ${r.apiCount} peticiones, ${r.duplicateCount} dup, cascada ${r.cascadeDepth}`);
+    details.push({ name: detail.name, route: detail.route, measured: true, ...r });
+  }
   const actions = [];
   for (const action of role.actions) actions.push(await measureAction(browser, role.login, role.prefix, action));
-  results.roles[roleName] = { login: role.login, screens, actions };
+  return { login: role.login, screens, details, actions };
+}
+
+const browser = await chromium.launch({ headless: true });
+const results = { generatedAt: new Date().toISOString(), network: '4G simulada: 150 ms RTT, 1,6 Mbps bajada, 750 kbps subida', cpu: 'x4', roles: {} };
+for (const [roleName, role] of Object.entries(roles)) {
+  if (ONLY && !ONLY.includes(roleName)) continue;
+  if (!role.login) {
+    console.log(`[${roleName}] omitido: ${role.missingLoginReason}`);
+    results.roles[roleName] = { login: null, skipped: role.missingLoginReason, screens: [], details: [], actions: [] };
+    continue;
+  }
+  try {
+    results.roles[roleName] = await measureRole(browser, roleName, role);
+  } catch (error) {
+    console.log(`[${roleName}] login falló: ${error.message}`);
+    results.roles[roleName] = { login: role.login, loginError: error.message.split('\n')[0], screens: [], details: [], actions: [] };
+  }
 }
 await browser.close();
 mkdirSync(OUT, { recursive: true });
