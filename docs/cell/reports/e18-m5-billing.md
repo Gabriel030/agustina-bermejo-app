@@ -45,3 +45,9 @@ E2 a E5 cortan la mitad `billing → enrollment`/`billing → academicstructure`
 ## Primera rebanada (este PR)
 
 E1. Patrón: mover la excepción de dominio al paquete `api` del módulo dueño (mismo patrón de `CohortAdmissionWindowClosedException`, #1439). Verificado: `ModularityTest` con la línea base en `billing.txt` (143→123 y 41→39), `ArchitectureTest`, `QualityRulesTest`, `ModulePatternRulesTest`, `JavadocOnlyInPackageInfoTest`, `OpenApiSnapshotTest` y `ErrorCatalogTest`, más `PaymentPlanOptionServiceTest`, `CourseEnrollmentFinderTest` y `TermEnrollmentWindowFinderTest`.
+
+## E4 (hecha en refactor/e18-m5-s7-enrollment-read-finders)
+
+Lecturas de cursadas de `InvoiceViewLoader`, `FinancialDashboardReader`, `StudentBillingOverviewReader` y `Own{Course,Program}EnrollmentBillingStatusReader` pasan por `CourseEnrollmentFinder`/`ProgramEnrollmentFinder` (métodos nuevos que delegan en las mismas consultas: misma cantidad de sentencias). Línea base de billing: enrollment 111→75 (−36); la entrada de academicstructure (3) ya medía 0 y se borra.
+
+Queda fuera: `MeInvoiceController` (lectura `findByStudentId` en `paymentStatusOf`). Cambiar su constructor deja obsoletas entradas de `archunit-frozen/6f93d0ad…`, que no se tocan; se resuelve en la rebanada de controllers a casos de uso. Los finders devuelven entidades (ya expuestas), no vistas, porque `InvoiceView` y los `*.of(enrollment, …)` las consumen; pasarlas a vistas es un cambio mayor que no entra en E4.
