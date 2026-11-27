@@ -243,7 +243,9 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SUBMISSION_WINDOW_CLOSED` | no | `SubmissionWindowClosedException` | evaluation |
 | `TEMPLATE_SUBJECT_REQUIRED` | no | `TemplateSubjectRequiredException` | notification |
 | `TERM_DATES_REQUIRED` | no | `TermDatesRequiredException` | shared |
+| `TERM_ENROLLMENT_WINDOW_OUTSIDE_TERM` | no | `TermEnrollmentWindowOutsideTermException` | academicstructure |
 | `TERM_ENROLLMENT_WINDOW_REQUIRED` | no | `TermEnrollmentWindowRequiredException` | shared |
+| `TERM_YEAR_MISMATCH` | no | `TermYearMismatchException` | academicstructure |
 | `UNKNOWN_AUDIENCE_SEGMENT` | no | `UnknownAudienceSegmentException` | announcement |
 | `UNSUPPORTED_CURRENCY` | no | `UnsupportedCurrencyException` | shared |
 | `UNSUPPORTED_FILE_TYPE` | no | `UnsupportedFileTypeException` | shared |
@@ -688,6 +690,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SUBJECT_CRITICAL_FIELDS_LOCKED` | no | `SubjectCriticalFieldsLockedException` | academicstructure |
 | `SUBJECT_INVALID_TRANSITION` | no | `SubjectInvalidTransitionException` | academicstructure |
 | `SUBJECT_IN_PROGRESS` | no | `SubjectInProgressException` | enrollment |
+| `SUBJECT_IS_PREREQUISITE_OF_ACTIVE_SUBJECT` | no | `SubjectIsPrerequisiteOfActiveSubjectException` | academicstructure |
 | `SUBJECT_NOT_ASSIGNABLE_TO_PLAN` | no | `SubjectNotAssignableToPlanException` | academicstructure |
 | `SUBJECT_NOT_OPENABLE_FOR_SECTIONS` | no | `SubjectNotOpenableForSectionsException` | academicstructure |
 | `TEMPLATE_NOTHING_TO_DISCARD` | no | `TemplateNothingToDiscardException` | graduation |
