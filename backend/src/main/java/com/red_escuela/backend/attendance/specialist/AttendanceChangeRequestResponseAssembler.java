@@ -25,9 +25,11 @@ public class AttendanceChangeRequestResponseAssembler {
             sectionName = enrollment.getCourseSubjectSection().getName();
         }
         Person requestedByPerson = request.getRequestedBy().getPerson();
+        Person decidedByPerson = request.getApprovedBy();
         return AttendanceChangeRequestResponse.from(
                 request, fullName(requestedByPerson), subjectName, sectionName,
-                attendance.getClassDate(), fullName(studentPerson));
+                attendance.getClassDate(), fullName(studentPerson),
+                decidedByPerson == null ? null : fullName(decidedByPerson));
     }
 
     private String fullName(Person person) {
