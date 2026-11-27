@@ -115,7 +115,7 @@ export function TopNav({ titulo, items, groups, breakpoint = TOP_NAV_BREAKPOINTS
   const entries = buildTopNavEntries(items, groups);
 
   return (
-    <div className={cn('relative z-30 mx-auto mt-4 hidden min-h-14 w-[calc(100%-2rem)] max-w-[1280px] shrink-0 items-center gap-0.5 rounded-card border border-border bg-surface px-3', breakpoint.barVisible)}>
+    <div className={cn('relative z-30 mx-auto mt-4 hidden min-h-14 w-[calc(100%-2rem)] max-w-[1248px] shrink-0 items-center gap-0.5 rounded-card border border-border bg-surface px-3', breakpoint.barVisible)}>
       <Link
         to={items[0]?.to ?? '/'}
         aria-label="Ir al inicio"
