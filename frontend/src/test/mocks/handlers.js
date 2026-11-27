@@ -522,6 +522,15 @@ export const handlers = [
     ),
   ),
   http.get(`${API}/programs/:id/subjects`, () => HttpResponse.json([])),
+  http.get(`${API}/programs/:id/curriculum-plans`, () => HttpResponse.json([])),
+  http.get(`${API}/curriculum-plans/:id`, ({ params }) =>
+    HttpResponse.json({
+      id: Number(params.id), programId: 1, versionNumber: 1, name: 'Plan v1', status: 'ACTIVE',
+      validFrom: '2026-03-01', validUntil: null, graduationDeadline: null,
+      totalYears: 3, totalCreditsRequired: 0, totalHoursRequired: null,
+    }),
+  ),
+  http.get(`${API}/curriculum-plans/:id/subjects`, () => HttpResponse.json([])),
   http.get(`${API}/courses`, () => HttpResponse.json([])),
   http.get(`${API}/informative-sessions`, () => HttpResponse.json([])),
   http.get(`${API}/courses/:id`, ({ params }) =>

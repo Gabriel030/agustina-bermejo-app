@@ -234,6 +234,7 @@ begin
       ('current_account_entry', 'amount_currency', array['ARS', 'USD']),
       ('current_account_entry', 'currency', array['ARS', 'USD']),
       ('current_account_entry', 'running_balance_amount_currency', array['ARS', 'USD']),
+      ('curriculum_plan', 'status', array['ACTIVE', 'DRAFT', 'EXPIRED']),
       ('director_approval_request', 'status', array['APPROVED', 'REJECTED', 'REQUESTED']),
       ('director_approval_request', 'type', array['LATE_EXAM', 'PREREQUISITE_WAIVER']),
       ('discount_definition_status_change', 'event', array['DEFINITION_CLOSED', 'DEFINITION_CREATED']),

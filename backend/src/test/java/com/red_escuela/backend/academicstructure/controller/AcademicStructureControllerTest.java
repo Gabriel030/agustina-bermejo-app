@@ -251,6 +251,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
 
         ProgramSubject entradaA = new ProgramSubject();
         entradaA.setProgram(program);
+        entradaA.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
         entradaA.setSubject(subjectA);
         entradaA.setCurricularYear(1);
         entradaA.setCurricularTerm(CurricularTerm.SECOND);
@@ -260,6 +261,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
 
         ProgramSubject entradaB = new ProgramSubject();
         entradaB.setProgram(program);
+        entradaB.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
         entradaB.setSubject(subjectB);
         entradaB.setCurricularYear(1);
         entradaB.setCurricularTerm(CurricularTerm.FIRST);

@@ -501,6 +501,7 @@ class SubjectEquivalenceControllerIT extends AbstractIntegrationTest {
         Subject created = persistSubject(name);
         ProgramSubject planEntry = new ProgramSubject();
         planEntry.setProgram(target);
+        planEntry.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(target));
         planEntry.setSubject(created);
         planEntry.setCredits(5);
         planEntry.setCurricularYear(1);
