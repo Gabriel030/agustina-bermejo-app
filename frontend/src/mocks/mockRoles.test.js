@@ -9,6 +9,18 @@ describe('resolveMockRole', () => {
     expect(resolveMockRole({ search: '?role=docente', storage: storageWith('alumno') })).toBe('docente');
   });
 
+  it('reads the mockRole query parameter', () => {
+    expect(resolveMockRole({ search: '?mockRole=preceptor' })).toBe('preceptor');
+  });
+
+  it('uses the environment role when the query and storage have none', () => {
+    expect(resolveMockRole({ search: '', storage: storageWith(null), envRole: 'subdirector' })).toBe('subdirector');
+  });
+
+  it('prefers the query over the environment role', () => {
+    expect(resolveMockRole({ search: '?mockRole=docente', envRole: 'alumno' })).toBe('docente');
+  });
+
   it('accepts platform admin spelled with separators and uppercase', () => {
     expect(resolveMockRole({ search: '?role=PLATFORM_ADMIN' })).toBe('platformadmin');
   });
@@ -25,7 +37,7 @@ describe('resolveMockRole', () => {
 describe('mockProfileFor', () => {
   it('returns a profile whose backend role matches each key', () => {
     const roles = MOCK_ROLE_KEYS.map((key) => mockProfileFor(key).roles[0]);
-    expect(roles).toEqual(['DIRECTOR', 'ADMINISTRATIVO', 'DOCENTE', 'ALUMNO', 'PLATFORM_ADMIN']);
+    expect(roles).toEqual(['DIRECTOR', 'ADMINISTRATIVO', 'DOCENTE', 'PRECEPTOR', 'SUBDIRECTOR', 'ALUMNO', 'PLATFORM_ADMIN']);
   });
 });
 
@@ -34,5 +46,11 @@ describe('buildBrowserHandlers', () => {
     const [first] = buildBrowserHandlers('alumno');
     expect(first.info.path).toBe('http://localhost:8080/me');
     expect(first.info.method).toBe('GET');
+  });
+
+  it('ends with a JSON 404 catch-all for unmocked non-GET requests', () => {
+    const last = buildBrowserHandlers('alumno').at(-1);
+    expect(String(last.info.method)).toBe('/.+/');
+    expect(last.info.path).toBe('http://localhost:8080/*');
   });
 });
