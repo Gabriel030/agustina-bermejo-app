@@ -90,6 +90,12 @@ public class SectionEnrollmentFinder {
                 .orElseThrow(() -> new SectionEnrollmentNotFoundException(id));
     }
 
+    public java.util.List<SubjectSectionEnrollment> findProgramEnrollmentsOfSubject(
+            Long programEnrollmentId, Long subjectId, java.util.List<com.red_escuela.backend.enrollment.entity.EnrollmentStatus> statuses) {
+        return programEnrollmentRepository.findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
+                programEnrollmentId, subjectId, statuses);
+    }
+
     public java.util.List<SubjectSectionEnrollment> findProgramEnrollmentsWithSection(java.util.Collection<Long> ids) {
         return programEnrollmentRepository.findWithSectionByIdIn(ids);
     }

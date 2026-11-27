@@ -14,6 +14,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Component
 public class SectionEnrollmentOutcomeRecorder {
 
+    public static final String FREE_OUTCOME_REASON = "Libre por inasistencias";
+
     private final SubjectSectionEnrollmentRepository programEnrollmentRepository;
     private final CourseSubjectSectionEnrollmentRepository courseEnrollmentRepository;
 
@@ -53,5 +55,23 @@ public class SectionEnrollmentOutcomeRecorder {
             enrollment.setFinalGradeType(null);
         }
         courseEnrollmentRepository.save(enrollment);
+    }
+
+    @Transactional
+    public void recordProgramFreeOutcome(Long enrollmentId) {
+        recordProgramOutcome(enrollmentId, EnrollmentStatus.FAILED, null, null, true);
+        programEnrollmentRepository.findById(enrollmentId).ifPresent(enrollment -> {
+            enrollment.setWithdrawalReason(FREE_OUTCOME_REASON);
+            programEnrollmentRepository.save(enrollment);
+        });
+    }
+
+    @Transactional
+    public void recordCourseFreeOutcome(Long enrollmentId) {
+        recordCourseOutcome(enrollmentId, EnrollmentStatus.FAILED, null, null, true);
+        courseEnrollmentRepository.findById(enrollmentId).ifPresent(enrollment -> {
+            enrollment.setWithdrawalReason(FREE_OUTCOME_REASON);
+            courseEnrollmentRepository.save(enrollment);
+        });
     }
 }

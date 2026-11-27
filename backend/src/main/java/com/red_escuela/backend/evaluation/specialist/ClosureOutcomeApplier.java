@@ -50,7 +50,11 @@ public class ClosureOutcomeApplier {
                     record(kind, row.getEnrollmentId(), EnrollmentStatus.FAILED, null, null);
                     flagGraduationOutdated(kind, row.getEnrollmentId());
                 }
-                case FREE, PROMOTION_CONDITIONAL -> {
+                case FREE -> {
+                    recordFree(kind, row.getEnrollmentId());
+                    flagGraduationOutdated(kind, row.getEnrollmentId());
+                }
+                case PROMOTION_CONDITIONAL -> {
                 }
             }
         }
@@ -77,6 +81,14 @@ public class ClosureOutcomeApplier {
             outcomeRecorder.recordProgramOutcome(enrollmentId, status, score, type, true);
         } else {
             outcomeRecorder.recordCourseOutcome(enrollmentId, status, score, type, true);
+        }
+    }
+
+    private void recordFree(SectionKind kind, Long enrollmentId) {
+        if (kind == SectionKind.PROGRAM) {
+            outcomeRecorder.recordProgramFreeOutcome(enrollmentId);
+        } else {
+            outcomeRecorder.recordCourseFreeOutcome(enrollmentId);
         }
     }
 
