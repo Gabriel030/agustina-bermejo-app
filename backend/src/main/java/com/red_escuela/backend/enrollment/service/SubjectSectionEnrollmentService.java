@@ -77,6 +77,7 @@ public class SubjectSectionEnrollmentService {
     private final OwnSectionChangeRecordsGuard ownSectionChangeRecordsGuard;
     private final SectionClosureGuard sectionClosureGuard;
     private final ProgramPlanSubjectGuard programPlanSubjectGuard;
+    private final StudentWithdrawalTermGuard studentWithdrawalTermGuard;
     private final Clock clock;
 
     public SubjectSectionEnrollmentService(SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
@@ -97,6 +98,7 @@ public class SubjectSectionEnrollmentService {
             OwnSectionChangeRecordsGuard ownSectionChangeRecordsGuard,
             SectionClosureGuard sectionClosureGuard,
             ProgramPlanSubjectGuard programPlanSubjectGuard,
+            StudentWithdrawalTermGuard studentWithdrawalTermGuard,
             Clock clock) {
         this.ownSectionChangeRecordsGuard = ownSectionChangeRecordsGuard;
         this.scheduleOverlapGuard = scheduleOverlapGuard;
@@ -116,6 +118,7 @@ public class SubjectSectionEnrollmentService {
         this.prerequisiteEvaluator = prerequisiteEvaluator;
         this.sectionClosureGuard = sectionClosureGuard;
         this.programPlanSubjectGuard = programPlanSubjectGuard;
+        this.studentWithdrawalTermGuard = studentWithdrawalTermGuard;
         this.clock = clock;
     }
 
@@ -218,6 +221,7 @@ public class SubjectSectionEnrollmentService {
             throw new CannotWithdrawException(
                     "La inscripción " + id + " no está ENROLLED/IN_PROGRESS/WAITLISTED, no se puede dar de baja");
         }
+        studentWithdrawalTermGuard.requireTermNotEnded(change, enrollment.termId());
         markWithdrawn(enrollment, change, LocalDateTime.now(clock));
         subjectSectionEnrollmentRepository.save(enrollment);
         if (previousStatus != EnrollmentStatus.WAITLISTED) {

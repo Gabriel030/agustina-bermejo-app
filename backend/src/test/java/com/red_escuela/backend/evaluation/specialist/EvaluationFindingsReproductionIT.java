@@ -1,6 +1,7 @@
 package com.red_escuela.backend.evaluation.specialist;
 
 import com.red_escuela.backend.academicstructure.exception.SectionClosureClosedException;
+import com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationNotWithdrawableException;
 import com.red_escuela.backend.evaluation.exception.GradeCorrectionPeriodEndedException;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
@@ -41,6 +42,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -252,15 +254,39 @@ class EvaluationFindingsReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("E34-A-S6")
     void h7WithdrawingFromAnExamBoardIsRejectedOnceTheFinalGradeIsLoaded() {
         Setup setup = setup("74000015", 1, 0, true, EnrollmentStatus.REGULAR);
         ExamBoard board = scheduledBoard(setup, LocalDateTime.now().minusHours(2), null);
         ExamBoardRegistration registration = register(board, setup.enrollment());
         loadFinal(setup, board, 5.0, null);
+        board.setExamDate(LocalDateTime.now().plusDays(3));
         entityManager.flush();
 
-        assertThatThrownBy(() -> examBoardRegistrationManager.withdraw(registration.getId())).isInstanceOf(RuntimeException.class);
+        assertThatThrownBy(() -> examBoardRegistrationManager.withdraw(registration.getId()))
+                .isInstanceOf(ExamBoardRegistrationNotWithdrawableException.class);
+    }
+
+    @Test
+    void h7WithdrawingFromAnExamBoardIsRejectedOnceTheExamDateHasArrived() {
+        Setup setup = setup("74000016", 1, 0, true, EnrollmentStatus.REGULAR);
+        ExamBoard board = scheduledBoard(setup, LocalDateTime.now().minusHours(2), null);
+        ExamBoardRegistration registration = register(board, setup.enrollment());
+
+        assertThatThrownBy(() -> examBoardRegistrationManager.withdraw(registration.getId()))
+                .isInstanceOf(ExamBoardRegistrationNotWithdrawableException.class);
+    }
+
+    @Test
+    void h7WithdrawingBeforeTheExamWithoutGradeSucceedsAndDoesNotConsumeAnAttempt() {
+        Setup setup = setup("74000018", 1, 0, true, EnrollmentStatus.REGULAR);
+        ExamBoard board = scheduledBoard(setup, LocalDateTime.now().plusDays(3), null);
+        ExamBoardRegistration registration = register(board, setup.enrollment());
+
+        examBoardRegistrationManager.withdraw(registration.getId());
+
+        assertThat(registration.getStatus()).isEqualTo(ExamBoardRegistrationStatus.WITHDRAWN);
+        assertThatCode(() -> examBoardRegistrationManager.registerProgramEnrollment(board.getId(), setup.enrollment().getId()))
+                .doesNotThrowAnyException();
     }
 
     @Test

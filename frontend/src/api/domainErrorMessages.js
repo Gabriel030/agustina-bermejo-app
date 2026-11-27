@@ -167,6 +167,9 @@ export const DOMAIN_ERROR_MESSAGES = {
   INVALID_SECTION_OVERRIDES: 'Los ajustes de la comisión no son válidos.',
   INVALID_SHIFT_RANGES: 'Los horarios de los turnos no son válidos.',
   INVALID_STAFF_ROLE: 'Ese rol no se puede asignar al personal.',
+  TERM_YEAR_MISMATCH: 'El año del cuatrimestre no coincide con su fecha de inicio.',
+  TERM_ENROLLMENT_WINDOW_OUTSIDE_TERM: 'La inscripción no puede cerrar después de que termina el cuatrimestre.',
+  SUBJECT_IS_PREREQUISITE_OF_ACTIVE_SUBJECT: 'La materia es correlativa de otra que sigue activa: quitá la correlatividad antes de desactivarla.',
   INVALID_TERM_DATES: 'Las fechas del cuatrimestre no son válidas.',
   INVALID_WINDOW_CONFIGURATION: 'La configuración del período no es válida.',
   MAX_EXAM_ATTEMPTS_EXCEEDED: 'Superaste la cantidad máxima de intentos para rendir este examen.',
@@ -463,4 +466,5 @@ export const DOMAIN_ERROR_MESSAGES = {
   DEBT_EXCEPTION_ALREADY_USED: 'Esta constancia ya se descargó y no se puede descargar de nuevo.',
   DEBT_EXCEPTION_EXPIRED: 'La excepción venció.',
   SECTION_HAS_RECORDS: 'Para cambiar de comisión hablá con Administración.',
+  SECTION_WITHDRAWAL_TERM_ENDED: 'El término ya terminó: para darte de baja hablá con Administración.',
 };
