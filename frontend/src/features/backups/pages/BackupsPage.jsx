@@ -38,7 +38,7 @@ function BackupsContent({ status, isPlatformAdmin }) {
       <BackupSummaryCard {...summary} />
       <BackupKeyFacts summary={status.summary} />
       <Tabs defaultValue="detail" className="gap-4">
-        <TabsList variant="segmented" aria-label="Secciones de Backups">
+        <TabsList variant="line" aria-label="Secciones de Backups">
           <TabsTrigger value="detail">Detalle</TabsTrigger>
           <TabsTrigger value="what">Qué se respalda</TabsTrigger>
           <TabsTrigger value="how">Cómo restaurar</TabsTrigger>

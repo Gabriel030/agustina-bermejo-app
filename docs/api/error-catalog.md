@@ -114,6 +114,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ENROLLMENT_WINDOW_CLOSED` | no | `EnrollmentWindowClosedException` | enrollment |
 | `EVALUATION_DATE_ON_HOLIDAY` | no | `EvaluationDateOnHolidayException` | evaluation |
 | `EVALUATION_DATE_OUTSIDE_TERM` | no | `EvaluationDateOutsideTermException` | evaluation |
+| `EXAM_BOARD_REGISTRATION_END_AFTER_EXAM` | no | `ExamBoardRegistrationEndAfterExamException` | evaluation |
 | `EXAM_BOARD_REGISTRATION_WINDOW_CLOSED` | no | `ExamBoardRegistrationWindowClosedException` | evaluation |
 | `EXAM_BOARD_SUBJECT_MISMATCH` | no | `ExamBoardSubjectMismatchException` | evaluation |
 | `EXAM_DATE_ON_HOLIDAY` | no | `ExamDateOnHolidayException` | evaluation |
@@ -158,6 +159,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVALID_EVALUATION_DATE` | no | `InvalidEvaluationDateException` | evaluation |
 | `INVALID_EVALUATION_SCHEME` | no | `InvalidEvaluationSchemeException` | evaluation |
 | `INVALID_EXAM_BOARD_FINAL_GRADE_ENTRY` | no | `InvalidExamBoardFinalGradeEntryException` | evaluation |
+| `INVALID_EXAM_BOARD_REGISTRATION_WINDOW` | no | `InvalidExamBoardRegistrationWindowException` | evaluation |
+| `INVALID_EXAM_BOARD_REOPEN_REASON` | no | `InvalidExamBoardReopenReasonException` | evaluation |
 | `INVALID_EXAM_REGISTRATION_RECIPIENT` | no | `InvalidExamRegistrationRecipientException` | graduation |
 | `INVALID_GRADE` | no | `InvalidGradeException` | shared |
 | `INVALID_GRADE_CORRECTION_REASON` | no | `InvalidGradeCorrectionReasonException` | evaluation |
@@ -489,6 +492,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `EXAM_BOARD_CLOSED` | no | `ExamBoardClosedException` | evaluation |
 | `EXAM_BOARD_FINAL_GRADE_ROW_REJECTED` | no | `ExamBoardFinalGradeRowRejectedException` | evaluation |
 | `EXAM_BOARD_HAS_GRADES` | no | `ExamBoardHasGradesException` | evaluation |
+| `EXAM_BOARD_NOT_CLOSED` | no | `ExamBoardNotClosedException` | evaluation |
 | `EXAM_BOARD_NOT_YET_TAKEN` | no | `ExamBoardNotYetTakenException` | evaluation |
 | `EXAM_BOARD_REGISTRATION_NOT_WITHDRAWABLE` | no | `ExamBoardRegistrationNotWithdrawableException` | evaluation |
 | `EXAM_BOARD_REGISTRATION_WITHDRAWN` | no | `ExamBoardRegistrationWithdrawnException` | evaluation |
@@ -937,6 +941,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/exam-boards/{id}/close` | `ExamBoardController#close` |
 | POST | `/exam-boards/{id}/exam-certificates/batch` | `ExamBoardCertificateController#issueBatch` |
 | POST | `/exam-boards/{id}/registrations` | `ExamBoardRegistrationController#register` |
+| POST | `/exam-boards/{id}/reopen` | `ExamBoardChangeController#reopen` |
 | POST | `/exam-boards/{id}/reschedule` | `ExamBoardChangeController#reschedule` |
 | POST | `/exam-boards/{id}/tribunal` | `ExamBoardController#assignTribunal` |
 | POST | `/exam-certificates/{id}/revoke` | `ExamCertificateController#revoke` |

@@ -263,12 +263,22 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
         Map<String, Object> request = new LinkedHashMap<>();
         request.put(board.ownerKey(), board.ownerId());
         request.put("termId", board.termId());
-        request.put("examDate", finalExamDate(api));
+        request.put("examDate", upcomingExamDate(api));
         long examBoardId = api.post(ADMIN, "/exam-boards", request).get("id").asLong();
         api.post(ADMIN, "/exam-boards/" + examBoardId + "/tribunal", Map.of("instructorId", board.instructorId()));
         api.post(ADMIN, "/exam-boards/" + examBoardId + "/registrations",
                 Map.of("examBoardId", examBoardId, board.registrationKey(), board.enrollmentId()));
+        api.post(ADMIN, "/exam-boards/" + examBoardId + "/reschedule", Map.of("examDate", finalExamDate(api)));
         return examBoardId;
+    }
+
+    private String upcomingExamDate(DemoApiClient api) {
+        Set<LocalDate> holidays = holidayDates(api);
+        LocalDate day = ApplicationTime.today().plusDays(1);
+        while (day.getDayOfWeek() == DayOfWeek.SATURDAY || day.getDayOfWeek() == DayOfWeek.SUNDAY || holidays.contains(day)) {
+            day = day.plusDays(1);
+        }
+        return day.atStartOfDay().toString() + ":00";
     }
 
     private void loadApprovingGrades(DemoApiClient api, String gradeItemsPath, String publishPath, FinalExamBoard board) {

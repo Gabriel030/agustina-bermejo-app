@@ -43,7 +43,7 @@ function TermsEditor({ initialText }) {
   return (
     <GlassCard className="flex flex-col gap-4 p-5">
       <Tabs defaultValue="edit" className="gap-3">
-        <TabsList variant="segmented">
+        <TabsList variant="line">
           <TabsTrigger value="edit">Editar</TabsTrigger>
           <TabsTrigger value="preview">Vista previa</TabsTrigger>
         </TabsList>

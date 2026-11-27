@@ -150,6 +150,30 @@ class ExamBoardManagerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void creatingAnExamBoardWithAnInvertedRegistrationWindowFails() {
+        Subject subject = persistSubject("MateriaMesaVentanaInvertida");
+        Term term = persistTerm();
+        entityManager.flush();
+        LocalDateTime exam = LocalDateTime.of(2099, 11, 24, 18, 0);
+
+        assertThatThrownBy(() -> examBoardService.create(new CreateExamBoardRequest(
+                subject.getId(), null, term.getId(), exam, exam.minusDays(1), exam.minusDays(5), null)))
+                .isInstanceOf(com.red_escuela.backend.evaluation.exception.InvalidExamBoardRegistrationWindowException.class);
+    }
+
+    @Test
+    void creatingAnExamBoardWhoseRegistrationClosesAfterTheExamFails() {
+        Subject subject = persistSubject("MateriaMesaCierreTardio");
+        Term term = persistTerm();
+        entityManager.flush();
+        LocalDateTime exam = LocalDateTime.of(2099, 11, 24, 18, 0);
+
+        assertThatThrownBy(() -> examBoardService.create(new CreateExamBoardRequest(
+                subject.getId(), null, term.getId(), exam, exam.minusDays(5), exam.plusDays(1), null)))
+                .isInstanceOf(com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationEndAfterExamException.class);
+    }
+
+    @Test
     void closingAnExamBoardBeforeItsExamDateFails() {
         Subject subject = persistSubject("MateriaMesaFutura");
         ExamBoard examBoard = persistExamBoard(subject, persistTerm(), LocalDateTime.of(2099, 11, 23, 18, 0));

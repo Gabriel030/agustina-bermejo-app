@@ -58,6 +58,9 @@ class ExamBoardFinalGradesRecorderTest extends ExamBoardChangeFixture {
     @Autowired
     private GradeItemAuditRepository auditRepository;
 
+    @Autowired
+    private ExamBoardReopener examBoardReopener;
+
     private record Row(SubjectSectionEnrollment enrollment, ExamBoardRegistration registration) {
     }
 
@@ -332,5 +335,30 @@ class ExamBoardFinalGradesRecorderTest extends ExamBoardChangeFixture {
                 .isInstanceOf(InvalidExamBoardFinalGradeEntryException.class);
         assertThatThrownBy(() -> new ExamBoardFinalGradeEntryRequest(1L, null, null, null))
                 .isInstanceOf(InvalidExamBoardFinalGradeEntryException.class);
+    }
+
+    @Test
+    void aReopenedBoardAllowsCorrectingAFinalGradeThatWasAlreadyClosed() {
+        Board board = board("74000091", LocalDateTime.now().minusDays(1));
+        Row student = row(board, "74000092");
+        record(board, score(student, "5.0", null));
+        examBoardManager.close(board.board().getId());
+        assertThatThrownBy(() -> record(board, score(student, "8.0", "Corrección")))
+                .isInstanceOf(ExamBoardClosedException.class);
+
+        var director = person("74000093");
+        entityManager.flush();
+        org.springframework.security.core.context.SecurityContextHolder.getContext().setAuthentication(
+                new org.springframework.security.authentication.UsernamePasswordAuthenticationToken(
+                        director.getId().toString(), null));
+        try {
+            examBoardReopener.reopen(board.board().getId(), "Nota mal cargada en el acta");
+        } finally {
+            org.springframework.security.core.context.SecurityContextHolder.clearContext();
+        }
+        record(board, score(student, "8.0", "Nota mal cargada en el acta"));
+
+        assertThat(items(student)).hasSize(1);
+        assertThat(items(student).get(0).getScore().value()).isEqualByComparingTo("8");
     }
 }

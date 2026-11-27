@@ -249,7 +249,7 @@ export function PadronAlumnos() {
           </div>
 
           <Tabs value={tabActivo} onValueChange={handleTabChange}>
-            <TabsList variant="segmented" className="w-full">
+            <TabsList variant="line">
               {TABS.map((tab) => (
                 <TabsTrigger key={tab.id} value={tab.id} className="flex-1">
                   {tab.label}

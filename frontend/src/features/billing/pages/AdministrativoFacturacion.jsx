@@ -725,7 +725,7 @@ export function AdministrativoFacturacion() {
       }
     >
       <Tabs value={tab} onValueChange={handleTabChange}>
-        <TabsList variant="segmented">
+        <TabsList variant="line">
           <TabsTrigger value={TAB_ACCOUNT}>Estado de cuenta</TabsTrigger>
           <TabsTrigger value={TAB_RECEIPTS}>
             Comprobantes{' '}
