@@ -74,7 +74,7 @@ class SimulationLatePaymentIT extends AbstractSimulationTest {
         onlyInExplorationTierNightly();
         Scenario scenario = paidMarch(Timeline.Mode.DAILY);
 
-        for (LocalDate current = day(4, 8); !current.isAfter(day(4, 18)); current = current.plusDays(1)) {
+        for (LocalDate current = day(4, 8); !current.isAfter(day(4, 19)); current = current.plusDays(1)) {
             scenario.advanceTo(current);
             String expected = current.isBefore(day(4, 18)) ? "PENDING" : "OVERDUE";
             assertThat(scenario.ledger().rows().get(2).paymentStatus()).as("April installment on %s", current).isEqualTo(expected);
@@ -117,7 +117,7 @@ class SimulationLatePaymentIT extends AbstractSimulationTest {
         onlyInExplorationTierNightly();
         Scenario scenario = paidMarch(Timeline.Mode.DAILY);
 
-        scenario.advanceTo(day(4, 16)).payEverythingDue();
+        scenario.advanceTo(day(4, 17)).payEverythingDue();
         scenario.advanceTo(day(5, 3));
 
         scenario.ledger().hasExactly(enrollmentFee(), installment(MARCH, "0.00", "PAID"), installment(APRIL, "0.00", "PAID"),
