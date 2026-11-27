@@ -5,10 +5,14 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.TreeMap;
 
 final class MigrationTemplateCatalog {
+
+    private static final Duration CONNECTIONS_CLOSE_TIMEOUT = Duration.ofSeconds(10);
+    private static final Duration CONNECTIONS_POLL_INTERVAL = Duration.ofMillis(100);
 
     private final PostgresEndpoint endpoint;
     private final SchemaMigrator migrator;
@@ -71,10 +75,25 @@ final class MigrationTemplateCatalog {
     }
 
     private void requireNoOpenConnections(String template) {
-        Integer open = administration().queryForObject("select count(*) from pg_stat_activity where datname = ?", Integer.class, template);
-        if (open != null && open > 0) {
+        long deadline = System.nanoTime() + CONNECTIONS_CLOSE_TIMEOUT.toNanos();
+        int open = openConnections(template);
+        while (open > 0 && System.nanoTime() < deadline) {
+            try {
+                Thread.sleep(CONNECTIONS_POLL_INTERVAL.toMillis());
+            } catch (InterruptedException interrupted) {
+                Thread.currentThread().interrupt();
+                break;
+            }
+            open = openConnections(template);
+        }
+        if (open > 0) {
             throw new IllegalStateException("Template " + template + " still has " + open + " open connections and cannot be cloned");
         }
+    }
+
+    private int openConnections(String template) {
+        Integer open = administration().queryForObject("select count(*) from pg_stat_activity where datname = ?", Integer.class, template);
+        return open == null ? 0 : open;
     }
 
     private JdbcTemplate administration() {
