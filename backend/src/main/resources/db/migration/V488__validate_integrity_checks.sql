@@ -1,0 +1,8 @@
+alter table subject_section validate constraint subject_section_capacity_positive;
+alter table course_section validate constraint course_section_capacity_positive;
+alter table course validate constraint course_capacity_positive;
+alter table classroom validate constraint classroom_capacity_positive;
+alter table subject_section_enrollment validate constraint subject_section_enrollment_attempt_number_positive;
+alter table course_section_enrollment validate constraint course_section_enrollment_attempt_number_positive;
+alter table subject_section_enrollment validate constraint fk_subject_section_enrollment_parent_student;
+alter table course_section_enrollment validate constraint fk_course_section_enrollment_parent_student;

@@ -86,14 +86,14 @@ class ProcessedEffectGuardIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void anEventWithoutIdAlwaysRunsTheEffect() {
+    void anEventWithoutIdIsRejectedWithoutRunningTheEffect() {
         ProbeEvent legacy = new ProbeEvent(null, "c", Instant.now());
         AtomicInteger runs = new AtomicInteger();
 
-        guard.runEffectOnce(legacy, "handler", runs::incrementAndGet);
-        guard.runEffectOnce(legacy, "handler", runs::incrementAndGet);
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> guard.runEffectOnce(legacy, "handler", runs::incrementAndGet))
+                .isInstanceOf(IllegalArgumentException.class);
 
-        assertThat(runs).hasValue(2);
+        assertThat(runs).hasValue(0);
     }
 
     @Test

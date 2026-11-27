@@ -122,4 +122,8 @@ public class Program {
             throw new CurrencyMismatchException(currency, money.currency());
         }
     }
+
+    @Version
+    @Column(name = "version")
+    private Long version;
 }

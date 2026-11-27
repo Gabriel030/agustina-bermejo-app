@@ -528,6 +528,18 @@ from course_enrollment
 where status = 'WITHDRAWN' and withdrawal_registered_on is not null and withdrawal_effective_date is null;
 \endif
 
+\echo [V487] Datos que hacen fallar el VALIDATE de V488 (capacidad <= 0, attempt_number < 1, inscripciones cuyo estudiante no coincide con la inscripcion padre); debe devolver 0 filas:
+select 'subject_section' as tabla, id from subject_section where capacity <= 0
+union all select 'course_section', id from course_section where capacity <= 0
+union all select 'course', id from course where capacity <= 0
+union all select 'classroom', id from classroom where capacity <= 0
+union all select 'subject_section_enrollment.attempt_number', id from subject_section_enrollment where attempt_number < 1
+union all select 'course_section_enrollment.attempt_number', id from course_section_enrollment where attempt_number < 1
+union all select 'subject_section_enrollment.parent_student', e.id from subject_section_enrollment e
+    join program_enrollment p on p.id = e.program_enrollment_id where p.student_id <> e.student_id
+union all select 'course_section_enrollment.parent_student', e.id from course_section_enrollment e
+    join course_enrollment c on c.id = e.course_enrollment_id where c.student_id <> e.student_id;
+
 \echo
 \echo [V470] Franjas de aula solapadas (misma aula, mismo dia y hora, periodos de termino que se pisan, ambas de comisiones ACTIVE); V470 ABORTA al crear el EXCLUDE si hay filas (corregir antes: mover una franja a otra aula u horario o desactivar la comision; no se borran datos):
 with active_slots as (

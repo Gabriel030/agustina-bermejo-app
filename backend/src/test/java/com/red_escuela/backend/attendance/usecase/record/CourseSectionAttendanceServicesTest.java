@@ -81,7 +81,8 @@ class CourseSectionAttendanceServicesTest {
                             enrollmentFinder, classSessionRepository), eventPublisher));
     private final CancelCourseSectionClassSessionService cancelService = new CancelCourseSectionClassSessionService(
             new CancelCourseSectionClassSessionTransaction(
-                    new ClassSessionCanceller(classSessionRepository, sectionAccess, classSessionUpserter)));
+                    new ClassSessionCanceller(classSessionRepository, sectionAccess, classSessionUpserter,
+                            mock(com.red_escuela.backend.attendance.repository.AttendanceRepository.class), eventPublisher)));
     private final GetCourseSectionAbsenceReportService absenceReportService =
             new GetCourseSectionAbsenceReportService(sectionAccess, rosterBuilder);
     private final GetCourseSectionAttendanceHistoryService historyService =
