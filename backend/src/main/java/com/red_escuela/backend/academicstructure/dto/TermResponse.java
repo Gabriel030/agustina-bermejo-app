@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.dto;
 
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import io.swagger.v3.oas.annotations.media.Schema;
 import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -17,7 +18,7 @@ public record TermResponse(
                 term.getId(), term.getYear(), term.getDescription(), term.getType(),
                 term.getStatus() == null ? null : term.getStatus().name(),
                 term.getStartDate(), term.getEndDate(), term.getEnrollmentStart(), term.getEnrollmentEnd(),
-                term.isEnrollmentOpenAt(LocalDateTime.now()),
+                term.isEnrollmentOpenAt(ApplicationTime.now()),
                 term.getEnrollmentOverride());
     }
 }
