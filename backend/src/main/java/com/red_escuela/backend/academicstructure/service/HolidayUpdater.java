@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.service;
 
+import com.red_escuela.backend.academicstructure.api.HolidayAffectedItem;
 import com.red_escuela.backend.academicstructure.api.HolidayAttendanceConflictPort;
 import com.red_escuela.backend.academicstructure.dto.HolidayResponse;
 import com.red_escuela.backend.academicstructure.dto.UpdateHolidayRequest;
@@ -8,13 +9,12 @@ import com.red_escuela.backend.academicstructure.exception.HolidayAlreadyExistsE
 import com.red_escuela.backend.academicstructure.exception.HolidayNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.HolidayRepository;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
-import com.red_escuela.backend.academicstructure.api.HolidayAffectedItem;
-import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class HolidayUpdater {

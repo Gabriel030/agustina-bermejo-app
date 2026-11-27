@@ -7,11 +7,10 @@ import com.red_escuela.backend.academicstructure.entity.Holiday;
 import com.red_escuela.backend.academicstructure.exception.HolidayAlreadyExistsException;
 import com.red_escuela.backend.academicstructure.repository.HolidayRepository;
 import org.springframework.stereotype.Component;
-
-import java.util.Optional;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class HolidayCreator {

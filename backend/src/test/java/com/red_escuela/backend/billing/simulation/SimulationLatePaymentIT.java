@@ -76,7 +76,7 @@ class SimulationLatePaymentIT extends AbstractSimulationTest {
 
         for (LocalDate current = day(4, 8); !current.isAfter(day(4, 18)); current = current.plusDays(1)) {
             scenario.advanceTo(current);
-            String expected = current.isBefore(day(4, 17)) ? "PENDING" : "OVERDUE";
+            String expected = current.isBefore(day(4, 18)) ? "PENDING" : "OVERDUE";
             assertThat(scenario.ledger().rows().get(2).paymentStatus()).as("April installment on %s", current).isEqualTo(expected);
         }
         scenario.finish();
@@ -93,7 +93,7 @@ class SimulationLatePaymentIT extends AbstractSimulationTest {
         scenario.advanceTo(day(4, 20)).payEverythingDue();
 
         scenario.ledger().hasExactly(enrollmentFee(), installment(MARCH, "0.00", "PAID"), installment(APRIL, "0.00", "PAID"),
-                lateFee(APRIL, day(4, 20), day(4, 30), "734.40", "734.40", "PENDING"));
+                lateFee(APRIL, day(4, 20), day(4, 30), "652.80", "652.80", "PENDING"));
         scenario.finish();
     }
 
@@ -104,10 +104,10 @@ class SimulationLatePaymentIT extends AbstractSimulationTest {
         onlyInExplorationTierNightly();
         Scenario scenario = paidMarch(Timeline.Mode.DAILY);
 
-        scenario.advanceTo(day(4, 17)).payEverythingDue();
+        scenario.advanceTo(day(4, 18)).payEverythingDue();
 
         scenario.ledger().hasExactly(enrollmentFee(), installment(MARCH, "0.00", "PAID"), installment(APRIL, "0.00", "PAID"),
-                lateFee(APRIL, day(4, 17), day(4, 27), "489.60", "489.60", "PENDING"));
+                lateFee(APRIL, day(4, 18), day(4, 28), "489.60", "489.60", "PENDING"));
         scenario.finish();
     }
 
@@ -136,7 +136,7 @@ class SimulationLatePaymentIT extends AbstractSimulationTest {
         scenario.advanceTo(day(5, 3));
 
         scenario.ledger().hasExactly(enrollmentFee(), installment(MARCH, "0.00", "PAID"), installment(APRIL, "48000.00", "OVERDUE"),
-                lateFee(APRIL, day(5, 1), day(5, 11), "1550.40", "1550.40", "PENDING"));
+                lateFee(APRIL, day(5, 1), day(5, 11), "1468.80", "1468.80", "PENDING"));
         scenario.finish();
     }
 
@@ -150,7 +150,7 @@ class SimulationLatePaymentIT extends AbstractSimulationTest {
         scenario.advanceTo(day(5, 3)).payEverythingDue();
 
         scenario.ledger().hasExactly(enrollmentFee(), installment(MARCH, "0.00", "PAID"), installment(APRIL, "0.00", "PAID"),
-                lateFee(APRIL, day(5, 1), day(5, 11), "1550.40", "0.00", "PAID"), lateFee(APRIL, day(5, 3), day(5, 13), "244.80", "244.80", "PENDING"),
+                lateFee(APRIL, day(5, 1), day(5, 11), "1468.80", "0.00", "PAID"), lateFee(APRIL, day(5, 3), day(5, 13), "244.80", "244.80", "PENDING"),
                 installment(MAY, day(5, 3), day(5, 13), "48000.00", "PENDING"));
         scenario.finish();
     }
@@ -166,7 +166,7 @@ class SimulationLatePaymentIT extends AbstractSimulationTest {
         scenario.advanceTo(day(6, 2));
 
         scenario.ledger().hasExactly(enrollmentFee(), installment(MARCH, "0.00", "PAID"), installment(APRIL, "0.00", "PAID"),
-                lateFee(APRIL, day(5, 1), day(5, 11), "1550.40", "0.00", "PAID"), lateFee(APRIL, day(5, 3), day(5, 13), "244.80", "244.80", "OVERDUE"),
+                lateFee(APRIL, day(5, 1), day(5, 11), "1468.80", "0.00", "PAID"), lateFee(APRIL, day(5, 3), day(5, 13), "244.80", "244.80", "OVERDUE"),
                 installment(MAY, day(5, 3), day(5, 13), "48000.00", "OVERDUE"), lateFee(MAY, day(6, 1), day(6, 11), "1468.80", "1468.80", "PENDING"));
         scenario.finish();
     }
@@ -187,7 +187,7 @@ class SimulationLatePaymentIT extends AbstractSimulationTest {
 
         scenario.advanceTo(day(6, 2));
         scenario.ledger().hasExactly(enrollmentFee(), installment(MARCH, "0.00", "PAID"), installment(APRIL, "48000.00", "OVERDUE"),
-                lateFee(APRIL, day(5, 1), day(5, 11), "1550.40", "1550.40", "OVERDUE"), lateFee(APRIL, day(6, 1), day(6, 11), "2529.60", "2529.60", "PENDING"));
+                lateFee(APRIL, day(5, 1), day(5, 11), "1468.80", "1468.80", "OVERDUE"), lateFee(APRIL, day(6, 1), day(6, 11), "2529.60", "2529.60", "PENDING"));
         scenario.finish();
     }
 
