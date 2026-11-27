@@ -87,11 +87,11 @@ describe('SolicitudesAsistencia', () => {
     await screen.findByText('Mateo Giménez');
     expect(screen.getByText('Valentina Suárez')).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('tab', { name: /Justificaciones/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Justificaciones' }));
     expect(screen.queryByText('Mateo Giménez')).not.toBeInTheDocument();
     expect(screen.getByText('Valentina Suárez')).toBeInTheDocument();
 
-    await userEvent.click(screen.getByRole('tab', { name: /Correcciones/ }));
+    await userEvent.click(screen.getByRole('button', { name: 'Correcciones' }));
     expect(screen.getByText('Mateo Giménez')).toBeInTheDocument();
     expect(screen.queryByText('Valentina Suárez')).not.toBeInTheDocument();
   });
@@ -222,7 +222,7 @@ describe('SolicitudesAsistencia', () => {
 
     await screen.findByText('Valentina Suárez');
     expect(screen.queryByText('Mateo Giménez')).not.toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /Justificaciones/ })).toHaveAttribute('data-state', 'active');
+    expect(screen.getByRole('button', { name: 'Justificaciones' })).toHaveAttribute('aria-pressed', 'true');
   });
 
   it('muestra el estado vacío cuando no hay nada pendiente', async () => {
