@@ -198,22 +198,21 @@ export const handlers = [
     HttpResponse.json(graduationCertificateDetail({ id: Number(params.id) })),
   ),
   http.get(`${API}/graduation-certificates/:id/pdf`, () => pdfResponse()),
-  http.post(`${API}/programs/:programId/terms/:termId/cohorts`, async ({ request, params }) => {
-    const body = await request.json();
-    return HttpResponse.json(
+  http.post(`${API}/programs/:programId/terms/:termId/cohorts`, ({ params }) =>
+    HttpResponse.json(
       {
         id: 1,
         programId: Number(params.programId),
         termId: Number(params.termId),
-        intake: body.intake,
-        admissionStart: body.admissionStart,
-        admissionEnd: body.admissionEnd,
-        cursadaStart: body.cursadaStart,
+        intake: 'FIRST',
+        admissionStart: '2027-01-01',
+        admissionEnd: '2027-02-01',
+        cursadaStart: '2027-03-01',
         createdAt: '2027-01-05T10:00:00',
       },
       { status: 201 },
-    );
-  }),
+    ),
+  ),
   http.post(`${API}/graduation-certificates/preview`, () => pdfResponse()),
   http.post(`${API}/graduation-certificates/batch`, () => HttpResponse.json(graduationCertificateBatch())),
   http.post(`${API}/graduation-certificates/:id/revoke`, ({ params }) =>
