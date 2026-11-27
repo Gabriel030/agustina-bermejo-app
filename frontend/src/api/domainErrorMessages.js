@@ -449,4 +449,5 @@ export const DOMAIN_ERROR_MESSAGES = {
   DEBT_EXCEPTION_ALREADY_USED: 'Esta constancia ya se descargó y no se puede descargar de nuevo.',
   DEBT_EXCEPTION_EXPIRED: 'La excepción venció.',
   SECTION_HAS_RECORDS: 'Para cambiar de comisión hablá con Administración.',
+  SECTION_WITHDRAWAL_TERM_ENDED: 'El término ya terminó: para darte de baja hablá con Administración.',
 };
