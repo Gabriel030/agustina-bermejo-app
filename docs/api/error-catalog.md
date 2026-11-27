@@ -79,7 +79,12 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CHARGEBACK_DATE_INVALID` | no | `ChargebackDateInvalidException` | billing |
 | `CHARGEBACK_REFERENCE_INVALID` | no | `ChargebackReferenceInvalidException` | billing |
 | `CIRCULAR_PREREQUISITE` | no | `CircularPrerequisiteException` | academicstructure |
+| `CLASS_DATE_AFTER_TERM_END` | no | `ClassDateAfterTermEndException` | attendance |
+| `CLASS_DATE_BEFORE_TERM_START` | no | `ClassDateBeforeTermStartException` | attendance |
+| `CLASS_DATE_IN_FUTURE` | no | `ClassDateInFutureException` | attendance |
+| `CLASS_DAY_WITHOUT_SCHEDULE_SLOT` | no | `ClassDayWithoutScheduleSlotException` | attendance |
 | `CLASS_ON_HOLIDAY` | no | `ClassOnHolidayException` | attendance |
+| `CLASS_ON_WEEKEND` | no | `ClassOnWeekendException` | attendance |
 | `CONSENT_CATEGORY_NOT_OPTIONAL` | no | `ConsentCategoryNotOptionalException` | notification |
 | `CONSENT_CATEGORY_REPEATED` | no | `ConsentCategoryRepeatedException` | notification |
 | `CONSENT_SOURCE_NOT_ACCEPTED` | no | `ConsentSourceNotAcceptedException` | notification |
