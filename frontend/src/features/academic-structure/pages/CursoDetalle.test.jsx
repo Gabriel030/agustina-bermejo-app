@@ -52,3 +52,19 @@ describe('CursoDetalle load failure', () => {
     expect(screen.queryByRole('button', { name: /Agregar módulo/ })).not.toBeInTheDocument();
   });
 });
+
+describe('CursoDetalle course hours', () => {
+  it.each([
+    [{ durationHours: 40 }, true],
+    [{}, false],
+  ])('shows the course hours only when they exist %j', async (extra, visible) => {
+    server.use(
+      http.get(`${API}/courses/5`, () => HttpResponse.json({ ...COURSE, ...extra })),
+      http.get(`${API}/courses/5/subjects`, () => HttpResponse.json([])),
+    );
+    renderPage();
+    await screen.findByRole('heading', { name: 'Primeros auxilios' });
+    if (visible) expect(await screen.findByText(/40 horas/)).toBeInTheDocument();
+    else expect(screen.queryByText(/horas/)).not.toBeInTheDocument();
+  });
+});

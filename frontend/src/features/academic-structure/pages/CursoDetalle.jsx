@@ -141,6 +141,7 @@ export function CursoDetalle() {
     term ? (term.description ? `${term.year} — ${term.description}` : String(term.year)) : null,
     course.teachingMode ? TEACHING_MODE_LABELS[course.teachingMode] : null,
     course.durationMonths ? `${course.durationMonths} meses` : null,
+    course.durationHours ? `${course.durationHours} horas` : null,
     course.capacity ? `${course.capacity} cupos` : null,
     course.price != null ? formatMoney(course.price) : null,
   ].filter(Boolean);
