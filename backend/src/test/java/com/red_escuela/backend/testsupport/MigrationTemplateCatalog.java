@@ -1,14 +1,21 @@
 package com.red_escuela.backend.testsupport;
 
+import org.awaitility.core.ConditionTimeoutException;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
+import java.time.Duration;
 import java.util.Map;
 import java.util.TreeMap;
 
+import static org.awaitility.Awaitility.await;
+
 final class MigrationTemplateCatalog {
+
+    private static final Duration CONNECTIONS_CLOSE_TIMEOUT = Duration.ofSeconds(10);
+    private static final Duration CONNECTIONS_POLL_INTERVAL = Duration.ofMillis(100);
 
     private final PostgresEndpoint endpoint;
     private final SchemaMigrator migrator;
@@ -71,10 +78,18 @@ final class MigrationTemplateCatalog {
     }
 
     private void requireNoOpenConnections(String template) {
-        Integer open = administration().queryForObject("select count(*) from pg_stat_activity where datname = ?", Integer.class, template);
-        if (open != null && open > 0) {
-            throw new IllegalStateException("Template " + template + " still has " + open + " open connections and cannot be cloned");
+        try {
+            await().atMost(CONNECTIONS_CLOSE_TIMEOUT).pollInterval(CONNECTIONS_POLL_INTERVAL)
+                    .until(() -> openConnections(template) == 0);
+        } catch (ConditionTimeoutException timeout) {
+            throw new IllegalStateException("Template " + template + " still has " + openConnections(template)
+                    + " open connections and cannot be cloned", timeout);
         }
+    }
+
+    private int openConnections(String template) {
+        Integer open = administration().queryForObject("select count(*) from pg_stat_activity where datname = ?", Integer.class, template);
+        return open == null ? 0 : open;
     }
 
     private JdbcTemplate administration() {
