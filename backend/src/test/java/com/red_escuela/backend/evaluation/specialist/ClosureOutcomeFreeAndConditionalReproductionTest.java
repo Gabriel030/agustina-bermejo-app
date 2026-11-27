@@ -50,7 +50,6 @@ class ClosureOutcomeFreeAndConditionalReproductionTest {
     }
 
     @Test
-    @Disabled("E34-A-S1")
     void h1FreeStudentLeavesTheOpenStatusWhenTheClosureIsApplied() {
         applyClosureWith(ClosureFinalCondition.FREE);
 
@@ -58,8 +57,8 @@ class ClosureOutcomeFreeAndConditionalReproductionTest {
                 ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.anyBoolean());
     }
 
+    @Disabled("E34-A-S1: PROMOTION_CONDITIONAL queda abierta con plazo y alerta (D1), fuera de alcance de S1")
     @Test
-    @Disabled("E34-A-S1")
     void h1ConditionalPromotionStudentLeavesTheOpenStatusWhenTheClosureIsApplied() {
         applyClosureWith(ClosureFinalCondition.PROMOTION_CONDITIONAL);
 

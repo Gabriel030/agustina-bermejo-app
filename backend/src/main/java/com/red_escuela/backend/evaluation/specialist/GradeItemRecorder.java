@@ -5,6 +5,7 @@ import com.red_escuela.backend.evaluation.entity.SectionGradeItemPublication;
 import com.red_escuela.backend.evaluation.events.GradeCorrectedEvent;
 import com.red_escuela.backend.evaluation.events.GradesPublishedEvent;
 import com.red_escuela.backend.evaluation.events.SubjectApprovalRevertedEvent;
+import com.red_escuela.backend.evaluation.events.SubjectApprovalStandingChangedEvent;
 import com.red_escuela.backend.identity.entity.Person;
 import org.springframework.context.ApplicationEventPublisher;
 import com.red_escuela.backend.evaluation.domain.PrerequisiteGatedOutcome;
@@ -280,7 +281,16 @@ public class GradeItemRecorder {
             } else if (losesApproval) {
                 graduationRequestTrigger.flagGraduationRequestOutdated(programEnrollmentId);
             }
+            if (wasApproved != (result.status() == EnrollmentStatus.APPROVED)) {
+                publishApprovalStandingChanged(enrollment, result.status() == EnrollmentStatus.APPROVED);
+            }
         }
+    }
+
+    private void publishApprovalStandingChanged(SubjectSectionEnrollment enrollment, boolean approved) {
+        eventPublisher.publishEvent(SubjectApprovalStandingChangedEvent.changedFor(
+                enrollment.getProgramEnrollment().getId(), enrollment.getProgramEnrollment().getProgram().getId(),
+                enrollment.subjectId(), approved));
     }
 
     private void revertApprovalLosingPrerequisites(SubjectSectionEnrollment enrollment) {
@@ -303,6 +313,7 @@ public class GradeItemRecorder {
                 enrollment.getSubjectSection().getId(), enrollment.getId());
         sectionEnrollmentOutcomeRecorder.recordProgramOutcome(enrollment.getId(), EnrollmentStatus.REGULAR, null, null, true);
         graduationRequestTrigger.flagGraduationRequestOutdated(programEnrollmentId);
+        publishApprovalStandingChanged(enrollment, false);
         Person student = enrollment.getStudent().getPerson();
         eventPublisher.publishEvent(SubjectApprovalRevertedEvent.revertedFor(
                 student.getId(), enrollment.getSubjectSection().getSubject().getName(), unmetNames));

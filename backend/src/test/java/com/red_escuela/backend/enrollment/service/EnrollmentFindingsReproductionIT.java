@@ -167,7 +167,6 @@ class EnrollmentFindingsReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("E34-A-S1")
     void h15RegularInThePrerequisiteDoesNotEnableTheNextSubjectInTheSameTerm() {
         Program program = fixtures.program("CarreraH15");
         Subject first = fixtures.subject("MateriaH15A");
