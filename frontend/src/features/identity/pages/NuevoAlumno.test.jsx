@@ -7,14 +7,16 @@ import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { RateLimitedError } from '@/api/client';
+import { Route, Routes, useLocation } from 'react-router-dom';
 import { NuevoAlumno } from './NuevoAlumno';
 import { addDays, addYears, installFixedClock } from '@/test/fixedClock';
 
 const toastMock = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock('sonner', async (importOriginal) => ({ ...(await importOriginal()), toast: toastMock }));
 
+const authMock = vi.hoisted(() => ({ roles: ['PRECEPTOR'] }));
 vi.mock('@/context/AuthContext', () => ({
-  useAuth: () => ({ usuario: { roles: ['PRECEPTOR'] } }),
+  useAuth: () => ({ usuario: { roles: authMock.roles } }),
 }));
 
 const API = 'http://localhost:8080';
@@ -89,10 +91,31 @@ async function goToReviewStep(user) {
 
 installFixedClock();
 
+function LocationProbe() {
+  return <p data-testid="location">{useLocation().pathname}</p>;
+}
+
+function renderWizardAt(route) {
+  return renderWithProviders(
+    <Routes>
+      <Route path="/:role/alumnos/nuevo" element={<NuevoAlumno />} />
+      <Route path="*" element={<LocationProbe />} />
+    </Routes>,
+    { route },
+  );
+}
+
+async function confirmRegistration(user) {
+  await goToReviewStep(user);
+  await user.click(screen.getByRole('button', { name: 'Confirmar alta' }));
+  await screen.findByRole('heading', { name: 'Alta confirmada' });
+}
+
 describe('NuevoAlumno', () => {
   beforeEach(() => {
     toastMock.success.mockClear();
     toastMock.error.mockClear();
+    authMock.roles = ['PRECEPTOR'];
   });
 
   it('registers the student through the staff endpoint, never the public one', async () => {
@@ -224,6 +247,38 @@ describe('NuevoAlumno', () => {
     expect(await screen.findByRole('heading', { name: 'Alta confirmada' })).toBeInTheDocument();
     expect(screen.getByText(/para que elija su contraseña/)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'Ir al legajo' })).toBeInTheDocument();
+  });
+
+  it('offers to enroll the new student right away and navigates to the enrollment screen', async () => {
+    mockOnboarding();
+    const user = userEvent.setup();
+    renderWizardAt('/preceptor/alumnos/nuevo');
+    await confirmRegistration(user);
+
+    await user.click(screen.getByRole('button', { name: 'Inscribir ahora' }));
+
+    expect(await screen.findByTestId('location')).toHaveTextContent('/preceptor/alumnos/64/inscribir');
+  });
+
+  it('shows the record button as outline when the enroll shortcut is visible', async () => {
+    mockOnboarding();
+    const user = userEvent.setup();
+    renderWizardAt('/preceptor/alumnos/nuevo');
+    await confirmRegistration(user);
+
+    expect(screen.getByRole('button', { name: 'Ir al legajo' }).className).toContain('border-border');
+    expect(screen.getByRole('button', { name: 'Inscribir ahora' }).className).toContain('--btn-primary-bg');
+  });
+
+  it('hides the enroll shortcut and keeps the record button primary when the role cannot enroll', async () => {
+    authMock.roles = ['DOCENTE'];
+    mockOnboarding();
+    const user = userEvent.setup();
+    renderWizardAt('/docente/alumnos/nuevo');
+    await confirmRegistration(user);
+
+    expect(screen.queryByRole('button', { name: 'Inscribir ahora' })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'Ir al legajo' }).className).toContain('--btn-primary-bg');
   });
 
   it('starts a clean registration when the staff asks to register another student', async () => {
