@@ -4,7 +4,7 @@ import com.red_escuela.backend.academicstructure.dto.CreateProgramRequest;
 import com.red_escuela.backend.academicstructure.dto.ProgramPricingResponse;
 import com.red_escuela.backend.academicstructure.dto.ProgramResponse;
 import com.red_escuela.backend.academicstructure.dto.SetCatalogVisibilityRequest;
-import com.red_escuela.backend.academicstructure.entity.CatalogArea;
+import com.red_escuela.backend.academicstructure.domain.CatalogArea;
 import com.red_escuela.backend.academicstructure.entity.ProgramLevel;
 import com.red_escuela.backend.academicstructure.usecase.SetCatalogVisibilityCommand;
 import com.red_escuela.backend.academicstructure.dto.UpdateProgramRequest;

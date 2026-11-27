@@ -246,13 +246,13 @@ class ProgramServiceIT extends AbstractIntegrationTest {
     @Test
     void listingFiltersByCatalogArea() {
         Program technology = createProgram("AAA tecnologia");
-        technology.setCatalogArea(com.red_escuela.backend.academicstructure.entity.CatalogArea.TECHNOLOGY);
+        technology.setCatalogArea(com.red_escuela.backend.academicstructure.domain.CatalogArea.TECHNOLOGY);
         Program design = createProgram("AAB diseno");
-        design.setCatalogArea(com.red_escuela.backend.academicstructure.entity.CatalogArea.DESIGN);
+        design.setCatalogArea(com.red_escuela.backend.academicstructure.domain.CatalogArea.DESIGN);
         Program withoutArea = createProgram("AAC sin area");
         entityManager.flush();
 
-        List<Program> onlyTechnology = programService.list(null, null, com.red_escuela.backend.academicstructure.entity.CatalogArea.TECHNOLOGY);
+        List<Program> onlyTechnology = programService.list(null, null, com.red_escuela.backend.academicstructure.domain.CatalogArea.TECHNOLOGY);
 
         assertThat(onlyTechnology).extracting(Program::getId)
                 .contains(technology.getId())

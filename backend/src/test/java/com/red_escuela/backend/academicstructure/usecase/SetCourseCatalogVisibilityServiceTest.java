@@ -1,6 +1,6 @@
 package com.red_escuela.backend.academicstructure.usecase;
 
-import com.red_escuela.backend.academicstructure.entity.CatalogArea;
+import com.red_escuela.backend.academicstructure.domain.CatalogArea;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.domain.CourseNotFoundException;
 import com.red_escuela.backend.academicstructure.CycleTestFixtures;
