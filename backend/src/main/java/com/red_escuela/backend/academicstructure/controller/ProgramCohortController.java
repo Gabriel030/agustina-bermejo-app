@@ -26,6 +26,6 @@ public class ProgramCohortController {
     @RequiresPermission(code = "academicstructure.manage_program_cohorts", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public ProgramTermCohortResponse createProgramTermCohort(@PathVariable Long programId, @PathVariable Long termId,
                                                              @Valid @RequestBody CreateProgramTermCohortRequest request) {
-        return ProgramTermCohortResponse.from(createProgramTermCohortUseCase.createProgramTermCohort(programId, termId, request));
+        return createProgramTermCohortUseCase.createProgramTermCohort(programId, termId, request);
     }
 }

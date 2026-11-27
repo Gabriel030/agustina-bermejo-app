@@ -6,7 +6,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import com.red_escuela.backend.academicstructure.domain.CohortIntake;
 import com.red_escuela.backend.academicstructure.dto.CreateProgramTermCohortRequest;
 import com.red_escuela.backend.academicstructure.entity.Program;
-import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.dto.ProgramTermCohortResponse;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.exception.ProgramCohortAlreadyExistsException;
 import com.red_escuela.backend.academicstructure.usecase.cohort.CreateProgramTermCohortUseCase;
@@ -50,12 +50,12 @@ class ProgramCohortWithBillingOffIT extends AbstractIntegrationTest {
         switchBillingTo("OFF", false);
         Long[] ids = persistProgramTermAndActor();
 
-        ProgramCohort cohort = createProgramTermCohortUseCase.createProgramTermCohort(ids[0], ids[1], request(CohortIntake.FIRST));
+        ProgramTermCohortResponse cohort = createProgramTermCohortUseCase.createProgramTermCohort(ids[0], ids[1], request(CohortIntake.FIRST));
 
-        assertThat(cohort.getId()).isNotNull();
-        assertThat(cohort.getTemplateId()).isNull();
-        assertThat(jdbc.queryForObject("select program_id from program_cohort where id = ?", Long.class, cohort.getId())).isEqualTo(ids[0]);
-        assertThat(jdbc.queryForObject("select term_id from program_cohort where id = ?", Long.class, cohort.getId())).isEqualTo(ids[1]);
+        assertThat(cohort.id()).isNotNull();
+        assertThat(jdbc.queryForObject("select template_id from program_cohort where id = ?", Long.class, cohort.id())).isNull();
+        assertThat(jdbc.queryForObject("select program_id from program_cohort where id = ?", Long.class, cohort.id())).isEqualTo(ids[0]);
+        assertThat(jdbc.queryForObject("select term_id from program_cohort where id = ?", Long.class, cohort.id())).isEqualTo(ids[1]);
         assertThat(jdbc.queryForObject("select count(*) from program_year_billing_template where program_id = ?", Integer.class, ids[0])).isZero();
     }
 
@@ -67,7 +67,7 @@ class ProgramCohortWithBillingOffIT extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> createProgramTermCohortUseCase.createProgramTermCohort(ids[0], ids[1], request(CohortIntake.FIRST)))
                 .isInstanceOf(ProgramCohortAlreadyExistsException.class);
-        assertThat(createProgramTermCohortUseCase.createProgramTermCohort(ids[0], ids[1], request(CohortIntake.SECOND)).getId()).isNotNull();
+        assertThat(createProgramTermCohortUseCase.createProgramTermCohort(ids[0], ids[1], request(CohortIntake.SECOND)).id()).isNotNull();
     }
 
     private static CreateProgramTermCohortRequest request(CohortIntake intake) {

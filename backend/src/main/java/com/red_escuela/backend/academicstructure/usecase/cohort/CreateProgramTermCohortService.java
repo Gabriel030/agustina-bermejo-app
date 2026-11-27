@@ -1,7 +1,7 @@
 package com.red_escuela.backend.academicstructure.usecase.cohort;
 
 import com.red_escuela.backend.academicstructure.dto.CreateProgramTermCohortRequest;
-import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.dto.ProgramTermCohortResponse;
 import com.red_escuela.backend.academicstructure.service.ProgramTermCohortCreation;
 import com.red_escuela.backend.shared.UseCase;
 
@@ -15,7 +15,7 @@ public class CreateProgramTermCohortService implements CreateProgramTermCohortUs
     }
 
     @Override
-    public ProgramCohort createProgramTermCohort(Long programId, Long termId, CreateProgramTermCohortRequest request) {
-        return cohortCreation.create(programId, termId, request);
+    public ProgramTermCohortResponse createProgramTermCohort(Long programId, Long termId, CreateProgramTermCohortRequest request) {
+        return ProgramTermCohortResponse.from(cohortCreation.create(programId, termId, request));
     }
 }
