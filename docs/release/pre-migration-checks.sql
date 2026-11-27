@@ -546,7 +546,7 @@ group by course_id, term_id
 having count(*) > 1;
 \endif
 
-\echo [V493] Datos que hacen fallar el VALIDATE de V493 (capacidad <= 0, attempt_number < 1, inscripciones cuyo estudiante no coincide con la inscripcion padre); debe devolver 0 filas:
+\echo [V494] Datos que hacen fallar el VALIDATE de V494 (capacidad <= 0, attempt_number < 1, inscripciones cuyo estudiante no coincide con la inscripcion padre); debe devolver 0 filas:
 select 'subject_section' as tabla, id from subject_section where capacity <= 0
 union all select 'course_section', id from course_section where capacity <= 0
 union all select 'course', id from course where capacity <= 0
