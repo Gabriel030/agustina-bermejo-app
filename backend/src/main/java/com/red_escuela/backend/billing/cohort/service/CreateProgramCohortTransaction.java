@@ -7,11 +7,11 @@ import com.red_escuela.backend.billing.configuration.service.BillingActorResolve
 import com.red_escuela.backend.billing.configuration.service.ChangeBillingConfigurationOperation;
 import com.red_escuela.backend.billing.configuration.service.DirectConfigurationPublisher;
 import com.red_escuela.backend.billing.dto.CreateProgramCohortRequest;
-import com.red_escuela.backend.billing.entity.CohortIntake;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.domain.CohortIntake;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
-import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
+import com.red_escuela.backend.academicstructure.api.ProgramCohortRecorder;
 import com.red_escuela.backend.billing.service.ProgramYearBillingTemplateService;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.specialist.CurrentPersonService;
@@ -28,7 +28,7 @@ public class CreateProgramCohortTransaction {
     private static final String INITIAL_VERSION_REASON = "Descuento de ingreso inicial de la cohorte";
     private static final String PROPOSAL_REASON = "Descuento de ingreso solicitado al crear la cohorte";
 
-    private final ProgramCohortRepository programCohortRepository;
+    private final ProgramCohortRecorder programCohortRecorder;
     private final ProgramYearBillingTemplateService templateService;
     private final CurrentPersonService currentPersonService;
     private final DirectConfigurationPublisher publisher;
@@ -37,7 +37,7 @@ public class CreateProgramCohortTransaction {
     private final BillingActorResolver actorResolver;
     private final Clock clock;
 
-    public CreateProgramCohortTransaction(ProgramCohortRepository programCohortRepository, ProgramYearBillingTemplateService templateService,
+    public CreateProgramCohortTransaction(ProgramCohortRecorder programCohortRecorder, ProgramYearBillingTemplateService templateService,
                                           CurrentPersonService currentPersonService, DirectConfigurationPublisher publisher, BillingOperationPipeline pipeline,
                                           ChangeBillingConfigurationOperation operation, BillingActorResolver actorResolver, Clock clock) {
         this.pipeline = pipeline;
@@ -45,7 +45,7 @@ public class CreateProgramCohortTransaction {
         this.actorResolver = actorResolver;
         this.publisher = publisher;
         this.clock = clock;
-        this.programCohortRepository = programCohortRepository;
+        this.programCohortRecorder = programCohortRecorder;
         this.templateService = templateService;
         this.currentPersonService = currentPersonService;
     }
@@ -56,13 +56,13 @@ public class CreateProgramCohortTransaction {
         Person actor = currentPersonService.resolveCurrentPerson();
 
         ProgramCohort cohort = new ProgramCohort();
-        cohort.setTemplate(template);
+        cohort.setTemplateId(template.getId());
         cohort.setIntake(request.intake());
         cohort.setAdmissionStart(request.admissionStart());
         cohort.setAdmissionEnd(request.admissionEnd());
         cohort.setCursadaStart(request.cursadaStart());
         cohort.setCreatedBy(actor);
-        ProgramCohort saved = programCohortRepository.save(cohort);
+        ProgramCohort saved = programCohortRecorder.save(cohort);
         Percentage defaultDiscount = Percentage.ofFraction(request.intake() == CohortIntake.SECOND ? new BigDecimal("0.5") : BigDecimal.ZERO);
         Percentage requested = request.entryFeeDiscountPercent() != null ? request.entryFeeDiscountPercent() : defaultDiscount;
         LocalDate today = LocalDate.now(clock);

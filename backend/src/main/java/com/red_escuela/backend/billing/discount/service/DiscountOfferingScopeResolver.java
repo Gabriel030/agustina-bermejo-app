@@ -4,25 +4,26 @@ import com.red_escuela.backend.academicstructure.api.OfferingCurrencyFinder;
 import com.red_escuela.backend.billing.discount.domain.DiscountDefinitionDraft;
 import com.red_escuela.backend.billing.discount.exception.DiscountScopeOfferingNotFoundException;
 import com.red_escuela.backend.billing.discount.policy.DiscountDefinitionCheck;
-import com.red_escuela.backend.billing.exception.ProgramCohortNotFoundException;
-import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
+import com.red_escuela.backend.academicstructure.api.ProgramCohortFinder;
+import com.red_escuela.backend.billing.service.ProgramYearBillingTemplateService;
 import com.red_escuela.backend.shared.domain.Currency;
 import org.springframework.stereotype.Component;
 
 @Component
 public class DiscountOfferingScopeResolver {
     private final OfferingCurrencyFinder currencyFinder;
-    private final ProgramCohortRepository programCohortRepository;
+    private final ProgramCohortFinder programCohortFinder;
+    private final ProgramYearBillingTemplateService templateService;
 
-    public DiscountOfferingScopeResolver(OfferingCurrencyFinder currencyFinder, ProgramCohortRepository programCohortRepository) {
+    public DiscountOfferingScopeResolver(OfferingCurrencyFinder currencyFinder, ProgramCohortFinder programCohortFinder, ProgramYearBillingTemplateService templateService) {
         this.currencyFinder = currencyFinder;
-        this.programCohortRepository = programCohortRepository;
+        this.programCohortFinder = programCohortFinder;
+        this.templateService = templateService;
     }
 
     public DiscountDefinitionCheck resolveScopeOf(DiscountDefinitionDraft draft) {
         Currency offeringCurrency = findOfferingCurrency(draft);
-        Long cohortProgramId = draft.programCohortId() == null ? null : programCohortRepository.findById(draft.programCohortId())
-                .orElseThrow(() -> new ProgramCohortNotFoundException(draft.programCohortId())).getTemplate().programId();
+        Long cohortProgramId = draft.programCohortId() == null ? null : templateService.findOrThrow(programCohortFinder.findOrThrow(draft.programCohortId()).getTemplateId()).programId();
         return new DiscountDefinitionCheck(draft, offeringCurrency, cohortProgramId);
     }
 

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
@@ -25,7 +26,7 @@ public class ProgramEnrollmentBillingSetup implements ProgramAdmissionFeePort {
     @Transactional
     public void assignTemplateIfMissing(ProgramEnrollment enrollment) {
         if (enrollment.getCurrentBillingTemplate() == null && enrollment.getProgramCohort() != null) {
-            enrollment.setCurrentBillingTemplate(enrollment.getProgramCohort().getTemplate());
+            enrollment.setCurrentBillingTemplate(entityManager.getReference(ProgramYearBillingTemplate.class, enrollment.getProgramCohort().getTemplateId()));
             programEnrollmentRepository.save(enrollment);
         }
     }

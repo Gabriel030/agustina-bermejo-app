@@ -21,7 +21,7 @@ import com.red_escuela.backend.billing.invoice.domain.InvoiceFactory;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingReason;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceLineDraft;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
-import com.red_escuela.backend.billing.entity.CohortIntake;
+import com.red_escuela.backend.academicstructure.domain.CohortIntake;
 import com.red_escuela.backend.billing.invoice.domain.StudentSnapshot;
 import com.red_escuela.backend.billing.invoice.operation.IssuingScenarioFactory;
 import com.red_escuela.backend.billing.invoice.service.InvoiceNumberGenerator;

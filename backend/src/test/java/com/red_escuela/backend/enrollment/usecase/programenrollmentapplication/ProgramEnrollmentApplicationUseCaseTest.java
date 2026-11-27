@@ -11,7 +11,7 @@ import com.red_escuela.backend.billing.operation.PaymentVerification;
 import com.red_escuela.backend.billing.operation.ReportedGatewayAllocation;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.domain.Address;
-import com.red_escuela.backend.billing.entity.CohortIntake;
+import com.red_escuela.backend.academicstructure.domain.CohortIntake;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.enrollment.dto.ProgramEnrollmentApplicationResponse;
 import com.red_escuela.backend.identity.entity.Institution;
@@ -19,7 +19,7 @@ import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplicationStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
@@ -159,7 +159,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         com.red_escuela.backend.billing.planning.TestTemplateTerms.publish(entityManager, template);
 
         ProgramCohort cohort = new ProgramCohort();
-        cohort.setTemplate(template);
+        cohort.setTemplateId(template.getId());
         cohort.setIntake(CohortIntake.FIRST);
         cohort.setAdmissionStart(admissionStart == null ? LocalDate.now().minusDays(30) : admissionStart);
         cohort.setAdmissionEnd(admissionEnd == null ? LocalDate.now().plusDays(30) : admissionEnd);
@@ -311,7 +311,7 @@ class ProgramEnrollmentApplicationUseCaseTest extends AbstractIntegrationTest {
         Invoice invoice = approved.getAdmissionInvoice();
         assertThatInvoice(invoice).isPending();
         assertThat(invoice.getAmounts().linesTotal().value()).isEqualTo(ars(50000));
-        assertThat(invoice.getDueDate()).isEqualTo(LocalDate.now().plusDays(configurationReader.requireYearTermsEffectiveOn(approved.getProgramCohort().getTemplate().programId(), approved.getProgramCohort().getTemplate().termId(), LocalDate.of(2100, 1, 1)).lateEnrollmentFeeDueDays()));
+        assertThat(invoice.getDueDate()).isEqualTo(LocalDate.now().plusDays(configurationReader.requireYearTermsEffectiveOn(entityManager.find(ProgramYearBillingTemplate.class, approved.getProgramCohort().getTemplateId()).programId(), entityManager.find(ProgramYearBillingTemplate.class, approved.getProgramCohort().getTemplateId()).termId(), LocalDate.of(2100, 1, 1)).lateEnrollmentFeeDueDays()));
         assertThat(admissionInvoicesOf(approved.getStudent())).isEqualTo(1L);
         assertThat(isEnrolled(approved.getStudent(), approved.getProgram())).isFalse();
         assertThat(approved.getStudent().getPerson().getRoles()).extracting(Role::getName).contains("ALUMNO");

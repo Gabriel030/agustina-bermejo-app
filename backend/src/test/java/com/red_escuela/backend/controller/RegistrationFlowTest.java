@@ -7,13 +7,13 @@ import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.dto.RegisterRequest;
 import com.red_escuela.backend.enrollment.dto.RejectProgramEnrollmentApplicationRequest;
 import com.red_escuela.backend.shared.domain.Address;
-import com.red_escuela.backend.billing.entity.CohortIntake;
+import com.red_escuela.backend.academicstructure.domain.CohortIntake;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplicationStatus;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
@@ -125,7 +125,7 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
         com.red_escuela.backend.billing.planning.TestTemplateTerms.publish(entityManager, template);
 
         ProgramCohort cohort = new ProgramCohort();
-        cohort.setTemplate(template);
+        cohort.setTemplateId(template.getId());
         cohort.setIntake(CohortIntake.FIRST);
         cohort.setAdmissionStart(LocalDate.now().minusDays(30));
         cohort.setAdmissionEnd(LocalDate.now().plusDays(30));

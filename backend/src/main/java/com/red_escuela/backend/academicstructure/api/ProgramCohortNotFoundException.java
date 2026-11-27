@@ -1,4 +1,4 @@
-package com.red_escuela.backend.billing.exception;
+package com.red_escuela.backend.academicstructure.api;
 
 import com.red_escuela.backend.shared.exception.NotFoundException;
 
