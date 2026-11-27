@@ -89,6 +89,7 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [adr/0005-venta-por-instituto-y-modulos-activables.md](adr/0005-venta-por-instituto-y-modulos-activables.md) | Venta por instituto, módulo `platform`, `PLATFORM_ADMIN` | aceptado, sin implementar |
 | [adr/0006-modo-espejo-de-facturacion.md](adr/0006-modo-espejo-de-facturacion.md) | Modo espejo de facturación | propuesto |
 | [adr/0007-vocabulario-de-roles-y-migracion-de-carpetas.md](adr/0007-vocabulario-de-roles-y-migracion-de-carpetas.md) | Vocabulario de roles (`service` a `specialist`) y migración de carpetas | aceptado |
+| [adr/0008-vistas-materializadas.md](adr/0008-vistas-materializadas.md) | Vistas materializadas: no por ahora; qué medición reabre el tema | aceptado |
 
 ## Arquitectura de módulos (`docs/architecture/`)
 
