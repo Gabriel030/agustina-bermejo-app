@@ -1,9 +1,9 @@
 package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.academicstructure.entity.Program;
-import com.red_escuela.backend.billing.entity.CohortIntake;
+import com.red_escuela.backend.academicstructure.domain.CohortIntake;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.billing.exception.DuplicateChargeException;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.service.ProgramAdmissionInvoiceIssuer;

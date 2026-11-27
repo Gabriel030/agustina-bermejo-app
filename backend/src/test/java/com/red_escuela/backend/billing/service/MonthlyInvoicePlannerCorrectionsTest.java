@@ -6,7 +6,7 @@ import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeRequirementS
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest;
-import com.red_escuela.backend.billing.entity.CohortIntake;
+import com.red_escuela.backend.academicstructure.domain.CohortIntake;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;

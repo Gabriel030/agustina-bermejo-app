@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.usecase.cohort;
 
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 
 import java.util.List;
 

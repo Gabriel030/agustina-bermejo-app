@@ -3,7 +3,7 @@ package com.red_escuela.backend.billing.cohort.service;
 import com.red_escuela.backend.billing.configuration.service.DirectConfigurationPublisher;
 import com.red_escuela.backend.billing.discount.operation.AbstractStudentDiscountIssuingIT;
 import com.red_escuela.backend.billing.dto.CreateProgramCohortRequest;
-import com.red_escuela.backend.billing.entity.CohortIntake;
+import com.red_escuela.backend.academicstructure.domain.CohortIntake;
 import com.red_escuela.backend.billing.operation.AuthorizationPendingException;
 import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
 import com.red_escuela.backend.billing.usecase.cohort.CreateProgramCohortUseCase;

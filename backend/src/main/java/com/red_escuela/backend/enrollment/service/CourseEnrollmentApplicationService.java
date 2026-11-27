@@ -76,7 +76,9 @@ public class CourseEnrollmentApplicationService {
         application.setInvoiceId(invoiceId);
         if (!invoice.payable()) {
             application.setCourseEnrollment(courseEnrollmentService.enrollSelfService(studentId, request));
-            courseAdmissionInvoicePort.assignInvoiceToCourseEnrollment(invoiceId, application.getCourseEnrollment().getId());
+            if (invoiceId != null) {
+                courseAdmissionInvoicePort.assignInvoiceToCourseEnrollment(invoiceId, application.getCourseEnrollment().getId());
+            }
             return courseEnrollmentApplicationRepository.save(application);
         }
         Long receiptId = courseAdmissionReceiptSubmissionPort.submitReceiptCoveringCourseAdmission(studentId, invoiceId, receipt.file(), receipt.olderInvoiceIds(),
@@ -96,6 +98,9 @@ public class CourseEnrollmentApplicationService {
         }
         Course course = enrollment.getCourse();
         Long invoiceId = courseAdmissionInvoicePort.issueCourseAdmissionInvoice(studentId, course.getId()).invoiceId();
+        if (invoiceId == null) {
+            return enrollment;
+        }
         CourseEnrollmentApplication application = new CourseEnrollmentApplication();
         application.setStudent(enrollment.getStudent());
         application.setCourse(course);

@@ -36,7 +36,7 @@ import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
@@ -180,8 +180,8 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         com.red_escuela.backend.billing.planning.TestTemplateTerms.publish(entityManager, template);
 
         ProgramCohort cohort = new ProgramCohort();
-        cohort.setTemplate(template);
-        cohort.setIntake(com.red_escuela.backend.billing.entity.CohortIntake.FIRST);
+        cohort.setTemplateId(template.getId());
+        cohort.setIntake(com.red_escuela.backend.academicstructure.domain.CohortIntake.FIRST);
         cohort.setAdmissionStart(admissionStart);
         cohort.setAdmissionEnd(admissionEnd);
         cohort.setCursadaStart(java.time.LocalDate.now());

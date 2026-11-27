@@ -98,11 +98,10 @@ public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnroll
     }
 
     @Query("""
-            select e.program.id as programId, coalesce(current.id, cohortTemplate.id) as templateId
+            select e.program.id as programId, coalesce(current.id, cohort.templateId) as templateId
             from ProgramEnrollment e
             left join e.currentBillingTemplate current
             left join e.programCohort cohort
-            left join cohort.template cohortTemplate
             where e.id = :id
             """)
     java.util.Optional<BillingTemplateRef> findBillingTemplateRef(@Param("id") Long id);

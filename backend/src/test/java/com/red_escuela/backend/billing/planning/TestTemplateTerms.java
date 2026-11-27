@@ -7,7 +7,7 @@ import com.red_escuela.backend.billing.planning.domain.YearCycle;
 import com.red_escuela.backend.billing.configuration.domain.CohortEntryDiscount;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersion;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.shared.domain.Percentage;
 import jakarta.persistence.EntityManager;
 

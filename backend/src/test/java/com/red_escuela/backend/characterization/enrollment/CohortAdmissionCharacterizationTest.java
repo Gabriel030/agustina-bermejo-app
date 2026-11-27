@@ -1,9 +1,9 @@
 package com.red_escuela.backend.characterization.enrollment;
 
 import com.red_escuela.backend.academicstructure.entity.Program;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.enrollment.exception.CohortAdmissionWindowClosedException;
-import com.red_escuela.backend.billing.exception.ProgramCohortNotFoundException;
+import com.red_escuela.backend.academicstructure.api.ProgramCohortNotFoundException;
 import com.red_escuela.backend.enrollment.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
@@ -145,7 +145,7 @@ class CohortAdmissionCharacterizationTest extends CohortP3CharacterizationSuppor
 
         assertThat(storedCohortIdOf(created.getId())).isEqualTo(cohortOfOtherProgram.getId());
         assertThat(created.getProgram().getId()).isEqualTo(program.getId());
-        assertThat(cohortOfOtherProgram.getTemplate().getProgram().getId()).isNotEqualTo(program.getId());
+        assertThat(templateRepository.findById(cohortOfOtherProgram.getTemplateId()).orElseThrow().getProgram().getId()).isNotEqualTo(program.getId());
     }
 
     @Test

@@ -344,7 +344,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `PRICE_NOT_FOUND` | no | `PriceNotFoundException` | billing |
 | `PRICE_VERSION_NOT_FOUND` | no | `PriceVersionNotFoundException` | billing |
 | `PROCEDURE_DOCUMENT_NOT_FOUND` | no | `ProcedureDocumentNotFoundException` | graduation |
-| `PROGRAM_COHORT_NOT_FOUND` | no | `ProgramCohortNotFoundException` | billing |
+| `PROGRAM_COHORT_NOT_FOUND` | no | `ProgramCohortNotFoundException` | academicstructure |
 | `PROGRAM_ENROLLMENT_APPLICATION_NOT_FOUND` | no | `ProgramEnrollmentApplicationNotFoundException` | enrollment |
 | `PROGRAM_ENROLLMENT_NOT_FOUND` | no | `ProgramEnrollmentNotFoundException` | enrollment |
 | `PROGRAM_NOT_FOUND` | no | `ProgramNotFoundException` | academicstructure |

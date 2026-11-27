@@ -6,11 +6,10 @@ import com.red_escuela.backend.billing.configuration.policy.ChangeBillingConfigu
 import com.red_escuela.backend.billing.configuration.service.BillingActorResolver;
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
 import com.red_escuela.backend.billing.configuration.service.ChangeBillingConfigurationOperation;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
-import com.red_escuela.backend.billing.exception.ProgramCohortNotFoundException;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.api.ProgramCohortFinder;
 import com.red_escuela.backend.billing.operation.AuthorizationPendingException;
 import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
-import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
 import com.red_escuela.backend.shared.domain.Percentage;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,15 +21,15 @@ import java.time.LocalDate;
 public class UpdateCohortEntryFeeDiscountTransaction {
     private static final String CHANGE_REASON = "Cambio del descuento de ingreso de la cohorte";
 
-    private final ProgramCohortRepository programCohortRepository;
+    private final ProgramCohortFinder programCohortFinder;
     private final BillingOperationPipeline pipeline;
     private final ChangeBillingConfigurationOperation operation;
     private final BillingActorResolver actorResolver;
     private final BillingConfigurationReader configurationReader;
     private final Clock clock;
 
-    public UpdateCohortEntryFeeDiscountTransaction(ProgramCohortRepository programCohortRepository, BillingOperationPipeline pipeline, ChangeBillingConfigurationOperation operation, BillingActorResolver actorResolver, BillingConfigurationReader configurationReader, Clock clock) {
-        this.programCohortRepository = programCohortRepository;
+    public UpdateCohortEntryFeeDiscountTransaction(ProgramCohortFinder programCohortFinder, BillingOperationPipeline pipeline, ChangeBillingConfigurationOperation operation, BillingActorResolver actorResolver, BillingConfigurationReader configurationReader, Clock clock) {
+        this.programCohortFinder = programCohortFinder;
         this.pipeline = pipeline;
         this.operation = operation;
         this.actorResolver = actorResolver;
@@ -40,7 +39,7 @@ public class UpdateCohortEntryFeeDiscountTransaction {
 
     @Transactional(noRollbackFor = AuthorizationPendingException.class)
     public ProgramCohort update(Long cohortId, Percentage discount) {
-        ProgramCohort cohort = programCohortRepository.findById(cohortId).orElseThrow(() -> new ProgramCohortNotFoundException(cohortId));
+        ProgramCohort cohort = programCohortFinder.findOrThrow(cohortId);
         LocalDate today = LocalDate.now(clock);
         if (!discount.equals(configurationReader.cohortEntryDiscountEffectiveOn(cohortId, today))) {
             pipeline.runOperation(operation, new ChangeBillingConfigurationCommand(ConfigurationTopic.ofCohortEntry(cohortId), new CohortEntryDiscount(discount),

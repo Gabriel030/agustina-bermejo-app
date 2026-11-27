@@ -17,7 +17,7 @@ import com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort;
 import com.red_escuela.backend.enrollment.api.ProgramProgressReader;
 import com.red_escuela.backend.enrollment.api.ProgramProgressView;
 import com.red_escuela.backend.enrollment.api.WithdrawnEnrollmentFacts;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
@@ -26,11 +26,10 @@ import com.red_escuela.backend.enrollment.exception.CohortAdmissionWindowClosedE
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInProgramException;
 import com.red_escuela.backend.enrollment.exception.CannotWithdrawException;
 import com.red_escuela.backend.enrollment.api.InvalidWindowConfigurationException;
-import com.red_escuela.backend.billing.exception.ProgramCohortNotFoundException;
+import com.red_escuela.backend.academicstructure.api.ProgramCohortFinder;
 import com.red_escuela.backend.enrollment.api.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateMismatchException;
 import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateNotFoundException;
-import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
@@ -56,7 +55,7 @@ public class ProgramEnrollmentService {
     private final AcademicReferenceFinder academicReferenceFinder;
     private final ProgramProgressReader programProgressReader;
     private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
-    private final ProgramCohortRepository programCohortRepository;
+    private final ProgramCohortFinder programCohortFinder;
     private final ProgramYearBillingTemplateRepository programYearBillingTemplateRepository;
     private final AttendanceStandingPort attendanceStandingPort;
     private final EnrollmentDebtGuardPort enrollmentDebtGuard;
@@ -72,7 +71,7 @@ public class ProgramEnrollmentService {
             AcademicReferenceFinder academicReferenceFinder,
             ProgramProgressReader programProgressReader,
             SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
-            ProgramCohortRepository programCohortRepository,
+            ProgramCohortFinder programCohortFinder,
             ProgramYearBillingTemplateRepository programYearBillingTemplateRepository,
             AttendanceStandingPort attendanceStandingPort,
             EnrollmentDebtGuardPort enrollmentDebtGuard,
@@ -87,7 +86,7 @@ public class ProgramEnrollmentService {
         this.academicReferenceFinder = academicReferenceFinder;
         this.programProgressReader = programProgressReader;
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
-        this.programCohortRepository = programCohortRepository;
+        this.programCohortFinder = programCohortFinder;
         this.programYearBillingTemplateRepository = programYearBillingTemplateRepository;
         this.attendanceStandingPort = attendanceStandingPort;
         this.enrollmentDebtGuard = enrollmentDebtGuard;
@@ -127,8 +126,7 @@ public class ProgramEnrollmentService {
 
         ProgramCohort cohort = null;
         if (request.cohortId() != null) {
-            cohort = programCohortRepository.findById(request.cohortId())
-                    .orElseThrow(() -> new ProgramCohortNotFoundException(request.cohortId()));
+            cohort = programCohortFinder.findOrThrow(request.cohortId());
             if (validateAdmissionWindow) {
                 validateAdmissionWindow(cohort);
             }

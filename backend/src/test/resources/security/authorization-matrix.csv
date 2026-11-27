@@ -13,6 +13,7 @@ DELETE,/announcements/{id},DENY,DENY,OWNER,DENY,DENY,DENY,ALLOW,DENY,announcemen
 PUT,/announcements/{id},DENY,DENY,OWNER,DENY,DENY,DENY,ALLOW,DENY,announcement-instructor,"{""title"":""x"",""body"":""x"",""category"":""REMINDER"",""urgent"":false}"
 GET,/announcements/{id}/recipients,DENY,DENY,OWNER,ALLOW,DENY,DENY,ALLOW,DENY,announcement-instructor,
 GET,/attendance/change-requests,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
+GET,/attendance/change-requests/resolved,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
 POST,/attendance/change-requests/{id}/approve,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
 POST,/attendance/change-requests/{id}/reject,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,"{""reason"":""Motivo suficiente""}"
 POST,/attendance/change-requests/{id}/revert,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,"{""reason"":""Motivo suficiente""}"
