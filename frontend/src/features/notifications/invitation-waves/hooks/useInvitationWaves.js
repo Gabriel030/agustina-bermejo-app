@@ -92,7 +92,7 @@ export function useInvitationWaveAction(id) {
   return useMutation({
     mutationFn: (endpoint) => apiFetch(`/invitation-waves/${id}/${endpoint}`, { method: 'POST' }),
     onSuccess: (wave) => {
-      if (wave) queryClient.setQueryData(waveKey(id), wave);
+      if (wave && wave.id) queryClient.setQueryData(waveKey(id), wave);
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: waveKey(id) });
