@@ -290,7 +290,7 @@ en Actions.
 
 ### Modo MSW de navegador (desarrollo sin backend y capturas)
 
-`cd frontend && npm run dev:mock` (equivale a `VITE_ENABLE_MSW=true vite`) levanta la app con los handlers de `src/test/mocks/` corriendo en un Service Worker de MSW, sin backend. La sesión es simulada: `/auth/refresh` y `/me` responden según el rol elegido con `?role=director|administrativo|docente|alumno|platformadmin` (sin parámetro se reusa el último rol guardado en `localStorage.mockRole`; por defecto `director`). Ejemplo: `http://localhost:5173/?role=alumno`. Los GET sin handler devuelven `[]`.
+`cd frontend && npm run dev:mock` (equivale a `VITE_ENABLE_MSW=true vite`) levanta la app con los handlers de `src/test/mocks/` corriendo en un Service Worker de MSW, sin backend. La sesión es simulada: `/auth/refresh` y `/me` responden según el rol elegido con `?mockRole=director|subdirector|administrativo|preceptor|docente|alumno|platformadmin (o VITE_MOCK_ROLE)` (sin parámetro se reusa el último rol guardado en `localStorage.mockRole`; por defecto `director`). Ejemplo: `http://localhost:5173/?role=alumno`. Los GET sin handler devuelven `[]`.
 
 - Código en `frontend/src/mocks/` (`mockRoles.js` perfiles por rol, `browserHandlers.js`, `enableBrowserMocking.js`); `main.jsx` lo carga con import dinámico solo si `VITE_ENABLE_MSW === 'true'`, así que un `build` normal no incluye msw ni `mockServiceWorker.js` (verificar con `grep -ril mockServiceWorker dist`).
 - `mockServiceWorker.js` no está en `public/`: un plugin de `vite.config.js` lo sirve en dev y lo emite en `dist/` solo con el flag (sirve también `VITE_ENABLE_MSW=true npm run build && npm run preview`; con el flag no se registra el SW de la PWA).
