@@ -20,8 +20,8 @@ export function PublicTopBar() {
   const homePath = usuario ? homePathFor(usuario) : '/login';
 
   return (
-    <header className="border-b border-border bg-surface">
-      <nav aria-label="Cuenta" className="flex min-h-14 items-center justify-between gap-2 px-4 xl:px-6">
+    <header className="mx-auto mt-4 w-[calc(100%-2rem)] max-w-[1200px] rounded-card border border-border bg-surface sm:w-[calc(100%-4rem)]">
+      <nav aria-label="Cuenta" className="flex min-h-14 items-center justify-between gap-2 px-3">
         <Link
           to={homePath}
           aria-label="Ir al inicio"
