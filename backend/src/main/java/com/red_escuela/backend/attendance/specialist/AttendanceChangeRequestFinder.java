@@ -1,5 +1,6 @@
 package com.red_escuela.backend.attendance.specialist;
 
+import com.red_escuela.backend.attendance.domain.AttendanceChangeRequestScope;
 import com.red_escuela.backend.attendance.entity.AttendanceChangeRequest;
 import com.red_escuela.backend.attendance.entity.AttendanceChangeRequestStatus;
 import com.red_escuela.backend.attendance.exception.AttendanceChangeRequestNotFoundException;
@@ -12,12 +13,18 @@ public class AttendanceChangeRequestFinder {
 
     private final AttendanceChangeRequestRepository attendanceChangeRequestRepository;
 
-    public AttendanceChangeRequestFinder(AttendanceChangeRequestRepository attendanceChangeRequestRepository) {
+    private final AttendanceChangeRequestScopeResolver scopeResolver;
+
+    public AttendanceChangeRequestFinder(AttendanceChangeRequestRepository attendanceChangeRequestRepository,
+                                         AttendanceChangeRequestScopeResolver scopeResolver) {
         this.attendanceChangeRequestRepository = attendanceChangeRequestRepository;
+        this.scopeResolver = scopeResolver;
     }
 
     public AttendanceChangeRequest findOrThrow(Long id) {
-        return attendanceChangeRequestRepository.findById(id)
+        AttendanceChangeRequestScope scope = scopeResolver.currentScope();
+        return attendanceChangeRequestRepository.findByIdInScope(
+                        id, scope.unrestricted(), scope.subjectSectionIdsForQuery(), scope.courseSectionIdsForQuery(), scope.programCohortIdsForQuery())
                 .orElseThrow(() -> new AttendanceChangeRequestNotFoundException(id));
     }
 
