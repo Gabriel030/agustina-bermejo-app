@@ -6,7 +6,6 @@ import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.shared.event.DeduplicableDomainEvent;
 import com.red_escuela.backend.shared.event.service.ProcessedEffectGuard;
 import jakarta.persistence.Version;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -34,7 +33,6 @@ class IntegrityGuardsReproductionIT extends ReproductionFixture {
     }
 
     @Test
-    @Disabled("E34-B-P8")
     void sectionCapacityMustBePositiveInSql() {
         for (String table : List.of("subject_section", "course_section", "course", "classroom")) {
             assertThat(checkDefinitionsOf(table)).as(table).anyMatch(definition -> definition.contains("capacity"));
@@ -42,7 +40,6 @@ class IntegrityGuardsReproductionIT extends ReproductionFixture {
     }
 
     @Test
-    @Disabled("E34-B-P8")
     void attemptNumberIsAtLeastOneInSqlForBothEnrollmentKinds() {
         for (String table : List.of("subject_section_enrollment", "course_section_enrollment")) {
             assertThat(checkDefinitionsOf(table)).as(table).anyMatch(definition -> definition.contains("attempt_number"));
@@ -50,7 +47,6 @@ class IntegrityGuardsReproductionIT extends ReproductionFixture {
     }
 
     @Test
-    @Disabled("E34-B-P8")
     void parentStudentForeignKeyOfSectionEnrollmentIsValidated() {
         Boolean validated = jdbcTemplate.queryForObject(
                 "select convalidated from pg_constraint where conname = 'fk_subject_section_enrollment_parent_student'",
@@ -60,7 +56,6 @@ class IntegrityGuardsReproductionIT extends ReproductionFixture {
     }
 
     @Test
-    @Disabled("E34-B-P8")
     void termProgramAndEvaluationSchemeCarryOptimisticLockVersion() {
         for (Class<?> entity : List.of(Term.class, Program.class, EvaluationScheme.class)) {
             assertThat(Arrays.stream(entity.getDeclaredFields()).anyMatch(field -> field.isAnnotationPresent(Version.class)))
@@ -69,7 +64,6 @@ class IntegrityGuardsReproductionIT extends ReproductionFixture {
     }
 
     @Test
-    @Disabled("E34-B-P8")
     void effectWithoutEventIdIsNotExecutedWithoutDeduplication() {
         DeduplicableDomainEvent eventWithoutId = new DeduplicableDomainEvent() {
             @Override
@@ -92,7 +86,7 @@ class IntegrityGuardsReproductionIT extends ReproductionFixture {
         assertThatThrownBy(() -> {
             processedEffectGuard.runEffectOnce(eventWithoutId, "reproductionHandler", executions::incrementAndGet);
             processedEffectGuard.runEffectOnce(eventWithoutId, "reproductionHandler", executions::incrementAndGet);
-        }).isInstanceOf(RuntimeException.class);
-        assertThat(executions.get()).isLessThanOrEqualTo(1);
+        }).isInstanceOf(IllegalArgumentException.class);
+        assertThat(executions.get()).isZero();
     }
 }

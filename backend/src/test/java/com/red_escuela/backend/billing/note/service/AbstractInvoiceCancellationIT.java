@@ -114,8 +114,7 @@ abstract class AbstractInvoiceCancellationIT extends AbstractCreditNoteIT {
             long tag = System.nanoTime();
             Long programId = jdbc.queryForObject("insert into program (name, status, total_years, currency) values (?, 'ACTIVE', 1, 'ARS') returning id", Long.class, "Fixture " + tag);
             Long revisionId = com.red_escuela.backend.billing.support.PriceFixtures.persistPriceVersion(programId, null, com.red_escuela.backend.billing.invoice.domain.FeeType.MONTHLY_INSTALLMENT, "Test", com.red_escuela.backend.shared.domain.Money.of(new java.math.BigDecimal("1000.00"), com.red_escuela.backend.shared.domain.Currency.ARS), java.time.LocalDate.of(2027, 1, 1), person.getId());
-            Long enrollmentId = jdbc.queryForObject("insert into program_enrollment (student_id, program_id, status, enrollment_date) values (?, ?, 'ENROLLED', now()) returning id",
-                    Long.class, studentId, programId);
+            Long enrollmentId = com.red_escuela.backend.testsupport.JdbcCurriculumPlans.enrollmentOf(jdbc, studentId, programId);
             Long studentDiscountId = jdbc.queryForObject(
                     "insert into student_discount (program_enrollment_id, student_id, currency, discount_type, applicable_invoice_type, origin, calculation, priority, from_period, "
                             + "to_period, status, granted_at, granted_by_id, reason) values (?, ?, 'ARS', 'INDIVIDUAL', 'ENROLLMENT_FEE', 'DIRECT_GRANT', "

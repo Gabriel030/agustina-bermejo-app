@@ -31,6 +31,10 @@ public class ProgramCohort {
     @Column(name = "template_id")
     private Long templateId;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "plan_id", nullable = false)
+    private CurriculumPlan plan;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "intake", nullable = false)
     private CohortIntake intake;

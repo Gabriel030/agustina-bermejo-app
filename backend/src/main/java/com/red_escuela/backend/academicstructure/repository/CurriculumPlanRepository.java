@@ -18,6 +18,10 @@ public interface CurriculumPlanRepository extends JpaRepository<CurriculumPlan, 
     @Query("select cp from CurriculumPlan cp where cp.id = :id")
     Optional<CurriculumPlan> findByIdForUpdate(@Param("id") Long id);
 
+    @Lock(LockModeType.PESSIMISTIC_READ)
+    @Query("select cp from CurriculumPlan cp where cp.id = :id")
+    Optional<CurriculumPlan> findByIdForShare(@Param("id") Long id);
+
     @Query("""
             select cp from CurriculumPlan cp
             where cp.program.id = :programId

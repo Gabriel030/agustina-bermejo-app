@@ -1,6 +1,8 @@
 package com.red_escuela.backend.enrollment.service;
 
 import com.red_escuela.backend.academicstructure.api.ProgramCurriculumFinder;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
+import com.red_escuela.backend.enrollment.exception.SubjectNotInEnrollmentPlanException;
 import com.red_escuela.backend.enrollment.exception.SubjectNotInProgramPlanException;
 import org.springframework.stereotype.Component;
 
@@ -16,6 +18,13 @@ public class ProgramPlanSubjectGuard {
     public void requireSubjectInPlan(Long programId, Long subjectId) {
         if (!programCurriculumFinder.subjectBelongsToProgram(programId, subjectId)) {
             throw new SubjectNotInProgramPlanException(subjectId, programId);
+        }
+    }
+
+    public void requireSubjectInEnrollmentPlan(ProgramEnrollment enrollment, Long subjectId) {
+        Long planId = enrollment.getPlan().getId();
+        if (!programCurriculumFinder.subjectBelongsToPlan(planId, subjectId)) {
+            throw new SubjectNotInEnrollmentPlanException(subjectId, planId);
         }
     }
 }

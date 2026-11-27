@@ -43,7 +43,7 @@ import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.entity.TermEnrollmentOverride;
 import com.red_escuela.backend.enrollment.exception.EnrollmentFeeNotPaidException;
 import com.red_escuela.backend.identity.exception.StudentNotActiveException;
-import com.red_escuela.backend.enrollment.exception.SubjectNotInProgramPlanException;
+import com.red_escuela.backend.enrollment.exception.SubjectNotInEnrollmentPlanException;
 import com.red_escuela.backend.enrollment.exception.TermEnrollmentOverrideClosedException;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.attendance.entity.Attendance;
@@ -211,7 +211,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> subjectSectionEnrollmentService.enroll(
                 enrollment.getId(), new CreateSectionEnrollmentRequest(section.getId())))
-                .isInstanceOf(SubjectNotInProgramPlanException.class);
+                .isInstanceOf(SubjectNotInEnrollmentPlanException.class);
     }
 
     private void persistSeatHolder(String dni, Institution institution, Program program, SubjectSection section, EnrollmentStatus status) {

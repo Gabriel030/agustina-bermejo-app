@@ -22,8 +22,7 @@ public class ProcessedEffectGuard {
     @Transactional
     public boolean runEffectOnce(DeduplicableDomainEvent event, String handlerName, Runnable effect) {
         if (event.eventId() == null) {
-            effect.run();
-            return true;
+            throw new IllegalArgumentException("El evento sin eventId no se puede deduplicar: handler=" + handlerName);
         }
         int claimed = jdbcTemplate.update(
                 "insert into processed_effect (event_id, handler_name, processed_at) values (?, ?, now()) on conflict do nothing",

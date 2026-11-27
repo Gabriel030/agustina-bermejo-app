@@ -37,6 +37,29 @@ public final class TestCurriculumPlans {
                 });
     }
 
+    public static EntityManager currentEntityManagerOrNull() {
+        return currentEntityManager();
+    }
+
+    public static CurriculumPlan planWithoutFlushOf(Program program) {
+        EntityManager entityManager = currentEntityManager();
+        return entityManager.createQuery("""
+                        select cp from CurriculumPlan cp
+                        where cp.program.id = :programId and cp.status <> :draft
+                        order by cp.versionNumber desc
+                        """, CurriculumPlan.class)
+                .setFlushMode(jakarta.persistence.FlushModeType.COMMIT)
+                .setParameter("programId", program.getId())
+                .setParameter("draft", CurriculumPlanStatus.DRAFT)
+                .setMaxResults(1)
+                .getResultStream().findFirst()
+                .orElseGet(() -> {
+                    CurriculumPlan plan = CurriculumPlan.initialVersionOf(program, PLAN_START);
+                    entityManager.persist(plan);
+                    return plan;
+                });
+    }
+
     private static EntityManager currentEntityManager() {
         return TransactionSynchronizationManager.getResourceMap().values().stream()
                 .filter(EntityManagerHolder.class::isInstance)

@@ -46,6 +46,27 @@ public class ProgramCurriculumFinder {
                 .map(this::toProgramSubjectView);
     }
 
+    public List<ProgramSubjectView> findProgramSubjectsOfPlan(Long planId) {
+        return programSubjectRepository.findByPlanIdOrderById(planId).stream()
+                .map(this::toProgramSubjectView)
+                .toList();
+    }
+
+    public Optional<ProgramSubjectView> findProgramSubjectOfPlan(Long planId, Long subjectId) {
+        return programSubjectRepository.findByPlanIdAndSubjectId(planId, subjectId)
+                .map(this::toProgramSubjectView);
+    }
+
+    public List<ProgramCurriculumEntryView> findActiveCurriculumEntriesOfPlan(Long planId) {
+        return programSubjectRepository.findActiveByPlanId(planId).stream()
+                .map(this::toCurriculumEntryView)
+                .toList();
+    }
+
+    public boolean subjectBelongsToPlan(Long planId, Long subjectId) {
+        return programSubjectRepository.findByPlanIdAndSubjectId(planId, subjectId).isPresent();
+    }
+
     public boolean subjectBelongsToProgram(Long programId, Long subjectId) {
         return programSubjectRepository.findByProgramIdAndSubjectId(programId, subjectId).isPresent();
     }

@@ -65,8 +65,7 @@ class PaymentStandingChangesMetricIT extends AbstractMonthlyMetricsIT {
     }
 
     private Long newStandingInProgram(Long programId) {
-        Long enrollmentId = jdbc.queryForObject("insert into program_enrollment (student_id, program_id, status, enrollment_date) values (?, ?, 'ENROLLED', now()) returning id",
-                Long.class, newStudentId(), programId);
+        Long enrollmentId = com.red_escuela.backend.testsupport.JdbcCurriculumPlans.enrollmentOf(jdbc, newStudentId(), programId);
         programEnrollmentIds.add(enrollmentId);
         Long standingId = jdbc.queryForObject("insert into enrollment_payment_standing (program_enrollment_id, student_id, status, last_closed_month) "
                 + "select id, student_id, 'UP_TO_DATE', date '2022-01-01' from program_enrollment where id = ? returning id", Long.class, enrollmentId);

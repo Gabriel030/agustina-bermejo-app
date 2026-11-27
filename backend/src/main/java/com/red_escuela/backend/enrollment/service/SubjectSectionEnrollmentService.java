@@ -76,6 +76,8 @@ public class SubjectSectionEnrollmentService {
     private final EnrollmentChangeEventPublisher changeEventPublisher;
     private final OwnSectionChangeRecordsGuard ownSectionChangeRecordsGuard;
     private final SectionClosureGuard sectionClosureGuard;
+    private final ProgramPlanSubjectGuard programPlanSubjectGuard;
+    private final StudentWithdrawalTermGuard studentWithdrawalTermGuard;
     private final Clock clock;
 
     public SubjectSectionEnrollmentService(SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
@@ -95,6 +97,8 @@ public class SubjectSectionEnrollmentService {
             EnrollmentChangeEventPublisher changeEventPublisher,
             OwnSectionChangeRecordsGuard ownSectionChangeRecordsGuard,
             SectionClosureGuard sectionClosureGuard,
+            ProgramPlanSubjectGuard programPlanSubjectGuard,
+            StudentWithdrawalTermGuard studentWithdrawalTermGuard,
             Clock clock) {
         this.ownSectionChangeRecordsGuard = ownSectionChangeRecordsGuard;
         this.scheduleOverlapGuard = scheduleOverlapGuard;
@@ -113,6 +117,8 @@ public class SubjectSectionEnrollmentService {
         this.invoiceRepository = invoiceRepository;
         this.prerequisiteEvaluator = prerequisiteEvaluator;
         this.sectionClosureGuard = sectionClosureGuard;
+        this.programPlanSubjectGuard = programPlanSubjectGuard;
+        this.studentWithdrawalTermGuard = studentWithdrawalTermGuard;
         this.clock = clock;
     }
 
@@ -140,6 +146,7 @@ public class SubjectSectionEnrollmentService {
             throw new AlreadyEnrolledInSubjectException(programEnrollmentId, subjectId);
         }
 
+        programPlanSubjectGuard.requireSubjectInEnrollmentPlan(programEnrollment, subjectId);
         subjectRetakeGuard.requireNotAlreadyPassed(programEnrollmentId, subjectId, null);
         validatePrerequisites(programEnrollment, subjectId, section.termId());
 
@@ -214,6 +221,7 @@ public class SubjectSectionEnrollmentService {
             throw new CannotWithdrawException(
                     "La inscripción " + id + " no está ENROLLED/IN_PROGRESS/WAITLISTED, no se puede dar de baja");
         }
+        studentWithdrawalTermGuard.requireTermNotEnded(change, enrollment.termId());
         markWithdrawn(enrollment, change, LocalDateTime.now(clock));
         subjectSectionEnrollmentRepository.save(enrollment);
         if (previousStatus != EnrollmentStatus.WAITLISTED) {
@@ -324,12 +332,12 @@ public class SubjectSectionEnrollmentService {
     }
 
     private Map<Long, ProgramSubjectView> resolveCurricularPositions(List<SubjectSectionEnrollment> enrollments) {
-        Map<Long, Map<Long, ProgramSubjectView>> subjectsByProgram = new HashMap<>();
+        Map<Long, Map<Long, ProgramSubjectView>> subjectsByPlan = new HashMap<>();
         Map<Long, ProgramSubjectView> positions = new HashMap<>();
         for (SubjectSectionEnrollment enrollment : enrollments) {
-            Long programId = enrollment.getProgramEnrollment().getProgram().getId();
-            Map<Long, ProgramSubjectView> subjects = subjectsByProgram.computeIfAbsent(programId, id ->
-                    programCurriculumFinder.findProgramSubjects(id).stream()
+            Long planId = enrollment.getProgramEnrollment().getPlan().getId();
+            Map<Long, ProgramSubjectView> subjects = subjectsByPlan.computeIfAbsent(planId, id ->
+                    programCurriculumFinder.findProgramSubjectsOfPlan(id).stream()
                             .collect(Collectors.toMap(ProgramSubjectView::subjectId, Function.identity(), (a, b) -> a)));
             ProgramSubjectView view = subjects.get(enrollment.subjectId());
             if (view != null) {
@@ -348,8 +356,8 @@ public class SubjectSectionEnrollmentService {
     }
 
     private Optional<ProgramSubjectView> resolveProgramSubject(SubjectSectionEnrollment enrollment) {
-        return programCurriculumFinder.findProgramSubject(
-                enrollment.getProgramEnrollment().getProgram().getId(),
+        return programCurriculumFinder.findProgramSubjectOfPlan(
+                enrollment.getProgramEnrollment().getPlan().getId(),
                 enrollment.subjectId());
     }
 

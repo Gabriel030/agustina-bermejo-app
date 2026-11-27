@@ -102,7 +102,7 @@ class SuspendedEnrollmentClosureServiceTest {
         when(cycleFactory.cyclesOf(any(), anyInt())).thenReturn(List.of(cycle));
         ProgramEnrollmentService enrollmentService = new ProgramEnrollmentService(enrollments, null, null, null, null, null, null, null, null, null,
                 new EnrollmentWithdrawalDateResolver(clock), port, null,
-                mock(com.red_escuela.backend.enrollment.service.ProgramEnrollmentSectionWithdrawer.class), clock);
+                mock(com.red_escuela.backend.enrollment.service.ProgramEnrollmentSectionWithdrawer.class), null, clock);
         logs.start();
         closureLogger.addAppender(logs);
         return new SuspendedEnrollmentClosureService(enrollments, templates, mock(AcademicReferenceFinder.class), invoices, enrollmentService, clock,

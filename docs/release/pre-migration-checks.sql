@@ -547,6 +547,40 @@ group by course_id, term_id
 having count(*) > 1;
 \endif
 
+\echo [V494] Datos que hacen fallar el VALIDATE de V494 (capacidad <= 0, attempt_number < 1, inscripciones cuyo estudiante no coincide con la inscripcion padre); debe devolver 0 filas:
+select 'subject_section' as tabla, id from subject_section where capacity <= 0
+union all select 'course_section', id from course_section where capacity <= 0
+union all select 'course', id from course where capacity <= 0
+union all select 'classroom', id from classroom where capacity <= 0
+union all select 'subject_section_enrollment.attempt_number', id from subject_section_enrollment where attempt_number < 1
+union all select 'course_section_enrollment.attempt_number', id from course_section_enrollment where attempt_number < 1
+union all select 'subject_section_enrollment.parent_student', e.id from subject_section_enrollment e
+    join program_enrollment p on p.id = e.program_enrollment_id where p.student_id <> e.student_id
+union all select 'course_section_enrollment.parent_student', e.id from course_section_enrollment e
+    join course_enrollment c on c.id = e.course_enrollment_id where c.student_id <> e.student_id;
+
+select :current_version < 495 as run_block \gset
+\if :run_block
+\echo
+\echo [V495] Matriculas cuya cohorte es de otra carrera (V495 les copiaria el plan de la cohorte ajena; corregir antes alineando la cohorte o la carrera de la matricula; no se borran datos):
+select pe.id as enrollment_id, pe.program_id as enrollment_program_id, pe.program_cohort_id, pc.program_id as cohort_program_id
+from program_enrollment pe
+join program_cohort pc on pc.id = pe.program_cohort_id
+where pc.program_id <> pe.program_id
+order by pe.id;
+\endif
+
+select :current_version < 495 as run_block \gset
+\if :run_block
+\echo [V495] Cohortes y matriculas cuya carrera no tiene un plan no-DRAFT (V495 ABORTA al validar program_cohort_plan_required y program_enrollment_plan_required; si V490 todavia no corrio, curriculum_plan no existe y esta consulta falla: ignorar el error, V490 crea el plan v1 ACTIVE de cada carrera):
+select 'COHORT' as origin, pc.id as row_id, pc.program_id from program_cohort pc
+where not exists (select 1 from curriculum_plan cp where cp.program_id = pc.program_id and cp.status <> 'DRAFT')
+union all
+select 'ENROLLMENT', pe.id, pe.program_id from program_enrollment pe
+where not exists (select 1 from curriculum_plan cp where cp.program_id = pe.program_id and cp.status <> 'DRAFT')
+order by 1, 2;
+\endif
+
 \echo
 \echo [V470] Franjas de aula solapadas (misma aula, mismo dia y hora, periodos de termino que se pisan, ambas de comisiones ACTIVE); V470 ABORTA al crear el EXCLUDE si hay filas (corregir antes: mover una franja a otra aula u horario o desactivar la comision; no se borran datos):
 with active_slots as (

@@ -22,7 +22,7 @@ public class CurriculumPlanEditPolicy {
     public CurriculumPlan lockEditableStructureOf(Long planId) {
         CurriculumPlan plan = curriculumPlanRepository.findByIdForUpdate(planId)
                 .orElseThrow(() -> new CurriculumPlanNotFoundException(planId));
-        if (!plan.isDraft() && enrollmentActivityPort.hasEnrolledStudentsInProgram(plan.getProgram().getId())) {
+        if (!plan.isDraft() && enrollmentActivityPort.hasEnrolledStudentsInPlan(plan.getId())) {
             throw new CurriculumPlanLockedException(plan.getId());
         }
         return plan;

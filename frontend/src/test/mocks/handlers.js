@@ -204,6 +204,7 @@ export const handlers = [
         id: 1,
         programId: Number(params.programId),
         termId: Number(params.termId),
+        planId: 21,
         intake: 'FIRST',
         admissionStart: '2027-01-01',
         admissionEnd: '2027-02-01',

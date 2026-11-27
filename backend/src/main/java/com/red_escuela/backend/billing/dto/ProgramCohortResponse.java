@@ -8,12 +8,12 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 public record ProgramCohortResponse(Long id, String intake, LocalDate admissionStart, LocalDate admissionEnd, LocalDate cursadaStart, String createdByName, LocalDateTime createdAt,
-                                    @JsonProperty("entryFeeDiscountPoints") Percentage entryFeeDiscountPercent) {
+                                    @JsonProperty("entryFeeDiscountPoints") Percentage entryFeeDiscountPercent, Long planId) {
 
     public static ProgramCohortResponse from(ProgramCohort cohort, Percentage entryFeeDiscount) {
         return new ProgramCohortResponse(
                 cohort.getId(), cohort.getIntake().name(), cohort.getAdmissionStart(), cohort.getAdmissionEnd(), cohort.getCursadaStart(),
                 cohort.getCreatedBy().getName() + " " + cohort.getCreatedBy().getLastname(), cohort.getCreatedAt(),
-                entryFeeDiscount);
+                entryFeeDiscount, cohort.getPlan().getId());
     }
 }

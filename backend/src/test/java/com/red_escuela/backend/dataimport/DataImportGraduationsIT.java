@@ -248,8 +248,10 @@ class DataImportGraduationsIT extends AbstractIntegrationTest {
         upload(batchId, "PROGRAMS", "programName,level,totalYears,totalCreditsRequired,totalHours,teachingMode,status,listPrice,listEnrollmentFee,currency,graduationProfile\n"
                 + program + ",UNDERGRADUATE,3,120,1800,IN_PERSON,ACTIVE,85000,40000,ARS,\n");
         String completion = enrollmentStatus.equals("COMPLETED") ? year + "-12-10" : "";
+        upload(batchId, "TERMS", "year,termType,description,startDate,endDate,programName\n"
+                + year + ",ANNUAL,Anual," + year + "-03-01,15/12/" + year + "," + program + "\n");
         upload(batchId, "PROGRAM_ENROLLMENTS", ENROLLMENT_HEADER
-                + "DNI," + studentDni + "," + program + "," + year + "-03-01," + enrollmentStatus + "," + completion + ",,,\n");
+                + "DNI," + studentDni + "," + program + "," + year + "-03-01," + enrollmentStatus + "," + completion + ",," + year + ",FIRST\n");
     }
 
     private long insertUnrelatedGraduation() {

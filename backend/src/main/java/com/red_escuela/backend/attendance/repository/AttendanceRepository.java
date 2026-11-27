@@ -41,6 +41,8 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
                    sum(case when a.status = :pendingStatus then 1 else 0 end) as pending
             from Attendance a
             where a.programSubjectSectionEnrollment.id in :enrollmentIds
+              and not exists (select 1 from ClassSession cs where cs.subjectSection = a.programSubjectSectionEnrollment.subjectSection
+                              and cs.classDate = a.classDate and cs.status = com.red_escuela.backend.attendance.entity.ClassSessionStatus.CANCELED)
             group by a.programSubjectSectionEnrollment.id
             """)
     List<EnrollmentAttendanceCounts> countsByProgramEnrollmentIds(@Param("enrollmentIds") java.util.Collection<Long> enrollmentIds,
@@ -55,6 +57,8 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
                    sum(case when a.status = :pendingStatus then 1 else 0 end) as pending
             from Attendance a
             where a.courseSubjectSectionEnrollment.id in :enrollmentIds
+              and not exists (select 1 from ClassSession cs where cs.courseSubjectSection = a.courseSubjectSectionEnrollment.courseSubjectSection
+                              and cs.classDate = a.classDate and cs.status = com.red_escuela.backend.attendance.entity.ClassSessionStatus.CANCELED)
             group by a.courseSubjectSectionEnrollment.id
             """)
     List<EnrollmentAttendanceCounts> countsByCourseEnrollmentIds(@Param("enrollmentIds") java.util.Collection<Long> enrollmentIds,
@@ -69,6 +73,8 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
                    sum(case when a.status = :pendingStatus then 1 else 0 end) as pending
             from Attendance a
             where a.programSubjectSectionEnrollment.subjectSection.id = :sectionId
+              and not exists (select 1 from ClassSession cs where cs.subjectSection = a.programSubjectSectionEnrollment.subjectSection
+                              and cs.classDate = a.classDate and cs.status = com.red_escuela.backend.attendance.entity.ClassSessionStatus.CANCELED)
             group by a.programSubjectSectionEnrollment.id
             """)
     List<EnrollmentAttendanceCounts> countsByProgramSection(@Param("sectionId") Long sectionId,
@@ -83,6 +89,8 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
                    sum(case when a.status = :pendingStatus then 1 else 0 end) as pending
             from Attendance a
             where a.courseSubjectSectionEnrollment.courseSubjectSection.id = :sectionId
+              and not exists (select 1 from ClassSession cs where cs.courseSubjectSection = a.courseSubjectSectionEnrollment.courseSubjectSection
+                              and cs.classDate = a.classDate and cs.status = com.red_escuela.backend.attendance.entity.ClassSessionStatus.CANCELED)
             group by a.courseSubjectSectionEnrollment.id
             """)
     List<EnrollmentAttendanceCounts> countsByCourseSection(@Param("sectionId") Long sectionId,
@@ -99,6 +107,10 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
     List<Attendance> findByProgramSubjectSectionEnrollment_SubjectSection_Id(Long subjectSectionId);
 
     List<Attendance> findByCourseSubjectSectionEnrollment_CourseSubjectSection_Id(Long courseSubjectSectionId);
+
+    List<Attendance> findByProgramSubjectSectionEnrollment_SubjectSection_IdAndClassDate(Long subjectSectionId, LocalDate classDate);
+
+    List<Attendance> findByCourseSubjectSectionEnrollment_CourseSubjectSection_IdAndClassDate(Long courseSubjectSectionId, LocalDate classDate);
 
     boolean existsByProgramSubjectSectionEnrollment_SubjectSection_IdAndClassDate(Long subjectSectionId, LocalDate classDate);
 }
