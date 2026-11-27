@@ -50,3 +50,6 @@ Gabriel rechazó varios mockups del catálogo por usabilidad: un desplegable «h
 - Barra utilitaria con enlaces a pantallas que no existen.
 - Precio en tarjetas de catálogo.
 - Diseñar «por convención» sin haber visto cómo lo resuelven las referencias.
+
+## Menú aprobado: toda pantalla nueva parte de él (26-nov)
+Todo mockup de pantalla nueva o cambiada se dibuja DENTRO del shell de navegación aprobado (`TopNav` + cajón móvil por niveles, ver «Menú aprobado» en `docs/context/frontend.md`, que lista los Artifacts de referencia): pestañas en la barra, hover en cada nivel, grilla de dos ejes, clic fija, menú de usuario único. Si el mockup necesita una entrada nueva, se muestra su lugar en `navModel.js`; no se inventa otro menú. Un mockup con menú propio se rechaza sin más revisión.
