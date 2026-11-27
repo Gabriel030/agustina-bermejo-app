@@ -58,6 +58,8 @@ public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnroll
     @Query("delete from ProgramEnrollment e where e.id in :ids")
     int deleteByIdIn(@Param("ids") Collection<Long> ids);
 
+    boolean existsByProgramIdAndStatusIn(Long programId, Collection<ProgramEnrollmentStatus> statuses);
+
     boolean existsByStudentIdAndStatusIn(Long studentId, Collection<ProgramEnrollmentStatus> statuses);
 
     List<ProgramEnrollment> findByStudentId(Long studentId);

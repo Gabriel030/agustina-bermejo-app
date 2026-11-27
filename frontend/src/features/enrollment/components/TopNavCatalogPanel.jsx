@@ -31,7 +31,7 @@ function AxisRow({ id, label, count, pointing }) {
       onClick={() => pointing.togglePin(id)}
       className={cn(GRID_ROW_BASE, pinned ? GRID_ROW_PINNED : pointing.shownId === id && 'bg-neutral-bg')}
     >
-      <span className="truncate">{label}</span>
+      <span>{label}</span>
       {count !== undefined && <span className="tabular-nums text-ink-faint">({count})</span>}
     </Button>
   );
@@ -141,7 +141,7 @@ export function TopNavCatalogPanel({ menus }) {
   else if (axis) announcement = axis.title;
 
   return (
-    <div ref={rootRef} onKeyDown={handleKeyDown} className="grid grid-cols-1 lg:grid-cols-[16rem_13.5rem_1fr]">
+    <div ref={rootRef} onKeyDown={handleKeyDown} className="grid grid-cols-1 lg:grid-cols-[14.375rem_16.875rem_1fr]">
       <div className="border-b border-border p-2 lg:border-b-0 lg:border-r">
         <p className={cn(GRID_ZONE_TITLE, 'px-3 pb-2 pt-1')}>Áreas académicas</p>
         <div className="flex flex-col gap-0.5">
@@ -157,18 +157,6 @@ export function TopNavCatalogPanel({ menus }) {
         </div>
       </div>
       <div className="flex flex-col gap-2 border-b border-border p-2 lg:border-b-0 lg:border-r">
-        <p className={cn(GRID_ZONE_TITLE, 'px-3 pt-1')}>Tipo de oferta</p>
-        <div className="flex flex-col gap-0.5">
-          {PANEL_LEVELS.map((level) => (
-            <AxisRow
-              key={level.id}
-              id={axisId('level', level.id)}
-              label={level.label}
-              count={loaded ? (levelCounts.get(level.id) ?? 0) : undefined}
-              pointing={pointing}
-            />
-          ))}
-        </div>
         <div className="relative px-1">
           <Search aria-hidden="true" className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-ink-faint" />
           <Input
@@ -180,6 +168,18 @@ export function TopNavCatalogPanel({ menus }) {
             onKeyDown={handleSearchKeyDown}
             className="min-h-11 pl-9"
           />
+        </div>
+        <p className={cn(GRID_ZONE_TITLE, 'px-3 pt-1')}>Tipo de oferta</p>
+        <div className="flex flex-col gap-0.5">
+          {PANEL_LEVELS.map((level) => (
+            <AxisRow
+              key={level.id}
+              id={axisId('level', level.id)}
+              label={level.label}
+              count={loaded ? (levelCounts.get(level.id) ?? 0) : undefined}
+              pointing={pointing}
+            />
+          ))}
         </div>
         <Link to={CATALOG_PATH} onClick={menus.close} className={MENU_ROW}>
           Ver toda la oferta

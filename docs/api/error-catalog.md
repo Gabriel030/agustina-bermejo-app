@@ -147,6 +147,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INVALID_COREQUISITE` | no | `InvalidCorequisiteException` | academicstructure |
 | `INVALID_CREDIT_NOTE_REASON` | no | `InvalidCreditNoteReasonException` | billing |
 | `INVALID_CURRENT_PASSWORD` | no | `InvalidCurrentPasswordException` | identity |
+| `INVALID_CURRICULUM_PLAN_DATES` | no | `InvalidCurriculumPlanDatesException` | academicstructure |
 | `INVALID_DATE_RANGE` | no | `InvalidDateRangeException` | shared |
 | `INVALID_DISCOUNT_DEFINITION` | no | `InvalidDiscountDefinitionException` | billing |
 | `INVALID_DOCUMENT_NUMBER` | no | `InvalidDocumentNumberException` | shared |
@@ -301,6 +302,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `COURSE_NOT_FOUND` | no | `CourseNotFoundException` | academicstructure |
 | `COURSE_SUBJECT_NOT_FOUND` | no | `CourseSubjectNotFoundException` | academicstructure |
 | `CREDIT_NOTE_INVOICE_NOT_FOUND` | no | `CreditNoteInvoiceNotFoundException` | billing |
+| `CURRICULUM_PLAN_NOT_FOUND` | no | `CurriculumPlanNotFoundException` | academicstructure |
 | `CYCLE_NOT_FOUND` | no | `CycleNotFoundException` | academicstructure |
 | `DEBT_EXCEPTION_NOT_FOUND` | no | `DebtExceptionNotFoundException` | graduation |
 | `DIRECTOR_APPROVAL_REQUEST_NOT_FOUND` | no | `DirectorApprovalRequestNotFoundException` | enrollment |
@@ -451,6 +453,9 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CREDIT_NOTE_ISSUING_REJECTED` | no | `CreditNoteIssuingRejectedException` | billing |
 | `CREDIT_NOTE_REFUND_EXCEEDS_PAID_AMOUNT` | no | `CreditNoteRefundExceedsPaidAmountException` | billing |
 | `CURRENT_ACCOUNT_ENTRY_SOURCE_MISMATCH` | no | `CurrentAccountEntrySourceMismatchException` | billing |
+| `CURRICULUM_PLAN_LOCKED` | no | `CurriculumPlanLockedException` | academicstructure |
+| `CURRICULUM_PLAN_NOT_OPEN_FOR_NEW_STUDENTS` | no | `CurriculumPlanNotOpenForNewStudentsException` | academicstructure |
+| `CURRICULUM_PLAN_WITHOUT_SUBJECTS` | no | `CurriculumPlanWithoutSubjectsException` | academicstructure |
 | `CYCLE_ALREADY_IN_PROGRESS` | no | `CycleAlreadyInProgressException` | academicstructure |
 | `CYCLE_DECISION_IDEMPOTENCY_KEY_CONFLICT` | no | `CycleDecisionIdempotencyKeyConflictException` | academicstructure |
 | `CYCLE_NOT_EDITABLE` | no | `CycleNotEditableException` | academicstructure |
@@ -553,6 +558,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `INSUFFICIENT_ACCOUNT_CREDIT` | no | `InsufficientAccountCreditException` | billing |
 | `INVALID_ATTENDANCE_CHANGE_REQUEST_STATE` | no | `InvalidAttendanceChangeRequestStateException` | attendance |
 | `INVALID_BILLING_MODE_TRANSITION` | no | `InvalidBillingModeTransitionException` | platform |
+| `INVALID_CURRICULUM_PLAN_TRANSITION` | no | `InvalidCurriculumPlanTransitionException` | academicstructure |
 | `INVALID_DIRECTOR_APPROVAL_REQUEST_STATE` | no | `InvalidDirectorApprovalRequestStateException` | enrollment |
 | `INVALID_GRADUATION_CERTIFICATE_REVIEW_DECISION` | no | `InvalidGraduationCertificateReviewDecisionException` | graduation |
 | `INVALID_GRADUATION_REQUEST_STATE` | no | `InvalidGraduationRequestStateException` | graduation |
@@ -883,6 +889,8 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/course-enrollments/{id}/withdraw` | `StaffEnrollmentChangeController#withdrawCourse` |
 | POST | `/course-section-enrollments/{id}/grade-items` | `GradeItemController#loadCourseEnrollmentGrade` |
 | POST | `/course-section-enrollments/{id}/withdraw` | `StaffEnrollmentChangeController#withdrawCourseModule` |
+| POST | `/course-section-evaluation-configs/{courseSectionId}/approve` | `CourseSectionEvaluationConfigController#approve` |
+| POST | `/course-section-evaluation-configs/{courseSectionId}/reject` | `CourseSectionEvaluationConfigController#reject` |
 | POST | `/course-sections/{id}/activate` | `CourseSectionController#reactivate` |
 | POST | `/course-sections/{id}/attendance` | `AttendanceController#loadCourseSectionAttendance` |
 | POST | `/course-sections/{id}/class-sessions/{date}/cancel` | `AttendanceController#cancelCourseSectionClassSession` |
@@ -902,6 +910,9 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/courses/{id}/payment-plan-options` | `PaymentPlanOptionController#createForCourse` |
 | POST | `/courses/{id}/promotions` | `PromotionController#createForCourse` |
 | POST | `/courses/{id}/subjects` | `CourseSubjectController#addModule` |
+| POST | `/curriculum-plans/{id}/activate` | `CurriculumPlanController#activate` |
+| POST | `/curriculum-plans/{id}/expire` | `CurriculumPlanController#expire` |
+| POST | `/curriculum-plans/{id}/subjects` | `CurriculumPlanController#addSubject` |
 | POST | `/data-imports` | `DataImportController#createBatch` |
 | POST | `/data-imports/{id}/commit` | `DataImportController#commitBatch` |
 | POST | `/data-imports/{id}/files/{entityType}` | `DataImportController#uploadFile` |
@@ -962,6 +973,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/me/attendance/{id}/justify` | `MeAcademicRecordController#justifyMyAbsence` |
 | POST | `/me/avatar` | `PersonController#uploadAvatar` |
 | POST | `/me/calendar/feed/token` | `MeCalendarFeedController#rotateMyCalendarFeedToken` |
+| POST | `/me/course-section-evaluation-configs/{courseSectionId}/submit` | `MeSectionEvaluationConfigController#submitCourseSectionForApproval` |
 | POST | `/me/documents/{type}` | `MeOwnDocumentController#generate` |
 | POST | `/me/exam-board-registrations` | `MeExamBoardRegistrationController#register` |
 | POST | `/me/exam-board-registrations/{id}/withdraw` | `MeExamBoardRegistrationController#withdraw` |
@@ -1022,6 +1034,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/program-subjects/{id}/prerequisites` | `ProgramSubjectController#addPrerequisite` |
 | POST | `/programs` | `ProgramController#create` |
 | POST | `/programs/{id}/activate` | `ProgramController#reactivate` |
+| POST | `/programs/{id}/curriculum-plans` | `CurriculumPlanController#create` |
 | POST | `/programs/{id}/deactivate` | `ProgramController#deactivate` |
 | POST | `/programs/{id}/elective-groups` | `ElectiveGroupController#assignToProgram` |
 | POST | `/programs/{id}/payment-plan-options` | `PaymentPlanOptionController#createForProgram` |

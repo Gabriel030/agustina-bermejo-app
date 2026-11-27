@@ -93,7 +93,7 @@ export function MonthlyRunPage() {
           {isRunning && <RunProgressCard counters={run.counters} />}
           {run && !isRunning && <RunCounterCards counters={run.counters} />}
           <Tabs defaultValue="items" className="gap-4">
-            <TabsList variant="segmented" className="w-full sm:w-fit">
+            <TabsList variant="line">
               <TabsTrigger value="items" className="flex-1">
                 Ítems
                 <TabCount count={problemCount} />

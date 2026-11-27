@@ -7,7 +7,9 @@ import lombok.Setter;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
+import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.evaluation.exception.InvalidSectionEvaluationConfigTransitionException;
 import com.red_escuela.backend.evaluation.exception.SubmissionWindowClosedException;
 
@@ -25,8 +27,12 @@ public class SectionEvaluationConfig {
     private Long version;
 
     @OneToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "subject_section_id", nullable = false, unique = true)
+    @JoinColumn(name = "subject_section_id", unique = true)
     private SubjectSection subjectSection;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "course_section_id", unique = true)
+    private CourseSubjectSection courseSection;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
@@ -89,7 +95,7 @@ public class SectionEvaluationConfig {
             throw new InvalidSectionEvaluationConfigTransitionException(status, "enviar a aprobación");
         }
         if (!canBeSubmitted(now)) {
-            throw new SubmissionWindowClosedException(subjectSection.getId());
+            throw new SubmissionWindowClosedException(ownerSectionId());
         }
         status = SectionEvaluationConfigStatus.PENDING_APPROVAL;
         submittedAt = now;
@@ -97,7 +103,39 @@ public class SectionEvaluationConfig {
     }
 
     private boolean isSubmissionWindowOpen(LocalDateTime now) {
-        LocalDateTime termStart = subjectSection.getTerm().getStartDate();
+        LocalDateTime termStart = term().getStartDate();
         return termStart == null || now.isBefore(termStart);
+    }
+
+    public boolean isOwnedByCourseSection() {
+        return courseSection != null;
+    }
+
+    public Long ownerSectionId() {
+        return courseSection != null ? courseSection.getId() : subjectSection.getId();
+    }
+
+    public Term term() {
+        return courseSection != null ? courseSection.getTerm() : subjectSection.getTerm();
+    }
+
+    public EvaluationScheme sectionEvaluationScheme() {
+        return courseSection != null ? courseSection.getEvaluationScheme() : subjectSection.getEvaluationScheme();
+    }
+
+    public String subjectName() {
+        return courseSection != null ? courseSection.getModuleName() : subjectSection.getSubject().getName();
+    }
+
+    public Long subjectId() {
+        return courseSection != null ? null : subjectSection.getSubject().getId();
+    }
+
+    public Long courseSubjectId() {
+        return courseSection != null ? courseSection.getCourseSubject().getId() : null;
+    }
+
+    public String sectionName() {
+        return courseSection != null ? courseSection.getName() : subjectSection.getName();
     }
 }

@@ -182,7 +182,7 @@ export function ImportedReviewPanel() {
       )}
 
       <Tabs value={status} onValueChange={changeStatus}>
-        <TabsList variant="segmented">
+        <TabsList variant="line">
           {REVIEW_STATUS_TABS.map((tab) => (
             <TabsTrigger key={tab.value} value={tab.value}>
               {tab.label}

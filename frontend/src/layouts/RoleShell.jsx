@@ -102,18 +102,18 @@ export function RoleShell({ titulo, items, groups, topNav = false }) {
           ref={mainRef}
           id="main-content"
           tabIndex={-1}
-          className="flex min-w-0 flex-1 flex-col overflow-y-auto scroll-pb-32 focus:outline-none px-4 py-5 sm:px-8 sm:py-6"
+          className="flex min-w-0 flex-1 flex-col overflow-y-auto scroll-pb-32 focus:outline-none px-4 py-5 sm:py-6"
         >
           {/* Breadcrumb: vive acá (no en cada página) porque es el único lugar que
               todas las rutas de rol comparten — ver useBreadcrumb.js para el mapeo
               ruta→items. No forma parte de la animación de entrada/salida de abajo
               (es chrome de navegación, no contenido de la pantalla) y devuelve null
               para cualquier ruta sin un patrón conocido, así que no aparece en
-              pantallas de un solo nivel (Inicio, placeholders, etc). max-w-[1200px]
+              pantallas de un solo nivel (Inicio, placeholders, etc). max-w-[1248px]
               replica el ancho de PageContainer para que quede alineado con el
               contenido de abajo. */}
           {breadcrumbItems.length > 0 && (
-            <div className="mx-auto w-full max-w-[1200px] pb-3">
+            <div className="mx-auto w-full max-w-[1248px] pb-3">
               <Breadcrumb items={breadcrumbItems} />
             </div>
           )}

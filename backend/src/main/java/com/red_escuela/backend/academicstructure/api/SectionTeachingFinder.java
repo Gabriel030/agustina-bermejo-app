@@ -38,4 +38,12 @@ public class SectionTeachingFinder {
         return programInstructorRepository.existsBySectionIdAndInstructorIdAndRole(
                 programSectionId, instructorId, InstructorRole.LEAD);
     }
+
+    public boolean isLead(SectionKind kind, Long sectionId, Long instructorId) {
+        return switch (kind) {
+            case PROGRAM -> isLead(sectionId, instructorId);
+            case COURSE -> courseInstructorRepository.existsBySectionIdAndInstructorIdAndRole(
+                    sectionId, instructorId, InstructorRole.LEAD);
+        };
+    }
 }

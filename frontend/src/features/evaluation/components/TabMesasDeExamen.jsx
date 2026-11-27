@@ -178,7 +178,7 @@ export function TabMesasDeExamen({ carreraId }) {
   return (
     <div className="flex flex-col gap-4">
       <Tabs value={subTab} onValueChange={setSubTab}>
-        <TabsList variant="segmented">
+        <TabsList variant="line">
           {SUB_TABS.map(({ id, label }) => (
             <TabsTrigger key={id} value={id}>{label}</TabsTrigger>
           ))}

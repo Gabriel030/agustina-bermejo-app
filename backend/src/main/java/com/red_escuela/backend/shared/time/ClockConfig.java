@@ -9,7 +9,7 @@ import java.time.Clock;
 import java.time.ZoneId;
 
 @Configuration
-@Profile("!test")
+@Profile("!test & !demo")
 public class ClockConfig {
 
     @Bean

@@ -12,6 +12,6 @@ public record SectionEvaluationConfigApprovedEvent(String correlationId, Instant
 
     public static SectionEvaluationConfigApprovedEvent approvedFor(SectionEvaluationConfig config, Long instructorPersonId) {
         return new SectionEvaluationConfigApprovedEvent(CorrelationIds.current(), ApplicationTime.instant(), config.getId(),
-                config.getSubjectSection().getSubject().getName(), config.getSubjectSection().getName(), instructorPersonId);
+                config.subjectName(), config.sectionName(), instructorPersonId);
     }
 }

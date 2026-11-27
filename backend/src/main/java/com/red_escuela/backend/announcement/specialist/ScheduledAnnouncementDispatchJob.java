@@ -1,5 +1,6 @@
 package com.red_escuela.backend.announcement.specialist;
 
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.announcement.entity.Announcement;
@@ -48,7 +49,7 @@ public class ScheduledAnnouncementDispatchJob {
     @Scheduled(cron = "0 */5 * * * *", zone = "${app.timezone}")
     @SchedulerLock(name = "ScheduledAnnouncementDispatchJob", lockAtMostFor = "PT10M")
     public void run() {
-        dispatchDue(LocalDateTime.now());
+        dispatchDue(ApplicationTime.now());
     }
 
     public void dispatchDue(LocalDateTime now) {
@@ -96,7 +97,7 @@ public class ScheduledAnnouncementDispatchJob {
         log.info("Envío programado de avisos: vencidos={}, enviados={}, fallidos={}, duracion={}ms",
                 candidates, processed, failed, durationMs);
         batchExecutionLogRecorder.recordRun(
-                JOB_NAME, LocalDateTime.now(), candidates, processed, failed, durationMs, serialize(errors));
+                JOB_NAME, ApplicationTime.now(), candidates, processed, failed, durationMs, serialize(errors));
     }
 
     private String serialize(List<Map<String, Object>> errors) {

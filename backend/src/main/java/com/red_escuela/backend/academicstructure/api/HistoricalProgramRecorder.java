@@ -35,17 +35,19 @@ public class HistoricalProgramRecorder {
     private final ProgramSubjectPrerequisiteRepository prerequisiteRepository;
     private final OfferingPriceCatalog offeringPriceCatalog;
     private final CurrentActorFinder currentActorFinder;
+    private final CurrentCurriculumPlanProvider currentPlanProvider;
 
     public HistoricalProgramRecorder(ProgramRepository programRepository, SubjectRepository subjectRepository,
             ProgramSubjectRepository programSubjectRepository,
             ProgramSubjectPrerequisiteRepository prerequisiteRepository, OfferingPriceCatalog offeringPriceCatalog,
-            CurrentActorFinder currentActorFinder) {
+            CurrentActorFinder currentActorFinder, CurrentCurriculumPlanProvider currentPlanProvider) {
         this.programRepository = programRepository;
         this.subjectRepository = subjectRepository;
         this.programSubjectRepository = programSubjectRepository;
         this.prerequisiteRepository = prerequisiteRepository;
         this.offeringPriceCatalog = offeringPriceCatalog;
         this.currentActorFinder = currentActorFinder;
+        this.currentPlanProvider = currentPlanProvider;
     }
 
     @Transactional(readOnly = true)
@@ -101,6 +103,7 @@ public class HistoricalProgramRecorder {
                 .graduationProfile(historical.graduationProfile())
                 .status(historical.active() ? StatusType.ACTIVE : StatusType.INACTIVE)
                 .currency(historical.tuition().currency()).build());
+        currentPlanProvider.createInitialPlanOf(program);
         Long actorId = currentActorFinder.currentPersonId();
         OfferingReference offering = OfferingReference.ofProgram(program.getId());
         offeringPriceCatalog.registerInitialOfferingPrice(offering, OfferingFee.MONTHLY_INSTALLMENT, historical.tuition(), actorId);
@@ -126,6 +129,7 @@ public class HistoricalProgramRecorder {
         program.requireCurricularYearWithinDuration(entry.curricularYear());
         ProgramSubject planEntry = new ProgramSubject();
         planEntry.setProgram(program);
+        planEntry.setPlan(currentPlanProvider.currentPlanOf(program));
         planEntry.setSubject(subject);
         planEntry.setCredits(entry.credits());
         planEntry.setCurricularYear(entry.curricularYear());

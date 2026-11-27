@@ -11,7 +11,7 @@ export function BillingRunsPage() {
   return (
     <PageContainer title="Corridas de facturación" description="Qué hizo el sistema cada noche">
       <Tabs defaultValue="nightly" className="gap-4">
-        <TabsList variant="segmented" className="w-full sm:w-fit">
+        <TabsList variant="line">
           <TabsTrigger value="nightly" className="flex-1">
             Procesos nocturnos
             <TabCount count={countNightsWithErrors(runs.data)} />
