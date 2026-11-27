@@ -665,6 +665,8 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
 
         ProgramCohort cohort = new ProgramCohort();
         cohort.setTemplateId(template.getId());
+        cohort.setProgramId(template.programId());
+        cohort.setTermId(template.termId());
         cohort.setIntake(CohortIntake.FIRST);
         cohort.setAdmissionStart(LocalDate.now().minusDays(60));
         cohort.setAdmissionEnd(LocalDate.now().minusDays(1));

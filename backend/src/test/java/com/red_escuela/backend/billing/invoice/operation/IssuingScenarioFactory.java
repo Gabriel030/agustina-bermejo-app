@@ -133,6 +133,9 @@ public class IssuingScenarioFactory {
         return transactionTemplate.execute(status -> {
             ProgramCohort cohort = new ProgramCohort();
             cohort.setTemplateId(templateId);
+            ProgramYearBillingTemplate cohortTemplate = entityManager.find(ProgramYearBillingTemplate.class, templateId);
+            cohort.setProgramId(cohortTemplate.programId());
+            cohort.setTermId(cohortTemplate.termId());
             cohort.setIntake(intake);
             cohort.setAdmissionStart(cursadaStart.minusMonths(2));
             cohort.setAdmissionEnd(cursadaStart.minusDays(1));

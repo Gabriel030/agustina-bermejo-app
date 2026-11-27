@@ -189,6 +189,8 @@ class EnrollmentWithBillingOffIT extends AbstractIntegrationTest {
             TestTemplateTerms.publish(entityManager, template);
             ProgramCohort cohort = new ProgramCohort();
             cohort.setTemplateId(template.getId());
+            cohort.setProgramId(program.getId());
+            cohort.setTermId(term.getId());
             cohort.setIntake(CohortIntake.FIRST);
             cohort.setAdmissionStart(LocalDate.now().minusDays(30));
             cohort.setAdmissionEnd(LocalDate.now().plusDays(30));

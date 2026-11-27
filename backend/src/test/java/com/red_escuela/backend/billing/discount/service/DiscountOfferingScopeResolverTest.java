@@ -6,8 +6,6 @@ import com.red_escuela.backend.billing.discount.exception.DiscountScopeOfferingN
 import com.red_escuela.backend.billing.discount.policy.DiscountDefinitionCheck;
 import com.red_escuela.backend.academicstructure.api.ProgramCohortFinder;
 import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
-import com.red_escuela.backend.billing.service.ProgramYearBillingTemplateService;
-import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.academicstructure.api.ProgramCohortNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.ProgramCohortRepository;
 import com.red_escuela.backend.shared.domain.Currency;
@@ -25,8 +23,7 @@ import static org.mockito.Mockito.when;
 class DiscountOfferingScopeResolverTest {
     private final OfferingCurrencyFinder currencyFinder = mock(OfferingCurrencyFinder.class);
     private final ProgramCohortRepository cohortRepository = mock(ProgramCohortRepository.class);
-    private final ProgramYearBillingTemplateService templateService = mock(ProgramYearBillingTemplateService.class);
-    private final DiscountOfferingScopeResolver resolver = new DiscountOfferingScopeResolver(currencyFinder, new ProgramCohortFinder(cohortRepository), templateService);
+    private final DiscountOfferingScopeResolver resolver = new DiscountOfferingScopeResolver(currencyFinder, new ProgramCohortFinder(cohortRepository));
 
     @Test
     void aProgramScopeResolvesTheCurrencyOfTheProgram() {
@@ -51,10 +48,8 @@ class DiscountOfferingScopeResolverTest {
     void aCohortScopeResolvesTheProgramTheCohortBelongsTo() {
         when(currencyFinder.findProgramCurrency(4L)).thenReturn(Optional.of(Currency.ARS));
         ProgramCohort cohort = mock(ProgramCohort.class);
-        ProgramYearBillingTemplate template = mock(ProgramYearBillingTemplate.class);
-        when(template.programId()).thenReturn(77L);
-        when(cohort.getTemplateId()).thenReturn(5L);
-        when(templateService.findOrThrow(5L)).thenReturn(template);
+        when(cohort.getProgramId()).thenReturn(77L);
+        when(cohort.getTemplateId()).thenReturn(null);
         when(cohortRepository.findById(8L)).thenReturn(Optional.of(cohort));
 
         DiscountDefinitionCheck check = resolver.resolveScopeOf(DiscountDraftBuilder.cohortPromotion().forProgram(4L).forCohort(8L).build());

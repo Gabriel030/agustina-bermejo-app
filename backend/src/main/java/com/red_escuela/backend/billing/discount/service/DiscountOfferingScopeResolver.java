@@ -5,7 +5,6 @@ import com.red_escuela.backend.billing.discount.domain.DiscountDefinitionDraft;
 import com.red_escuela.backend.billing.discount.exception.DiscountScopeOfferingNotFoundException;
 import com.red_escuela.backend.billing.discount.policy.DiscountDefinitionCheck;
 import com.red_escuela.backend.academicstructure.api.ProgramCohortFinder;
-import com.red_escuela.backend.billing.service.ProgramYearBillingTemplateService;
 import com.red_escuela.backend.shared.domain.Currency;
 import org.springframework.stereotype.Component;
 
@@ -13,17 +12,15 @@ import org.springframework.stereotype.Component;
 public class DiscountOfferingScopeResolver {
     private final OfferingCurrencyFinder currencyFinder;
     private final ProgramCohortFinder programCohortFinder;
-    private final ProgramYearBillingTemplateService templateService;
 
-    public DiscountOfferingScopeResolver(OfferingCurrencyFinder currencyFinder, ProgramCohortFinder programCohortFinder, ProgramYearBillingTemplateService templateService) {
+    public DiscountOfferingScopeResolver(OfferingCurrencyFinder currencyFinder, ProgramCohortFinder programCohortFinder) {
         this.currencyFinder = currencyFinder;
         this.programCohortFinder = programCohortFinder;
-        this.templateService = templateService;
     }
 
     public DiscountDefinitionCheck resolveScopeOf(DiscountDefinitionDraft draft) {
         Currency offeringCurrency = findOfferingCurrency(draft);
-        Long cohortProgramId = draft.programCohortId() == null ? null : templateService.findOrThrow(programCohortFinder.findOrThrow(draft.programCohortId()).getTemplateId()).programId();
+        Long cohortProgramId = draft.programCohortId() == null ? null : programCohortFinder.findOrThrow(draft.programCohortId()).getProgramId();
         return new DiscountDefinitionCheck(draft, offeringCurrency, cohortProgramId);
     }
 
