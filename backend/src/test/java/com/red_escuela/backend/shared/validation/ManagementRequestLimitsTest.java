@@ -1,7 +1,6 @@
 package com.red_escuela.backend.shared.validation;
 
 import com.red_escuela.backend.academicstructure.dto.CreateElectiveGroupRequest;
-import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.academicstructure.dto.CreateTermRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateCourseSubjectRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateElectiveGroupRequest;
@@ -38,10 +37,6 @@ class ManagementRequestLimitsTest {
 
     @RestController
     static class EchoController {
-        @PostMapping("/echo/create-section")
-        void createSection(@RequestBody CreateSectionRequest request) {
-        }
-
         @PostMapping("/echo/update-section")
         void updateSection(@RequestBody UpdateSectionRequest request) {
         }
@@ -93,8 +88,6 @@ class ManagementRequestLimitsTest {
 
     private static Stream<Arguments> invalidBodies() {
         return Stream.of(
-                Arguments.of("/echo/create-section", "{\"name\":\"" + LONG_TEXT + "\",\"termId\":1,\"capacity\":10}", "REQUEST_FIELD_TOO_LONG"),
-                Arguments.of("/echo/create-section", "{\"name\":\"A\",\"termId\":1,\"capacity\":1000000}", "REQUEST_FIELD_OUT_OF_RANGE"),
                 Arguments.of("/echo/update-section", "{\"schedule\":\"" + LONG_TEXT + "\"}", "REQUEST_FIELD_TOO_LONG"),
                 Arguments.of("/echo/update-course-subject", "{\"name\":\"" + LONG_TEXT + "\"}", "REQUEST_FIELD_TOO_LONG"),
                 Arguments.of("/echo/update-course-subject", "{\"weeklyWorkload\":100000}", "REQUEST_FIELD_OUT_OF_RANGE"),
@@ -120,7 +113,6 @@ class ManagementRequestLimitsTest {
 
     private static Stream<Arguments> validBodies() {
         return Stream.of(
-                Arguments.of("/echo/create-section", "{\"name\":\"" + "x".repeat(255) + "\",\"termId\":1,\"capacity\":10000}"),
                 Arguments.of("/echo/update-elective-group", "{\"description\":\"" + "x".repeat(500) + "\"}"),
                 Arguments.of("/echo/create-grade-item", "{\"type\":\"EXAM\",\"date\":\"2026-03-01T00:00:00\",\"score\":7,\"sequenceNumber\":1000}"));
     }

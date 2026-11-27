@@ -85,7 +85,9 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
         long schemeId = createEvaluationScheme(api);
         long termId = createOpenTerm(api);
         long instructorId = findTeacherInstructorId(api);
-        List<Long> sectionIds = createSectionsWithLeadTeacher(api, subjectIds, termId, schemeId, instructorId);
+        long cycleId = createCycle(api, "programId", programId, termId);
+        List<Long> sectionIds = createSectionsWithLeadTeacher(api, subjectIds, cycleId, schemeId, instructorId);
+        approveCycle(api, cycleId);
         long regularStudentId = findStudentId(api, REGULAR_STUDENT);
         enrollRegularStudent(api, regularStudentId, programId, sectionIds);
         limitAbsencesOfSection(sectionIds.get(1));
@@ -181,24 +183,31 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
         throw new IllegalStateException("No existe el perfil de docente para " + TEACHER);
     }
 
-    private List<Long> createSectionsWithLeadTeacher(DemoApiClient api, List<Long> subjectIds, long termId, long schemeId, long instructorId) {
+    private long createCycle(DemoApiClient api, String ownerKey, long ownerId, long termId) {
+        return api.post(ADMIN, "/academic-offering-cycles", Map.of(ownerKey, ownerId, "termId", termId)).get("id").asLong();
+    }
+
+    private void approveCycle(DemoApiClient api, long cycleId) {
+        api.post(ADMIN, "/academic-offering-cycles/" + cycleId + "/submit", null);
+        api.post(DIRECTOR, "/academic-offering-cycles/" + cycleId + "/approve", null);
+    }
+
+    private List<Long> createSectionsWithLeadTeacher(DemoApiClient api, List<Long> subjectIds, long cycleId, long schemeId, long instructorId) {
         List<Long> sectionIds = new ArrayList<>();
-        String[] schedules = {"Lunes y miércoles 18:00 a 20:00", "Martes y jueves 18:00 a 20:00", "Viernes 18:00 a 22:00"};
-        for (int index = 0; index < subjectIds.size(); index++) {
-            sectionIds.add(createSectionWithLeadTeacher(api, subjectIds.get(index), termId, schemeId, instructorId, "Comisión A", schedules[index]));
+        for (Long subjectId : subjectIds) {
+            sectionIds.add(createSectionWithLeadTeacher(api, subjectId, cycleId, schemeId, instructorId, "Comisión A"));
         }
         return sectionIds;
     }
 
-    private long createSectionWithLeadTeacher(DemoApiClient api, long subjectId, long termId, long schemeId, long instructorId, String name, String schedule) {
+    private long createSectionWithLeadTeacher(DemoApiClient api, long subjectId, long cycleId, long schemeId, long instructorId, String name) {
         Map<String, Object> section = new LinkedHashMap<>();
         section.put("name", name);
-        section.put("termId", termId);
-        section.put("schedule", schedule);
+        section.put("subjectId", subjectId);
         section.put("capacity", 30);
         section.put("shift", "MORNING");
-        section.put("evaluationSchemeId", schemeId);
-        long sectionId = api.post(ADMIN, "/subjects/" + subjectId + "/sections", section).get("id").asLong();
+        long sectionId = api.post(ADMIN, "/academic-offering-cycles/" + cycleId + "/sections", section).asLong();
+        api.put(ADMIN, "/program-sections/" + sectionId, Map.of("evaluationSchemeId", schemeId));
         api.post(ADMIN, "/program-sections/" + sectionId + "/instructors", Map.of("instructorId", instructorId, "role", "LEAD"));
         return sectionId;
     }
@@ -221,7 +230,7 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
         for (int index = 0; index < sectionEnrollmentIds.size(); index++) {
             recordAttendance(api, sectionIds.get(index), sectionEnrollmentIds.get(index));
         }
-        api.post(TEACHER, "/section-enrollments/" + sectionEnrollmentIds.get(0) + "/grade-items", Map.of("type", "EXAM", "date", "2026-04-15T00:00:00", "score", 7));
+        api.post(TEACHER, "/section-enrollments/" + sectionEnrollmentIds.get(0) + "/grade-items", Map.of("type", "EXAM", "sequenceNumber", 1, "date", "2026-04-15T00:00:00", "score", 7));
         justifyFirstAbsence(api, sectionEnrollmentIds.get(0));
     }
 
@@ -232,7 +241,9 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
     private void enrollGraduatingStudent(DemoApiClient api, long termId, long schemeId, long instructorId) {
         long programId = createProgram(api, GRADUATING_PROGRAM_NAME, 5);
         long subjectId = createActiveSubjectInProgram(api, programId, GRADUATING_SUBJECT);
-        long sectionId = createSectionWithLeadTeacher(api, subjectId, termId, schemeId, instructorId, "Comisión A", "Jueves 18:00 a 22:00");
+        long cycleId = createCycle(api, "programId", programId, termId);
+        long sectionId = createSectionWithLeadTeacher(api, subjectId, cycleId, schemeId, instructorId, "Comisión A");
+        approveCycle(api, cycleId);
         long studentId = findStudentId(api, GRADUATING_STUDENT);
         long programEnrollmentId = api.post(ADMIN, "/students/" + studentId + "/program-enrollments", Map.of("programId", programId)).get("id").asLong();
         long sectionEnrollmentId = api.post(ADMIN, "/program-enrollments/" + programEnrollmentId + "/section-enrollments", Map.of("sectionId", sectionId)).get("id").asLong();
@@ -321,6 +332,7 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
         course.put("price", Map.of("amount", "15000", "currency", "ARS"));
         course.put("durationMonths", 3);
         long courseId = api.post(ADMIN, "/courses", course).get("id").asLong();
+        long cycleId = createCycle(api, "courseId", courseId, termId);
         List<Long> moduleSectionIds = new ArrayList<>();
         List<Long> moduleIds = new ArrayList<>();
         int order = 1;
@@ -329,14 +341,15 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
             moduleIds.add(moduleId);
             Map<String, Object> section = new LinkedHashMap<>();
             section.put("name", "Comisión única");
-            section.put("termId", termId);
+            section.put("courseSubjectId", moduleId);
             section.put("capacity", 20);
             section.put("shift", "MORNING");
-            section.put("evaluationSchemeId", schemeId);
-            long sectionId = api.post(ADMIN, "/course-subjects/" + moduleId + "/sections", section).get("id").asLong();
+            long sectionId = api.post(ADMIN, "/academic-offering-cycles/" + cycleId + "/sections", section).asLong();
+            api.put(ADMIN, "/course-sections/" + sectionId, Map.of("evaluationSchemeId", schemeId));
             api.post(ADMIN, "/course-sections/" + sectionId + "/instructors", Map.of("instructorId", instructorId, "role", "LEAD"));
             moduleSectionIds.add(sectionId);
         }
+        approveCycle(api, cycleId);
         api.post(ADMIN, "/students/" + findStudentId(api, COURSE_STUDENT) + "/course-enrollments", Map.of("courseId", courseId));
         for (int index = 0; index < 2; index++) {
             long sectionId = moduleSectionIds.get(index);

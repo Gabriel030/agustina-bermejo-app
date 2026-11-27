@@ -1,7 +1,6 @@
 package com.red_escuela.backend.evaluation.usecase.sectionconfig;
 
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
-import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
@@ -11,11 +10,11 @@ import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.academicstructure.service.SubjectSectionService;
+import com.red_escuela.backend.testsupport.ActiveProgramSectionTestFactory;
 import com.red_escuela.backend.config.TestSubjectCodes;
 import com.red_escuela.backend.academicstructure.exception.NotOwnSectionException;
 import com.red_escuela.backend.academicstructure.repository.HolidayRepository;
-import com.red_escuela.backend.academicstructure.service.CourseSectionService;
+import com.red_escuela.backend.academicstructure.api.SectionEvaluationSetupPort;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.evaluation.domain.SectionRef;
 import com.red_escuela.backend.evaluation.dto.RejectSectionEvaluationConfigRequest;
@@ -84,10 +83,10 @@ class CourseSectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
     private ListMyCourseSectionEvaluationConfigsUseCase listMyCourseConfigs;
 
     @Autowired
-    private CourseSectionService courseSectionService;
+    private SectionEvaluationSetupPort evaluationSetupPort;
 
     @Autowired
-    private SubjectSectionService subjectSectionService;
+    private ActiveProgramSectionTestFactory sectionFactory;
 
     @Autowired
     private SectionEvaluationConfigRepository configRepository;
@@ -159,8 +158,13 @@ class CourseSectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
     }
 
     private CourseSubjectSection createCourseSection(CourseSubject courseSubject, Term term) {
-        CourseSubjectSection section = courseSectionService.create(courseSubject.getId(),
-                new CreateSectionRequest("Comisión Curso", term.getId(), null, 30, null));
+        CourseSubjectSection section = new CourseSubjectSection();
+        section.setName("Comisión Curso");
+        section.setCourseSubject(courseSubject);
+        section.setTerm(term);
+        section.setStatus(StatusType.ACTIVE);
+        entityManager.persist(section);
+        evaluationSetupPort.createInitialEvaluationDraftForCourseSection(section);
         entityManager.flush();
         return section;
     }
@@ -188,7 +192,7 @@ class CourseSectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void creatingCourseSectionCreatesDraftConfigOwnedByTheCourseSection() {
+    void initialDraftForACourseSectionIsOwnedByTheCourseSection() {
         Term term = persistTerm();
         CourseSubjectSection section = createCourseSection(persistCourseSubject(term, "ModuloAuto"), term);
 
@@ -313,8 +317,7 @@ class CourseSectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         subject.setName("MateriaXor");
         entityManager.persist(subject);
         entityManager.flush();
-        SubjectSection programSection = subjectSectionService.create(subject.getId(),
-                new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
+        SubjectSection programSection = sectionFactory.create(subject, term, "Comisión A", 30, null);
         entityManager.flush();
 
         jdbcTemplate.update("delete from section_evaluation_config where subject_section_id = ?", programSection.getId());

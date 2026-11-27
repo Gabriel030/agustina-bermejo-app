@@ -302,6 +302,8 @@ export const DOMAIN_ERROR_MESSAGES = {
   ATTENDANCE_DECISION_REVERT_WINDOW_EXPIRED: 'Ya pasó el plazo para revertir: se puede hasta el fin del séptimo día posterior a la decisión.',
   CANNOT_CHANGE_AUDIENCE_OF_SENT_ANNOUNCEMENT: 'No se pueden cambiar los destinatarios de un aviso ya enviado.',
   CANNOT_WITHDRAW: 'No se puede dar de baja en el estado actual.',
+  SECTION_LAST_INSTRUCTOR_REMOVAL: 'La comisión está activa y este es su único docente titular. Asigná otro docente antes de quitarlo.',
+  TERM_NOT_OPEN_FOR_OFFERING: 'El cuatrimestre está inactivo o ya terminó: no se pueden crear ciclos ni comisiones.',
   SECTION_NOT_OPEN_FOR_ENROLLMENT: 'La comisión no está abierta a inscripción. Elegí otra comisión activa.',
   SECTION_EVALUATION_SCHEME_LOCKED: 'No se puede cambiar el esquema de evaluación de una comisión que ya tiene notas cargadas.',
   SECTION_HAS_ACTIVE_ENROLLMENTS: 'No se puede desactivar la comisión porque tiene inscripciones activas o en espera.',

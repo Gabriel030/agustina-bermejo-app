@@ -85,6 +85,10 @@ public class CourseSubjectSection {
         return courseSubject.getName();
     }
 
+    public boolean isOpenForEnrollment() {
+        return getStatus() == StatusType.ACTIVE && (academicOfferingCycle == null || academicOfferingCycle.isOpenForEnrollment());
+    }
+
     public boolean isOfferingApproved() {
         return academicOfferingCycle == null || academicOfferingCycle.wasApproved();
     }

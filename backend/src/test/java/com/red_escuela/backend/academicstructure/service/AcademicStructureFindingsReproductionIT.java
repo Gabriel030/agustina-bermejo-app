@@ -5,7 +5,6 @@ import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
 import com.red_escuela.backend.academicstructure.domain.RequirementType;
 import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.red_escuela.backend.academicstructure.dto.AddPrerequisiteRequest;
-import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.academicstructure.dto.CreateTermRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateProgramSubjectRequest;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycle;
@@ -17,13 +16,20 @@ import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor;
 import com.red_escuela.backend.academicstructure.entity.Term;
+import com.red_escuela.backend.academicstructure.exception.CycleAlreadyInProgressException;
+import com.red_escuela.backend.academicstructure.exception.SectionLastInstructorRemovalException;
 import com.red_escuela.backend.academicstructure.exception.SectionNotOpenForEnrollmentException;
+import com.red_escuela.backend.academicstructure.exception.TermNotOpenForOfferingException;
+import jakarta.persistence.PersistenceException;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.testsupport.AcademicReproductionFixtures;
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,7 +62,21 @@ class AcademicStructureFindingsReproductionIT extends AbstractIntegrationTest {
     @Autowired
     private SectionFinder sectionFinder;
 
+    @Autowired
+    private CreateAcademicOfferingCycleTransaction createCycleTransaction;
+
+    @Autowired
+    private CreateCycleSectionTransaction createCycleSectionTransaction;
+
+    @Autowired
+    private CycleApproval cycleApproval;
+
     private AcademicReproductionFixtures fixtures;
+
+    @AfterEach
+    void clearSecurityContext() {
+        SecurityContextHolder.clearContext();
+    }
 
     @BeforeEach
     void createFixtures() {
@@ -97,40 +117,70 @@ class AcademicStructureFindingsReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("E34-A-S5")
-    void h4SectionCreatedThroughTheApiIsNotApprovedWithoutAnOfferingCycle() {
+    void sectionOfADraftCycleIsNotOpenForEnrollment() {
+        Person creator = fixtures.student("75000010").getPerson();
         Subject subject = fixtures.subject("MateriaH4");
         Term term = fixtures.openTerm();
+        Program program = fixtures.program("CarreraH4");
+        SubjectSection section = fixtures.section(subject, term, null);
+        section.setAcademicOfferingCycle(cycle(term, program, AcademicOfferingCycleStatus.DRAFT, creator));
         entityManager.flush();
 
-        SubjectSection created = subjectSectionService.create(subject.getId(),
-                new CreateSectionRequest("Comision H4", term.getId(), null, 30, null));
-
-        assertThat(created.isOfferingApproved()).isFalse();
+        assertThatThrownBy(() -> sectionFinder.findOpenProgramSection(section.getId()))
+                .isInstanceOf(SectionNotOpenForEnrollmentException.class);
     }
 
     @Test
-    @Disabled("E34-A-S5")
-    void h11SectionCannotBeCreatedInAnInactiveTerm() {
-        Subject subject = fixtures.subject("MateriaH11Inactiva");
-        Term term = termWith(StatusType.INACTIVE, LocalDateTime.of(2026, 3, 1, 0, 0), LocalDateTime.of(2026, 7, 1, 0, 0));
+    void cycleCannotBeCreatedInAnInactiveTerm() {
+        Program program = fixtures.program("CarreraH11Inactiva");
+        Term term = termWith(StatusType.INACTIVE, LocalDateTime.of(2026, 3, 1, 0, 0), LocalDateTime.of(2999, 7, 1, 0, 0));
 
-        assertThatThrownBy(() -> subjectSectionService.create(subject.getId(),
-                new CreateSectionRequest("Comision H11", term.getId(), null, 30, null))).isInstanceOf(RuntimeException.class);
+        assertThatThrownBy(() -> createCycleTransaction.create(program.getId(), null, term.getId()))
+                .isInstanceOf(TermNotOpenForOfferingException.class);
     }
 
     @Test
-    @Disabled("E34-A-S5")
-    void h11SectionCannotBeCreatedInATermThatAlreadyEnded() {
-        Subject subject = fixtures.subject("MateriaH11Vencido");
+    void cycleCannotBeCreatedInATermThatAlreadyEnded() {
+        Program program = fixtures.program("CarreraH11Vencida");
         Term term = termWith(StatusType.ACTIVE, LocalDateTime.of(2020, 3, 1, 0, 0), LocalDateTime.of(2020, 7, 1, 0, 0));
 
-        assertThatThrownBy(() -> subjectSectionService.create(subject.getId(),
-                new CreateSectionRequest("Comision H11 vencida", term.getId(), null, 30, null))).isInstanceOf(RuntimeException.class);
+        assertThatThrownBy(() -> createCycleTransaction.create(program.getId(), null, term.getId()))
+                .isInstanceOf(TermNotOpenForOfferingException.class);
     }
 
     @Test
-    @Disabled("E34-A-S5")
+    void sectionCannotBeCreatedInTheCycleOfATermThatAlreadyEnded() {
+        Person creator = fixtures.student("75000011").getPerson();
+        Subject subject = fixtures.subject("MateriaH11Vencida");
+        Term term = termWith(StatusType.ACTIVE, LocalDateTime.of(2020, 3, 1, 0, 0), LocalDateTime.of(2020, 7, 1, 0, 0));
+        AcademicOfferingCycle draft = cycle(term, fixtures.program("CarreraH11Seccion"), AcademicOfferingCycleStatus.DRAFT, creator);
+
+        assertThatThrownBy(() -> createCycleSectionTransaction.createSection(draft.getId(), "Comision", subject.getId(), null, 30,
+                null, null, null, null, LocalDateTime.now())).isInstanceOf(TermNotOpenForOfferingException.class);
+    }
+
+    @Test
+    void cycleOfATermThatAlreadyEndedCannotBeApproved() {
+        Person creator = fixtures.student("75000012").getPerson();
+        Term term = termWith(StatusType.ACTIVE, LocalDateTime.of(2020, 3, 1, 0, 0), LocalDateTime.of(2020, 7, 1, 0, 0));
+        AcademicOfferingCycle pending = cycle(term, fixtures.program("CarreraH11Aprobar"), AcademicOfferingCycleStatus.PENDING_APPROVAL, creator);
+
+        assertThatThrownBy(() -> cycleApproval.approve(pending.getId(), null)).isInstanceOf(TermNotOpenForOfferingException.class);
+    }
+
+    @Test
+    void secondCycleOfTheSameProgramAndTermIsRejectedWhileTheFirstIsApproved() {
+        Person creator = fixtures.student("75000013").getPerson();
+        Term term = fixtures.openTerm();
+        Program program = fixtures.program("CarreraH11Duplicado");
+        cycle(term, program, AcademicOfferingCycleStatus.APPROVED, creator);
+        SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(creator.getId().toString(), null));
+
+        assertThatThrownBy(() -> createCycleTransaction.create(program.getId(), null, term.getId()))
+                .isInstanceOf(CycleAlreadyInProgressException.class);
+    }
+
+    @Test
     void h8SectionOfAClosedCycleIsNotOpenForEnrollment() {
         Person creator = fixtures.student("75000001").getPerson();
         Subject subject = fixtures.subject("MateriaH8");
@@ -145,15 +195,14 @@ class AcademicStructureFindingsReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("E34-A-S5")
-    void h11TwoApprovedCyclesOfTheSameProgramAndTermAreRejected() {
+    void twoLiveCyclesOfTheSameProgramAndTermAreRejectedByTheDatabase() {
         Person creator = fixtures.student("75000002").getPerson();
         Term term = fixtures.openTerm();
         Program program = fixtures.program("CarreraH11Ciclos");
         cycle(term, program, AcademicOfferingCycleStatus.APPROVED, creator);
 
         assertThatThrownBy(() -> cycle(term, program, AcademicOfferingCycleStatus.APPROVED, creator))
-                .isInstanceOf(RuntimeException.class);
+                .isInstanceOf(PersistenceException.class);
     }
 
     @Test
@@ -205,7 +254,6 @@ class AcademicStructureFindingsReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("E34-A-S5")
     void h18RemovingTheOnlyInstructorOfAnActiveSectionIsRejected() {
         Instructor instructor = fixtures.instructor("75000003");
         SubjectSection section = fixtures.section(fixtures.subject("MateriaH18"), fixtures.openTerm(), null);
@@ -214,6 +262,6 @@ class AcademicStructureFindingsReproductionIT extends AbstractIntegrationTest {
         SubjectSectionInstructor assignment = subjectSectionService.listInstructors(section.getId()).get(0);
 
         assertThatThrownBy(() -> subjectSectionService.removeInstructor(section.getId(), assignment.getId()))
-                .isInstanceOf(RuntimeException.class);
+                .isInstanceOf(SectionLastInstructorRemovalException.class);
     }
 }

@@ -81,6 +81,10 @@ public class SubjectSection {
     @Column(name = "pending_approval", nullable = false)
     private boolean pendingApproval = false;
 
+    public boolean isOpenForEnrollment() {
+        return getStatus() == StatusType.ACTIVE && (academicOfferingCycle == null || academicOfferingCycle.isOpenForEnrollment());
+    }
+
     public boolean isOfferingApproved() {
         return academicOfferingCycle == null || academicOfferingCycle.wasApproved();
     }
