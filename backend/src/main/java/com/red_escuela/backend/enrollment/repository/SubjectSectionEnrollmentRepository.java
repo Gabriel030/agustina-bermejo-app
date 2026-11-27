@@ -208,4 +208,7 @@ public interface SubjectSectionEnrollmentRepository extends JpaRepository<Subjec
 
     @Query("select e.id from SubjectSectionEnrollment e where e.status = :waiting and e.waitlistExpiryRemindedAt is null and e.subjectSection.term.enrollmentEnd > :now and e.subjectSection.term.enrollmentEnd <= :until and (e.subjectSection.term.enrollmentOverride is null or e.subjectSection.term.enrollmentOverride <> com.red_escuela.backend.academicstructure.entity.TermEnrollmentOverride.CLOSED) order by e.id")
     List<Long> findWaitlistedIdsToRemind(@Param("now") LocalDateTime now, @Param("until") LocalDateTime until, @Param("waiting") EnrollmentStatus waiting);
+
+    @Query("select new com.red_escuela.backend.enrollment.repository.ActiveEnrollmentLimitRow(e.id, e.student.id, e.subjectSection.maxAbsenceRate) from SubjectSectionEnrollment e where e.student.id in :studentIds and e.status in :statuses")
+    List<ActiveEnrollmentLimitRow> findActiveLimitRowsByStudentIdIn(@Param("studentIds") java.util.Collection<Long> studentIds, @Param("statuses") java.util.Collection<EnrollmentStatus> statuses);
 }

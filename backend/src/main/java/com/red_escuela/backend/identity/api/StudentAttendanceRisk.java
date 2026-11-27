@@ -1,4 +1,4 @@
-package com.red_escuela.backend.identity.dto;
+package com.red_escuela.backend.identity.api;
 
 public enum StudentAttendanceRisk {
     NONE,

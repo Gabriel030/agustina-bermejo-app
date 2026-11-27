@@ -98,8 +98,10 @@ public class StudentController {
     }
 
     private boolean seesWithdrawalReason() {
-        return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
-                .anyMatch(authority -> "ROLE_DIRECTOR".equals(authority.getAuthority())
-                        || "ROLE_ADMINISTRATIVO".equals(authority.getAuthority()));
+        var authorities = SecurityContextHolder.getContext().getAuthentication().getAuthorities();
+        boolean isDirector = authorities.stream().anyMatch(authority -> "ROLE_DIRECTOR".equals(authority.getAuthority()));
+        boolean isAdministrative = authorities.stream().anyMatch(authority -> "ROLE_ADMINISTRATIVO".equals(authority.getAuthority()));
+        boolean isDeputyDirector = authorities.stream().anyMatch(authority -> "ROLE_SUBDIRECTOR".equals(authority.getAuthority()));
+        return isDirector || (isAdministrative && !isDeputyDirector);
     }
 }
