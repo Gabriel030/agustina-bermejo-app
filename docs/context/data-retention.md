@@ -6,6 +6,7 @@ Jobs nocturnos con ShedLock que borran datos operativos viejos en lotes. Nunca t
 |---|---|---|
 | `IdentityDataRetentionJob` | 03:40 | `refresh_token` (incluidos los rotados), `password_reset_token` y `email_verification_token` vencidos (`expires_at < ahora`); `login_attempt` con más de 12 meses |
 | `NotificationDataRetentionJob` | 03:50 | `notification_delivery` en estado terminal (`SENT`, `SENT_SIMULATED`, `SUPPRESSED`, `DISCARDED`, `FAILED`) con `scheduled_for` de más de 12 meses; `notification` de más de 12 meses |
+| `ProcessedEffectRetentionJob` | 03:45 | `processed_effect` (deduplicación de efectos de eventos) con `processed_at` de más de 6 meses |
 
 ## Qué se conserva
 
@@ -27,6 +28,7 @@ Propiedades `app.retention.*` (variable de entorno entre paréntesis), con valor
 | `app.retention.notification-months` (`RETENTION_NOTIFICATION_MONTHS`) | 12 |
 | `app.retention.notification-delivery-months` (`RETENTION_NOTIFICATION_DELIVERY_MONTHS`) | 12 |
 | `app.retention.collection-reminder-delivery-months` (`RETENTION_COLLECTION_REMINDER_DELIVERY_MONTHS`) | 36 |
+| `app.retention.processed-effect-months` (`RETENTION_PROCESSED_EFFECT_MONTHS`) | 6 |
 | `app.retention.batch-size` (`RETENTION_BATCH_SIZE`) | 1000 filas por transacción |
 | `app.retention.max-batches-per-run` (`RETENTION_MAX_BATCHES_PER_RUN`) | 1000 lotes por tabla y corrida |
 
