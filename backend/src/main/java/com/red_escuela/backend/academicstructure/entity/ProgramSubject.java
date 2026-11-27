@@ -24,7 +24,7 @@ public class ProgramSubject {
     private Program program;
 
     @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "plan_id")
+    @JoinColumn(name = "plan_id", updatable = false)
     @OnDelete(action = OnDeleteAction.CASCADE)
     private CurriculumPlan plan;
 
