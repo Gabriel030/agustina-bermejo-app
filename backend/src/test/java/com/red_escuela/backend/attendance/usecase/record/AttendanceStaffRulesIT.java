@@ -99,7 +99,7 @@ class AttendanceStaffRulesIT extends AbstractIntegrationTest {
     void seedAbsenceInAnOwnedSection() {
         MutableClock.INSTANCE.setDate(CLASS_DAY.plusDays(1));
         fixtures = new CycleTestFixtures(entityManager);
-        Term term = fixtures.term(2040 + (int) (System.nanoTime() % 50));
+        Term term = fixtures.term(CLASS_DAY.getYear());
         var cycle = fixtures.programCycle(fixtures.program(), term, AcademicOfferingCycleStatus.APPROVED);
         section = fixtures.section(fixtures.subject(), term, com.red_escuela.backend.shared.domain.StatusType.ACTIVE, cycle);
         owner = fixtures.instructor();
@@ -292,7 +292,7 @@ class AttendanceStaffRulesIT extends AbstractIntegrationTest {
 
     @Test
     void anEnrollmentOfAnotherSectionIsRejectedAndNothingOfTheBatchIsPersisted() {
-        LocalDate otherDay = CLASS_DAY.plusDays(21);
+        LocalDate otherDay = CLASS_DAY.minusDays(21);
         var request = requestFor(otherDay,
                 new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT),
                 new AttendanceEntry(enrollmentInAnotherSection.getId(), AttendanceStatus.ABSENT));
@@ -307,7 +307,7 @@ class AttendanceStaffRulesIT extends AbstractIntegrationTest {
 
     @Test
     void aWithdrawnEnrollmentIsRejectedAndNothingIsPersisted() {
-        LocalDate otherDay = CLASS_DAY.plusDays(28);
+        LocalDate otherDay = CLASS_DAY.minusDays(28);
         enrollment.setStatus(EnrollmentStatus.WITHDRAWN);
         entityManager.flush();
         var request = requestFor(otherDay, new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT));
@@ -320,7 +320,7 @@ class AttendanceStaffRulesIT extends AbstractIntegrationTest {
 
     @Test
     void attendanceOnACanceledClassIsRefusedAndNothingIsPersisted() {
-        LocalDate otherDay = CLASS_DAY.plusDays(35);
+        LocalDate otherDay = CLASS_DAY.minusDays(35);
         cancelClass.cancel(new CancelProgramSectionClassSessionCommand(section.getId(), owner.getId(), otherDay));
         var request = requestFor(otherDay, new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT));
 
@@ -332,7 +332,7 @@ class AttendanceStaffRulesIT extends AbstractIntegrationTest {
 
     @Test
     void anActiveEnrollmentOfTheSectionIsStillRecorded() {
-        LocalDate otherDay = CLASS_DAY.plusDays(42);
+        LocalDate otherDay = CLASS_DAY.minusDays(42);
 
         var loaded = loadAttendance.load(new LoadProgramSectionAttendanceCommand(section.getId(), owner.getId(),
                 requestFor(otherDay, new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT))));
@@ -342,7 +342,7 @@ class AttendanceStaffRulesIT extends AbstractIntegrationTest {
 
     @Test
     void cancelingAClassMarksItCanceledAndCancelingItAgainIsAConflict() {
-        LocalDate otherDay = CLASS_DAY.plusDays(7);
+        LocalDate otherDay = CLASS_DAY.minusDays(7);
 
         cancelClass.cancel(new CancelProgramSectionClassSessionCommand(section.getId(), owner.getId(), otherDay));
 
@@ -354,7 +354,7 @@ class AttendanceStaffRulesIT extends AbstractIntegrationTest {
 
     @Test
     void anInstructorOfAnotherSectionCannotCancelTheClassAndNothingIsCreated() {
-        LocalDate otherDay = CLASS_DAY.plusDays(14);
+        LocalDate otherDay = CLASS_DAY.minusDays(14);
 
         assertThatThrownBy(() -> cancelClass.cancel(new CancelProgramSectionClassSessionCommand(section.getId(), stranger.getId(), otherDay)))
                 .isInstanceOf(NotOwnSectionException.class);

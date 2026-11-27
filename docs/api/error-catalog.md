@@ -79,7 +79,12 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CHARGEBACK_DATE_INVALID` | no | `ChargebackDateInvalidException` | billing |
 | `CHARGEBACK_REFERENCE_INVALID` | no | `ChargebackReferenceInvalidException` | billing |
 | `CIRCULAR_PREREQUISITE` | no | `CircularPrerequisiteException` | academicstructure |
+| `CLASS_DATE_AFTER_TERM_END` | no | `ClassDateAfterTermEndException` | attendance |
+| `CLASS_DATE_BEFORE_TERM_START` | no | `ClassDateBeforeTermStartException` | attendance |
+| `CLASS_DATE_IN_FUTURE` | no | `ClassDateInFutureException` | attendance |
+| `CLASS_DAY_WITHOUT_SCHEDULE_SLOT` | no | `ClassDayWithoutScheduleSlotException` | attendance |
 | `CLASS_ON_HOLIDAY` | no | `ClassOnHolidayException` | attendance |
+| `CLASS_ON_WEEKEND` | no | `ClassOnWeekendException` | attendance |
 | `CONSENT_CATEGORY_NOT_OPTIONAL` | no | `ConsentCategoryNotOptionalException` | notification |
 | `CONSENT_CATEGORY_REPEATED` | no | `ConsentCategoryRepeatedException` | notification |
 | `CONSENT_SOURCE_NOT_ACCEPTED` | no | `ConsentSourceNotAcceptedException` | notification |
@@ -634,6 +639,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SCHOLARSHIP_NOT_AVAILABLE_WITH_ANNUAL_UPFRONT` | no | `ScholarshipNotAvailableWithAnnualUpfrontException` | billing |
 | `SCHOLARSHIP_START_BEFORE_NEXT_INSTALLMENT` | no | `ScholarshipStartBeforeNextInstallmentException` | billing |
 | `SECTION_CODE_ALREADY_EXISTS` | no | `SectionCodeAlreadyExistsException` | academicstructure |
+| `SECTION_EVALUATION_SCHEME_LOCKED` | no | `SectionEvaluationSchemeLockedException` | academicstructure |
 | `SECTION_FULL` | no | `SectionFullException` | enrollment |
 | `SECTION_HAS_ACTIVE_ENROLLMENTS` | no | `SectionHasActiveEnrollmentsException` | academicstructure |
 | `SECTION_HAS_RECORDS` | no | `SectionHasRecordsException` | enrollment |
@@ -663,6 +669,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SUBJECT_ALREADY_EXISTS` | no | `SubjectAlreadyExistsException` | academicstructure |
 | `SUBJECT_ALREADY_REGULAR` | no | `SubjectAlreadyRegularException` | enrollment |
 | `SUBJECT_APPROVED_BY_EQUIVALENCE` | no | `SubjectApprovedByEquivalenceException` | enrollment |
+| `SUBJECT_CRITICAL_FIELDS_LOCKED` | no | `SubjectCriticalFieldsLockedException` | academicstructure |
 | `SUBJECT_INVALID_TRANSITION` | no | `SubjectInvalidTransitionException` | academicstructure |
 | `SUBJECT_IN_PROGRESS` | no | `SubjectInProgressException` | enrollment |
 | `SUBJECT_NOT_ASSIGNABLE_TO_PLAN` | no | `SubjectNotAssignableToPlanException` | academicstructure |
