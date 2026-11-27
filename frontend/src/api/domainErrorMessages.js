@@ -281,6 +281,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   SUBJECT_NOT_FOUND: 'No encontramos la materia.',
   TERM_NOT_FOUND: 'No encontramos el cuatrimestre.',
   ACTIVE_TERM_ALREADY_EXISTS: 'Ya hay un cuatrimestre activo.',
+  PROGRAM_COHORT_BILLING_TEMPLATE_REQUIRED: 'Con facturación activa la cohorte se crea desde la plantilla de facturación de la carrera.',
   PROGRAM_COHORT_ALREADY_EXISTS: 'Ya existe una cohorte de esa carrera, ese año lectivo y ese ingreso.',
   INFORMATIVE_SESSION_ALREADY_STARTED: 'La charla ya comenzó.',
   INFORMATIVE_SESSION_CAPACITY_BELOW_REGISTRATIONS: 'La capacidad no puede ser menor a los lugares ya reservados.',

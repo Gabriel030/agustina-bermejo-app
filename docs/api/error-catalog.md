@@ -616,6 +616,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `PREREQUISITE_ALREADY_EXISTS` | no | `PrerequisiteAlreadyExistsException` | academicstructure |
 | `PRICE_CHANGED_CONCURRENTLY` | no | `PriceChangedConcurrentlyException` | billing |
 | `PROGRAM_COHORT_ALREADY_EXISTS` | no | `ProgramCohortAlreadyExistsException` | academicstructure |
+| `PROGRAM_COHORT_BILLING_TEMPLATE_REQUIRED` | no | `ProgramCohortBillingTemplateRequiredException` | academicstructure |
 | `PROGRAM_ENROLLMENT_MISSING_COHORT` | no | `ProgramEnrollmentMissingCohortException` | billing |
 | `PROGRAM_NOT_AVAILABLE` | no | `ProgramNotAvailableException` | enrollment |
 | `PROGRAM_SUBJECT_ALREADY_EXISTS` | no | `ProgramSubjectAlreadyExistsException` | academicstructure |

@@ -9,6 +9,7 @@ import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.dto.ProgramTermCohortResponse;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.exception.ProgramCohortAlreadyExistsException;
+import com.red_escuela.backend.academicstructure.exception.ProgramCohortBillingTemplateRequiredException;
 import com.red_escuela.backend.academicstructure.usecase.cohort.CreateProgramTermCohortUseCase;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.Person;
@@ -68,6 +69,19 @@ class ProgramCohortWithBillingOffIT extends AbstractIntegrationTest {
         assertThatThrownBy(() -> createProgramTermCohortUseCase.createProgramTermCohort(ids[0], ids[1], request(CohortIntake.FIRST)))
                 .isInstanceOf(ProgramCohortAlreadyExistsException.class);
         assertThat(createProgramTermCohortUseCase.createProgramTermCohort(ids[0], ids[1], request(CohortIntake.SECOND)).id()).isNotNull();
+    }
+
+    @Test
+    void cohortWithoutTemplateIsRejectedWhenBillingIsMirrorOrFull() {
+        Long[] ids = persistProgramTermAndActor();
+        switchBillingTo("MIRROR", true);
+
+        assertThatThrownBy(() -> createProgramTermCohortUseCase.createProgramTermCohort(ids[0], ids[1], request(CohortIntake.FIRST)))
+                .isInstanceOf(ProgramCohortBillingTemplateRequiredException.class);
+        switchBillingTo("FULL", true);
+        assertThatThrownBy(() -> createProgramTermCohortUseCase.createProgramTermCohort(ids[0], ids[1], request(CohortIntake.FIRST)))
+                .isInstanceOf(ProgramCohortBillingTemplateRequiredException.class);
+        assertThat(jdbc.queryForObject("select count(*) from program_cohort where program_id = ?", Integer.class, ids[0])).isZero();
     }
 
     private static CreateProgramTermCohortRequest request(CohortIntake intake) {
