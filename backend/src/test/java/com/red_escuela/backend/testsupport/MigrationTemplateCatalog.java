@@ -1,5 +1,6 @@
 package com.red_escuela.backend.testsupport;
 
+import org.awaitility.core.ConditionTimeoutException;
 import org.flywaydb.core.api.MigrationVersion;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -8,6 +9,8 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 import java.time.Duration;
 import java.util.Map;
 import java.util.TreeMap;
+
+import static org.awaitility.Awaitility.await;
 
 final class MigrationTemplateCatalog {
 
@@ -75,19 +78,12 @@ final class MigrationTemplateCatalog {
     }
 
     private void requireNoOpenConnections(String template) {
-        long deadline = System.nanoTime() + CONNECTIONS_CLOSE_TIMEOUT.toNanos();
-        int open = openConnections(template);
-        while (open > 0 && System.nanoTime() < deadline) {
-            try {
-                Thread.sleep(CONNECTIONS_POLL_INTERVAL.toMillis());
-            } catch (InterruptedException interrupted) {
-                Thread.currentThread().interrupt();
-                break;
-            }
-            open = openConnections(template);
-        }
-        if (open > 0) {
-            throw new IllegalStateException("Template " + template + " still has " + open + " open connections and cannot be cloned");
+        try {
+            await().atMost(CONNECTIONS_CLOSE_TIMEOUT).pollInterval(CONNECTIONS_POLL_INTERVAL)
+                    .until(() -> openConnections(template) == 0);
+        } catch (ConditionTimeoutException timeout) {
+            throw new IllegalStateException("Template " + template + " still has " + openConnections(template)
+                    + " open connections and cannot be cloned", timeout);
         }
     }
 
