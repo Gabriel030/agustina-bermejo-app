@@ -77,4 +77,8 @@ public class EvaluationScheme {
         this.promotionMinGrade = promotionMinGrade;
         this.notes = notes;
     }
+
+    @Version
+    @Column(name = "version")
+    private Long version;
 }

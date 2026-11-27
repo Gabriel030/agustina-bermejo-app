@@ -15,7 +15,6 @@ import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -30,7 +29,6 @@ class CanceledClassSessionAbsencesReproductionIT extends ReproductionFixture {
     private AttendanceStandingReader attendanceStandingReader;
 
     @Test
-    @Disabled("E34-B-P8")
     void absencesRecordedOnACanceledClassDateDoNotCountTowardsAbsenceStanding() {
         Program program = program(4);
         Subject subject = subject("Algebra");
