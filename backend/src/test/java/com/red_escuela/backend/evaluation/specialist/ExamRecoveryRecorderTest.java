@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.specialist;
 
+import com.red_escuela.backend.testsupport.ApprovedSectionConfigFixture;
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.entity.Program;
@@ -139,6 +140,7 @@ class ExamRecoveryRecorderTest extends AbstractIntegrationTest {
         section.setEvaluationScheme(scheme);
         section.setStatus(StatusType.ACTIVE);
         entityManager.persist(section);
+        ApprovedSectionConfigFixture.persistWhenSchemeExpectsCoursework(entityManager, section);
         SubjectSectionInstructor assignment = new SubjectSectionInstructor();
         assignment.setSection(section);
         assignment.setInstructor(instructor);

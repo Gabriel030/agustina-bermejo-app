@@ -18,19 +18,22 @@ public class SectionEvaluationConfigApprovalTransaction {
     private final SectionFinalCallCreator finalCallCreator;
     private final SectionEvaluationConfigReviewer configReviewer;
     private final ApplicationEventPublisher eventPublisher;
+    private final SectionEvaluationConfigCompletenessValidator completenessValidator;
 
     public SectionEvaluationConfigApprovalTransaction(SectionEvaluationConfigRepository configRepository,
                                                       SectionEvaluationConfigFinder configFinder,
                                                       SectionEvaluationConfigInstructorAccessChecker instructorAccess,
                                                       SectionFinalCallCreator finalCallCreator,
                                                       SectionEvaluationConfigReviewer configReviewer,
-                                                      ApplicationEventPublisher eventPublisher) {
+                                                      ApplicationEventPublisher eventPublisher,
+                                                      SectionEvaluationConfigCompletenessValidator completenessValidator) {
         this.configRepository = configRepository;
         this.configFinder = configFinder;
         this.instructorAccess = instructorAccess;
         this.finalCallCreator = finalCallCreator;
         this.configReviewer = configReviewer;
         this.eventPublisher = eventPublisher;
+        this.completenessValidator = completenessValidator;
     }
 
     @Transactional
@@ -39,6 +42,7 @@ public class SectionEvaluationConfigApprovalTransaction {
         if (config.getStatus() != SectionEvaluationConfigStatus.PENDING_APPROVAL) {
             throw new InvalidSectionEvaluationConfigTransitionException(config.getStatus(), "aprobar");
         }
+        completenessValidator.requireComplete(config);
         configReviewer.markReviewedByCurrentActor(config, SectionEvaluationConfigStatus.APPROVED);
         SectionEvaluationConfig saved = configRepository.save(config);
 

@@ -22,6 +22,7 @@ import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
 import com.red_escuela.backend.evaluation.entity.GradeItem;
 import com.red_escuela.backend.evaluation.entity.GradeItemType;
 import com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationWindowClosedException;
+import com.red_escuela.backend.evaluation.exception.GradeItemOutsideConfiguredSlotsException;
 import com.red_escuela.backend.shared.domain.Grade;
 import com.red_escuela.backend.shared.time.MutableClock;
 import com.red_escuela.backend.testsupport.AcademicReproductionFixtures;
@@ -184,19 +185,19 @@ class EvaluationFindingsReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("E34-A-S2")
     void h2ExamSequenceBeyondTheSchemeExamCountIsRejected() {
         Setup setup = setup("74000009", 2, 0, false, EnrollmentStatus.IN_PROGRESS);
 
-        assertThatThrownBy(() -> loadItem(setup, GradeItemType.EXAM, 5, 7.0)).isInstanceOf(RuntimeException.class);
+        assertThatThrownBy(() -> loadItem(setup, GradeItemType.EXAM, 5, 7.0))
+                .isInstanceOf(GradeItemOutsideConfiguredSlotsException.class);
     }
 
     @Test
-    @Disabled("E34-A-S2")
     void h2CourseworkItemIsRejectedWhenTheSchemeExpectsNone() {
         Setup setup = setup("74000011", 2, 0, false, EnrollmentStatus.IN_PROGRESS);
 
-        assertThatThrownBy(() -> loadItem(setup, GradeItemType.TP, 1, 7.0)).isInstanceOf(RuntimeException.class);
+        assertThatThrownBy(() -> loadItem(setup, GradeItemType.TP, 1, 7.0))
+                .isInstanceOf(GradeItemOutsideConfiguredSlotsException.class);
     }
 
     @Test

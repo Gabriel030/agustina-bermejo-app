@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.specialist;
 
+import com.red_escuela.backend.testsupport.ApprovedSectionConfigFixture;
 import com.red_escuela.backend.academicstructure.domain.RequirementType;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.academicstructure.entity.Program;
@@ -144,6 +145,7 @@ class ClosureRequirementsCalculatorIT extends AbstractIntegrationTest {
         section.setStatus(StatusType.ACTIVE);
         section.setEvaluationScheme(scheme);
         entityManager.persist(section);
+        ApprovedSectionConfigFixture.persistWhenSchemeExpectsCoursework(entityManager, section);
         return section;
     }
 
