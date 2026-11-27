@@ -259,7 +259,9 @@ public class ExamBoardRegistrationManager {
         if (examBoard.getRegistrationStart() != null && now.isBefore(examBoard.getRegistrationStart())) {
             throw new ExamBoardRegistrationWindowClosedException(examBoard.getId());
         }
-        if (examBoard.getRegistrationEnd() != null && now.isAfter(examBoard.getRegistrationEnd())) {
+        LocalDateTime registrationEnd = examBoard.getRegistrationEnd() != null
+                ? examBoard.getRegistrationEnd() : examBoard.getExamDate();
+        if (now.isAfter(registrationEnd)) {
             throw new ExamBoardRegistrationWindowClosedException(examBoard.getId());
         }
     }

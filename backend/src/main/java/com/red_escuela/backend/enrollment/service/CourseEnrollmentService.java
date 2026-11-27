@@ -4,7 +4,9 @@ import com.red_escuela.backend.academicstructure.api.CourseCatalogFinder;
 import com.red_escuela.backend.academicstructure.api.CourseModuleView;
 import com.red_escuela.backend.academicstructure.api.CourseRegistrationView;
 import com.red_escuela.backend.academicstructure.api.CourseSectionView;
+import com.red_escuela.backend.academicstructure.api.SectionClosureGuard;
 import com.red_escuela.backend.academicstructure.api.SectionFinder;
+import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.api.StudentEnrollmentEligibility;
 import com.red_escuela.backend.identity.api.StudentFinder;
@@ -61,6 +63,7 @@ public class CourseEnrollmentService {
     private final EnrollmentWithdrawalDateResolver withdrawalDateResolver;
     private final EnrollmentWithdrawalBillingPort withdrawalBillingPort;
     private final CatalogAvailabilityGuard catalogAvailabilityGuard;
+    private final SectionClosureGuard sectionClosureGuard;
     private final Clock clock;
 
     public CourseEnrollmentService(CourseEnrollmentRepository courseEnrollmentRepository,
@@ -73,6 +76,7 @@ public class CourseEnrollmentService {
             EnrollmentWithdrawalDateResolver withdrawalDateResolver,
             EnrollmentWithdrawalBillingPort withdrawalBillingPort,
             CatalogAvailabilityGuard catalogAvailabilityGuard,
+            SectionClosureGuard sectionClosureGuard,
             Clock clock,
             WaitlistPromoter waitlistPromoter) {
         this.courseEnrollmentRepository = courseEnrollmentRepository;
@@ -87,6 +91,7 @@ public class CourseEnrollmentService {
         this.withdrawalDateResolver = withdrawalDateResolver;
         this.withdrawalBillingPort = withdrawalBillingPort;
         this.catalogAvailabilityGuard = catalogAvailabilityGuard;
+        this.sectionClosureGuard = sectionClosureGuard;
         this.clock = clock;
     }
 
@@ -106,7 +111,9 @@ public class CourseEnrollmentService {
 
         List<CourseSectionView> resueltas = new ArrayList<>();
         for (CourseModuleView module : courseCatalogFinder.findActiveModules(registration.courseId())) {
-            resueltas.add(resolveSection(module.id(), registration.termId(), request));
+            CourseSectionView section = resolveSection(module.id(), registration.termId(), request);
+            sectionClosureGuard.requireNotClosed(SectionKind.COURSE, section.id());
+            resueltas.add(section);
         }
         lockCourseThenSectionsAscending(registration.courseId(), resueltas.stream().map(CourseSectionView::id).toList());
 

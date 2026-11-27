@@ -100,4 +100,8 @@ public class Term {
         }
         return ChronoUnit.MONTHS.between(YearMonth.from(startDate), YearMonth.from(endDate)) + 1;
     }
+
+    @Version
+    @Column(name = "version")
+    private Long version;
 }

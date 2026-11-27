@@ -30,7 +30,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -207,7 +206,6 @@ class AcademicStructureFindingsReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("E34-A-S5")
     void h11TermCreationRejectsAYearThatDoesNotMatchItsDates() {
         CreateTermRequest request = new CreateTermRequest(2026, "2026-1C desfasado", TermType.FIRST_SEMESTER,
                 LocalDateTime.of(2031, 3, 1, 0, 0), LocalDateTime.of(2031, 7, 1, 0, 0),
@@ -217,7 +215,6 @@ class AcademicStructureFindingsReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("E34-A-S5")
     void h11TermCreationRejectsAnEnrollmentWindowThatEndsAfterTheTermEnds() {
         CreateTermRequest request = new CreateTermRequest(2026, "2026-1C ventana tardia", TermType.FIRST_SEMESTER,
                 LocalDateTime.of(2026, 3, 1, 0, 0), LocalDateTime.of(2026, 7, 1, 0, 0),
@@ -227,7 +224,6 @@ class AcademicStructureFindingsReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("E34-A-S5")
     void h14UpdateRejectsACurricularPlacementThatBreaksAnExistingPrerequisiteOrder() {
         Program program = fixtures.program("CarreraH14");
         ProgramSubject first = programSubject(program, fixtures.subject("MateriaH14A"), 1, CurricularTerm.FIRST);
@@ -242,7 +238,6 @@ class AcademicStructureFindingsReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("E34-A-S5")
     void h14DeactivatingASubjectThatIsAPrerequisiteOfAnActiveOneIsRejected() {
         Program program = fixtures.program("CarreraH14Baja");
         ProgramSubject first = programSubject(program, fixtures.subject("MateriaH14C"), 1, CurricularTerm.FIRST);

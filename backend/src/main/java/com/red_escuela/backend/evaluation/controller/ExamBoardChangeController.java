@@ -1,10 +1,13 @@
 package com.red_escuela.backend.evaluation.controller;
 
 import com.red_escuela.backend.evaluation.dto.CancelExamBoardRequest;
+import com.red_escuela.backend.evaluation.dto.ClosureReasonRequest;
 import com.red_escuela.backend.evaluation.dto.ExamBoardResponse;
 import com.red_escuela.backend.evaluation.dto.RescheduleExamBoardRequest;
 import com.red_escuela.backend.evaluation.usecase.examboard.CancelExamBoardCommand;
 import com.red_escuela.backend.evaluation.usecase.examboard.CancelExamBoardUseCase;
+import com.red_escuela.backend.evaluation.usecase.examboard.ReopenExamBoardCommand;
+import com.red_escuela.backend.evaluation.usecase.examboard.ReopenExamBoardUseCase;
 import com.red_escuela.backend.evaluation.usecase.examboard.RescheduleExamBoardCommand;
 import com.red_escuela.backend.evaluation.usecase.examboard.RescheduleExamBoardUseCase;
 import com.red_escuela.backend.shared.permission.RequiresPermission;
@@ -19,10 +22,13 @@ public class ExamBoardChangeController {
 
     private final RescheduleExamBoardUseCase rescheduleExamBoard;
     private final CancelExamBoardUseCase cancelExamBoard;
+    private final ReopenExamBoardUseCase reopenExamBoard;
 
-    public ExamBoardChangeController(RescheduleExamBoardUseCase rescheduleExamBoard, CancelExamBoardUseCase cancelExamBoard) {
+    public ExamBoardChangeController(RescheduleExamBoardUseCase rescheduleExamBoard, CancelExamBoardUseCase cancelExamBoard,
+                                    ReopenExamBoardUseCase reopenExamBoard) {
         this.rescheduleExamBoard = rescheduleExamBoard;
         this.cancelExamBoard = cancelExamBoard;
+        this.reopenExamBoard = reopenExamBoard;
     }
 
     @PostMapping("/exam-boards/{id}/reschedule")
@@ -35,5 +41,11 @@ public class ExamBoardChangeController {
     @RequiresPermission(code = "evaluation.cancel_exam_board", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
     public ExamBoardResponse cancel(@PathVariable Long id, @Valid @RequestBody CancelExamBoardRequest request) {
         return cancelExamBoard.cancel(new CancelExamBoardCommand(id, request.reason()));
+    }
+
+    @PostMapping("/exam-boards/{id}/reopen")
+    @RequiresPermission(code = "evaluation.reopen_exam_board", legacyRoles = "ROLE_DIRECTOR")
+    public ExamBoardResponse reopen(@PathVariable Long id, @Valid @RequestBody ClosureReasonRequest request) {
+        return reopenExamBoard.reopen(new ReopenExamBoardCommand(id, request.reason()));
     }
 }
