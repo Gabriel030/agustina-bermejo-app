@@ -124,8 +124,7 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
         Long studentId = jdbc.queryForObject("select student_id from student_current_account where id = ?", Long.class, accountId);
         Long personId = jdbc.queryForObject("select person_id from student where id = ?", Long.class, studentId);
         Long programId = seedProgram(currency);
-        Long enrollmentId = jdbc.queryForObject("insert into program_enrollment (student_id, program_id, status, enrollment_date) values (?, ?, 'ENROLLED', now()) returning id",
-                Long.class, studentId, programId);
+        Long enrollmentId = com.red_escuela.backend.testsupport.JdbcCurriculumPlans.enrollmentOf(jdbc, studentId, programId);
         seededProgramEnrollmentIds.add(enrollmentId);
         Long studentDiscountId = jdbc.queryForObject(
                 "insert into student_discount (program_enrollment_id, student_id, currency, discount_type, applicable_invoice_type, origin, calculation, priority, from_period, "
@@ -167,8 +166,7 @@ abstract class AbstractMonthlyMetricsIT extends AbstractCreditNoteIT {
         Long enrollmentId = jdbc.queryForList("select id from program_enrollment where student_id = ? and program_id = ? and status = 'ENROLLED'",
                 Long.class, studentId, programId).stream().findFirst().orElse(null);
         if (enrollmentId == null) {
-            enrollmentId = jdbc.queryForObject("insert into program_enrollment (student_id, program_id, status, enrollment_date) values (?, ?, 'ENROLLED', now()) returning id",
-                    Long.class, studentId, programId);
+            enrollmentId = com.red_escuela.backend.testsupport.JdbcCurriculumPlans.enrollmentOf(jdbc, studentId, programId);
             seededProgramEnrollmentIds.add(enrollmentId);
         }
         linkInvoiceLines(invoiceId, "program_enrollment_id", enrollmentId);
