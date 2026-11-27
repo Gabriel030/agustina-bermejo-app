@@ -217,7 +217,7 @@ class OwnRegularDocumentIntegrationTest extends AbstractIntegrationTest {
     }
 
     private ResultActions publicView(String code) throws Exception {
-        return mockMvc.perform(get("/public/certificates/" + code).with(request -> {
+        return mockMvc.perform(get("/public/documents/" + code).with(request -> {
             request.setRemoteAddr("10.9.8.7");
             return request;
         }));

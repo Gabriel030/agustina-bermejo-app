@@ -39,6 +39,7 @@ function estadoInicial() {
     teachingMode: '',
     schedule: '',
     durationMonths: '',
+    durationHours: '',
     registrationStart: '',
     registrationEnd: '',
   };
@@ -173,6 +174,7 @@ function Paso2Detalle({ state, dispatch }) {
         ...(state.teachingMode && { teachingMode: state.teachingMode }),
         ...(state.schedule.trim() && { schedule: state.schedule.trim() }),
         ...(state.durationMonths && { durationMonths: parseInt(state.durationMonths) }),
+        ...(state.durationHours.trim() && { durationHours: parseInt(state.durationHours) }),
         ...(state.registrationStart && { registrationStart: state.registrationStart }),
         ...(state.registrationEnd && { registrationEnd: state.registrationEnd }),
       };
@@ -205,6 +207,23 @@ function Paso2Detalle({ state, dispatch }) {
           value={state.durationMonths}
           onChange={(e) => dispatch({ type: 'SET', campo: 'durationMonths', valor: e.target.value })}
           placeholder="Ej. 3"
+        />
+      </FormField>
+
+      <FormField
+        id="course-hours"
+        label="Carga horaria (horas)"
+        hint="Opcional. Total de horas del curso, en números enteros."
+        error={errors.durationHours}
+      >
+        <Input
+          {...fieldProps('course-hours', errors.durationHours, false)}
+          type="number"
+          min={1}
+          step={1}
+          value={state.durationHours}
+          onChange={(e) => dispatch({ type: 'SET', campo: 'durationHours', valor: e.target.value })}
+          placeholder="Ej. 40"
         />
       </FormField>
 
@@ -258,6 +277,7 @@ const FIELD_KEYS = [
   'teachingMode',
   'schedule',
   'durationMonths',
+  'durationHours',
   'registrationStart',
   'registrationEnd',
 ];

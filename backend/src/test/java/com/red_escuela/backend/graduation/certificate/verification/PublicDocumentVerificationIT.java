@@ -506,11 +506,15 @@ class PublicDocumentVerificationIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void legacyCertificatesEndpointKeepsResolvingIssuedCodes() throws Exception {
+    void retiredCertificatesEndpointNeverResolvesIssuedCodes() throws Exception {
         String code = insertGraduation("VALID", null);
 
-        mockMvc.perform(get("/public/certificates/{code}", code).with(from(freshClient())))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.documentKind").value("GRADUATION"));
+        mockMvc.perform(get("/public/{legacy}/{code}", "certificates", code).with(from(freshClient())))
+                .andExpect(status().isUnauthorized());
+        mockMvc.perform(get("/public/{legacy}/{code}", "certificates", code).with(from(freshClient()))
+                        .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user("staff").roles("DIRECTOR")))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/public/documents/{code}", code).with(from(freshClient())))
+                .andExpect(status().isOk());
     }
 }

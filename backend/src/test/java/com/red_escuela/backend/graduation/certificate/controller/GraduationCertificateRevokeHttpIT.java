@@ -82,7 +82,7 @@ class GraduationCertificateRevokeHttpIT extends GraduationCertificateOperationsS
         String code = repository.findById(id).orElseThrow().getCode();
         postJson(BASE + "/" + id + "/revoke", director, VALID_REASON).andExpect(status().isOk());
 
-        mockMvc.perform(get("/public/certificates/{code}", code).with(request -> {
+        mockMvc.perform(get("/public/documents/{code}", code).with(request -> {
                     request.setRemoteAddr("198.51.100.201");
                     return request;
                 }))

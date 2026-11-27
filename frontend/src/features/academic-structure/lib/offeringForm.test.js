@@ -87,4 +87,16 @@ describe('course validation', () => {
     ).toBeDefined();
     expect(validateCourseDetail({ durationMonths: '3', registrationStart: '', registrationEnd: '' })).toEqual({});
   });
+
+  it('accepts an empty course hours field and positive whole numbers', () => {
+    const base = { durationMonths: '3', registrationStart: '', registrationEnd: '' };
+    expect(validateCourseDetail({ ...base, durationHours: '' })).toEqual({});
+    expect(validateCourseDetail({ ...base })).toEqual({});
+    expect(validateCourseDetail({ ...base, durationHours: '40' })).toEqual({});
+  });
+
+  it.each(['0', '-5', '2.5', 'abc'])('rejects course hours %s', (durationHours) => {
+    const errors = validateCourseDetail({ durationMonths: '3', durationHours, registrationStart: '', registrationEnd: '' });
+    expect(errors.durationHours).toBeDefined();
+  });
 });

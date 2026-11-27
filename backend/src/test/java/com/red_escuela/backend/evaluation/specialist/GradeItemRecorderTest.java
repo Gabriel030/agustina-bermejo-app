@@ -129,6 +129,9 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
     private EntityManager entityManager;
 
     @Autowired
+    private com.red_escuela.backend.academicstructure.service.SubjectSectionService subjectSectionService;
+
+    @Autowired
     private EvaluationSchemeManager evaluationSchemeService;
 
     @Autowired
@@ -1095,6 +1098,49 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> loadFinalThroughBoard(enrollment, instructor, 1, 8.0))
                 .isInstanceOf(FinalExamBlockedByAbsencesException.class);
+    }
+
+    @Test
+    void changingTheEvaluationSchemeOfASectionWithPublishedGradesKeepsTheHistoricalFinalScore() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("71000091", institution);
+        Instructor instructor = persistInstructor("71000092");
+        Subject subject = persistSubject("MateriaCambioDeEsquema");
+        Term term = persistTerm();
+        EvaluationScheme promotionScheme = persistScheme(2, 0, true, 7.0);
+        SubjectSection section = persistSection(subject, term, promotionScheme);
+        assignInstructor(section, instructor);
+        Program program = persistProgram("CarreraCambioDeEsquema");
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
+        SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
+        entityManager.flush();
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
+                new CreateGradeItemRequest(GradeItemType.EXAM, 1, null, LocalDateTime.now(), BigDecimal.valueOf(8.0), null, null, null));
+        gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
+                new CreateGradeItemRequest(GradeItemType.EXAM, 2, null, LocalDateTime.now(), BigDecimal.valueOf(7.0), null, null, null));
+        publishLoadedItems(enrollment, instructor);
+        entityManager.refresh(enrollment);
+        Grade historicalFinalScore = enrollment.getFinalScore();
+        EnrollmentStatus historicalStatus = enrollment.getStatus();
+        com.red_escuela.backend.enrollment.entity.FinalGradeType historicalFinalGradeType = enrollment.getFinalGradeType();
+        EvaluationScheme stricterScheme = persistScheme(2, 0, true, 9.5);
+        entityManager.flush();
+
+        subjectSectionService.update(section.getId(),
+                new com.red_escuela.backend.academicstructure.dto.UpdateSectionRequest(null, null, null, stricterScheme.getId()));
+        entityManager.flush();
+        entityManager.clear();
+
+        SubjectSectionEnrollment reloaded = entityManager.find(SubjectSectionEnrollment.class, enrollment.getId());
+        assertThat(historicalFinalScore).isEqualTo(Grade.of(BigDecimal.valueOf(7.5)));
+        assertThat(historicalStatus).isEqualTo(EnrollmentStatus.APPROVED);
+        assertThat(reloaded.getSubjectSection().getEvaluationScheme().getId()).isEqualTo(stricterScheme.getId());
+        assertThat(reloaded.getFinalScore()).isEqualTo(historicalFinalScore);
+        assertThat(reloaded.getStatus()).isEqualTo(historicalStatus);
+        assertThat(reloaded.getFinalGradeType()).isEqualTo(historicalFinalGradeType);
+        assertThat(gradeItemRepository.findByProgramSubjectSectionEnrollmentId(enrollment.getId()))
+                .extracting(item -> item.getScore().value().doubleValue())
+                .containsExactlyInAnyOrder(8.0, 7.0);
     }
 
     private void publishLoadedItems(SubjectSectionEnrollment enrollment, Instructor instructor) {

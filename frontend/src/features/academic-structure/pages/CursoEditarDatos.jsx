@@ -64,6 +64,7 @@ function CursoEditarDatosForm({ id, course }) {
   const [teachingMode, setTeachingMode] = useState(course.teachingMode ?? '');
   const [schedule, setSchedule] = useState(course.schedule ?? '');
   const [durationMonths, setDurationMonths] = useState(course.durationMonths?.toString() ?? '');
+  const [durationHours, setDurationHours] = useState(course.durationHours?.toString() ?? '');
   const [registrationStart, setRegistrationStart] = useState(isoToDatetimeLocal(course.registrationStart));
   const [registrationEnd, setRegistrationEnd] = useState(isoToDatetimeLocal(course.registrationEnd));
   const [errors, setErrors] = useState({});
@@ -76,6 +77,7 @@ function CursoEditarDatosForm({ id, course }) {
     teachingMode !== (course.teachingMode ?? '') ||
     schedule !== (course.schedule ?? '') ||
     durationMonths !== (course.durationMonths?.toString() ?? '') ||
+    durationHours !== (course.durationHours?.toString() ?? '') ||
     registrationStart !== isoToDatetimeLocal(course.registrationStart) ||
     registrationEnd !== isoToDatetimeLocal(course.registrationEnd);
   const { requestNavigation, guardDialog } = useUnsavedChangesGuard(dirty);
@@ -83,7 +85,7 @@ function CursoEditarDatosForm({ id, course }) {
   async function handleGuardar() {
     const found = {
       ...validateCourseBasics({ name, capacity, price }),
-      ...validateCourseDetail({ durationMonths, registrationStart, registrationEnd }),
+      ...validateCourseDetail({ durationMonths, durationHours, registrationStart, registrationEnd }),
     };
     if (course.teachingMode && !teachingMode) {
       found.teachingMode = 'No se puede quitar la modalidad una vez definida: elegí otra.';
@@ -99,6 +101,7 @@ function CursoEditarDatosForm({ id, course }) {
         ...(teachingMode && { teachingMode }),
         schedule: schedule.trim() || null,
         durationMonths: parseInt(durationMonths),
+        durationHours: durationHours.trim() ? parseInt(durationHours) : null,
         registrationStart: registrationStart || null,
         registrationEnd: registrationEnd || null,
       });
@@ -176,6 +179,22 @@ function CursoEditarDatosForm({ id, course }) {
               min={1}
               value={durationMonths}
               onChange={(e) => setDurationMonths(e.target.value)}
+            />
+          </FormField>
+
+          <FormField
+            id="course-hours"
+            label="Carga horaria (horas)"
+            hint="Opcional. Total de horas del curso, en números enteros."
+            error={errors.durationHours}
+          >
+            <Input
+              {...fieldProps('course-hours', errors.durationHours, false)}
+              type="number"
+              min={1}
+              step={1}
+              value={durationHours}
+              onChange={(e) => setDurationHours(e.target.value)}
             />
           </FormField>
 

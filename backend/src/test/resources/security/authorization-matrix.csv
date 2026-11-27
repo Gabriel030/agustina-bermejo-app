@@ -15,6 +15,7 @@ GET,/announcements/{id}/recipients,DENY,DENY,OWNER,ALLOW,DENY,DENY,ALLOW,DENY,an
 GET,/attendance/change-requests,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
 POST,/attendance/change-requests/{id}/approve,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
 POST,/attendance/change-requests/{id}/reject,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,"{""reason"":""Motivo suficiente""}"
+POST,/attendance/change-requests/{id}/revert,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,"{""reason"":""Motivo suficiente""}"
 GET,/attendance/justifications,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
 POST,/attendance/{id}/approve-justification,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
 POST,/attendance/{id}/change-requests,DENY,DENY,OWNER,DENY,DENY,DENY,DENY,DENY,attendance-section-instructor,
@@ -153,6 +154,7 @@ POST,/exam-board-registrations/{id}/withdraw,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DE
 GET,/exam-boards,DENY,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/exam-boards,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
 GET,/exam-boards/{id},DENY,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,exam-board-tribunal,
+GET,/exam-boards/{id}/acta,DENY,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,exam-board-tribunal,
 POST,/exam-boards/{id}/cancel,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,"{""reason"":""Motivo suficiente""}"
 POST,/exam-boards/{id}/close,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
 PUT,/exam-boards/{id}/final-grades,DENY,DENY,OWNER,DENY,DENY,DENY,DENY,DENY,exam-board-tribunal,"{""items"":[{""registrationId"":1,""absent"":true}]}"
@@ -413,7 +415,6 @@ GET,/prospects/{id}/documents,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/prospects/{id}/documents,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/prospects/{id}/send-verification,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/public/calendar/{token}.ics,PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
-GET,/public/certificates/{code},PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
 GET,/public/modules,PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
 POST,/public/monitoring/tunnel,PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
 GET,/public/unsubscribe/{token},PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
