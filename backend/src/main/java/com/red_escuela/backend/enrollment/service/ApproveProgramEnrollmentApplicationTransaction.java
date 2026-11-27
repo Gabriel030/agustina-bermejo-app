@@ -1,12 +1,13 @@
 package com.red_escuela.backend.enrollment.service;
 
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
-import com.red_escuela.backend.billing.invoice.service.ProgramAdmissionInvoiceIssuer;
+import com.red_escuela.backend.enrollment.api.ProgramAdmissionInvoicePort;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplicationStatus;
 import com.red_escuela.backend.enrollment.exception.InvalidProgramEnrollmentApplicationStateException;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
+import java.util.Optional;
 import org.springframework.stereotype.Service;
 import com.red_escuela.backend.enrollment.events.ProgramApplicationApprovedEvent;
 import org.springframework.context.ApplicationEventPublisher;
@@ -18,18 +19,18 @@ public class ApproveProgramEnrollmentApplicationTransaction {
 
     private final ProgramEnrollmentApplicationFinder applicationFinder;
     private final ProgramApplicantRoleGranter programApplicantRoleGranter;
-    private final ProgramAdmissionInvoiceIssuer programAdmissionInvoiceIssuer;
+    private final ProgramAdmissionInvoicePort programAdmissionInvoicePort;
     private final ProgramEnrollmentService programEnrollmentService;
     private final ApplicationEventPublisher eventPublisher;
 
     public ApproveProgramEnrollmentApplicationTransaction(ProgramEnrollmentApplicationFinder applicationFinder,
                                                         ProgramApplicantRoleGranter programApplicantRoleGranter,
-                                                        ProgramAdmissionInvoiceIssuer programAdmissionInvoiceIssuer,
+                                                        ProgramAdmissionInvoicePort programAdmissionInvoicePort,
                                                         ProgramEnrollmentService programEnrollmentService,
                                                         ApplicationEventPublisher eventPublisher) {
         this.applicationFinder = applicationFinder;
         this.programApplicantRoleGranter = programApplicantRoleGranter;
-        this.programAdmissionInvoiceIssuer = programAdmissionInvoiceIssuer;
+        this.programAdmissionInvoicePort = programAdmissionInvoicePort;
         this.programEnrollmentService = programEnrollmentService;
         this.eventPublisher = eventPublisher;
     }
@@ -48,9 +49,12 @@ public class ApproveProgramEnrollmentApplicationTransaction {
         programEnrollmentService.validateStudentCanEnrollInProgram(student, application.getProgram());
         programEnrollmentService.verifyStudentHasNoOutstandingDebt(student.getId());
 
-        Invoice admissionInvoice = programAdmissionInvoiceIssuer.issueAdmissionInvoice(student.getId(), application.getProgram(), application.getProgramCohort());
-        application.approve(decidedBy, admissionInvoice);
+        Optional<Invoice> admissionInvoice = programAdmissionInvoicePort.issueAdmissionInvoice(student.getId(), application.getProgram(), application.getProgramCohort());
+        application.approve(decidedBy, admissionInvoice.orElse(null));
         ApplicationDecisionIdempotencyKeys.remember(application, idempotencyKey);
+        if (admissionInvoice.isEmpty()) {
+            programEnrollmentService.enrollApplicantAfterAdmissionPayment(application);
+        }
         programApplicantRoleGranter.grantStudentRole(student);
         eventPublisher.publishEvent(ProgramApplicationApprovedEvent.approvedFor(application.getId(), student.getPerson().getId(), application.getProgram().getName()));
         return application;
