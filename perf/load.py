@@ -42,3 +42,4 @@ if __name__ == "__main__":
         out.append(run(token, path, threads, per))
         print(json.dumps(out[-1]), flush=True)
     json.dump(out, open("perf/out/load.json", "w"), indent=1)
+    json.dump({"pool:db": {"peakConnections": max(r["peakDbConnections"] for r in out)}}, open("perf/out/pool.json", "w"), indent=1)

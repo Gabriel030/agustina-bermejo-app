@@ -1,12 +1,15 @@
 import json, os, sys
 
 SCREEN_PREFIX = "screen:"
+POOL_PREFIX = "pool:"
 
 
 def select_budget(budget, scope):
     if scope == "screen":
         return {name: limits for name, limits in budget.items() if name.startswith(SCREEN_PREFIX)}
-    return {name: limits for name, limits in budget.items() if not name.startswith(SCREEN_PREFIX)}
+    if scope == "pool":
+        return {name: limits for name, limits in budget.items() if name.startswith(POOL_PREFIX)}
+    return {name: limits for name, limits in budget.items() if not name.startswith((SCREEN_PREFIX, POOL_PREFIX))}
 
 
 def check(latest, budget):
@@ -26,7 +29,7 @@ def check(latest, budget):
 
 def main():
     scope = os.environ.get("PERF_SCOPE", "endpoint")
-    default_latest = "perf/out/screens.json" if scope == "screen" else "perf/out/latest.json"
+    default_latest = {"screen": "perf/out/screens.json", "pool": "perf/out/pool.json"}.get(scope, "perf/out/latest.json")
     latest = json.load(open(os.environ.get("PERF_LATEST", default_latest)))
     budget = select_budget(json.load(open(os.environ.get("PERF_BUDGET", "perf/budget.json"))), scope)
     failures = check(latest, budget)
