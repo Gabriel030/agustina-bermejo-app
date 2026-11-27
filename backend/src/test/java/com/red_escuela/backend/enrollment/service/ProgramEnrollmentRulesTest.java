@@ -133,6 +133,7 @@ class ProgramEnrollmentRulesTest {
     private ProgramCohort cohort(LocalDate start, LocalDate end) {
         ProgramCohort cohort = new ProgramCohort();
         cohort.setId(9L);
+        cohort.setProgramId(4L);
         cohort.setPlan(PLAN);
         cohort.setAdmissionStart(start);
         cohort.setAdmissionEnd(end);

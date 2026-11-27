@@ -68,7 +68,9 @@ public class DemoEnrollmentSeedStep implements DemoSeedStep {
     private long findOrCreateCohort(long programId) {
         return cohortIdsByProgramId.computeIfAbsent(programId, id -> {
             long termId = findAnnualTermId(2026);
-            return session.api().post(DemoPersona.ADMIN, "/programs/" + id + "/terms/" + termId + "/cohorts",
+            long templateId = session.api().post(DemoPersona.DIRECTOR, "/programs/" + id + "/year-billing-templates",
+                    Map.of("termId", termId)).get("id").asLong();
+            return session.api().post(DemoPersona.ADMIN, "/year-billing-templates/" + templateId + "/cohorts",
                     Map.of("intake", "FIRST", "admissionStart", "2020-01-01", "admissionEnd", "2099-12-31", "cursadaStart", "2026-03-01")).get("id").asLong();
         });
     }

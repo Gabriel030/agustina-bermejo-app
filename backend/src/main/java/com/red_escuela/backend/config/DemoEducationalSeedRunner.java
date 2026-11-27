@@ -222,7 +222,8 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
     }
 
     private long createOpenCohort(DemoApiClient api, long programId, long termId) {
-        return api.post(ADMIN, "/programs/" + programId + "/terms/" + termId + "/cohorts",
+        long templateId = api.post(DIRECTOR, "/programs/" + programId + "/year-billing-templates", Map.of("termId", termId)).get("id").asLong();
+        return api.post(ADMIN, "/year-billing-templates/" + templateId + "/cohorts",
                 Map.of("intake", "FIRST", "admissionStart", "2020-01-01", "admissionEnd", "2099-12-31", "cursadaStart", "2026-03-01")).get("id").asLong();
     }
 
