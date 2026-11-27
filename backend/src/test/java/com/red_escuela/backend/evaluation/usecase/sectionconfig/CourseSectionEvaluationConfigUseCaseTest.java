@@ -352,4 +352,53 @@ class CourseSectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         assertThat(config.instructors()).hasSize(1);
         assertThat(config.evaluationConfigDeadline()).isNotNull();
     }
+
+    @Test
+    void readingAnExistingCourseSectionWithoutConfigCreatesTheDraftLazily() {
+        Term term = persistTerm();
+        CourseSubjectSection section = createCourseSectionWithoutConfig(persistCourseSubject(term, "ModuloPerezoso"), term);
+        assertThat(configRepository.findByCourseSectionId(section.getId())).isEmpty();
+
+        SectionEvaluationConfigResponse config = getConfigForStaff.get(SectionRef.course(section.getId()));
+
+        assertThat(config.status()).isEqualTo(SectionEvaluationConfigStatus.DRAFT.name());
+        assertThat(config.courseSectionId()).isEqualTo(section.getId());
+        assertThat(configRepository.findByCourseSectionId(section.getId())).isPresent();
+    }
+
+    @Test
+    void instructorReadingACourseSectionWithoutConfigGetsAnEditableDraft() {
+        Term term = persistTerm();
+        CourseSubjectSection section = createCourseSectionWithoutConfig(persistCourseSubject(term, "ModuloPerezosoDocente"), term);
+        Instructor lead = persistInstructor("91000009");
+        assignInstructor(section, lead, InstructorRole.LEAD);
+
+        SectionEvaluationConfigResponse config = getMyConfig.get(
+                new GetMySectionEvaluationConfigCommand(SectionRef.course(section.getId()), lead.getId()));
+
+        assertThat(config.status()).isEqualTo(SectionEvaluationConfigStatus.DRAFT.name());
+        assertThat(config.canEdit()).isTrue();
+    }
+
+    @Test
+    void lazyDraftIsCreatedOnlyOnceForACourseSection() {
+        Term term = persistTerm();
+        CourseSubjectSection section = createCourseSectionWithoutConfig(persistCourseSubject(term, "ModuloPerezosoUnico"), term);
+
+        SectionEvaluationConfigResponse first = getConfigForStaff.get(SectionRef.course(section.getId()));
+        SectionEvaluationConfigResponse second = getConfigForStaff.get(SectionRef.course(section.getId()));
+
+        assertThat(second.id()).isEqualTo(first.id());
+    }
+
+    private CourseSubjectSection createCourseSectionWithoutConfig(CourseSubject courseSubject, Term term) {
+        CourseSubjectSection section = new CourseSubjectSection();
+        section.setName("Comisión Curso");
+        section.setCourseSubject(courseSubject);
+        section.setTerm(term);
+        section.setStatus(StatusType.ACTIVE);
+        entityManager.persist(section);
+        entityManager.flush();
+        return section;
+    }
 }
