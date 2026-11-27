@@ -9,6 +9,7 @@ create table exam_board_audit (
 );
 
 create index ix_exam_board_audit_exam_board on exam_board_audit (exam_board_id);
+create index ix_exam_board_audit_actor on exam_board_audit (actor_person_id);
 
 insert into permission (code, module, description, fixed_to_director, sensitive) values
     ('evaluation.reopen_exam_board', 'evaluation', 'Reabrir el acta de una mesa de examen cerrada', false, true);
