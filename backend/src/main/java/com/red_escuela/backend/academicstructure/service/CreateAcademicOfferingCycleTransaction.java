@@ -10,6 +10,7 @@ import com.red_escuela.backend.academicstructure.repository.AcademicOfferingCycl
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,6 +23,7 @@ public class CreateAcademicOfferingCycleTransaction {
     private final CourseRepository courseRepository;
     private final AcademicOfferingCycleDrafter cycleDrafter;
     private final HolidayYearGuard holidayYearGuard;
+    private final TermOfferingGuard termOfferingGuard;
 
     public CreateAcademicOfferingCycleTransaction(
             AcademicOfferingCycleRepository cycleRepository,
@@ -29,7 +31,8 @@ public class CreateAcademicOfferingCycleTransaction {
             ProgramRepository programRepository,
             CourseRepository courseRepository,
             AcademicOfferingCycleDrafter cycleDrafter,
-            HolidayYearGuard holidayYearGuard
+            HolidayYearGuard holidayYearGuard,
+            TermOfferingGuard termOfferingGuard
     ) {
         this.cycleRepository = cycleRepository;
         this.termRepository = termRepository;
@@ -37,6 +40,7 @@ public class CreateAcademicOfferingCycleTransaction {
         this.courseRepository = courseRepository;
         this.cycleDrafter = cycleDrafter;
         this.holidayYearGuard = holidayYearGuard;
+        this.termOfferingGuard = termOfferingGuard;
     }
 
     @Transactional
@@ -44,6 +48,7 @@ public class CreateAcademicOfferingCycleTransaction {
         var term = termRepository.findById(termId)
                 .orElseThrow(() -> new TermNotFoundException(termId));
 
+        termOfferingGuard.requireTermOpenForOffering(term);
         holidayYearGuard.ensureHolidaysLoadedForTerm(term);
 
         var cycle = cycleDrafter.draftFor(term);
@@ -54,7 +59,7 @@ public class CreateAcademicOfferingCycleTransaction {
             var active = cycleRepository.findByProgramIdOrderByCreatedAtDesc(programId)
                     .stream()
                     .filter(c -> c.getTerm().getId().equals(termId))
-                    .filter(c -> c.getStatus() == AcademicOfferingCycleStatus.DRAFT || c.getStatus() == AcademicOfferingCycleStatus.PENDING_APPROVAL)
+                    .filter(c -> c.getStatus() != AcademicOfferingCycleStatus.REJECTED)
                     .findFirst();
             if (active.isPresent()) throw new CycleAlreadyInProgressException();
             cycle.setProgram(program);
@@ -64,12 +69,16 @@ public class CreateAcademicOfferingCycleTransaction {
             var active = cycleRepository.findByCourseIdOrderByCreatedAtDesc(courseId)
                     .stream()
                     .filter(c -> c.getTerm().getId().equals(termId))
-                    .filter(c -> c.getStatus() == AcademicOfferingCycleStatus.DRAFT || c.getStatus() == AcademicOfferingCycleStatus.PENDING_APPROVAL)
+                    .filter(c -> c.getStatus() != AcademicOfferingCycleStatus.REJECTED)
                     .findFirst();
             if (active.isPresent()) throw new CycleAlreadyInProgressException();
             cycle.setCourse(course);
         }
 
-        return AcademicOfferingCycleResponse.from(cycleRepository.save(cycle), 0L);
+        try {
+            return AcademicOfferingCycleResponse.from(cycleRepository.saveAndFlush(cycle), 0L);
+        } catch (DataIntegrityViolationException violation) {
+            throw new CycleAlreadyInProgressException();
+        }
     }
 }

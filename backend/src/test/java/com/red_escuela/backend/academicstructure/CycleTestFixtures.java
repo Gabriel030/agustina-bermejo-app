@@ -21,6 +21,7 @@ import jakarta.persistence.EntityManager;
 
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.time.LocalTime;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
@@ -95,6 +96,16 @@ public class CycleTestFixtures {
     }
 
     public AcademicOfferingCycle programCycle(Program program, Term term, AcademicOfferingCycleStatus status) {
+        List<AcademicOfferingCycle> existing = entityManager.createQuery(
+                        "select c from AcademicOfferingCycle c where c.program = :program and c.term = :term and c.status = :status",
+                        AcademicOfferingCycle.class)
+                .setParameter("program", program)
+                .setParameter("term", term)
+                .setParameter("status", status)
+                .getResultList();
+        if (!existing.isEmpty()) {
+            return existing.get(0);
+        }
         AcademicOfferingCycle cycle = new AcademicOfferingCycle();
         cycle.setProgram(program);
         cycle.setTerm(term);

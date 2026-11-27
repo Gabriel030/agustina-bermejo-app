@@ -93,7 +93,9 @@ class AcademicStructureTransactionBoundaryIT extends AbstractIntegrationTest {
             var otherTerm = fixtures.term(CLOSED_YEAR);
             fixtures.programCycle(program, otherTerm, AcademicOfferingCycleStatus.APPROVED);
             ids[0] = program.getId();
-            ids[1] = fixtures.term(CLOSED_YEAR - 1).getId();
+            var openTerm = fixtures.term(CLOSED_YEAR - 1);
+            openTerm.setEndDate(java.time.LocalDateTime.of(2999, 12, 15, 0, 0));
+            ids[1] = openTerm.getId();
             ids[2] = fixtures.person().getId();
         });
         SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(String.valueOf(ids[2]), null));

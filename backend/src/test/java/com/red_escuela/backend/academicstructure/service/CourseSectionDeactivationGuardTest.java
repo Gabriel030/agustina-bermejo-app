@@ -22,7 +22,7 @@ class CourseSectionDeactivationGuardTest {
     private final CourseSubjectSectionRepository repository = Mockito.mock(CourseSubjectSectionRepository.class);
     private final SectionEnrollmentActivityPort activityPort = Mockito.mock(SectionEnrollmentActivityPort.class);
     private final CourseSectionService service = new CourseSectionService(
-            repository, null, null, null, null, null, null, null, null, null, null, activityPort, null);
+            repository, null, null, null, null, null, null, null, null, activityPort, null);
 
     @Test
     void deactivatingACourseSectionWithLiveEnrollmentsIsRejectedAndNothingIsSaved() {

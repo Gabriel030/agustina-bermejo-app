@@ -6,6 +6,8 @@ import com.red_escuela.backend.enrollment.dto.WaitlistVerdict;
 import com.red_escuela.backend.enrollment.dto.WaitlistVerdictReason;
 import com.red_escuela.backend.enrollment.exception.SectionScheduleOverlapException;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentApplicationRepository;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
+import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,12 +22,15 @@ public class WaitlistCandidateEligibility {
     private final StudentScheduleOverlapGuard scheduleOverlapGuard;
     private final CourseEnrollmentApplicationRepository courseApplicationRepository;
     private final AdmissionInvoiceReceiptFinder admissionInvoiceReceiptFinder;
+    private final ProgramEnrollmentRepository programEnrollmentRepository;
 
     public WaitlistCandidateEligibility(SubjectRetakeGuard subjectRetakeGuard,
                                         ProgramPrerequisiteEvaluator prerequisiteEvaluator,
                                         StudentScheduleOverlapGuard scheduleOverlapGuard,
                                         CourseEnrollmentApplicationRepository courseApplicationRepository,
-                                        AdmissionInvoiceReceiptFinder admissionInvoiceReceiptFinder) {
+                                        AdmissionInvoiceReceiptFinder admissionInvoiceReceiptFinder,
+                                        ProgramEnrollmentRepository programEnrollmentRepository) {
+        this.programEnrollmentRepository = programEnrollmentRepository;
         this.subjectRetakeGuard = subjectRetakeGuard;
         this.prerequisiteEvaluator = prerequisiteEvaluator;
         this.scheduleOverlapGuard = scheduleOverlapGuard;
@@ -55,6 +60,9 @@ public class WaitlistCandidateEligibility {
     }
 
     private Optional<WaitlistVerdictReason> programSectionViolation(WaitlistCandidate candidate) {
+        if (!hasActiveProgramEnrollment(candidate.programEnrollmentId())) {
+            return Optional.of(WaitlistVerdictReason.PROGRAM_ENROLLMENT_NOT_ACTIVE);
+        }
         if (subjectRetakeGuard.isAlreadyPassed(candidate.programEnrollmentId(), candidate.subjectId(), candidate.enrollmentId())) {
             return Optional.of(WaitlistVerdictReason.ALREADY_PASSED);
         }
@@ -66,6 +74,12 @@ public class WaitlistCandidateEligibility {
             return Optional.of(WaitlistVerdictReason.SCHEDULE_OVERLAP);
         }
         return Optional.empty();
+    }
+
+    private boolean hasActiveProgramEnrollment(Long programEnrollmentId) {
+        return programEnrollmentRepository.findById(programEnrollmentId)
+                .map(enrollment -> enrollment.getStatus() == ProgramEnrollmentStatus.ENROLLED)
+                .orElse(false);
     }
 
     private boolean lacksApprovedAdmissionReceipt(Long courseEnrollmentId) {

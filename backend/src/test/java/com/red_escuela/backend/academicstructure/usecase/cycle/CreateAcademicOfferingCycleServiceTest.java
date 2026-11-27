@@ -66,8 +66,10 @@ class CreateAcademicOfferingCycleServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new CreateAcademicOfferingCycleService(new CreateAcademicOfferingCycleTransaction(cycleRepository, termRepository, programRepository, courseRepository, cycleDrafter, holidayYearGuard));
+        service = new CreateAcademicOfferingCycleService(new CreateAcademicOfferingCycleTransaction(cycleRepository, termRepository, programRepository, courseRepository, cycleDrafter, holidayYearGuard,
+                new com.red_escuela.backend.academicstructure.service.TermOfferingGuard(java.time.Clock.systemDefaultZone())));
         term = TermFixtures.newTerm();
+        term.setStatus(com.red_escuela.backend.shared.domain.StatusType.ACTIVE);
         term.setId(TERM_ID);
         term.setDescription("2026");
         creator = new Person();
@@ -97,7 +99,7 @@ class CreateAcademicOfferingCycleServiceTest {
     private void stubTermAndPersistence() {
         when(termRepository.findById(TERM_ID)).thenReturn(Optional.of(term));
         stubDraft();
-        when(cycleRepository.save(any(AcademicOfferingCycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(cycleRepository.saveAndFlush(any(AcademicOfferingCycle.class))).thenAnswer(invocation -> invocation.getArgument(0));
     }
 
     @Test
@@ -106,7 +108,7 @@ class CreateAcademicOfferingCycleServiceTest {
                 .isInstanceOf(RequestFieldRequiredException.class);
 
         verify(courseRepository, never()).findById(any());
-        verify(cycleRepository, never()).save(any());
+        verify(cycleRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -116,7 +118,7 @@ class CreateAcademicOfferingCycleServiceTest {
         assertThatThrownBy(() -> service.create(new CreateAcademicOfferingCycleRequest(PROGRAM_ID, null, TERM_ID)))
                 .isInstanceOf(TermNotFoundException.class);
 
-        verify(cycleRepository, never()).save(any());
+        verify(cycleRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -128,7 +130,7 @@ class CreateAcademicOfferingCycleServiceTest {
         var response = service.create(new CreateAcademicOfferingCycleRequest(PROGRAM_ID, null, TERM_ID));
 
         var captor = ArgumentCaptor.forClass(AcademicOfferingCycle.class);
-        verify(cycleRepository).save(captor.capture());
+        verify(cycleRepository).saveAndFlush(captor.capture());
         assertThat(captor.getValue().getStatus()).isEqualTo(AcademicOfferingCycleStatus.DRAFT);
         assertThat(captor.getValue().getTerm()).isSameAs(term);
         assertThat(captor.getValue().getCreatedBy()).isSameAs(creator);
@@ -149,7 +151,7 @@ class CreateAcademicOfferingCycleServiceTest {
         assertThatThrownBy(() -> service.create(new CreateAcademicOfferingCycleRequest(PROGRAM_ID, null, TERM_ID)))
                 .isInstanceOf(ProgramNotFoundException.class);
 
-        verify(cycleRepository, never()).save(any());
+        verify(cycleRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -163,7 +165,7 @@ class CreateAcademicOfferingCycleServiceTest {
         assertThatThrownBy(() -> service.create(new CreateAcademicOfferingCycleRequest(PROGRAM_ID, null, TERM_ID)))
                 .isInstanceOf(CycleAlreadyInProgressException.class);
 
-        verify(cycleRepository, never()).save(any());
+        verify(cycleRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -179,19 +181,29 @@ class CreateAcademicOfferingCycleServiceTest {
     }
 
     @Test
-    void programCycleIgnoresInProgressCyclesOfOtherTermsAndFinishedCyclesOfTheSameTerm() {
+    void programWithAnApprovedCycleInTheSameTermCannotOpenAnotherOne() {
+        when(termRepository.findById(TERM_ID)).thenReturn(Optional.of(term));
+        stubDraft();
+        when(programRepository.findById(PROGRAM_ID)).thenReturn(Optional.of(Program.builder().id(PROGRAM_ID).build()));
+        when(cycleRepository.findByProgramIdOrderByCreatedAtDesc(PROGRAM_ID))
+                .thenReturn(List.of(existingCycle(TERM_ID, AcademicOfferingCycleStatus.APPROVED)));
+
+        assertThatThrownBy(() -> service.create(new CreateAcademicOfferingCycleRequest(PROGRAM_ID, null, TERM_ID)))
+                .isInstanceOf(CycleAlreadyInProgressException.class);
+    }
+
+    @Test
+    void programCycleIgnoresLiveCyclesOfOtherTermsAndRejectedCyclesOfTheSameTerm() {
         stubTermAndPersistence();
         when(programRepository.findById(PROGRAM_ID)).thenReturn(Optional.of(Program.builder().id(PROGRAM_ID).build()));
         when(cycleRepository.findByProgramIdOrderByCreatedAtDesc(PROGRAM_ID)).thenReturn(List.of(
                 existingCycle(99L, AcademicOfferingCycleStatus.DRAFT),
                 existingCycle(99L, AcademicOfferingCycleStatus.PENDING_APPROVAL),
-                existingCycle(TERM_ID, AcademicOfferingCycleStatus.APPROVED),
-                existingCycle(TERM_ID, AcademicOfferingCycleStatus.REJECTED),
-                existingCycle(TERM_ID, AcademicOfferingCycleStatus.CLOSED)));
+                existingCycle(TERM_ID, AcademicOfferingCycleStatus.REJECTED)));
 
         service.create(new CreateAcademicOfferingCycleRequest(PROGRAM_ID, null, TERM_ID));
 
-        verify(cycleRepository).save(any(AcademicOfferingCycle.class));
+        verify(cycleRepository).saveAndFlush(any(AcademicOfferingCycle.class));
     }
 
     @Test
@@ -206,7 +218,7 @@ class CreateAcademicOfferingCycleServiceTest {
         var response = service.create(new CreateAcademicOfferingCycleRequest(null, COURSE_ID, TERM_ID));
 
         var captor = ArgumentCaptor.forClass(AcademicOfferingCycle.class);
-        verify(cycleRepository).save(captor.capture());
+        verify(cycleRepository).saveAndFlush(captor.capture());
         assertThat(captor.getValue().getCourse()).isSameAs(course);
         assertThat(captor.getValue().getProgram()).isNull();
         assertThat(captor.getValue().getStatus()).isEqualTo(AcademicOfferingCycleStatus.DRAFT);
@@ -224,7 +236,7 @@ class CreateAcademicOfferingCycleServiceTest {
         assertThatThrownBy(() -> service.create(new CreateAcademicOfferingCycleRequest(null, COURSE_ID, TERM_ID)))
                 .isInstanceOf(CourseNotFoundException.class);
 
-        verify(cycleRepository, never()).save(any());
+        verify(cycleRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -238,7 +250,7 @@ class CreateAcademicOfferingCycleServiceTest {
         assertThatThrownBy(() -> service.create(new CreateAcademicOfferingCycleRequest(null, COURSE_ID, TERM_ID)))
                 .isInstanceOf(CycleAlreadyInProgressException.class);
 
-        verify(cycleRepository, never()).save(any());
+        verify(cycleRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -254,19 +266,17 @@ class CreateAcademicOfferingCycleServiceTest {
     }
 
     @Test
-    void courseCycleIgnoresInProgressCyclesOfOtherTermsAndFinishedCyclesOfTheSameTerm() {
+    void courseCycleIgnoresLiveCyclesOfOtherTermsAndRejectedCyclesOfTheSameTerm() {
         stubTermAndPersistence();
         when(courseRepository.findById(COURSE_ID)).thenReturn(Optional.of(new Course()));
         when(cycleRepository.findByCourseIdOrderByCreatedAtDesc(COURSE_ID)).thenReturn(List.of(
                 existingCycle(99L, AcademicOfferingCycleStatus.DRAFT),
                 existingCycle(99L, AcademicOfferingCycleStatus.PENDING_APPROVAL),
-                existingCycle(TERM_ID, AcademicOfferingCycleStatus.APPROVED),
-                existingCycle(TERM_ID, AcademicOfferingCycleStatus.REJECTED),
-                existingCycle(TERM_ID, AcademicOfferingCycleStatus.CLOSED)));
+                existingCycle(TERM_ID, AcademicOfferingCycleStatus.REJECTED)));
 
         service.create(new CreateAcademicOfferingCycleRequest(null, COURSE_ID, TERM_ID));
 
-        verify(cycleRepository).save(any(AcademicOfferingCycle.class));
+        verify(cycleRepository).saveAndFlush(any(AcademicOfferingCycle.class));
     }
 
     @Test
@@ -279,7 +289,7 @@ class CreateAcademicOfferingCycleServiceTest {
 
         verify(cycleDrafter, never()).draftFor(any());
         verify(programRepository, never()).findById(any());
-        verify(cycleRepository, never()).save(any());
+        verify(cycleRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -291,6 +301,6 @@ class CreateAcademicOfferingCycleServiceTest {
         service.create(new CreateAcademicOfferingCycleRequest(PROGRAM_ID, null, TERM_ID));
 
         verify(holidayYearGuard).ensureHolidaysLoadedForTerm(term);
-        verify(cycleRepository).save(any(AcademicOfferingCycle.class));
+        verify(cycleRepository).saveAndFlush(any(AcademicOfferingCycle.class));
     }
 }

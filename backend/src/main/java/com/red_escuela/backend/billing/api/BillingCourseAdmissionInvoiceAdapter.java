@@ -24,7 +24,7 @@ public class BillingCourseAdmissionInvoiceAdapter implements CourseAdmissionInvo
 
     @Override
     public CourseAdmissionInvoiceView issueCourseAdmissionInvoice(Long studentId, Long courseId) {
-        if (billingMode.currentMode() != BillingMode.FULL) {
+        if (billingMode.currentMode() == BillingMode.OFF) {
             return NO_INVOICE;
         }
         return issuer.issueCourseAdmissionInvoice(studentId, courseId);
@@ -32,7 +32,7 @@ public class BillingCourseAdmissionInvoiceAdapter implements CourseAdmissionInvo
 
     @Override
     public void assignInvoiceToCourseEnrollment(Long invoiceId, Long courseEnrollmentId) {
-        if (billingMode.currentMode() != BillingMode.FULL) {
+        if (billingMode.currentMode() == BillingMode.OFF) {
             return;
         }
         issuer.assignInvoiceToCourseEnrollment(invoiceId, courseEnrollmentId);

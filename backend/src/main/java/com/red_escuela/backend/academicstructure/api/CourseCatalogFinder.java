@@ -59,8 +59,9 @@ public class CourseCatalogFinder {
                 .toList();
     }
 
-    public List<CourseSectionView> findActiveSectionsOfModule(Long courseSubjectId) {
+    public List<CourseSectionView> findSectionsOpenForEnrollmentOfModule(Long courseSubjectId) {
         return courseSectionRepository.findByCourseSubjectIdAndStatus(courseSubjectId, StatusType.ACTIVE).stream()
+                .filter(CourseSubjectSection::isOpenForEnrollment)
                 .map(this::toSectionView)
                 .toList();
     }

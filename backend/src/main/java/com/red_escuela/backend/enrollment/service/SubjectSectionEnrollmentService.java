@@ -419,8 +419,7 @@ public class SubjectSectionEnrollmentService {
     }
 
     private void validateActiveProgramEnrollment(ProgramEnrollment programEnrollment) {
-        if (programEnrollment.getStatus() != ProgramEnrollmentStatus.ENROLLED
-                && programEnrollment.getStatus() != ProgramEnrollmentStatus.PAUSED) {
+        if (programEnrollment.getStatus() != ProgramEnrollmentStatus.ENROLLED) {
             throw new ProgramEnrollmentRequiredException(programEnrollment.getId());
         }
     }
