@@ -236,6 +236,7 @@ class CommissionClosureQaIT extends AbstractIntegrationTest {
         entityManager.persist(subject);
         ProgramSubject entry = new ProgramSubject();
         entry.setProgram(program);
+        entry.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
         entry.setSubject(subject);
         entry.setCredits(4);
         entry.setStatus(StatusType.ACTIVE);
@@ -473,6 +474,7 @@ class CommissionClosureQaIT extends AbstractIntegrationTest {
         entityManager.persist(prerequisite);
         ProgramSubject prerequisiteEntry = new ProgramSubject();
         prerequisiteEntry.setProgram(commission.program());
+        prerequisiteEntry.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(commission.program()));
         prerequisiteEntry.setSubject(prerequisite);
         prerequisiteEntry.setCredits(4);
         prerequisiteEntry.setStatus(StatusType.ACTIVE);

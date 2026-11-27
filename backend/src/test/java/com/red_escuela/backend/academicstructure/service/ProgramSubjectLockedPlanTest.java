@@ -61,7 +61,7 @@ class ProgramSubjectLockedPlanTest {
                 Mockito.mock(SubjectRepository.class), Mockito.mock(ElectiveGroupRepository.class),
                 Mockito.mock(ProgramElectiveGroupRepository.class), prerequisiteRepository, corequisiteRepository,
                 curriculumPlanRepository, Mockito.mock(CurrentCurriculumPlanProvider.class),
-                new CurriculumPlanEditPolicy(enrollmentActivityPort));
+                new CurriculumPlanEditPolicy(enrollmentActivityPort, curriculumPlanRepository));
     }
 
     private CurriculumPlan plan(long id, CurriculumPlanStatus status) {
@@ -74,6 +74,7 @@ class ProgramSubjectLockedPlanTest {
         entry.setId(id);
         entry.setProgram(program);
         entry.setPlan(plan);
+        when(curriculumPlanRepository.findByIdForUpdate(plan.getId())).thenReturn(Optional.of(plan));
         when(programSubjectRepository.findById(id)).thenReturn(Optional.of(entry));
         return entry;
     }
@@ -127,6 +128,7 @@ class ProgramSubjectLockedPlanTest {
     void addingSubjectToLockedPlanIsRejected() {
         CurriculumPlan locked = plan(5L, CurriculumPlanStatus.ACTIVE);
         when(curriculumPlanRepository.findById(5L)).thenReturn(Optional.of(locked));
+        when(curriculumPlanRepository.findByIdForUpdate(5L)).thenReturn(Optional.of(locked));
         CreateProgramSubjectRequest request = new CreateProgramSubjectRequest(
                 99L, ProgramSubjectCategory.ADDITIONAL_MANDATORY, null, null, 10, null, null, null);
 

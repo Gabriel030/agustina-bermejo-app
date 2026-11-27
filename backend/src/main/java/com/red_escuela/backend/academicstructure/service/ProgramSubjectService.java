@@ -98,7 +98,7 @@ public class ProgramSubjectService {
     }
 
     private ProgramSubject addSubjectTo(CurriculumPlan plan, CreateProgramSubjectRequest request) {
-        editPolicy.requireStructureEditable(plan);
+        plan = editPolicy.lockEditableStructureOf(plan.getId());
         Program program = plan.getProgram();
         Long programId = program.getId();
         Subject subject = subjectRepository.findById(request.subjectId())
@@ -143,7 +143,7 @@ public class ProgramSubjectService {
     @Transactional
     public ProgramSubject update(Long id, UpdateProgramSubjectRequest request) {
         ProgramSubject programSubject = findOrThrow(id);
-        editPolicy.requireStructureEditable(planOf(programSubject));
+        editPolicy.lockEditableStructureOf(programSubject.getPlan().getId());
 
         if (request.curricularYear() != null) {
             programSubject.getProgram().requireCurricularYearWithinDuration(request.curricularYear());
@@ -191,7 +191,7 @@ public class ProgramSubjectService {
     @Transactional
     public void deactivate(Long id) {
         ProgramSubject programSubject = findOrThrow(id);
-        editPolicy.requireStructureEditable(planOf(programSubject));
+        editPolicy.lockEditableStructureOf(programSubject.getPlan().getId());
         programSubject.setStatus(StatusType.INACTIVE);
         programSubjectRepository.save(programSubject);
     }
@@ -199,7 +199,7 @@ public class ProgramSubjectService {
     @Transactional
     public void reactivate(Long id) {
         ProgramSubject programSubject = findOrThrow(id);
-        editPolicy.requireStructureEditable(planOf(programSubject));
+        editPolicy.lockEditableStructureOf(programSubject.getPlan().getId());
         programSubject.setStatus(StatusType.ACTIVE);
         programSubjectRepository.save(programSubject);
     }
@@ -208,12 +208,12 @@ public class ProgramSubjectService {
     public ProgramSubjectPrerequisite addPrerequisite(Long programSubjectId, AddPrerequisiteRequest request) {
         ProgramSubject objetivo = findOrThrow(programSubjectId);
         ProgramSubject prerequisitePropuesto = findOrThrow(request.prerequisiteProgramSubjectId());
-        editPolicy.requireStructureEditable(planOf(objetivo));
+        editPolicy.lockEditableStructureOf(objetivo.getPlan().getId());
 
         if (objetivo.getId().equals(prerequisitePropuesto.getId())) {
             throw new InvalidPrerequisiteException("Una materia no puede ser prerrequisito de sí misma");
         }
-        if (!planOf(objetivo).getId().equals(planOf(prerequisitePropuesto).getId())) {
+        if (!objetivo.getPlan().getId().equals(prerequisitePropuesto.getPlan().getId())) {
             throw new InvalidPrerequisiteException(
                     "Las correlatividades solo pueden darse entre materias del mismo plan de estudios");
         }
@@ -290,7 +290,7 @@ public class ProgramSubjectService {
     public void removePrerequisite(Long prerequisiteId) {
         ProgramSubjectPrerequisite prerequisite = prerequisiteRepository.findById(prerequisiteId)
                 .orElseThrow(() -> new PrerequisiteNotFoundException(prerequisiteId));
-        editPolicy.requireStructureEditable(planOf(prerequisite.getProgramSubject()));
+        editPolicy.lockEditableStructureOf(prerequisite.getProgramSubject().getPlan().getId());
         prerequisiteRepository.delete(prerequisite);
     }
 
@@ -322,12 +322,12 @@ public class ProgramSubjectService {
     public ProgramSubjectCorequisite addCorequisite(Long programSubjectId, AddCorequisiteRequest request) {
         ProgramSubject subject = findOrThrow(programSubjectId);
         ProgramSubject corequisite = findOrThrow(request.corequisiteProgramSubjectId());
-        editPolicy.requireStructureEditable(planOf(subject));
+        editPolicy.lockEditableStructureOf(subject.getPlan().getId());
 
         if (subject.getId().equals(corequisite.getId())) {
             throw new InvalidCorequisiteException("Una materia no puede ser co-requisito de sí misma");
         }
-        if (!planOf(subject).getId().equals(planOf(corequisite).getId())) {
+        if (!subject.getPlan().getId().equals(corequisite.getPlan().getId())) {
             throw new InvalidCorequisiteException(
                     "Los co-requisitos solo pueden darse entre materias del mismo plan de estudios");
         }
@@ -355,12 +355,8 @@ public class ProgramSubjectService {
     public void removeCorequisite(Long corequisiteId) {
         ProgramSubjectCorequisite link = corequisiteRepository.findById(corequisiteId)
                 .orElseThrow(() -> new CorequisiteNotFoundException(corequisiteId));
-        editPolicy.requireStructureEditable(planOf(link.getProgramSubject()));
+        editPolicy.lockEditableStructureOf(link.getProgramSubject().getPlan().getId());
         corequisiteRepository.delete(link);
-    }
-
-    private CurriculumPlan planOf(ProgramSubject entry) {
-        return entry.getPlan() != null ? entry.getPlan() : currentPlanProvider.currentPlanOf(entry.getProgram());
     }
 
     private CurriculumPlan findPlanOrThrow(Long planId) {

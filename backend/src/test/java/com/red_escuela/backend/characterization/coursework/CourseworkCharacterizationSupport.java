@@ -170,6 +170,7 @@ abstract class CourseworkCharacterizationSupport extends AbstractIntegrationTest
     protected ProgramSubject persistPlanEntry(Program program, Subject subject, int credits) {
         ProgramSubject entry = new ProgramSubject();
         entry.setProgram(program);
+        entry.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
         entry.setSubject(subject);
         entry.setCredits(credits);
         entry.setCurricularYear(1);

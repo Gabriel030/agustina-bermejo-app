@@ -2,6 +2,9 @@ package com.red_escuela.backend.academicstructure.service;
 
 import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
 import com.red_escuela.backend.academicstructure.domain.RequirementType;
+import com.red_escuela.backend.academicstructure.api.CurriculumPlanFinder;
+import com.red_escuela.backend.academicstructure.domain.CurriculumPlanNotOpenForNewStudentsException;
+import com.red_escuela.backend.academicstructure.dto.AddCorequisiteRequest;
 import com.red_escuela.backend.academicstructure.dto.AddPrerequisiteRequest;
 import com.red_escuela.backend.academicstructure.dto.CreateCurriculumPlanRequest;
 import com.red_escuela.backend.academicstructure.dto.CreateProgramSubjectRequest;
@@ -58,6 +61,10 @@ class CurriculumPlanVersioningIT extends AbstractIntegrationTest {
     private ProgramSubjectRepository programSubjectRepository;
     @Autowired
     private JdbcTemplate jdbc;
+    @Autowired
+    private CurriculumPlanFinder curriculumPlanFinder;
+    @Autowired
+    private java.time.Clock clock;
     @Autowired
     private EntityManager entityManager;
 
@@ -137,7 +144,8 @@ class CurriculumPlanVersioningIT extends AbstractIntegrationTest {
     void draftPlanTotalsCanBeEditedAndActivationMakesItTheCurrentPlan() {
         Program program = persistProgram("Tecnicatura Activación");
         addSubject(program, persistSubject("Biología"), 1);
-        CurriculumPlanResponse draft = createCurriculumPlanUseCase.createDraftVersion(program.getId(), draftRequest(null));
+        Long currentPlanId = curriculumPlanRepository.findCurrentByProgramId(program.getId()).orElseThrow().getId();
+        CurriculumPlanResponse draft = createCurriculumPlanUseCase.createDraftVersion(program.getId(), draftRequest(currentPlanId));
 
         updateCurriculumPlanUseCase.update(draft.id(), new UpdateCurriculumPlanRequest(null, null, null, 4, 150, null));
         activateCurriculumPlanUseCase.activate(draft.id());
@@ -147,6 +155,9 @@ class CurriculumPlanVersioningIT extends AbstractIntegrationTest {
         CurriculumPlan current = curriculumPlanRepository.findCurrentByProgramId(program.getId()).orElseThrow();
         assertThat(current.getId()).isEqualTo(draft.id());
         assertThat(current.getTotalYears()).isEqualTo(4);
+        CurriculumPlan previous = curriculumPlanRepository.findById(currentPlanId).orElseThrow();
+        assertThat(previous.getStatus()).isEqualTo(CurriculumPlanStatus.EXPIRED);
+        assertThat(previous.getValidUntil()).isNotNull();
         assertThat(entityManager.find(Program.class, program.getId()).getTotalCreditsRequired()).isEqualTo(150);
     }
 
@@ -166,18 +177,62 @@ class CurriculumPlanVersioningIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void subjectInsertedWithoutPlanGetsTheProgramActivePlanFromTheDatabase() {
-        Program program = persistProgram("Tecnicatura Trigger");
-        Subject subject = persistSubject("Historia");
+    void copyingAPlanClonesCorequisitesWithTheirOwnRowsPointingToTheCopies() {
+        Program program = persistProgram("Tecnicatura Correquisitos");
+        ProgramSubject first = addSubject(program, persistSubject("Laboratorio"), 1);
+        ProgramSubject second = addSubject(program, persistSubject("Teoría"), 1);
+        programSubjectService.addCorequisite(first.getId(), new AddCorequisiteRequest(second.getId()));
+        entityManager.flush();
 
-        Long entryId = jdbc.queryForObject("insert into program_subject (program_id, subject_id, credits, category, status) "
-                + "values (?, ?, 5, 'MANDATORY', 'ACTIVE') returning id", Long.class, program.getId(), subject.getId());
+        CurriculumPlanResponse draft = createCurriculumPlanUseCase.createDraftVersion(program.getId(),
+                draftRequest(first.getPlan().getId()));
+        entityManager.flush();
 
-        List<CurriculumPlan> plans = curriculumPlanRepository.findByProgramIdOrderByVersionNumberAsc(program.getId());
-        assertThat(plans).hasSize(1);
-        assertThat(plans.get(0).getStatus()).isEqualTo(CurriculumPlanStatus.ACTIVE);
-        assertThat(plans.get(0).getTotalCreditsRequired()).isEqualTo(100);
-        assertThat(jdbc.queryForObject("select plan_id from program_subject where id = ?", Long.class, entryId))
-                .isEqualTo(plans.get(0).getId());
+        List<ProgramSubject> copies = programSubjectRepository.findByPlanIdOrderById(draft.id());
+        List<Long> copyIds = copies.stream().map(ProgramSubject::getId).toList();
+        List<java.util.Map<String, Object>> rows = jdbc.queryForList("select id, program_subject_id, corequisite_program_subject_id "
+                + "from program_subject_corequisite where program_subject_id in (select id from program_subject where plan_id = ?)", draft.id());
+        assertThat(rows).hasSize(1);
+        assertThat(copyIds).contains(((Number) rows.get(0).get("program_subject_id")).longValue(),
+                ((Number) rows.get(0).get("corequisite_program_subject_id")).longValue());
+        assertThat(jdbc.queryForObject("select count(*) from program_subject_corequisite", Integer.class)
+                - jdbc.queryForObject("select count(*) from program_subject_corequisite c join program_subject ps "
+                + "on ps.id = c.program_subject_id where ps.plan_id <> ?", Integer.class, draft.id())).isEqualTo(1);
+    }
+
+    private CurriculumPlanResponse expiredPlanOf(String name, LocalDate deadline) {
+        Program program = persistProgram(name);
+        ProgramSubject entry = addSubject(program, persistSubject("Materia " + name), 1);
+        Long planId = entry.getPlan().getId();
+        updateCurriculumPlanUseCase.update(planId, new UpdateCurriculumPlanRequest(null, LocalDate.of(2020, 1, 1), null, null, null, null));
+        return expireCurriculumPlanUseCase.expire(planId, new ExpireCurriculumPlanRequest(LocalDate.of(2021, 1, 1), deadline));
+    }
+
+    @Test
+    void expiredPlanRejectsNewStudentsButExistingStudentsContinueUntilTheDeadlineInclusive() {
+        LocalDate today = LocalDate.now(clock);
+        CurriculumPlanResponse deadlineToday = expiredPlanOf("Vencida hoy", today);
+        CurriculumPlanResponse deadlinePassed = expiredPlanOf("Vencida ayer", today.minusDays(1));
+        CurriculumPlanResponse noDeadline = expiredPlanOf("Vencida sin límite", null);
+
+        assertThatThrownBy(() -> curriculumPlanFinder.requireOpenForNewStudents(deadlineToday.id()))
+                .isInstanceOf(CurriculumPlanNotOpenForNewStudentsException.class);
+        assertThat(curriculumPlanFinder.allowsExistingStudentsToContinue(deadlineToday.id())).isTrue();
+        assertThat(curriculumPlanFinder.allowsExistingStudentsToContinue(deadlinePassed.id())).isFalse();
+        assertThat(curriculumPlanFinder.allowsExistingStudentsToContinue(noDeadline.id())).isTrue();
+    }
+
+    @Test
+    void activatingADraftExpiresThePreviousActivePlanAndKeepsItsStudentsReadable() {
+        Program program = persistProgram("Tecnicatura Reemplazo");
+        ProgramSubject entry = addSubject(program, persistSubject("Reemplazo"), 1);
+        Long previousId = entry.getPlan().getId();
+        CurriculumPlanResponse draft = createCurriculumPlanUseCase.createDraftVersion(program.getId(), draftRequest(previousId));
+
+        activateCurriculumPlanUseCase.activate(draft.id());
+        entityManager.flush();
+
+        assertThat(curriculumPlanRepository.findActiveByProgramId(program.getId()).orElseThrow().getId()).isEqualTo(draft.id());
+        assertThat(curriculumPlanFinder.allowsExistingStudentsToContinue(previousId)).isTrue();
     }
 }

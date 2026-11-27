@@ -83,7 +83,7 @@ public class ProgramService {
                 || request.getTotalHoursRequired() != null;
         CurriculumPlan currentPlan = changesTotals ? currentPlanProvider.currentPlanOf(program) : null;
         if (currentPlan != null) {
-            editPolicy.requireStructureEditable(currentPlan);
+            currentPlan = editPolicy.lockEditableStructureOf(currentPlan.getId());
         }
         Optional.ofNullable(request.getTotalYears()).ifPresent(program::setTotalYears);
         adjustIfChanged(program, OfferingFee.MONTHLY_INSTALLMENT, request.getPrice(), actor, listPriceReader.findProgramTuition(program.getId()));

@@ -385,6 +385,8 @@ export const DOMAIN_ERROR_MESSAGES = {
   PENDING_COURSE_ENROLLMENT_APPLICATION: 'Hay una inscripción al curso pendiente de aprobación.',
   PREREQUISITE_ALREADY_EXISTS: 'Esa correlatividad ya existe.',
   PUBLISHED_GRADES_INCOMPLETE: 'Faltan publicar evaluaciones: no se puede confirmar el cierre todavía.',
+  CURRICULUM_PLAN_NOT_FOUND: 'No encontramos el plan de estudios.',
+  CURRICULUM_PLAN_WITHOUT_SUBJECTS: 'El plan de estudios no tiene materias: agregá al menos una antes de activarlo.',
   CURRICULUM_PLAN_LOCKED: 'El plan de estudios tiene alumnos matriculados y no se puede editar. Creá una versión nueva del plan.',
   CURRICULUM_PLAN_NOT_OPEN_FOR_NEW_STUDENTS: 'El plan de estudios no admite alumnos nuevos.',
   INVALID_CURRICULUM_PLAN_TRANSITION: 'El plan de estudios no puede pasar a ese estado.',

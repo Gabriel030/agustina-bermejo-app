@@ -104,10 +104,14 @@ public class CurriculumPlan {
         return status == CurriculumPlanStatus.DRAFT;
     }
 
-    public void activate() {
+    public void requireActivatable() {
         if (status != CurriculumPlanStatus.DRAFT) {
             throw new InvalidCurriculumPlanTransitionException(id, status.name(), CurriculumPlanStatus.ACTIVE.name());
         }
+    }
+
+    public void activate() {
+        requireActivatable();
         status = CurriculumPlanStatus.ACTIVE;
     }
 

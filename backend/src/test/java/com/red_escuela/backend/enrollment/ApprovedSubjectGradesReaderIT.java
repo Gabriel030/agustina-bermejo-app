@@ -111,6 +111,7 @@ class ApprovedSubjectGradesReaderIT extends AbstractIntegrationTest {
         Subject subject = fixtures.subject();
         ProgramSubject entry = new ProgramSubject();
         entry.setProgram(program);
+        entry.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
         entry.setSubject(subject);
         entry.setCredits(4);
         entry.setCurricularYear(year);

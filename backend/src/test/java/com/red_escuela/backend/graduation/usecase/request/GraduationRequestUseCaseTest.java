@@ -131,6 +131,7 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
         entityManager.persist(subject);
         ProgramSubject programSubject = new ProgramSubject();
         programSubject.setProgram(program);
+        programSubject.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
         programSubject.setSubject(subject);
         programSubject.setCredits(0);
         programSubject.setCurricularYear(1);
@@ -180,6 +181,7 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
 
         ProgramSubject ps = new ProgramSubject();
         ps.setProgram(program);
+        ps.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
         ps.setSubject(subject);
         ps.setCredits(10);
         ps.setCurricularYear(1);

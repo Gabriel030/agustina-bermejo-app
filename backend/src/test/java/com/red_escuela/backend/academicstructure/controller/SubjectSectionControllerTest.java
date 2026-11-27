@@ -123,6 +123,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
 
         ProgramSubject entradaA = new ProgramSubject();
         entradaA.setProgram(carreraA);
+        entradaA.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(carreraA));
         entradaA.setSubject(subject);
         entradaA.setCurricularYear(1);
         entradaA.setCurricularTerm(CurricularTerm.FIRST);
@@ -131,6 +132,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
 
         ProgramSubject entradaB = new ProgramSubject();
         entradaB.setProgram(carreraB);
+        entradaB.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(carreraB));
         entradaB.setSubject(subject);
         entradaB.setCurricularYear(2);
         entradaB.setCurricularTerm(CurricularTerm.SECOND);

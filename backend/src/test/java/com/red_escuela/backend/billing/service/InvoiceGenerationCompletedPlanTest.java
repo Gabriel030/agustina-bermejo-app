@@ -133,6 +133,7 @@ class InvoiceGenerationCompletedPlanTest extends AbstractIntegrationTest {
         entityManager.persist(subject);
         ProgramSubject programSubject = new ProgramSubject();
         programSubject.setProgram(program);
+        programSubject.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
         programSubject.setSubject(subject);
         programSubject.setCredits(10);
         programSubject.setCurricularYear(1);

@@ -233,6 +233,7 @@ final class OwnershipFixtures {
         entityManager.persist(program);
         ProgramSubject planEntry = new ProgramSubject();
         planEntry.setProgram(program);
+        planEntry.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
         planEntry.setSubject(subject);
         planEntry.setCredits(10);
         planEntry.setCurricularYear(1);

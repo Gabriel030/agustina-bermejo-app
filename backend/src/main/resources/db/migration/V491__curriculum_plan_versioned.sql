@@ -36,33 +36,7 @@ create index idx_program_subject_program on program_subject (program_id);
 alter table program_subject drop constraint uk_program_subject_program_subject;
 alter table program_subject add constraint uk_program_subject_plan_subject unique (plan_id, subject_id);
 
-create function program_subject_assign_default_plan() returns trigger as $$
-begin
-    if new.plan_id is null then
-        select cp.id into new.plan_id
-        from curriculum_plan cp
-        where cp.program_id = new.program_id and cp.status = 'ACTIVE'
-        order by cp.version_number desc
-        limit 1;
-        if new.plan_id is null then
-            insert into curriculum_plan (program_id, version_number, name, status, valid_from, total_years,
-                                         total_credits_required, total_hours_required)
-            select p.id,
-                   coalesce((select max(c.version_number) from curriculum_plan c where c.program_id = p.id), 0) + 1,
-                   p.name || ' - Plan inicial', 'ACTIVE', current_date, p.total_years,
-                   coalesce(p.total_credits_required, 0), p.total_hours_required
-            from program p
-            where p.id = new.program_id
-            returning id into new.plan_id;
-        end if;
-    end if;
-    return new;
-end;
-$$ language plpgsql;
-
-create trigger trg_program_subject_assign_default_plan
-    before insert on program_subject
-    for each row execute function program_subject_assign_default_plan();
+create unique index uk_curriculum_plan_one_active_per_program on curriculum_plan (program_id) where status = 'ACTIVE';
 
 alter table curriculum_plan
     add constraint curriculum_plan_status_enum check (status in ('DRAFT', 'ACTIVE', 'EXPIRED')) not valid;

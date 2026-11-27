@@ -1,5 +1,7 @@
 package com.red_escuela.backend.academicstructure.service;
 
+import com.red_escuela.backend.academicstructure.domain.CurriculumPlanNotFoundException;
+import com.red_escuela.backend.academicstructure.domain.CurriculumPlanWithoutSubjectsException;
 import com.red_escuela.backend.academicstructure.domain.ProgramNotFoundException;
 import com.red_escuela.backend.academicstructure.dto.CreateCurriculumPlanRequest;
 import com.red_escuela.backend.academicstructure.dto.CreateProgramSubjectRequest;
@@ -12,7 +14,6 @@ import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubjectCorequisite;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubjectPrerequisite;
-import com.red_escuela.backend.academicstructure.domain.CurriculumPlanNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.CurriculumPlanRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramSubjectCorequisiteRepository;
@@ -21,6 +22,8 @@ import com.red_escuela.backend.academicstructure.repository.ProgramSubjectReposi
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -36,6 +39,7 @@ public class CurriculumPlanService {
     private final ProgramSubjectCorequisiteRepository corequisiteRepository;
     private final CurriculumPlanEditPolicy editPolicy;
     private final ProgramSubjectService programSubjectService;
+    private final Clock clock;
 
     public CurriculumPlanService(ProgramRepository programRepository,
                                  CurriculumPlanRepository curriculumPlanRepository,
@@ -43,7 +47,8 @@ public class CurriculumPlanService {
                                  ProgramSubjectPrerequisiteRepository prerequisiteRepository,
                                  ProgramSubjectCorequisiteRepository corequisiteRepository,
                                  CurriculumPlanEditPolicy editPolicy,
-                                 ProgramSubjectService programSubjectService) {
+                                 ProgramSubjectService programSubjectService,
+                                 Clock clock) {
         this.programRepository = programRepository;
         this.curriculumPlanRepository = curriculumPlanRepository;
         this.programSubjectRepository = programSubjectRepository;
@@ -51,11 +56,12 @@ public class CurriculumPlanService {
         this.corequisiteRepository = corequisiteRepository;
         this.editPolicy = editPolicy;
         this.programSubjectService = programSubjectService;
+        this.clock = clock;
     }
 
     @Transactional
     public CurriculumPlanResponse createDraftVersion(Long programId, CreateCurriculumPlanRequest request) {
-        Program program = programRepository.findById(programId).orElseThrow(() -> new ProgramNotFoundException(programId));
+        Program program = programRepository.findByIdForUpdate(programId).orElseThrow(() -> new ProgramNotFoundException(programId));
         Optional<CurriculumPlan> source = Optional.ofNullable(request.copyFromPlanId())
                 .map(id -> curriculumPlanRepository.findById(id).orElseThrow(() -> new CurriculumPlanNotFoundException(id)));
         source.ifPresent(plan -> requireSameProgram(plan, programId));
@@ -116,9 +122,10 @@ public class CurriculumPlanService {
 
     @Transactional
     public CurriculumPlanResponse update(Long planId, UpdateCurriculumPlanRequest request) {
-        CurriculumPlan plan = findOrThrow(planId);
+        CurriculumPlan plan = curriculumPlanRepository.findByIdForUpdate(planId)
+                .orElseThrow(() -> new CurriculumPlanNotFoundException(planId));
         if (request.changesTotals()) {
-            editPolicy.requireStructureEditable(plan);
+            editPolicy.lockEditableStructureOf(plan.getId());
             plan.changeTotals(request.totalYears(), request.totalCreditsRequired(), request.totalHoursRequired());
             adoptTotalsIfCurrent(plan);
         }
@@ -129,16 +136,28 @@ public class CurriculumPlanService {
 
     @Transactional
     public CurriculumPlanResponse activate(Long planId) {
-        CurriculumPlan plan = findOrThrow(planId);
+        CurriculumPlan plan = curriculumPlanRepository.findByIdForUpdate(planId)
+                .orElseThrow(() -> new CurriculumPlanNotFoundException(planId));
+        programRepository.findByIdForUpdate(plan.getProgram().getId());
+        plan.requireActivatable();
+        if (programSubjectRepository.findByPlanIdOrderById(planId).isEmpty()) {
+            throw new CurriculumPlanWithoutSubjectsException(planId);
+        }
+        LocalDate today = LocalDate.now(clock);
+        curriculumPlanRepository.findActiveByProgramId(plan.getProgram().getId()).ifPresent(previous -> {
+            previous.expire(today.isBefore(previous.getValidFrom()) ? previous.getValidFrom() : today, null);
+            curriculumPlanRepository.saveAndFlush(previous);
+        });
         plan.activate();
-        curriculumPlanRepository.save(plan);
-        adoptTotalsIfCurrent(plan);
+        curriculumPlanRepository.saveAndFlush(plan);
+        plan.getProgram().adoptCurriculumTotals(plan);
         return CurriculumPlanResponse.from(plan);
     }
 
     @Transactional
     public CurriculumPlanResponse expire(Long planId, ExpireCurriculumPlanRequest request) {
-        CurriculumPlan plan = findOrThrow(planId);
+        CurriculumPlan plan = curriculumPlanRepository.findByIdForUpdate(planId)
+                .orElseThrow(() -> new CurriculumPlanNotFoundException(planId));
         plan.expire(request.expiresOn(), request.graduationDeadline());
         return CurriculumPlanResponse.from(curriculumPlanRepository.save(plan));
     }

@@ -449,6 +449,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CURRENT_ACCOUNT_ENTRY_SOURCE_MISMATCH` | no | `CurrentAccountEntrySourceMismatchException` | billing |
 | `CURRICULUM_PLAN_LOCKED` | no | `CurriculumPlanLockedException` | academicstructure |
 | `CURRICULUM_PLAN_NOT_OPEN_FOR_NEW_STUDENTS` | no | `CurriculumPlanNotOpenForNewStudentsException` | academicstructure |
+| `CURRICULUM_PLAN_WITHOUT_SUBJECTS` | no | `CurriculumPlanWithoutSubjectsException` | academicstructure |
 | `CYCLE_ALREADY_IN_PROGRESS` | no | `CycleAlreadyInProgressException` | academicstructure |
 | `CYCLE_DECISION_IDEMPOTENCY_KEY_CONFLICT` | no | `CycleDecisionIdempotencyKeyConflictException` | academicstructure |
 | `CYCLE_NOT_EDITABLE` | no | `CycleNotEditableException` | academicstructure |
