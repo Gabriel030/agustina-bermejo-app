@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.usecase.sectionconfig;
 
+import com.red_escuela.backend.evaluation.domain.SectionRef;
 import com.red_escuela.backend.evaluation.dto.SectionEvaluationConfigResponse;
 import com.red_escuela.backend.evaluation.specialist.SectionEvaluationConfigApprovalTransaction;
 import com.red_escuela.backend.evaluation.specialist.SectionEvaluationConfigResponseAssembler;
@@ -19,6 +20,6 @@ public class ApproveSectionEvaluationConfigService implements ApproveSectionEval
 
     @Override
     public SectionEvaluationConfigResponse approve(ApproveSectionEvaluationConfigCommand command) {
-        return responseAssembler.assembleForStaff(transaction.approve(command.sectionId()));
+        return responseAssembler.assembleForStaff(transaction.approve(command.section()));
     }
 }

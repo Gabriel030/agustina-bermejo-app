@@ -105,7 +105,9 @@ public class CourseSectionService {
         if (request.maxAbsencePercent() != null) {
             section.setMaxAbsenceRate(request.maxAbsencePercent());
         }
-        return sectionRepository.save(section);
+        CourseSubjectSection saved = sectionRepository.save(section);
+        evaluationSetupPort.createInitialEvaluationDraftForCourseSection(saved);
+        return saved;
     }
 
     @Transactional

@@ -1,14 +1,16 @@
 package com.red_escuela.backend.evaluation.specialist;
 
 import com.red_escuela.backend.academicstructure.api.SectionInstructorFinder;
+import com.red_escuela.backend.academicstructure.api.SectionInstructorView;
 import com.red_escuela.backend.academicstructure.api.SectionTeachingFinder;
-import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.academicstructure.exception.NotOwnSectionException;
+import com.red_escuela.backend.evaluation.domain.SectionRef;
 import com.red_escuela.backend.evaluation.dto.SectionInstructorSummary;
 import com.red_escuela.backend.evaluation.exception.NotSectionLeadInstructorException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class SectionEvaluationConfigInstructorAccessChecker {
@@ -22,29 +24,34 @@ public class SectionEvaluationConfigInstructorAccessChecker {
         this.sectionInstructorFinder = sectionInstructorFinder;
     }
 
-    public void requireAssignedToSection(Long sectionId, Long instructorId) {
-        sectionTeachingFinder.requireTeaches(SectionKind.PROGRAM, sectionId, instructorId);
+    public void requireAssignedToSection(SectionRef section, Long instructorId) {
+        sectionTeachingFinder.requireTeaches(section.kind(), section.id(), instructorId);
     }
 
-    public void requireLeadInstructor(Long sectionId, Long instructorId) {
-        requireAssignedToSection(sectionId, instructorId);
-        if (!isLeadInstructor(sectionId, instructorId)) {
-            throw new NotSectionLeadInstructorException(instructorId, sectionId);
+    public void requireLeadInstructor(SectionRef section, Long instructorId) {
+        requireAssignedToSection(section, instructorId);
+        if (!isLeadInstructor(section, instructorId)) {
+            throw new NotSectionLeadInstructorException(instructorId, section.id());
         }
     }
 
-    public boolean isLeadInstructor(Long sectionId, Long instructorId) {
-        return sectionTeachingFinder.isLead(sectionId, instructorId);
+    public boolean isLeadInstructor(SectionRef section, Long instructorId) {
+        return sectionTeachingFinder.isLead(section.kind(), section.id(), instructorId);
     }
 
-    public List<SectionInstructorSummary> listInstructors(Long sectionId) {
-        return sectionInstructorFinder.findProgramSectionInstructors(sectionId).stream()
+    public List<SectionInstructorSummary> listInstructors(SectionRef section) {
+        List<SectionInstructorView> instructors = section.isCourse()
+                ? sectionInstructorFinder.findCourseSectionInstructors(section.id())
+                : sectionInstructorFinder.findProgramSectionInstructors(section.id());
+        return instructors.stream()
                 .map(SectionInstructorSummary::from)
                 .toList();
     }
 
-    public Long leadInstructorPersonId(Long sectionId) {
-        return sectionInstructorFinder.findProgramSectionLeadPersonId(sectionId)
-                .orElseThrow(() -> new NotOwnSectionException(null, sectionId));
+    public Long leadInstructorPersonId(SectionRef section) {
+        Optional<Long> leadPersonId = section.isCourse()
+                ? sectionInstructorFinder.findCourseSectionLeadPersonId(section.id())
+                : sectionInstructorFinder.findProgramSectionLeadPersonId(section.id());
+        return leadPersonId.orElseThrow(() -> new NotOwnSectionException(null, section.id()));
     }
 }

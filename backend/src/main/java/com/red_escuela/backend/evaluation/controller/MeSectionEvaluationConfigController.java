@@ -1,10 +1,12 @@
 package com.red_escuela.backend.evaluation.controller;
 
 import com.red_escuela.backend.academicstructure.entity.Instructor;
+import com.red_escuela.backend.evaluation.domain.SectionRef;
 import com.red_escuela.backend.evaluation.dto.SectionEvaluationConfigResponse;
 import com.red_escuela.backend.evaluation.dto.UpdateSectionEvaluationConfigRequest;
 import com.red_escuela.backend.evaluation.usecase.sectionconfig.GetMySectionEvaluationConfigCommand;
 import com.red_escuela.backend.evaluation.usecase.sectionconfig.GetMySectionEvaluationConfigUseCase;
+import com.red_escuela.backend.evaluation.usecase.sectionconfig.ListMyCourseSectionEvaluationConfigsUseCase;
 import com.red_escuela.backend.evaluation.usecase.sectionconfig.ListMySectionEvaluationConfigsUseCase;
 import com.red_escuela.backend.evaluation.usecase.sectionconfig.SaveSectionEvaluationConfigDraftCommand;
 import com.red_escuela.backend.evaluation.usecase.sectionconfig.SaveSectionEvaluationConfigDraftUseCase;
@@ -26,6 +28,7 @@ import java.util.List;
 public class MeSectionEvaluationConfigController {
 
     private final ListMySectionEvaluationConfigsUseCase listMySectionEvaluationConfigsUseCase;
+    private final ListMyCourseSectionEvaluationConfigsUseCase listMyCourseSectionEvaluationConfigsUseCase;
     private final GetMySectionEvaluationConfigUseCase getMySectionEvaluationConfigUseCase;
     private final SaveSectionEvaluationConfigDraftUseCase saveSectionEvaluationConfigDraftUseCase;
     private final SubmitSectionEvaluationConfigForApprovalUseCase submitSectionEvaluationConfigForApprovalUseCase;
@@ -33,11 +36,13 @@ public class MeSectionEvaluationConfigController {
 
     public MeSectionEvaluationConfigController(
             ListMySectionEvaluationConfigsUseCase listMySectionEvaluationConfigsUseCase,
+            ListMyCourseSectionEvaluationConfigsUseCase listMyCourseSectionEvaluationConfigsUseCase,
             GetMySectionEvaluationConfigUseCase getMySectionEvaluationConfigUseCase,
             SaveSectionEvaluationConfigDraftUseCase saveSectionEvaluationConfigDraftUseCase,
             SubmitSectionEvaluationConfigForApprovalUseCase submitSectionEvaluationConfigForApprovalUseCase,
             CurrentInstructorService currentInstructorService) {
         this.listMySectionEvaluationConfigsUseCase = listMySectionEvaluationConfigsUseCase;
+        this.listMyCourseSectionEvaluationConfigsUseCase = listMyCourseSectionEvaluationConfigsUseCase;
         this.getMySectionEvaluationConfigUseCase = getMySectionEvaluationConfigUseCase;
         this.saveSectionEvaluationConfigDraftUseCase = saveSectionEvaluationConfigDraftUseCase;
         this.submitSectionEvaluationConfigForApprovalUseCase = submitSectionEvaluationConfigForApprovalUseCase;
@@ -72,5 +77,36 @@ public class MeSectionEvaluationConfigController {
         Instructor instructor = currentInstructorService.resolveCurrentInstructor();
         return submitSectionEvaluationConfigForApprovalUseCase.submit(
                 new SubmitSectionEvaluationConfigForApprovalCommand(sectionId, instructor.getId()));
+    }
+
+    @GetMapping("/me/course-section-evaluation-configs")
+    @PreAuthorize("hasRole('DOCENTE')")
+    public List<SectionEvaluationConfigResponse> myCourseSections() {
+        return listMyCourseSectionEvaluationConfigsUseCase.list(currentInstructorService.resolveCurrentInstructor().getId());
+    }
+
+    @GetMapping("/me/course-section-evaluation-configs/{courseSectionId}")
+    @PreAuthorize("hasRole('DOCENTE')")
+    public SectionEvaluationConfigResponse getCourseSection(@PathVariable Long courseSectionId) {
+        Instructor instructor = currentInstructorService.resolveCurrentInstructor();
+        return getMySectionEvaluationConfigUseCase.get(
+                new GetMySectionEvaluationConfigCommand(SectionRef.course(courseSectionId), instructor.getId()));
+    }
+
+    @PutMapping("/me/course-section-evaluation-configs/{courseSectionId}")
+    @PreAuthorize("hasRole('DOCENTE')")
+    public SectionEvaluationConfigResponse saveCourseSectionDraft(
+            @PathVariable Long courseSectionId, @Valid @RequestBody UpdateSectionEvaluationConfigRequest request) {
+        Instructor instructor = currentInstructorService.resolveCurrentInstructor();
+        return saveSectionEvaluationConfigDraftUseCase.save(
+                new SaveSectionEvaluationConfigDraftCommand(SectionRef.course(courseSectionId), instructor.getId(), request));
+    }
+
+    @PostMapping("/me/course-section-evaluation-configs/{courseSectionId}/submit")
+    @PreAuthorize("hasRole('DOCENTE')")
+    public SectionEvaluationConfigResponse submitCourseSectionForApproval(@PathVariable Long courseSectionId) {
+        Instructor instructor = currentInstructorService.resolveCurrentInstructor();
+        return submitSectionEvaluationConfigForApprovalUseCase.submit(
+                new SubmitSectionEvaluationConfigForApprovalCommand(SectionRef.course(courseSectionId), instructor.getId()));
     }
 }

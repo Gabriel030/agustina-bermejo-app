@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.controller;
 
+import com.red_escuela.backend.evaluation.domain.SectionRef;
 import com.red_escuela.backend.evaluation.dto.RejectSectionEvaluationConfigRequest;
 import com.red_escuela.backend.evaluation.dto.SectionEvaluationConfigResponse;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfigStatus;
@@ -48,7 +49,7 @@ public class SectionEvaluationConfigController {
     @GetMapping("/section-evaluation-configs/{sectionId}")
     @RequiresPermission(code = "evaluation.read_evaluation_settings", legacyRoles = "ROLE_DIRECTOR,ROLE_ADMINISTRATIVO")
     public SectionEvaluationConfigResponse get(@PathVariable Long sectionId) {
-        return getSectionEvaluationConfigForStaffUseCase.get(sectionId);
+        return getSectionEvaluationConfigForStaffUseCase.get(SectionRef.program(sectionId));
     }
 
     @PostMapping("/section-evaluation-configs/{sectionId}/approve")

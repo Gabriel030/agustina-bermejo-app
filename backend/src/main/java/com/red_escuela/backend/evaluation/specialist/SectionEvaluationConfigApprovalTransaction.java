@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.specialist;
 
+import com.red_escuela.backend.evaluation.domain.SectionRef;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfigStatus;
 import com.red_escuela.backend.evaluation.events.SectionEvaluationConfigApprovedEvent;
@@ -34,8 +35,8 @@ public class SectionEvaluationConfigApprovalTransaction {
     }
 
     @Transactional
-    public SectionEvaluationConfig approve(Long sectionId) {
-        SectionEvaluationConfig config = configFinder.findOrThrow(sectionId);
+    public SectionEvaluationConfig approve(SectionRef section) {
+        SectionEvaluationConfig config = configFinder.findOrThrow(section);
         if (config.getStatus() != SectionEvaluationConfigStatus.PENDING_APPROVAL) {
             throw new InvalidSectionEvaluationConfigTransitionException(config.getStatus(), "aprobar");
         }
@@ -44,7 +45,7 @@ public class SectionEvaluationConfigApprovalTransaction {
 
         finalCallCreator.createFinalCalls(config);
 
-        Long leadInstructorPersonId = instructorAccess.leadInstructorPersonId(sectionId);
+        Long leadInstructorPersonId = instructorAccess.leadInstructorPersonId(section);
         eventPublisher.publishEvent(SectionEvaluationConfigApprovedEvent.approvedFor(saved, leadInstructorPersonId));
         return saved;
     }

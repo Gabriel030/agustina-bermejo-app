@@ -34,7 +34,7 @@ class MySectionEvaluationConfigDeadlineTest {
         var finder = mock(SectionEvaluationConfigFinder.class);
         var assembler = mock(SectionEvaluationConfigResponseAssembler.class);
         var config = mock(SectionEvaluationConfig.class);
-        when(finder.findOrThrow(2L)).thenReturn(config);
+        when(finder.findOrThrow(com.red_escuela.backend.evaluation.domain.SectionRef.program(2L))).thenReturn(config);
         when(assembler.assembleForInstructor(config, 7L)).thenReturn(responseStartingAt(LocalDateTime.of(2026, 3, 2, 18, 30)));
 
         var response = new GetMySectionEvaluationConfigService(
