@@ -31,6 +31,9 @@ public class ProgramAdmissionInvoiceIssuer {
 
     @Transactional
     public Invoice issueAdmissionInvoice(Long studentId, Program program, ProgramCohort cohort) {
+        if (cohort.getTemplateId() == null) {
+            return null;
+        }
         ProgramYearBillingTemplate template = templateService.findOrThrow(cohort.getTemplateId());
         return switch (invoiceIssuingService.issueInvoiceInCallerTransaction(
                 InvoiceIssuingRequestFactory.createProgramAdmissionRequest(studentId, program, cohort, template,

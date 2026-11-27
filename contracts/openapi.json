@@ -5486,6 +5486,28 @@
         "required" : [ "category", "credits", "subjectId" ],
         "type" : "object"
       },
+      "CreateProgramTermCohortRequest" : {
+        "properties" : {
+          "admissionEnd" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "admissionStart" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "cursadaStart" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "intake" : {
+            "enum" : [ "FIRST", "SECOND" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "admissionEnd", "admissionStart", "cursadaStart", "intake" ],
+        "type" : "object"
+      },
       "CreateProgramYearBillingTemplateRequest" : {
         "properties" : {
           "configuration" : {
@@ -13895,6 +13917,43 @@
             "type" : [ "integer", "null" ]
           }
         },
+        "type" : "object"
+      },
+      "ProgramTermCohortResponse" : {
+        "properties" : {
+          "admissionEnd" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "admissionStart" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "cursadaStart" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "intake" : {
+            "type" : "string"
+          },
+          "programId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "termId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "admissionEnd", "admissionStart", "createdAt", "cursadaStart", "id", "intake", "programId", "termId" ],
         "type" : "object"
       },
       "ProgramYearBillingTemplateResponse" : {
@@ -92328,6 +92387,151 @@
           }
         },
         "tags" : [ "program-year-billing-template-controller" ]
+      }
+    },
+    "/programs/{programId}/terms/{termId}/cohorts" : {
+      "post" : {
+        "operationId" : "ProgramCohort_createProgramTermCohort",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "programId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "termId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateProgramTermCohortRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProgramTermCohortResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "program-cohort-controller" ]
       }
     },
     "/promotions" : {

@@ -64,7 +64,7 @@ describe('short role layouts', () => {
     expect(screen.getByRole('navigation', { name: 'Principal' }).parentElement).toHaveClass(barClass);
     const trigger = screen.getByRole('button', { name: 'Abrir menú' });
     expect(trigger).toHaveClass(drawerClass);
-    expect(trigger.closest('.mx-auto.w-full.max-w-none')).toHaveClass(drawerClass);
+    expect(trigger.closest('.pt-4.px-4')).toHaveClass(drawerClass);
   });
 
   it('marks the active route as current', () => {

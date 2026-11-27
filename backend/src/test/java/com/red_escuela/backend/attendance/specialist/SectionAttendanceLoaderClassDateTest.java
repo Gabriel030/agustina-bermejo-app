@@ -1,5 +1,6 @@
 package com.red_escuela.backend.attendance.specialist;
 
+import com.red_escuela.backend.academicstructure.api.SectionClosureGuard;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
@@ -36,7 +37,8 @@ class SectionAttendanceLoaderClassDateTest {
     private final Instructor instructor = mock(Instructor.class);
 
     private final SectionAttendanceLoader loader = new SectionAttendanceLoader(
-            attendanceRecorder, sectionAccess, classSessionUpserter, enrollmentFinder, classSessionRepository, classDateValidator);
+            attendanceRecorder, sectionAccess, classSessionUpserter, enrollmentFinder, classSessionRepository, classDateValidator,
+            mock(SectionClosureGuard.class));
 
     private CargarAsistenciaRequest request() {
         return new CargarAsistenciaRequest(CLASS_DATE, List.of(new AttendanceEntry(10L, AttendanceStatus.PRESENT)), null, null);

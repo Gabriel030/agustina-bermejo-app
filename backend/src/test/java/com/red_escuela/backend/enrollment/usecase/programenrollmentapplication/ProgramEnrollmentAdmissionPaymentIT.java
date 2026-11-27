@@ -146,6 +146,8 @@ class ProgramEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
             com.red_escuela.backend.billing.planning.TestTemplateTerms.publish(entityManager, template);
             ProgramCohort cohort = new ProgramCohort();
             cohort.setTemplateId(template.getId());
+        cohort.setProgramId(template.programId());
+        cohort.setTermId(template.termId());
             cohort.setIntake(CohortIntake.FIRST);
             cohort.setAdmissionStart(LocalDate.now().minusDays(30));
             cohort.setAdmissionEnd(LocalDate.now().plusDays(30));

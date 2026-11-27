@@ -95,7 +95,7 @@ public class RecurringFeeWindowService {
         if (managed.getCurrentBillingTemplate() != null) {
             return managed.getCurrentBillingTemplate();
         }
-        return managed.getProgramCohort() != null ? templateRepository.getReferenceById(managed.getProgramCohort().getTemplateId()) : null;
+        return managed.getProgramCohort() != null && managed.getProgramCohort().getTemplateId() != null ? templateRepository.getReferenceById(managed.getProgramCohort().getTemplateId()) : null;
     }
 
     private ProgramEnrollment managedProgramEnrollment(ProgramEnrollment programEnrollment) {

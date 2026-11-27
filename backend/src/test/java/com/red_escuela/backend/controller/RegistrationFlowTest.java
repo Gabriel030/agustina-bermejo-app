@@ -126,6 +126,8 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
 
         ProgramCohort cohort = new ProgramCohort();
         cohort.setTemplateId(template.getId());
+        cohort.setProgramId(template.programId());
+        cohort.setTermId(template.termId());
         cohort.setIntake(CohortIntake.FIRST);
         cohort.setAdmissionStart(LocalDate.now().minusDays(30));
         cohort.setAdmissionEnd(LocalDate.now().plusDays(30));
