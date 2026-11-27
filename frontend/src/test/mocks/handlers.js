@@ -309,6 +309,9 @@ export const handlers = [
   http.post(`${API}/certificate-templates/:kind/preview`, () => pdfResponse()),
   http.get(`${API}/regular-certificates`, () => HttpResponse.json([])),
   http.get(`${API}/me/attendance-change-requests`, () => HttpResponse.json([])),
+  http.get(`${API}/attendance/change-requests/resolved`, () =>
+    HttpResponse.json({ items: [], page: 0, size: 20, totalElements: 0 }),
+  ),
   http.get(`${API}/institution/academic-settings`, () =>
     HttpResponse.json({
       announcementEmailEnabled: false,
