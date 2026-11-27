@@ -286,6 +286,51 @@ class RegistrationFlowTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void anotherStudentCannotUploadDocumentsToSomeoneElsesProgramApplication() throws Exception {
+        Long institutionId = persistInstitution();
+        Program program = persistProgram();
+        ProgramCohort cohort = persistCohort(program);
+        persistPriceRevision(program, null, FeeType.ENROLLMENT_FEE, BigDecimal.valueOf(50000));
+        String ownerToken = objectMapper.readTree(mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRegistration("owner", institutionId))))
+                .andReturn().getResponse().getContentAsString()).get("accessToken").asString("");
+        String strangerToken = objectMapper.readTree(mockMvc.perform(post("/auth/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(validRegistration("stranger", institutionId))))
+                .andReturn().getResponse().getContentAsString()).get("accessToken").asString("");
+        giveDni("owner");
+        giveDni("stranger");
+        Long applicationId = objectMapper.readTree(mockMvc.perform(post("/me/program-enrollment-applications")
+                        .param("programId", program.getId().toString())
+                        .param("cohortId", cohort.getId().toString())
+                        .header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString()).get("id").asLong();
+
+        var foreign = mockMvc.perform(multipart("/me/program-enrollment-applications/" + applicationId + "/documents")
+                        .file(new MockMultipartFile("file", "dni.pdf", "application/pdf", "%PDF-1.4 test".getBytes()))
+                        .param("type", "DNI_FRENTE")
+                        .header("Authorization", "Bearer " + strangerToken))
+                .andReturn().getResponse();
+        var missing = mockMvc.perform(multipart("/me/program-enrollment-applications/999999/documents")
+                        .file(new MockMultipartFile("file", "dni.pdf", "application/pdf", "%PDF-1.4 test".getBytes()))
+                        .param("type", "DNI_FRENTE")
+                        .header("Authorization", "Bearer " + strangerToken))
+                .andReturn().getResponse();
+
+        org.assertj.core.api.Assertions.assertThat(foreign.getStatus()).isEqualTo(404);
+        org.assertj.core.api.Assertions.assertThat(missing.getStatus()).isEqualTo(404);
+        org.assertj.core.api.Assertions.assertThat(foreign.getContentAsString()).isEqualTo(missing.getContentAsString());
+        mockMvc.perform(get("/me/documents").header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+        mockMvc.perform(get("/me/documents").header("Authorization", "Bearer " + strangerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isEmpty());
+    }
+
+    @Test
     void fullFlowApprovedProgramRequest() throws Exception {
         Long institutionId = persistInstitution();
         Program program = persistProgram();
