@@ -318,7 +318,7 @@ export function SolicitudesAsistencia() {
       </div>
 
       <Tabs value={section} onValueChange={setSection}>
-        <TabsList variant="segmented" className="w-full px-1 sm:w-fit">
+        <TabsList variant="line">
           <TabsTrigger value="pending" className="flex-1">
             Pendientes
             <TabCount count={pendingTotal} />

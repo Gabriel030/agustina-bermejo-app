@@ -117,7 +117,7 @@ export function StaffAnnouncementReaders() {
     body = (
       <GlassCard className="flex flex-col gap-3 p-3 md:p-5">
         <Tabs value={tab} onValueChange={changeTab}>
-          <TabsList variant="segmented" className="w-full px-1 sm:w-fit">
+          <TabsList variant="line">
             <TabsTrigger value="unread" className="flex-1">
               Sin abrir
               <TabCount count={unread.length} />

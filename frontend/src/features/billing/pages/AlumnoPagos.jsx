@@ -95,7 +95,7 @@ export function AlumnoPagos() {
   return (
     <PageContainer>
       <Tabs value={tab} onValueChange={(next) => setSearchParams(next === 'cuotas' ? {} : { tab: next }, { replace: true })} className="gap-4">
-        <TabsList variant="segmented" className="w-full sm:w-fit">
+        <TabsList variant="line">
           <TabsTrigger value="cuotas" className="flex-1">Cuotas</TabsTrigger>
           <TabsTrigger value="descuentos" className="flex-1">Mis descuentos</TabsTrigger>
         </TabsList>

@@ -191,7 +191,7 @@ export function AdministrativoHolidays() {
             <div className="flex min-w-0 flex-col gap-2">
               {!isDesktop && (
                 <Tabs value={scope} onValueChange={setScope}>
-                  <TabsList variant="segmented" className="w-full">
+                  <TabsList variant="line">
                     <TabsTrigger value="month">Este mes</TabsTrigger>
                     <TabsTrigger value="year">Todo el año</TabsTrigger>
                   </TabsList>

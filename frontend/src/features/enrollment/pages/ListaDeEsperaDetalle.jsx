@@ -252,7 +252,7 @@ export function ListaDeEsperaDetalle() {
         </Notice>
       )}
       <Tabs className="gap-4" value={tab} onValueChange={setTab}>
-        <TabsList variant="segmented" className="group-data-horizontal/tabs:h-12 p-0 md:group-data-horizontal/tabs:h-8 md:p-[3px]">
+        <TabsList variant="line">
           <TabsTrigger value="queue" className="h-full md:h-[calc(100%-1px)]">Cola</TabsTrigger>
           <TabsTrigger value="history" className="h-full md:h-[calc(100%-1px)]">Historial</TabsTrigger>
         </TabsList>
