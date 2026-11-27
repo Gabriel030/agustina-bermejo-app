@@ -405,7 +405,7 @@ export function CarreraDetalle() {
         )}
 
         <Tabs value={activeTab} onValueChange={(tab) => setSearchParams({ tab }, { replace: true })}>
-          <TabsList variant="segmented">
+          <TabsList variant="line">
             <TabsTrigger value="plan">Plan de estudios</TabsTrigger>
             <TabsTrigger value="anios">Años lectivos</TabsTrigger>
             <TabsTrigger value="cohortes">Cohortes</TabsTrigger>

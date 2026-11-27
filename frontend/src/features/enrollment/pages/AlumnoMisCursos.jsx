@@ -83,7 +83,7 @@ export function AlumnoMisCursos() {
   return (
     <PageContainer title="Mis cursos">
       <Tabs value={tab} onValueChange={changeTab}>
-        <TabsList variant="segmented">
+        <TabsList variant="line">
           <TabsTrigger value="en-curso">
             En curso <TabCount count={inProgress.length} />
           </TabsTrigger>

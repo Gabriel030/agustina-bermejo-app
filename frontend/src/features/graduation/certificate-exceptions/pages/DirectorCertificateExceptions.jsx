@@ -59,7 +59,7 @@ export function DirectorCertificateExceptions() {
       }
     >
       <Tabs className="gap-4" value={tab} onValueChange={setTab}>
-        <TabsList variant="segmented">
+        <TabsList variant="line">
           <TabsTrigger value="pendientes">
             Pendientes <TabCount count={pendingRows?.length} />
           </TabsTrigger>

@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
 
 // Mide la posición del elemento activo dentro de un contenedor (leyendo el DOM
 // vía MutationObserver, no el estado de quien lo usa) para poder deslizar un
-// fondo detrás de él — usado por TabsList variant="segmented" y por el
+// fondo detrás de él — usado por TabsList variant="line" y por el
 // Sidebar. `activeSelector` identifica al elemento activo actual (ej. un
 // data-state o una clase que ya cambia sola con la navegación/selección).
 export function useSlidingIndicator(activeSelector) {

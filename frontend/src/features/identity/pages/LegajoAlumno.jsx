@@ -113,7 +113,7 @@ export function LegajoAlumno() {
 
           {!isError && (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList variant="segmented" className="w-full">
+            <TabsList variant="line">
               <TabsTrigger value="datos-personales" className="flex-1">
                 Datos personales
               </TabsTrigger>

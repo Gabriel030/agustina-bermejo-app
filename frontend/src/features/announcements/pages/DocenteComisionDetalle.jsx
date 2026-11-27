@@ -117,7 +117,7 @@ export function DocenteComisionDetalle() {
       </div>
 
       <Tabs value={tab} onValueChange={cambiarTab}>
-        <TabsList variant="segmented">
+        <TabsList variant="line">
           {!esCurso && <TabsTrigger value="evaluacion">Evaluación</TabsTrigger>}
           <TabsTrigger value="avisos">Avisos</TabsTrigger>
           <TabsTrigger value="alumnos">Alumnos</TabsTrigger>
