@@ -4,7 +4,7 @@ import { buildBrowserHandlers } from '@/mocks/browserHandlers';
 import { MOCK_ROLE_STORAGE_KEY, resolveMockRole } from '@/mocks/mockRoles';
 
 export async function enableBrowserMocking() {
-  const roleKey = resolveMockRole({ search: window.location.search, storage: window.localStorage });
+  const roleKey = resolveMockRole({ search: window.location.search, storage: window.localStorage, envRole: import.meta.env.VITE_MOCK_ROLE });
   window.localStorage.setItem(MOCK_ROLE_STORAGE_KEY, roleKey);
   markSessionActive();
   const worker = setupWorker(...buildBrowserHandlers(roleKey));

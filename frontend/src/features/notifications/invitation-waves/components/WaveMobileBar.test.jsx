@@ -5,7 +5,6 @@ import { server } from '@/test/mocks/server';
 import { InvitationWaveDetailPage } from '../pages/InvitationWaveDetailPage';
 import { buildWave } from '../test/fixtures';
 import { lifecycleHandlers, sampleRecipients } from '../test/handlers';
-import { setRetryFailedAvailableForTests } from '../lib/invitationWaveActions';
 import { renderInvitationScreen } from '../test/render';
 import { restoreViewport, useCompactViewport } from '@/test/compactViewport';
 
@@ -15,13 +14,11 @@ vi.mock('sonner', () => ({ toast: toastMock }));
 
 beforeEach(() => {
   useCompactViewport();
-  setRetryFailedAvailableForTests(true);
   toastMock.success.mockClear();
   toastMock.error.mockClear();
 });
 
 afterEach(() => {
-  setRetryFailedAvailableForTests(false);
   restoreViewport();
 });
 

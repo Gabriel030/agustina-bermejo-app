@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -8,26 +8,23 @@ import { takeContractDeviations } from '@/test/contract/withContract';
 import { installFixedClock } from '@/test/fixedClock';
 import { InvitationWaveDetailPage } from './InvitationWaveDetailPage';
 import { API, SETTINGS, buildWave, springPage } from '../test/fixtures';
-import { setRetryFailedAvailableForTests } from '../lib/invitationWaveActions';
 import { invitationWaveHandlers, lifecycleHandlers, sampleRecipients } from '../test/handlers';
-import { acceptPendingRetryEndpoint, renderInvitationScreen } from '../test/render';
+import { failOnContractDeviations, renderInvitationScreen } from '../test/render';
 
 const toastMock = vi.hoisted(() => ({ success: vi.fn(), error: vi.fn() }));
 vi.mock('sonner', () => ({ toast: toastMock }));
 const saveBlobMock = vi.hoisted(() => vi.fn());
 vi.mock('@/lib/saveBlob', () => ({ saveBlob: saveBlobMock }));
 
-acceptPendingRetryEndpoint();
+failOnContractDeviations();
 installFixedClock({ now: '2026-11-23T12:00:00-03:00', advanceWithRealTime: true });
 
 beforeEach(() => {
-  setRetryFailedAvailableForTests(true);
   toastMock.success.mockClear();
   toastMock.error.mockClear();
   saveBlobMock.mockClear();
 });
 
-afterEach(() => setRetryFailedAvailableForTests(false));
 
 const PATH = '/director/invitaciones/:waveId';
 
@@ -46,7 +43,7 @@ describe('InvitationWaveDetailPage by state', () => {
   it.each([
     ['DRAFT', 'Borrador', /Borrador: todavía no se envió ningún mail/, ['Iniciar oleada', 'Exportar reporte CSV', 'Cancelar oleada']],
     ['RUNNING', 'En curso', /En curso: la próxima tanda de 30 mails sale hoy a las 14:30/, ['Pausar', 'Reintentar fallidos (6)', 'Exportar reporte CSV', 'Cancelar oleada']],
-    ['PAUSED', 'Pausada', /Pausada: no se envía nada hasta que la reanudes/, ['Reanudar', 'Reintentar fallidos (6)', 'Exportar reporte CSV', 'Cancelar oleada']],
+    ['PAUSED', 'Pausada', /Pausada: no se envía nada hasta que la reanudes/, ['Reanudar', 'Exportar reporte CSV', 'Cancelar oleada']],
     ['COMPLETED', 'Completada', /Completada: se procesaron todos los destinatarios/, ['Exportar reporte CSV']],
     ['CANCELLED', 'Cancelada', /Cancelada el 23\/11\/2026\. Los pendientes quedaron liberados/, ['Exportar reporte CSV']],
   ])('%s shows its banner and only the actions that make sense', async (status, label, banner, actions) => {
@@ -59,11 +56,11 @@ describe('InvitationWaveDetailPage by state', () => {
     expect(names).toEqual(actions);
   });
 
-  it('offersRetryOnACompletedWaveOnlyWhenSomethingFailed', async () => {
-    renderDetail({ wave: buildWave('COMPLETED', { failedTotal: 2 }) });
+  it('offersRetryOnARunningWaveOnlyWhenSomethingFailed', async () => {
+    renderDetail({ wave: buildWave('RUNNING', { failedTotal: 0 }) });
 
     await screen.findByRole('heading', { level: 1 });
-    expect(within(desktopActions()).getByRole('button', { name: 'Reintentar fallidos (2)' })).toBeInTheDocument();
+    expect(within(desktopActions()).queryByRole('button', { name: /Reintentar fallidos/ })).not.toBeInTheDocument();
   });
 
   it('describesTheDraftWithTheBatchAndTheCreationDate', async () => {
@@ -146,14 +143,6 @@ describe('InvitationWaveDetailPage recipients', () => {
     expect(await screen.findByText('Persona N° 4001')).toBeInTheDocument();
     expect(screen.getByText(/No tenés permiso para ver datos personales/)).toBeInTheDocument();
     expect(screen.queryByText(/ejemplo\.edu\.ar/)).not.toBeInTheDocument();
-  });
-
-  it('hidesRetryFailedWhileTheEndpointIsNotAvailable', async () => {
-    setRetryFailedAvailableForTests(false);
-    renderDetail({ wave: buildWave('RUNNING') });
-    await screen.findByRole('heading', { level: 1 });
-
-    expect(within(desktopActions()).queryByRole('button', { name: /Reintentar fallidos/ })).not.toBeInTheDocument();
   });
 
   describe.each([
@@ -308,7 +297,27 @@ describe('InvitationWaveDetailPage actions', () => {
     await userEvent.click(within(dialog).getByRole('button', { name: 'Reintentar 6' }));
 
     await waitFor(() => expect(lifecycle.state.calls).toEqual(['retry-failed']));
-    await waitFor(() => expect(toastMock.success).toHaveBeenCalledWith('Reintento programado', { description: '6 envíos vuelven a la cola.' }));
+    await waitFor(() => expect(toastMock.success).toHaveBeenCalledWith('Reintento programado', { description: '3 destinatarios en cola de reintento' }));
+  });
+
+  it('showsANeutralMessageWhenNothingWasRequeued', async () => {
+    renderDetail({ wave: buildWave('RUNNING'), setup: { overrides: { 'retry-failed': () => HttpResponse.json({ requeued: 0 }) } } });
+    await screen.findByRole('heading', { level: 1 });
+
+    await userEvent.click(within(desktopActions()).getByRole('button', { name: 'Reintentar fallidos (6)' }));
+    await userEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Reintentar 6' }));
+
+    await waitFor(() => expect(toastMock.success).toHaveBeenCalledWith('Reintento programado', { description: 'No había destinatarios para reintentar ahora' }));
+  });
+
+  it('explainsThatTheWaveIsNotRunningWhenRetryIsRejected', async () => {
+    renderDetail({ wave: buildWave('RUNNING'), setup: { overrides: { 'retry-failed': () => HttpResponse.json(errorBody('INVITATION_WAVE_NOT_RUNNING'), { status: 409 }) } } });
+    await screen.findByRole('heading', { level: 1 });
+
+    await userEvent.click(within(desktopActions()).getByRole('button', { name: 'Reintentar fallidos (6)' }));
+    await userEvent.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: 'Reintentar 6' }));
+
+    await waitFor(() => expect(toastMock.error).toHaveBeenCalledWith('La oleada no está en curso, por eso no se puede reintentar.', expect.anything()));
   });
 
   it('showsTheDomainMessageWithItsCodeAndRefreshesWhenTheTransitionIsInvalid', async () => {
@@ -376,7 +385,7 @@ describe('InvitationWaveDetailPage permissions', () => {
 
     const reason = screen.getByText(/necesitás el permiso/);
     expect(reason).toHaveTextContent('notification.send_invitation_wave');
-    for (const name of ['Reanudar', 'Reintentar fallidos (6)', 'Cancelar oleada']) {
+    for (const name of ['Reanudar', 'Cancelar oleada']) {
       const button = within(desktopActions()).getByRole('button', { name });
       expect(button).toHaveAttribute('aria-disabled', 'true');
       expect(button).toHaveAccessibleDescription(/necesitás el permiso/);
