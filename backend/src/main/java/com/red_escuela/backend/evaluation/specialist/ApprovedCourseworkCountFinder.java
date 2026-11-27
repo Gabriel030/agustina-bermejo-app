@@ -19,9 +19,13 @@ public class ApprovedCourseworkCountFinder {
         if (kind != SectionKind.PROGRAM) {
             return 0;
         }
-        return configRepository.findBySubjectSectionId(sectionId)
-                .filter(config -> config.getStatus() == SectionEvaluationConfigStatus.APPROVED)
-                .map(SectionEvaluationConfig::getTpCount)
-                .orElse(0);
+        return expectedCountOf(configRepository.findBySubjectSectionId(sectionId).orElse(null));
+    }
+
+    public int expectedCountOf(SectionEvaluationConfig config) {
+        if (config == null || config.getStatus() != SectionEvaluationConfigStatus.APPROVED || config.getTpCount() == null) {
+            return 0;
+        }
+        return config.getTpCount();
     }
 }

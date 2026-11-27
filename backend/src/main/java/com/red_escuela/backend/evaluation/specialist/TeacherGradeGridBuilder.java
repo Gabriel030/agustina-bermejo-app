@@ -208,7 +208,14 @@ public class TeacherGradeGridBuilder {
                 scheme.getMinRegularGrade(),
                 scheme.getMinApprovalGrade(),
                 scheme.getPromotionMinGrade(),
-                columns(scheme, courseworkCountFinder.findExpectedCount(kind, sectionId), config, publications), students, correctionDeadline);
+                columns(scheme, tpColumnCount(kind, scheme, config), config, publications), students, correctionDeadline);
+    }
+
+    private int tpColumnCount(SectionKind kind, EvaluationScheme scheme, SectionEvaluationConfig config) {
+        if (kind == SectionKind.PROGRAM) {
+            return courseworkCountFinder.expectedCountOf(config);
+        }
+        return scheme.getTpCountExpected() == null ? 0 : scheme.getTpCountExpected();
     }
 
     private List<GradeGridColumnResponse> columns(EvaluationScheme scheme, int tps, SectionEvaluationConfig config,
