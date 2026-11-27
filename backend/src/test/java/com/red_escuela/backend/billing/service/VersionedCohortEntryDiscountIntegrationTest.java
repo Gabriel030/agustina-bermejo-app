@@ -6,8 +6,8 @@ import com.red_escuela.backend.billing.authorization.usecase.ApproveAuthorizatio
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersionStatus;
 import com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository;
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
-import com.red_escuela.backend.billing.entity.CohortIntake;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.domain.CohortIntake;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.billing.operation.AuthorizationPendingException;
 import com.red_escuela.backend.billing.planning.TestTemplateTerms;
 import com.red_escuela.backend.billing.dto.CreateProgramCohortRequest;

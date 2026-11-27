@@ -32,9 +32,12 @@ public class BillingTestTrigger {
     private final PaymentPlanSelectionInvoiceIssuingService invoiceGenerationService;
     private final Clock clock;
     private final InvoiceIssuingService invoiceIssuingService;
+    private final jakarta.persistence.EntityManager entityManager;
 
     public BillingTestTrigger(InvoicePlanningContextLoader contextLoader, CourseInvoicePlanningContextLoader courseContextLoader, ProgramMonthlyInvoicePlanner planner,
-                              CourseMonthlyInvoicePlanner coursePlanner, PlannedInvoiceIssuingService executor, PaymentPlanSelectionInvoiceIssuingService invoiceGenerationService, Clock clock, InvoiceIssuingService invoiceIssuingService) {
+                              CourseMonthlyInvoicePlanner coursePlanner, PlannedInvoiceIssuingService executor, PaymentPlanSelectionInvoiceIssuingService invoiceGenerationService, Clock clock, InvoiceIssuingService invoiceIssuingService,
+                              jakarta.persistence.EntityManager entityManager) {
+        this.entityManager = entityManager;
         this.invoiceIssuingService = invoiceIssuingService;
         this.contextLoader = contextLoader;
         this.courseContextLoader = courseContextLoader;
@@ -66,7 +69,7 @@ public class BillingTestTrigger {
 
     public void issueEntryFee(ProgramEnrollment enrollment, PaymentPlanSelection selection) {
         var cohort = enrollment.getProgramCohort();
-        var template = cohort.getTemplate();
+        var template = entityManager.find(com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate.class, cohort.getTemplateId());
         LocalDate today = LocalDate.now(clock);
         YearMonth entryMonth = YearMonth.from(cohort.getCursadaStart());
         int slot = com.red_escuela.backend.billing.planning.domain.YearCycle.of(template, com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(template), entryMonth.getYear()).slotOf(entryMonth);

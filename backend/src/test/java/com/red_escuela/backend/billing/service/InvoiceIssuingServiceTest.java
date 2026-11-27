@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
-import com.red_escuela.backend.billing.entity.CohortIntake;
+import com.red_escuela.backend.academicstructure.domain.CohortIntake;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingReason;
@@ -15,7 +15,7 @@ import com.red_escuela.backend.shared.domain.MonetaryAdjustment;
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.billing.invoice.exception.InvoiceLinesEnrollmentMismatchException;
 import com.red_escuela.backend.billing.invoice.service.InvoiceIssuingRequestFactory;
 import org.junit.jupiter.api.Tag;
@@ -194,12 +194,13 @@ class InvoiceIssuingServiceTest extends AbstractInvoiceSequenceTest {
         return transactionTemplate.execute(status -> {
             Program program = entityManager.find(Program.class, career.programId());
             ProgramCohort cohort = entityManager.find(ProgramCohort.class, cohortId);
+            var admissionTemplate = entityManager.find(com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate.class, cohort.getTemplateId());
             var student = new com.red_escuela.backend.identity.entity.Student();
             student.setPerson(newPerson());
             student.setInstitution(entityManager.getReference(com.red_escuela.backend.identity.entity.Institution.class, career.institutionId()));
             student.setOnboardingStatus(com.red_escuela.backend.identity.entity.StudentOnboardingStatus.CONFIRMADO);
             entityManager.persist(student);
-            InvoiceIssuingResult result = issuer.issueInvoiceInCallerTransaction(InvoiceIssuingRequestFactory.createProgramAdmissionRequest(student.getId(), program, cohort, com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(cohort.getTemplate()), java.time.LocalDate.now(clockOf())));
+            InvoiceIssuingResult result = issuer.issueInvoiceInCallerTransaction(InvoiceIssuingRequestFactory.createProgramAdmissionRequest(student.getId(), program, cohort, admissionTemplate, com.red_escuela.backend.billing.planning.TestTemplateTerms.latest(admissionTemplate), java.time.LocalDate.now(clockOf())));
             return ((InvoiceIssuingResult.InvoiceIssued) result).invoice();
         });
     }

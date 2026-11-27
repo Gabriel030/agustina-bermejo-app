@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.usecase.cohort;
 
-import com.red_escuela.backend.billing.entity.ProgramCohort;
-import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
+import com.red_escuela.backend.billing.cohort.service.ProgramCohortLister;
 import com.red_escuela.backend.shared.UseCase;
 
 import java.util.List;
@@ -9,14 +9,14 @@ import java.util.List;
 @UseCase
 public class ListProgramCohortsForProgramService implements ListProgramCohortsForProgramUseCase {
 
-    private final ProgramCohortRepository programCohortRepository;
+    private final ProgramCohortLister programCohortLister;
 
-    public ListProgramCohortsForProgramService(ProgramCohortRepository programCohortRepository) {
-        this.programCohortRepository = programCohortRepository;
+    public ListProgramCohortsForProgramService(ProgramCohortLister programCohortLister) {
+        this.programCohortLister = programCohortLister;
     }
 
     @Override
     public List<ProgramCohort> list(Long programId) {
-        return programCohortRepository.findByTemplate_ProgramId(programId);
+        return programCohortLister.listForProgram(programId);
     }
 }

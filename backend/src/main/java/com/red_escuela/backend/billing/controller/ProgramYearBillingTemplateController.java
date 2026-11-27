@@ -9,7 +9,7 @@ import com.red_escuela.backend.billing.advanceenrollmentfee.usecase.FindAdvanceE
 import com.red_escuela.backend.billing.dto.ProgramYearBillingTemplateResponse;
 import com.red_escuela.backend.billing.dto.UpdateEntryFeeDiscountRequest;
 import com.red_escuela.backend.billing.dto.YearBillingConfigurationRequest;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.configuration.usecase.FindProgramBillingConfigurationUseCase;
 import com.red_escuela.backend.billing.usecase.cohort.UpdateCohortEntryFeeDiscountUseCase;

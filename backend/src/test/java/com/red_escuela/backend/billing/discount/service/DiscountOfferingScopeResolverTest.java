@@ -4,10 +4,12 @@ import com.red_escuela.backend.academicstructure.api.OfferingCurrencyFinder;
 import com.red_escuela.backend.billing.discount.DiscountDraftBuilder;
 import com.red_escuela.backend.billing.discount.exception.DiscountScopeOfferingNotFoundException;
 import com.red_escuela.backend.billing.discount.policy.DiscountDefinitionCheck;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.api.ProgramCohortFinder;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
+import com.red_escuela.backend.billing.service.ProgramYearBillingTemplateService;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
-import com.red_escuela.backend.billing.exception.ProgramCohortNotFoundException;
-import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
+import com.red_escuela.backend.academicstructure.api.ProgramCohortNotFoundException;
+import com.red_escuela.backend.academicstructure.repository.ProgramCohortRepository;
 import com.red_escuela.backend.shared.domain.Currency;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -23,7 +25,8 @@ import static org.mockito.Mockito.when;
 class DiscountOfferingScopeResolverTest {
     private final OfferingCurrencyFinder currencyFinder = mock(OfferingCurrencyFinder.class);
     private final ProgramCohortRepository cohortRepository = mock(ProgramCohortRepository.class);
-    private final DiscountOfferingScopeResolver resolver = new DiscountOfferingScopeResolver(currencyFinder, cohortRepository);
+    private final ProgramYearBillingTemplateService templateService = mock(ProgramYearBillingTemplateService.class);
+    private final DiscountOfferingScopeResolver resolver = new DiscountOfferingScopeResolver(currencyFinder, new ProgramCohortFinder(cohortRepository), templateService);
 
     @Test
     void aProgramScopeResolvesTheCurrencyOfTheProgram() {
@@ -50,7 +53,8 @@ class DiscountOfferingScopeResolverTest {
         ProgramCohort cohort = mock(ProgramCohort.class);
         ProgramYearBillingTemplate template = mock(ProgramYearBillingTemplate.class);
         when(template.programId()).thenReturn(77L);
-        when(cohort.getTemplate()).thenReturn(template);
+        when(cohort.getTemplateId()).thenReturn(5L);
+        when(templateService.findOrThrow(5L)).thenReturn(template);
         when(cohortRepository.findById(8L)).thenReturn(Optional.of(cohort));
 
         DiscountDefinitionCheck check = resolver.resolveScopeOf(DiscountDraftBuilder.cohortPromotion().forProgram(4L).forCohort(8L).build());

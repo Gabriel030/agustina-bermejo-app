@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.usecase.cohort;
 
 import com.red_escuela.backend.billing.cohort.service.UpdateCohortEntryFeeDiscountTransaction;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.shared.UseCase;
 import com.red_escuela.backend.shared.domain.Percentage;
 

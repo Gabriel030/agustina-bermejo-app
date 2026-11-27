@@ -7,13 +7,14 @@ import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.enrollment.api.AttendanceStandingPort;
 import com.red_escuela.backend.enrollment.api.SubjectAttendanceView;
 import com.red_escuela.backend.enrollment.api.EnrollmentDebtGuardPort;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.enrollment.exception.CohortAdmissionWindowClosedException;
-import com.red_escuela.backend.billing.exception.ProgramCohortNotFoundException;
+import com.red_escuela.backend.academicstructure.api.ProgramCohortNotFoundException;
 import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateMismatchException;
 import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateNotFoundException;
-import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
+import com.red_escuela.backend.academicstructure.api.ProgramCohortFinder;
+import com.red_escuela.backend.academicstructure.repository.ProgramCohortRepository;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort;
 import com.red_escuela.backend.enrollment.api.ProgramProgressReader;
@@ -112,7 +113,7 @@ class ProgramEnrollmentRulesTest {
     @BeforeEach
     void setUp() {
         service = new ProgramEnrollmentService(programEnrollmentRepository, studentFinder, studentEnrollmentEligibility,
-                academicReferenceFinder, programProgressReader, subjectSectionEnrollmentRepository, programCohortRepository,
+                academicReferenceFinder, programProgressReader, subjectSectionEnrollmentRepository, new ProgramCohortFinder(programCohortRepository),
                 templateRepository, attendanceStandingPort, enrollmentDebtGuard, withdrawalDateResolver, withdrawalBillingPort, documentCompletenessGuard, mock(ProgramEnrollmentSectionWithdrawer.class), CLOCK);
         student = new Student();
         student.setId(7L);

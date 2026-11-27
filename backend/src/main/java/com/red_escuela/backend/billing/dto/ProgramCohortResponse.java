@@ -2,7 +2,7 @@ package com.red_escuela.backend.billing.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.red_escuela.backend.shared.domain.Percentage;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;

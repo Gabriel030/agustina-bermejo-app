@@ -2,7 +2,7 @@ package com.red_escuela.backend.billing.usecase.cohort;
 
 import com.red_escuela.backend.billing.cohort.service.CreateProgramCohortTransaction;
 import com.red_escuela.backend.billing.dto.CreateProgramCohortRequest;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.shared.UseCase;
 
 @UseCase
