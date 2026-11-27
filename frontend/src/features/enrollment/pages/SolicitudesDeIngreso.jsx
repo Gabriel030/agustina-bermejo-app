@@ -376,7 +376,7 @@ export function SolicitudesDeIngreso() {
         value={tab}
         onValueChange={(value) => setParams(value === 'historial' ? { tab: 'historial' } : {}, { replace: true })}
       >
-        <TabsList variant="segmented" className="group-data-horizontal/tabs:h-12">
+        <TabsList variant="line">
           <TabsTrigger value="pendientes">
             Pendientes
             <TabCount count={pending.data?.length} />

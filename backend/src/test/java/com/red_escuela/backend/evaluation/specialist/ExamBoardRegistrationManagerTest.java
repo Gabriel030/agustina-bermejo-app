@@ -200,6 +200,24 @@ class ExamBoardRegistrationManagerTest extends AbstractIntegrationTest {
     }
 
     @Test
+    void aBoardWithoutRegistrationEndStopsAcceptingRegistrationsOnceTheExamDatePassed() {
+        Student student = persistStudent("90000093");
+        Subject subject = persistSubject("MateriaSinCierreMesa", null);
+        Term term = persistTerm();
+        SubjectSection section = persistSection(subject, term);
+        ExamBoard examBoard = persistExamBoard(subject, term);
+        examBoard.setExamDate(LocalDateTime.now().minusHours(1));
+        Program program = persistProgram("CarreraSinCierreMesa");
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
+        SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section, EnrollmentStatus.REGULAR);
+        entityManager.flush();
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(
+                        () -> examBoardRegistrationService.registerProgramEnrollment(examBoard.getId(), enrollment.getId()))
+                .isInstanceOf(com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationWindowClosedException.class);
+    }
+
+    @Test
     void registerWithdrawAndReRegisterReactivatesRowWithoutDuplicating() {
         Student student = persistStudent("90000003");
         Subject subject = persistSubject("MateriaReinscripcionMesa", null);

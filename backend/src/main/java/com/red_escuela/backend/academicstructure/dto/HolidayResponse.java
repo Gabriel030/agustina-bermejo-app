@@ -9,14 +9,14 @@ import java.time.LocalDate;
 import java.util.List;
 
 public record HolidayResponse(Long id, LocalDate date, String name, HolidayType type, String description,
-                              HolidayScope scope, List<HolidayAffectedItem> affected) {
+                              HolidayScope scope, List<HolidayAffectedItem> affected, List<LocalDate> attendanceAffectedDates) {
     public static HolidayResponse from(Holiday holiday) {
-        return from(holiday, List.of());
+        return from(holiday, List.of(), List.of());
     }
 
-    public static HolidayResponse from(Holiday holiday, List<HolidayAffectedItem> affected) {
+    public static HolidayResponse from(Holiday holiday, List<HolidayAffectedItem> affected, List<LocalDate> attendanceAffectedDates) {
         String description = holiday.getDescription() == null ? "" : holiday.getDescription();
         return new HolidayResponse(holiday.getId(), holiday.getDate(), holiday.getName(), holiday.getType(), description,
-                holiday.getScope(), affected);
+                holiday.getScope(), affected, List.copyOf(attendanceAffectedDates));
     }
 }

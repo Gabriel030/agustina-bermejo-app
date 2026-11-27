@@ -46,9 +46,16 @@ public class SectionFinalCallCreator {
         LocalDateTime examDate = slot.map(s -> examDay.atTime(s.startTime())).orElse(examDay.atStartOfDay());
         String classroom = slot.map(SectionSlotView::classroomName).orElse(null);
         LocalDateTime registrationEnd = examDay.minusDays(REGISTRATION_CLOSES_DAYS_BEFORE_EXAM).atTime(REGISTRATION_CLOSING_TIME);
+        LocalDateTime registrationStart = approvedAt;
+        if (registrationStart != null && registrationStart.isAfter(registrationEnd)) {
+            registrationEnd = examDate;
+            if (registrationStart.isAfter(examDate)) {
+                registrationStart = examDate;
+            }
+        }
         examBoardService.create(new CreateExamBoardRequest(
                 config.subjectId(), config.courseSubjectId(), config.term().getId(),
-                examDate, approvedAt, registrationEnd, classroom));
+                examDate, registrationStart, registrationEnd, classroom));
     }
 
     private Optional<SectionSlotView> slotFor(List<SectionSlotView> slots, LocalDate examDay) {

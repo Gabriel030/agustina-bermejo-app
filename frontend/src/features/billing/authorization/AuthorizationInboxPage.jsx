@@ -136,7 +136,7 @@ export function AuthorizationInboxPage() {
       </div>
 
       <Tabs value={tab} onValueChange={changeTab} className="gap-3">
-        <TabsList variant="segmented" className="self-start">
+        <TabsList variant="line" className="self-start">
           <TabsTrigger value="pending">
             {pendingLabel}
             {pendingTotal != null && pendingTotal > 0 ? ` (${pendingTotal})` : ''}

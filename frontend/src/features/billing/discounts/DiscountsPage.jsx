@@ -61,7 +61,7 @@ export function DiscountsPage() {
     <PageContainer title="Descuentos y promociones" description="Becas, pago anual, promociones de cohorte y descuentos otorgados">
       <PendingRequestsNotice roleBase={roleBase} />
       <Tabs value={tab} onValueChange={changeTab} className="gap-4">
-        <TabsList variant="segmented" className="w-full sm:w-fit">
+        <TabsList variant="line">
           <TabsTrigger value="catalog" className="flex-1">Becas y pago anual</TabsTrigger>
           <TabsTrigger value="promotions" className="flex-1">Promociones de cohorte</TabsTrigger>
           <TabsTrigger value="granted" className="flex-1">Otorgados</TabsTrigger>

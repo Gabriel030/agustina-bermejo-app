@@ -56,7 +56,7 @@ export function DefinitionsSection({
       </div>
       {isCardMode && !isEmpty && !isLoading && !isError && (
         <Tabs value={activeGroup.id} onValueChange={setGroup}>
-          <TabsList variant="segmented" className="w-full">
+          <TabsList variant="line">
             {mobileGroups.map((candidate) => (
               <TabsTrigger key={candidate.id} value={candidate.id} className="flex-1">
                 {candidate.label}

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.service;
 
+import com.red_escuela.backend.academicstructure.api.HolidayAttendanceConflictPort;
 import com.red_escuela.backend.academicstructure.dto.HolidayResponse;
 import com.red_escuela.backend.academicstructure.dto.UpdateHolidayRequest;
 import com.red_escuela.backend.academicstructure.entity.Holiday;
@@ -20,10 +21,12 @@ public class HolidayUpdater {
 
     private final HolidayRepository holidayRepository;
     private final HolidayImpactFinder impactFinder;
+    private final HolidayAttendanceConflictPort attendanceConflictPort;
 
-    public HolidayUpdater(HolidayRepository holidayRepository, HolidayImpactFinder impactFinder) {
+    public HolidayUpdater(HolidayRepository holidayRepository, HolidayImpactFinder impactFinder, HolidayAttendanceConflictPort attendanceConflictPort) {
         this.holidayRepository = holidayRepository;
         this.impactFinder = impactFinder;
+        this.attendanceConflictPort = attendanceConflictPort;
     }
 
     @Transactional
@@ -42,6 +45,6 @@ public class HolidayUpdater {
         List<HolidayAffectedItem> affected = Stream.concat(
                 impactFinder.findAffectedBy(saved).stream(),
                 previousDate.equals(saved.getDate()) ? Stream.<HolidayAffectedItem>empty() : impactFinder.findAffectedOn(previousDate).stream()).toList();
-        return HolidayResponse.from(saved, affected);
+        return HolidayResponse.from(saved, affected, attendanceConflictPort.findDatesWithRecordedAttendance(List.of(saved.getDate())));
     }
 }

@@ -67,7 +67,7 @@ export function TabMaterias({ carreraId }) {
   return (
     <Tabs value={subTab} onValueChange={setSubTab} className="flex flex-col gap-5">
       <div className="flex items-center justify-between gap-4">
-        <TabsList variant="segmented">
+        <TabsList variant="line">
           {SUB_TABS.map(({ id, label }) => (
             <TabsTrigger key={id} value={id}>{label}</TabsTrigger>
           ))}

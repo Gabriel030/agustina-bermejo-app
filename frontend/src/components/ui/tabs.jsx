@@ -3,9 +3,6 @@ import { cva } from "class-variance-authority";
 import { Tabs as TabsPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
-import { smoothScrollBehavior } from "@/lib/scrollBehavior"
-import { useSlidingIndicator } from "@/hooks/useSlidingIndicator"
-import { useScrollEdgeMask } from "@/hooks/useScrollEdgeMask"
 
 function Tabs({
   className,
@@ -21,14 +18,15 @@ function Tabs({
   );
 }
 
+const TabsVariantContext = React.createContext("default");
+
 const tabsListVariants = cva(
-  "group/tabs-list inline-flex w-fit items-center justify-center rounded-lg p-[3px] text-muted-foreground group-data-horizontal/tabs:h-8 group-data-vertical/tabs:h-fit group-data-vertical/tabs:flex-col data-[variant=line]:rounded-none",
+  "group/tabs-list inline-flex w-fit items-center justify-center rounded-lg p-[3px] text-muted-foreground group-data-horizontal/tabs:h-8 group-data-vertical/tabs:h-fit group-data-vertical/tabs:flex-col",
   {
     variants: {
       variant: {
         default: "bg-muted",
-        line: "gap-1 bg-transparent",
-        segmented: "relative gap-0.5 rounded-(--r-seg) bg-neutral-bg",
+        line: "w-full max-w-full justify-start gap-0.5 overflow-x-auto rounded-none border-b border-border bg-transparent p-0 group-data-horizontal/tabs:h-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
       },
     },
     defaultVariants: {
@@ -37,45 +35,25 @@ const tabsListVariants = cva(
   }
 )
 
+const DEFAULT_TRIGGER =
+  "relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-1.5 py-0.5 text-sm font-medium whitespace-nowrap text-foreground/60 transition-all group-data-vertical/tabs:w-full group-data-vertical/tabs:justify-start hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:outline-1 focus-visible:outline-ring disabled:pointer-events-none disabled:text-(--disabled-fg) dark:disabled:text-(--disabled-fg) has-data-[icon=inline-end]:pr-1 has-data-[icon=inline-start]:pl-1 dark:text-muted-foreground dark:hover:text-foreground data-active:bg-background data-active:text-foreground data-active:shadow-sm dark:data-active:border-input dark:data-active:bg-input/30 dark:data-active:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+
+const LINE_TRIGGER =
+  "relative inline-flex min-h-11 min-w-11 flex-none items-center justify-center gap-1.5 whitespace-nowrap rounded-control border-b-[3px] border-transparent px-3 text-size-13 font-semibold text-ink-soft transition-colors motion-reduce:transition-none hover:bg-neutral-bg hover:text-ink focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-inset focus-visible:ring-ring disabled:pointer-events-none disabled:text-(--disabled-fg) data-active:rounded-none data-active:border-b-(--accent) data-active:text-(--accent) data-active:hover:text-(--accent) [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4"
+
 function TabsList({
   className,
   variant = "default",
-  children,
-  style,
   ...props
 }) {
-  const { containerRef, rect } = useSlidingIndicator('[data-slot="tabs-trigger"][data-state="active"]');
-  const segmented = variant === "segmented";
-  const activeLeft = rect?.left;
-  const activeWidth = rect?.width;
-
-  const { maskImage } = useScrollEdgeMask(containerRef, segmented, rect);
-
-  React.useEffect(() => {
-    const container = containerRef.current;
-    if (!segmented || activeLeft == null || !container || typeof container.scrollTo !== "function") return;
-    const target = activeLeft - (container.clientWidth - activeWidth) / 2;
-    container.scrollTo({ left: Math.max(0, target), behavior: smoothScrollBehavior() });
-  }, [segmented, containerRef, activeLeft, activeWidth]);
-
   return (
-    <TabsPrimitive.List
-      ref={containerRef}
-      data-slot="tabs-list"
-      data-variant={variant}
-      className={cn(tabsListVariants({ variant }), segmented && "max-w-full justify-start overflow-x-auto [scrollbar-width:none] [&::-webkit-scrollbar]:hidden", className)}
-      style={maskImage ? { maskImage, WebkitMaskImage: maskImage, ...style } : style}
-      {...props}
-    >
-      {variant === "segmented" && rect && (
-        <div
-          aria-hidden="true"
-          className="absolute inset-y-[3px] left-0 z-0 rounded-(--r-seg-indicator) bg-(--seg-indicator-bg) shadow-(--seg-indicator-shadow) transition-[transform,width] duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]"
-          style={{ transform: `translateX(${rect.left}px)`, width: rect.width }}
-        />
-      )}
-      {children}
-    </TabsPrimitive.List>
+    <TabsVariantContext.Provider value={variant}>
+      <TabsPrimitive.List
+        data-slot="tabs-list"
+        data-variant={variant}
+        className={cn(tabsListVariants({ variant }), className)}
+        {...props} />
+    </TabsVariantContext.Provider>
   );
 }
 
@@ -83,17 +61,11 @@ function TabsTrigger({
   className,
   ...props
 }) {
+  const variant = React.useContext(TabsVariantContext);
   return (
     <TabsPrimitive.Trigger
       data-slot="tabs-trigger"
-      className={cn(
-        "relative inline-flex h-[calc(100%-1px)] flex-1 items-center justify-center gap-1.5 rounded-md border border-transparent px-1.5 py-0.5 text-sm font-medium whitespace-nowrap text-foreground/60 transition-all group-data-vertical/tabs:w-full group-data-vertical/tabs:justify-start hover:text-foreground focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring focus-visible:outline-1 focus-visible:outline-ring disabled:pointer-events-none disabled:text-(--disabled-fg) dark:disabled:text-(--disabled-fg) has-data-[icon=inline-end]:pr-1 has-data-[icon=inline-start]:pl-1 dark:text-muted-foreground dark:hover:text-foreground group-data-[variant=default]/tabs-list:data-active:shadow-sm group-data-[variant=line]/tabs-list:data-active:shadow-none [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
-        "group-data-[variant=line]/tabs-list:bg-transparent group-data-[variant=line]/tabs-list:data-active:bg-transparent dark:group-data-[variant=line]/tabs-list:data-active:border-transparent dark:group-data-[variant=line]/tabs-list:data-active:bg-transparent",
-        "data-active:bg-background data-active:text-foreground dark:data-active:border-input dark:data-active:bg-input/30 dark:data-active:text-foreground",
-        "after:absolute after:bg-foreground after:opacity-0 after:transition-opacity group-data-horizontal/tabs:after:inset-x-0 group-data-horizontal/tabs:after:bottom-[-5px] group-data-horizontal/tabs:after:h-0.5 group-data-vertical/tabs:after:inset-y-0 group-data-vertical/tabs:after:-right-1 group-data-vertical/tabs:after:w-0.5 group-data-[variant=line]/tabs-list:data-active:after:opacity-100",
-        "group-data-[variant=segmented]/tabs-list:z-10 group-data-[variant=segmented]/tabs-list:bg-transparent group-data-[variant=segmented]/tabs-list:text-ink-faint group-data-[variant=segmented]/tabs-list:data-active:bg-transparent group-data-[variant=segmented]/tabs-list:data-active:text-(--seg-active-fg) group-data-[variant=segmented]/tabs-list:data-active:shadow-none",
-        className
-      )}
+      className={cn(variant === "line" ? LINE_TRIGGER : DEFAULT_TRIGGER, className)}
       {...props} />
   );
 }

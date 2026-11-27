@@ -453,7 +453,7 @@ function OfertaAcademica({ navigate }) {
   return (
     <div className="flex flex-col gap-4">
       <Tabs value={ofertaTab} onValueChange={setOfertaTab}>
-        <TabsList variant="segmented">
+        <TabsList variant="line">
           <TabsTrigger value="carreras">Carreras publicadas</TabsTrigger>
           <TabsTrigger value="cursos">Cursos publicados</TabsTrigger>
         </TabsList>
@@ -511,7 +511,7 @@ export function AdministrativoSubjects() {
       <GlassCard className="p-4">
         <div className="mb-4 flex flex-col gap-3">
           <Tabs value={section} onValueChange={handleSectionChange}>
-            <TabsList variant="segmented">
+            <TabsList variant="line">
               <TabsTrigger value="materias">Banco de materias</TabsTrigger>
               <TabsTrigger value="carreras">Carreras</TabsTrigger>
               <TabsTrigger value="cursos">Cursos</TabsTrigger>
@@ -540,7 +540,7 @@ export function AdministrativoSubjects() {
           <ProgramList search={search} navigate={navigate} />
         ) : (
           <Tabs value={activeTab} onValueChange={handleTabChange}>
-            <TabsList variant="segmented" className="mb-4">
+            <TabsList variant="line" className="mb-4">
               {SUBJECT_TABS.map((t) => (
                 <TabsTrigger key={t.id} value={t.id}>
                   {t.label}

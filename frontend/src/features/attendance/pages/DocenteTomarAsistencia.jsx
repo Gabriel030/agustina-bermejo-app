@@ -911,7 +911,7 @@ export function DocenteTomarAsistencia() {
             </GlassCard>
           ) : (
             <Tabs value={activeView} onValueChange={(value) => updateParams({ tab: value, pedido: null, fecha: null })}>
-              <TabsList variant="segmented" aria-label="Vistas de asistencia de la comisión" className={TAB_LIST_CLASS}>
+              <TabsList variant="line" aria-label="Vistas de asistencia de la comisión" className={TAB_LIST_CLASS}>
                 <TabsTrigger value="pasar-lista" className={TAB_TRIGGER_CLASS}>Pasar lista</TabsTrigger>
                 <TabsTrigger value="historial" className={TAB_TRIGGER_CLASS}>Historial</TabsTrigger>
                 <TabsTrigger value="reporte" aria-label="Reporte de asistencia" className={TAB_TRIGGER_CLASS}>Reporte</TabsTrigger>
