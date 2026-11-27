@@ -6,4 +6,8 @@ public interface SectionEvaluationSetupPort {
     void createInitialEvaluationDraft(SubjectSection section);
 
     void requireEvaluationSchemeExists(Long evaluationSchemeId);
+
+    boolean hasGradesLoadedInProgramSection(Long sectionId);
+
+    boolean hasGradesLoadedInCourseSection(Long sectionId);
 }
