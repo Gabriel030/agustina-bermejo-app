@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.dto;
 
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.module.CatalogPriced;
@@ -67,6 +68,6 @@ public class CourseResponse implements CatalogPriced<CourseResponse> {
                 .teachingMode(course.getTeachingMode() == null ? null : course.getTeachingMode().name())
                 .registrationStart(course.getRegistrationStart())
                 .registrationEnd(course.getRegistrationEnd())
-                .registrationOpen(course.isRegistrationOpenAt(LocalDateTime.now()));
+                .registrationOpen(course.isRegistrationOpenAt(ApplicationTime.now()));
     }
 }

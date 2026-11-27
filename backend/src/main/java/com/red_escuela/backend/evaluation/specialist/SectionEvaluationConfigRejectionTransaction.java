@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.specialist;
 
+import com.red_escuela.backend.evaluation.domain.SectionRef;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfigStatus;
 import com.red_escuela.backend.evaluation.events.SectionEvaluationConfigRejectedEvent;
@@ -31,8 +32,8 @@ public class SectionEvaluationConfigRejectionTransaction {
     }
 
     @Transactional
-    public SectionEvaluationConfig reject(Long sectionId, String reason) {
-        SectionEvaluationConfig config = configFinder.findOrThrow(sectionId);
+    public SectionEvaluationConfig reject(SectionRef section, String reason) {
+        SectionEvaluationConfig config = configFinder.findOrThrow(section);
         if (config.getStatus() != SectionEvaluationConfigStatus.PENDING_APPROVAL) {
             throw new InvalidSectionEvaluationConfigTransitionException(config.getStatus(), "rechazar");
         }
@@ -40,7 +41,7 @@ public class SectionEvaluationConfigRejectionTransaction {
         config.setRejectionReason(reason);
         SectionEvaluationConfig saved = configRepository.save(config);
 
-        Long leadInstructorPersonId = instructorAccess.leadInstructorPersonId(sectionId);
+        Long leadInstructorPersonId = instructorAccess.leadInstructorPersonId(section);
         eventPublisher.publishEvent(SectionEvaluationConfigRejectedEvent.rejectedFor(saved, leadInstructorPersonId));
         return saved;
     }

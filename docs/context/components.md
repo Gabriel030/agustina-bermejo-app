@@ -28,7 +28,7 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 | `TopNavGridPanel` [shared] | Panel de grilla de un desplegable de `TopNav`: secciones con conteo a la izquierda, pantallas de la sección apuntada a la derecha; hover a 140 ms, clic fija/suelta | `title`, `sections: [{ id, label, items }]`, `menus` |
 | `TopHeader` [shared] | Cabecera con título, ítems, campana, tema | `titulo`, `items` |
 | `Breadcrumb` [shared] (+ hook `useBreadcrumb`) | Ruta jerárquica en pantallas de detalle | `items` |
-| `Tabs` `TabsList` `TabsTrigger` `TabsContent` [ui] | Pestañas de una pantalla | `TabsList variant="segmented"` (nunca `line`) |
+| `Tabs` `TabsList` `TabsTrigger` `TabsContent` [ui] | Pestañas de una pantalla | `TabsList variant="line"` (subrayado de acento, como la barra superior) |
 | `Stepper` [shared] | Wizards; completados en verde con tilde, pasos visitados clickeables | `pasos`, `pasoActual`, `pasosVisitados`, `onStepClick` |
 | `Paginador` [shared] | Paginación de listados (← Anterior / Página N de M / Siguiente →); botones de 44 px en móvil; no dibuja nada con una sola página | `page` (desde 1), `totalPages`, `onChange` |
 

@@ -58,6 +58,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 @ActiveProfiles("test")
 class EnrollmentConcurrencyTest extends AbstractIntegrationTest {
     @Autowired
+    private com.red_escuela.backend.academicstructure.repository.CurriculumPlanRepository curriculumPlanRepository;
+
+    @Autowired
     private MockMvc mockMvc;
     @Autowired
     private ObjectMapper objectMapper;
@@ -142,6 +145,7 @@ class EnrollmentConcurrencyTest extends AbstractIntegrationTest {
 
         ProgramSubject programSubject = new ProgramSubject();
         programSubject.setProgram(program);
+        programSubject.setPlan(curriculumPlanRepository.save(com.red_escuela.backend.academicstructure.entity.CurriculumPlan.initialVersionOf(program, java.time.LocalDate.of(2020, 1, 1))));
         programSubject.setSubject(subject);
         programSubject.setCredits(10);
         programSubject.setCurricularYear(1);

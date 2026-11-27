@@ -151,7 +151,7 @@ function PermissionsGrid({ catalog, grid }) {
       <TooltipProvider>
       <Tabs value={tab} onValueChange={setTab} className="gap-4">
         {editable && (
-          <TabsList variant="segmented">
+          <TabsList variant="line">
             <TabsTrigger value="grid">Permisos</TabsTrigger>
             <TabsTrigger value="discrepancies">
               Discrepancias

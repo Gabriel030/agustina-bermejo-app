@@ -20,7 +20,7 @@ export function CertificateTemplateEditor() {
   return (
     <PageContainer title="Plantillas de certificados" description="Logo, textos y firmantes de cada documento">
       <Tabs value={templateKey} onValueChange={setTemplateKey} className="gap-4">
-        <TabsList variant="segmented" aria-label="Documentos" className="hidden max-w-full md:inline-flex">
+        <TabsList variant="line" aria-label="Documentos" className="hidden max-w-full md:inline-flex">
           {TEMPLATE_TABS.map((tab) => (
             <TabsTrigger key={tab.value} value={tab.value}>
               {tab.label}

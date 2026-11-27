@@ -1,6 +1,7 @@
 package com.red_escuela.backend.evaluation.specialist;
 
 import com.red_escuela.backend.academicstructure.api.SectionEvaluationSetupPort;
+import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.evaluation.exception.EvaluationSchemeNotFoundException;
 import com.red_escuela.backend.evaluation.repository.EvaluationSchemeRepository;
@@ -26,6 +27,12 @@ public class SectionEvaluationSetupPortAdapter implements SectionEvaluationSetup
     @Override
     @Transactional
     public void createInitialEvaluationDraft(SubjectSection section) {
+        draftInitializer.createInitialDraft(section);
+    }
+
+    @Override
+    @Transactional
+    public void createInitialEvaluationDraftForCourseSection(CourseSubjectSection section) {
         draftInitializer.createInitialDraft(section);
     }
 

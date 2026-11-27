@@ -375,7 +375,7 @@ export function StaffRegularCertificates() {
   return (
     <PageContainer title="Constancias" description="Alumno regular">
       <Tabs className="gap-4" value={tab} onValueChange={setTab}>
-        <TabsList variant="segmented">
+        <TabsList variant="line">
           <TabsTrigger value="pedidos">
             Pedidos
             <TabCount count={pending.data?.length} />

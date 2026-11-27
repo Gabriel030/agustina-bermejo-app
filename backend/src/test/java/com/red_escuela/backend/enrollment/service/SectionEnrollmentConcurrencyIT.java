@@ -64,6 +64,7 @@ class SectionEnrollmentConcurrencyIT extends AbstractIntegrationTest {
             subject = fixtures.cycle().subject();
             ProgramSubject programSubject = new ProgramSubject();
             programSubject.setProgram(program);
+            programSubject.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
             programSubject.setSubject(subject);
             programSubject.setCredits(0);
             programSubject.setCurricularYear(1);
@@ -124,6 +125,7 @@ class SectionEnrollmentConcurrencyIT extends AbstractIntegrationTest {
             Program otherProgram = fixtures.cycle().program();
             ProgramSubject otherPlanEntry = new ProgramSubject();
             otherPlanEntry.setProgram(otherProgram);
+            otherPlanEntry.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(otherProgram));
             otherPlanEntry.setSubject(subject);
             otherPlanEntry.setCredits(0);
             otherPlanEntry.setCurricularYear(1);

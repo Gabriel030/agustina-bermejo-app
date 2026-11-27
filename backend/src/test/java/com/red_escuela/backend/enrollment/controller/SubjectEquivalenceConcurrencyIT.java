@@ -195,6 +195,7 @@ class SubjectEquivalenceConcurrencyIT extends AbstractIntegrationTest {
         entityManager.persist(subject);
         ProgramSubject planEntry = new ProgramSubject();
         planEntry.setProgram(program);
+        planEntry.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
         planEntry.setSubject(subject);
         planEntry.setCredits(5);
         planEntry.setCurricularYear(1);

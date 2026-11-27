@@ -12,6 +12,6 @@ public record SectionEvaluationConfigRejectedEvent(String correlationId, Instant
 
     public static SectionEvaluationConfigRejectedEvent rejectedFor(SectionEvaluationConfig config, Long instructorPersonId) {
         return new SectionEvaluationConfigRejectedEvent(CorrelationIds.current(), ApplicationTime.instant(), config.getId(),
-                config.getSubjectSection().getSubject().getName(), config.getSubjectSection().getName(), config.getRejectionReason(), instructorPersonId);
+                config.subjectName(), config.sectionName(), config.getRejectionReason(), instructorPersonId);
     }
 }

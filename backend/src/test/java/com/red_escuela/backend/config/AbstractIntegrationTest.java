@@ -2,6 +2,8 @@ package com.red_escuela.backend.config;
 
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import com.red_escuela.backend.shared.time.MutableClock;
+import java.time.Clock;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.awaitility.Awaitility;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,15 +67,18 @@ public abstract class AbstractIntegrationTest {
         }
     }
 
+    @Autowired
+    private Clock contextClock;
+
     @BeforeEach
     void installApplicationClock() {
         MutableClock.INSTANCE.reset();
-        ApplicationTime.useClock(MutableClock.INSTANCE);
+        ApplicationTime.useClock(contextClock);
     }
 
     @AfterEach
     void resetApplicationClock() {
         MutableClock.INSTANCE.reset();
-        ApplicationTime.useClock(MutableClock.INSTANCE);
+        ApplicationTime.useClock(contextClock);
     }
 }

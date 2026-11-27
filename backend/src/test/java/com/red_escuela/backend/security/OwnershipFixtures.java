@@ -233,6 +233,7 @@ final class OwnershipFixtures {
         entityManager.persist(program);
         ProgramSubject planEntry = new ProgramSubject();
         planEntry.setProgram(program);
+        planEntry.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
         planEntry.setSubject(subject);
         planEntry.setCredits(10);
         planEntry.setCurricularYear(1);
@@ -507,6 +508,10 @@ final class OwnershipFixtures {
         courseAssignment.setRole(InstructorRole.LEAD);
         entityManager.persist(courseAssignment);
         courseSectionId = courseSection.getId();
+        SectionEvaluationConfig courseEvaluationConfig = new SectionEvaluationConfig();
+        courseEvaluationConfig.setCourseSection(courseSection);
+        courseEvaluationConfig.setStatus(SectionEvaluationConfigStatus.DRAFT);
+        entityManager.persist(courseEvaluationConfig);
         CourseEnrollment courseEnrollment = new CourseEnrollment();
         courseEnrollment.setStudent(student);
         courseEnrollment.setCourse(course);

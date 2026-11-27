@@ -10,7 +10,7 @@ const API = 'http://localhost:8080';
 const CICLO_2026 = { termStartDate: '2026-03-02T00:00:00', termEndDate: '2026-12-11T00:00:00' };
 
 function config(id, status, evaluationConfigDeadline = null) {
-  return { id, subjectSectionId: id, subjectName: `Materia ${id}`, sectionName: 'Comisión A', status, instructors: [], evaluationConfigDeadline, ...CICLO_2026 };
+  return { id, subjectSectionId: id, subjectName: `Materia ${id}`, sectionName: 'Comisión A', status, instructors: [], evaluationConfigDeadline, courseSectionId: null, sectionKind: 'PROGRAM', ...CICLO_2026 };
 }
 
 function tarjeta(label) {

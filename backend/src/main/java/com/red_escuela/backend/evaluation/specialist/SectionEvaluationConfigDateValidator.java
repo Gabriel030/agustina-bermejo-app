@@ -21,7 +21,7 @@ public class SectionEvaluationConfigDateValidator {
     }
 
     public void requireDatesWithinTermAndOffHolidays(SectionEvaluationConfig config, UpdateSectionEvaluationConfigRequest request) {
-        Term term = config.getSubjectSection().getTerm();
+        Term term = config.term();
         Stream.of(request.tp1DueDate(), request.tp2DueDate(), request.tp3DueDate(),
                         request.exam1Date(), request.exam2Date(), request.exam3Date(), request.exam4Date(),
                         request.finalCall1Date(), request.finalCall2Date())
