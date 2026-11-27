@@ -23,6 +23,7 @@ import com.red_escuela.backend.evaluation.exception.ExamBoardSubjectMismatchExce
 import com.red_escuela.backend.evaluation.exception.MaxExamAttemptsExceededException;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRegistrationRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRepository;
+import com.red_escuela.backend.evaluation.repository.GradeItemRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +44,7 @@ public class ExamBoardRegistrationManager {
     private final FinalExamEligibilityEvaluator finalExamEligibilityEvaluator;
     private final FinalExamPrerequisiteChecker finalExamPrerequisiteChecker;
     private final EnrollmentFeeRequirementPort enrollmentFeeRequirementPort;
+    private final GradeItemRepository gradeItemRepository;
     private final Clock clock;
 
     public ExamBoardRegistrationManager(ExamBoardRegistrationRepository examBoardRegistrationRepository,
@@ -52,6 +54,7 @@ public class ExamBoardRegistrationManager {
             FinalExamEligibilityEvaluator finalExamEligibilityEvaluator,
             FinalExamPrerequisiteChecker finalExamPrerequisiteChecker,
             EnrollmentFeeRequirementPort enrollmentFeeRequirementPort,
+            GradeItemRepository gradeItemRepository,
             Clock clock) {
         this.enrollmentFeeRequirementPort = enrollmentFeeRequirementPort;
         this.examBoardRegistrationRepository = examBoardRegistrationRepository;
@@ -60,6 +63,7 @@ public class ExamBoardRegistrationManager {
         this.lateExamApprovalChecker = lateExamApprovalChecker;
         this.finalExamEligibilityEvaluator = finalExamEligibilityEvaluator;
         this.finalExamPrerequisiteChecker = finalExamPrerequisiteChecker;
+        this.gradeItemRepository = gradeItemRepository;
         this.clock = clock;
     }
 
@@ -202,8 +206,27 @@ public class ExamBoardRegistrationManager {
             throw new ExamBoardRegistrationNotWithdrawableException(
                     "La inscripción " + registrationId + " no está REGISTERED, no se puede dar de baja");
         }
+        requireWithdrawalBeforeExamWithoutFinalGrade(registration);
         registration.setStatus(ExamBoardRegistrationStatus.WITHDRAWN);
         examBoardRegistrationRepository.save(registration);
+    }
+
+    private void requireWithdrawalBeforeExamWithoutFinalGrade(ExamBoardRegistration registration) {
+        ExamBoard examBoard = registration.getExamBoard();
+        if (examBoard.getExamDate() != null && !LocalDateTime.now(clock).isBefore(examBoard.getExamDate())) {
+            throw new ExamBoardRegistrationNotWithdrawableException(
+                    "La inscripción " + registration.getId() + " pertenece a una mesa cuya fecha de examen ya llegó, no se puede dar de baja");
+        }
+        boolean hasGrade = registration.getProgramSubjectSectionEnrollment() != null
+                ? !gradeItemRepository.findByExamBoardIdAndProgramSubjectSectionEnrollmentId(
+                        examBoard.getId(), registration.getProgramSubjectSectionEnrollment().getId()).isEmpty()
+                : registration.getCourseSubjectSectionEnrollment() != null
+                        && !gradeItemRepository.findByExamBoardIdAndCourseSubjectSectionEnrollmentId(
+                                examBoard.getId(), registration.getCourseSubjectSectionEnrollment().getId()).isEmpty();
+        if (hasGrade) {
+            throw new ExamBoardRegistrationNotWithdrawableException(
+                    "La inscripción " + registration.getId() + " ya tiene nota cargada, no se puede dar de baja");
+        }
     }
 
     public ExamBoardRegistration get(Long id) {

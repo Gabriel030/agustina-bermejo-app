@@ -667,6 +667,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SECTION_NOT_OPEN_FOR_ENROLLMENT` | no | `SectionNotOpenForEnrollmentException` | academicstructure |
 | `SECTION_SCHEDULE_CONFLICT` | no | `SectionScheduleConflictException` | academicstructure |
 | `SECTION_SCHEDULE_OVERLAP` | no | `SectionScheduleOverlapException` | enrollment |
+| `SECTION_WITHDRAWAL_TERM_ENDED` | no | `SectionWithdrawalTermEndedException` | enrollment |
 | `SEGMENT_NOT_AVAILABLE` | no | `SegmentNotAvailableException` | notification |
 | `SESSION_FULL` | no | `SessionFullException` | enrollment |
 | `SIGNATORY_INACTIVE` | no | `SignatoryInactiveException` | graduation |

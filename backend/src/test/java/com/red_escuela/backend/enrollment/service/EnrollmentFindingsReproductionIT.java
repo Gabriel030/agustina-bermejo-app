@@ -22,9 +22,8 @@ import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
-import com.red_escuela.backend.enrollment.exception.EnrollmentWindowClosedException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentRequiredException;
-import com.red_escuela.backend.enrollment.exception.SectionHasRecordsException;
+import com.red_escuela.backend.enrollment.exception.SectionWithdrawalTermEndedException;
 import com.red_escuela.backend.evaluation.entity.ClosureStatus;
 import com.red_escuela.backend.evaluation.entity.GradeItem;
 import com.red_escuela.backend.evaluation.entity.GradeItemType;
@@ -135,9 +134,29 @@ class EnrollmentFindingsReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("E34-A-S6")
-    void h7StudentCannotWithdrawFromASectionThatAlreadyHasGrades() {
-        ProgramSetup setup = programSetup("H7Notas", null);
+    void h7StudentCannotWithdrawOnceTheTermHasEnded() {
+        ProgramSetup setup = programSetup("H7Ventana", null);
+        setup.term().setEndDate(LocalDateTime.now().minusDays(1));
+        SubjectSectionEnrollment enrollment = seatedEnrollment(setup, "77000011", EnrollmentStatus.IN_PROGRESS, ProgramEnrollmentStatus.ENROLLED);
+
+        assertThatThrownBy(() -> subjectSectionEnrollmentService.withdraw(enrollment.getId()))
+                .isInstanceOf(SectionWithdrawalTermEndedException.class);
+    }
+
+    @Test
+    void h7StaffCanWithdrawAStudentAfterTheTermHasEnded() {
+        ProgramSetup setup = programSetup("H7Personal", null);
+        setup.term().setEndDate(LocalDateTime.now().minusDays(1));
+        SubjectSectionEnrollment enrollment = seatedEnrollment(setup, "77000012", EnrollmentStatus.IN_PROGRESS, ProgramEnrollmentStatus.ENROLLED);
+
+        subjectSectionEnrollmentService.withdraw(enrollment.getId(), EnrollmentChange.byStaff("Baja por pedido formal del alumno", enrollment.getStudent().getPerson().getId()));
+
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.WITHDRAWN);
+    }
+
+    @Test
+    void h7StudentCanWithdrawWhileTheTermIsRunningEvenWithGradesLoaded() {
+        ProgramSetup setup = programSetup("H7Vigente", null);
         SubjectSectionEnrollment enrollment = seatedEnrollment(setup, "77000009", EnrollmentStatus.IN_PROGRESS, ProgramEnrollmentStatus.ENROLLED);
         GradeItem item = new GradeItem();
         item.setProgramSubjectSectionEnrollment(enrollment);
@@ -148,20 +167,9 @@ class EnrollmentFindingsReproductionIT extends AbstractIntegrationTest {
         entityManager.persist(item);
         entityManager.flush();
 
-        assertThatThrownBy(() -> subjectSectionEnrollmentService.withdraw(enrollment.getId()))
-                .isInstanceOf(SectionHasRecordsException.class);
-    }
+        subjectSectionEnrollmentService.withdraw(enrollment.getId());
 
-    @Test
-    @Disabled("E34-A-S6")
-    void h7StudentCannotWithdrawOutsideTheTermEnrollmentWindow() {
-        ProgramSetup setup = programSetup("H7Ventana", null);
-        setup.term().setEnrollmentStart(LocalDateTime.of(2020, 1, 1, 0, 0));
-        setup.term().setEnrollmentEnd(LocalDateTime.of(2020, 2, 1, 0, 0));
-        SubjectSectionEnrollment enrollment = seatedEnrollment(setup, "77000011", EnrollmentStatus.IN_PROGRESS, ProgramEnrollmentStatus.ENROLLED);
-
-        assertThatThrownBy(() -> subjectSectionEnrollmentService.withdraw(enrollment.getId()))
-                .isInstanceOf(EnrollmentWindowClosedException.class);
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.WITHDRAWN);
     }
 
     @Test
