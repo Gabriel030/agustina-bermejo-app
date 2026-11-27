@@ -35,14 +35,14 @@ class HolidayYearGuardTest {
 
     @Test
     void nextYearWithoutHolidaysIsRejected() {
-        when(holidayRepository.existsByDateBetween(LocalDate.of(2027, 1, 1), LocalDate.of(2027, 12, 31))).thenReturn(false);
+        when(holidayRepository.countByDateBetween(LocalDate.of(2027, 1, 1), LocalDate.of(2027, 12, 31))).thenReturn(0L);
 
         assertThatThrownBy(() -> guard.ensureHolidaysLoaded(2027)).isInstanceOf(HolidaysNotLoadedForYearException.class);
     }
 
     @Test
     void nextYearWithHolidaysIsAccepted() {
-        when(holidayRepository.existsByDateBetween(LocalDate.of(2027, 1, 1), LocalDate.of(2027, 12, 31))).thenReturn(true);
+        when(holidayRepository.countByDateBetween(LocalDate.of(2027, 1, 1), LocalDate.of(2027, 12, 31))).thenReturn(5L);
 
         assertThatCode(() -> guard.ensureHolidaysLoaded(2027)).doesNotThrowAnyException();
     }
@@ -58,7 +58,7 @@ class HolidayYearGuardTest {
     void termOfAYearWithoutHolidaysIsRejected() {
         var term = new Term();
         term.setYear(2027);
-        when(holidayRepository.existsByDateBetween(LocalDate.of(2027, 1, 1), LocalDate.of(2027, 12, 31))).thenReturn(false);
+        when(holidayRepository.countByDateBetween(LocalDate.of(2027, 1, 1), LocalDate.of(2027, 12, 31))).thenReturn(0L);
 
         assertThatThrownBy(() -> guard.ensureHolidaysLoadedForTerm(term)).isInstanceOf(HolidaysNotLoadedForYearException.class);
     }
@@ -67,7 +67,7 @@ class HolidayYearGuardTest {
     void termOfAYearWithHolidaysIsAccepted() {
         var term = new Term();
         term.setYear(2027);
-        when(holidayRepository.existsByDateBetween(LocalDate.of(2027, 1, 1), LocalDate.of(2027, 12, 31))).thenReturn(true);
+        when(holidayRepository.countByDateBetween(LocalDate.of(2027, 1, 1), LocalDate.of(2027, 12, 31))).thenReturn(5L);
 
         assertThatCode(() -> guard.ensureHolidaysLoadedForTerm(term)).doesNotThrowAnyException();
     }
@@ -77,5 +77,13 @@ class HolidayYearGuardTest {
         assertThatCode(() -> guard.ensureHolidaysLoadedForTerm(new Term())).doesNotThrowAnyException();
 
         verifyNoInteractions(holidayRepository);
+    }
+
+    @Test
+    void yearWithFewerHolidaysThanTheMinimumIsRejected() {
+        when(holidayRepository.countByDateBetween(LocalDate.of(2027, 1, 1), LocalDate.of(2027, 12, 31)))
+                .thenReturn((long) HolidayYearGuard.MINIMUM_HOLIDAYS_PER_YEAR - 1);
+
+        assertThatThrownBy(() -> guard.ensureHolidaysLoaded(2027)).isInstanceOf(HolidaysNotLoadedForYearException.class);
     }
 }

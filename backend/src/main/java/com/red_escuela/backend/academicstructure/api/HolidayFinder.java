@@ -6,6 +6,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import com.red_escuela.backend.academicstructure.domain.HolidayScope;
 import java.util.Comparator;
 import java.util.List;
 
@@ -20,7 +21,7 @@ public class HolidayFinder {
     }
 
     public boolean isHoliday(LocalDate date) {
-        return holidayRepository.existsByDate(date);
+        return holidayRepository.existsByDateAndScopeIn(date, HolidayScope.AFFECTING_CLASSES);
     }
 
     public List<HolidayView> findBetween(LocalDate from, LocalDate to) {

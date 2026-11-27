@@ -199,7 +199,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   ENROLLMENT_NOT_ACTIVE: 'La inscripción a la carrera no está activa.',
   INVALID_SCORE: 'La nota de origen debe estar entre 1 y 10, con hasta 2 decimales.',
   FUTURE_DATE: 'La fecha de reconocimiento no puede ser futura.',
-  SUBMISSION_WINDOW_CLOSED: 'El plazo de entrega está cerrado.',
+  SUBMISSION_WINDOW_CLOSED: 'Venció el plazo para enviar la configuración de evaluación.',
   TERM_DATES_REQUIRED: 'Faltan las fechas del cuatrimestre.',
   TERM_ENROLLMENT_WINDOW_REQUIRED: 'Falta definir el período de inscripción del cuatrimestre.',
   UNKNOWN_AUDIENCE_SEGMENT: 'El segmento de destinatarios no existe.',

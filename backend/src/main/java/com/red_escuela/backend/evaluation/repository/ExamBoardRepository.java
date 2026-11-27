@@ -52,6 +52,8 @@ public interface ExamBoardRepository extends JpaRepository<ExamBoard, Long> {
             @Param("start") LocalDateTime start, @Param("endExclusive") LocalDateTime endExclusive,
             @Param("now") LocalDateTime now);
 
+    List<ExamBoard> findByExamDateGreaterThanEqualAndExamDateLessThan(java.time.LocalDateTime start, java.time.LocalDateTime endExclusive);
+
     List<ExamBoard> findBySubjectIdAndTermId(Long subjectId, Long termId);
 
     List<ExamBoard> findByCourseSubjectIdAndTermId(Long courseSubjectId, Long termId);

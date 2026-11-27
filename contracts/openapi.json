@@ -5244,6 +5244,10 @@
           "name" : {
             "type" : "string"
           },
+          "scope" : {
+            "enum" : [ "CLASSES", "BILLING", "BOTH" ],
+            "type" : "string"
+          },
           "type" : {
             "enum" : [ "NATIONAL", "PROVINCIAL", "MUNICIPAL", "NON_WORKING_DAY", "BRIDGE", "OTHER" ],
             "type" : "string"
@@ -8930,8 +8934,31 @@
         "required" : [ "attendanceId", "justifiable", "justificationDeadline", "rejection", "status" ],
         "type" : "object"
       },
+      "HolidayAffectedItem" : {
+        "properties" : {
+          "date" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "kind" : {
+            "type" : "string"
+          },
+          "referenceId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "date", "kind", "referenceId" ],
+        "type" : "object"
+      },
       "HolidayResponse" : {
         "properties" : {
+          "affected" : {
+            "items" : {
+              "$ref" : "#/components/schemas/HolidayAffectedItem"
+            },
+            "type" : "array"
+          },
           "date" : {
             "format" : "date",
             "type" : "string"
@@ -8946,12 +8973,16 @@
           "name" : {
             "type" : "string"
           },
+          "scope" : {
+            "enum" : [ "CLASSES", "BILLING", "BOTH" ],
+            "type" : "string"
+          },
           "type" : {
             "enum" : [ "NATIONAL", "PROVINCIAL", "MUNICIPAL", "NON_WORKING_DAY", "BRIDGE", "OTHER" ],
             "type" : "string"
           }
         },
-        "required" : [ "date", "description", "id", "name", "type" ],
+        "required" : [ "affected", "date", "description", "id", "name", "scope", "type" ],
         "type" : "object"
       },
       "Impact" : {
@@ -17884,6 +17915,10 @@
             "type" : "string"
           },
           "name" : {
+            "type" : "string"
+          },
+          "scope" : {
+            "enum" : [ "CLASSES", "BILLING", "BOTH" ],
             "type" : "string"
           },
           "type" : {

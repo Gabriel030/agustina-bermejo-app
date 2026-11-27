@@ -163,10 +163,10 @@ class SectionEvaluationConfigCharacterizationTest extends CourseworkCharacteriza
 
     @Test
     void submissionIsRejectedOnceTheTermHasStartedAndStillAllowedAfterARejection() throws Exception {
-        Classroom classroom = classroomWithDraftConfig("cfg6", "7800006", InstructorRole.LEAD, LocalDateTime.now().minusDays(10));
+        Classroom classroom = classroomWithDraftConfig("cfg6", "7800006", InstructorRole.LEAD, LocalDateTime.now().minusDays(20));
 
         postEmpty(classroom.teacher(), configPath(classroom) + "/submit")
-                .andExpect(status().is4xxClientError())
+                .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("SUBMISSION_WINDOW_CLOSED"));
         getAs(classroom.teacher(), configPath(classroom))
                 .andExpect(jsonPath("$.status").value("DRAFT"))

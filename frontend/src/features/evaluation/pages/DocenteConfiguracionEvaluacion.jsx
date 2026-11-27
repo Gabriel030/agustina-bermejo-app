@@ -25,7 +25,7 @@ const COLUMNAS_PARCIALES = { 1: 'sm:grid-cols-1', 2: 'sm:grid-cols-2', 3: 'sm:gr
 const MENSAJES_ERROR_CONFIGURACION = {
   EVALUATION_DATE_OUTSIDE_TERM: 'Una de las fechas cae fuera del cuatrimestre. Revisá las fechas marcadas.',
   EVALUATION_DATE_ON_HOLIDAY: 'Una de las fechas cae en un feriado. Revisá las fechas marcadas.',
-  SUBMISSION_WINDOW_CLOSED: 'Venció el plazo para enviar la configuración: el cuatrimestre ya empezó. Si necesitás un ajuste, pedíselo a Dirección.',
+  SUBMISSION_WINDOW_CLOSED: 'Venció el plazo para enviar la configuración (inicio del cuatrimestre más los días de plazo). Si necesitás un ajuste, pedíselo a Dirección.',
   INVALID_SECTION_EVALUATION_CONFIG_TRANSITION: 'La configuración ya no se puede modificar en su estado actual. Recargá la página.',
 };
 

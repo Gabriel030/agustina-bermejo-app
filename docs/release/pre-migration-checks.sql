@@ -257,6 +257,7 @@ begin
       ('graduation_request', 'certificate_review_status', array['DISABLED', 'ENABLED', 'NOT_REQUIRED', 'PENDING_REVIEW']),
       ('graduation_request', 'status', array['ADMIN_VERIFIED', 'APPROVED', 'REJECTED', 'REQUESTED']),
       ('holiday', 'type', array['BRIDGE', 'MUNICIPAL', 'NATIONAL', 'NON_WORKING_DAY', 'OTHER', 'PROVINCIAL']),
+      ('holiday', 'scope', array['BILLING', 'BOTH', 'CLASSES']),
       ('identity_contact_change_log', 'change_type', array['DOCUMENT_CHANGED', 'EMAIL_CHANGE_CONFIRMED', 'EMAIL_CHANGE_REQUESTED']),
       ('import_batch', 'status', array['COMMITTED', 'COMMITTING', 'DRAFT', 'FAILED', 'FILES_UPLOADED', 'PARTIAL', 'ROLLED_BACK', 'ROLLING_BACK', 'SEALED', 'VALIDATED', 'VALIDATING', 'VALIDATION_FAILED']),
       ('import_batch_event', 'type', array['COMMITTED', 'CREATED', 'FILE_UPLOADED', 'RETRIED', 'ROLLBACK_BLOCKED', 'ROLLED_BACK', 'SEALED', 'VALIDATED']),

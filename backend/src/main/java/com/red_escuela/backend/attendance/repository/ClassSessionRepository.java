@@ -25,6 +25,8 @@ public interface ClassSessionRepository extends JpaRepository<ClassSession, Long
             Collection<Long> sectionIds, ClassSessionStatus status,
             LocalDate from, LocalDate to);
 
+    List<ClassSession> findByClassDate(LocalDate classDate);
+
     List<ClassSession> findBySubjectSectionId(Long subjectSectionId);
 
     List<ClassSession> findByCourseSubjectSectionId(Long courseSubjectSectionId);

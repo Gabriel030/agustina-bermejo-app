@@ -75,6 +75,14 @@ public class SectionEvaluationConfig {
     @Column(name = "reviewed_at")
     private LocalDateTime reviewedAt;
 
+    @Transient
+    private int evaluationConfigDueDays;
+
+    public SectionEvaluationConfig withEvaluationConfigDueDays(int dueDays) {
+        this.evaluationConfigDueDays = dueDays;
+        return this;
+    }
+
     public boolean isEditable() {
         return status == SectionEvaluationConfigStatus.DRAFT || status == SectionEvaluationConfigStatus.REJECTED;
     }
@@ -98,6 +106,6 @@ public class SectionEvaluationConfig {
 
     private boolean isSubmissionWindowOpen(LocalDateTime now) {
         LocalDateTime termStart = subjectSection.getTerm().getStartDate();
-        return termStart == null || now.isBefore(termStart);
+        return termStart == null || !now.toLocalDate().isAfter(termStart.toLocalDate().plusDays(evaluationConfigDueDays));
     }
 }

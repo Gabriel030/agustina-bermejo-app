@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import com.red_escuela.backend.academicstructure.domain.HolidayScope;
 
 @Service
 public class HolidayBusinessDayCalendar implements BusinessDayCalendar {
@@ -19,7 +20,7 @@ public class HolidayBusinessDayCalendar implements BusinessDayCalendar {
     @Override
     @Transactional(readOnly = true)
     public boolean isBusinessDay(LocalDate date) {
-        return !isWeekend(date) && !holidayRepository.existsByDate(date);
+        return !isWeekend(date) && !holidayRepository.existsByDateAndScopeIn(date, HolidayScope.AFFECTING_BILLING);
     }
 
     private static boolean isWeekend(LocalDate date) {

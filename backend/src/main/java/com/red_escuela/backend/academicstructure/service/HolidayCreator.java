@@ -6,15 +6,19 @@ import com.red_escuela.backend.academicstructure.entity.Holiday;
 import com.red_escuela.backend.academicstructure.exception.HolidayAlreadyExistsException;
 import com.red_escuela.backend.academicstructure.repository.HolidayRepository;
 import org.springframework.stereotype.Component;
+
+import java.util.Optional;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class HolidayCreator {
 
     private final HolidayRepository holidayRepository;
+    private final HolidayImpactFinder impactFinder;
 
-    public HolidayCreator(HolidayRepository holidayRepository) {
+    public HolidayCreator(HolidayRepository holidayRepository, HolidayImpactFinder impactFinder) {
         this.holidayRepository = holidayRepository;
+        this.impactFinder = impactFinder;
     }
 
     @Transactional
@@ -27,6 +31,8 @@ public class HolidayCreator {
         holiday.setName(request.name());
         holiday.setType(request.type());
         holiday.setDescription(request.description());
-        return HolidayResponse.from(holidayRepository.save(holiday));
+        Optional.ofNullable(request.scope()).ifPresent(holiday::setScope);
+        Holiday saved = holidayRepository.save(holiday);
+        return HolidayResponse.from(saved, impactFinder.findAffectedBy(saved));
     }
 }
