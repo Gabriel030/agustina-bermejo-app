@@ -21,8 +21,10 @@ Leyenda: **[ui]** = `components/ui/` (shadcn, agregar con `npx shadcn add`) · *
 ## 2. Navegación
 | Componente | Uso | API relevante |
 |---|---|---|
-| `Sidebar` [shared] | Nav lateral desktop, indicador deslizante | por rol |
-| `MobileMenu` [shared] | Drawer mobile con iconos | — |
+| `TopNav` [shared] | **Menú aprobado de toda la app** (barra superior, sin hamburguesa en escritorio): pestañas por rol; cada nivel abre al pasar el mouse (90 ms al abrir, 140 ms entre filas, 220 ms al salir), el clic fija y un segundo clic suelta; teclado como alternativa. Todo layout de rol lo usa; una pantalla nueva vive DENTRO de un layout de rol y se agrega con una entrada en `frontend/src/routes/navModel.js` (`buildNavModel`), nunca con un menú propio | `titulo`, `items`, `groups` (armados con `buildNavModel`), `breakpoint` |
+| `TopNavMenu` [shared] | Contenedor del desplegable de una pestaña de `TopNav` (lista simple o grilla) | `id`, `active`, `open`, `menus`, `wide`, `align`, `trigger` |
+| `MobileDrawerLevel` / `MobileMenu` [shared] | Cajón móvil por niveles con «Volver» (menú de usuario, «Cambiar de rol» y «Cerrar sesión» al pie) | `titulo`, `items`, `groups`, `hiddenFrom` |
+| `Sidebar` [shared] | Nav lateral (resto histórico; los menús nuevos van por `TopNav`) | por rol |
 | `TopNavGridPanel` [shared] | Panel de grilla de un desplegable de `TopNav`: secciones con conteo a la izquierda, pantallas de la sección apuntada a la derecha; hover a 140 ms, clic fija/suelta | `title`, `sections: [{ id, label, items }]`, `menus` |
 | `TopHeader` [shared] | Cabecera con título, ítems, campana, tema | `titulo`, `items` |
 | `Breadcrumb` [shared] (+ hook `useBreadcrumb`) | Ruta jerárquica en pantallas de detalle | `items` |
