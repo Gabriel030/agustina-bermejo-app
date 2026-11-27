@@ -96,7 +96,6 @@ class EnrollmentFindingsReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("E34-A-S3")
     void h3EnrollingIsRejectedWhileTheSectionClosureIsClosed() {
         ProgramSetup setup = programSetup("H3", null);
         Student student = fixtures.student("77000001");

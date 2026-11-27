@@ -1,5 +1,7 @@
 package com.red_escuela.backend.evaluation.specialist;
 
+import com.red_escuela.backend.evaluation.exception.SectionClosureClosedException;
+import com.red_escuela.backend.evaluation.exception.GradeCorrectionPeriodEndedException;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.entity.Subject;
@@ -135,7 +137,6 @@ class EvaluationFindingsReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("E34-A-S3")
     void h3LoadingAGradeIsRejectedWhileTheClosureIsClosed() {
         Setup setup = setup("74000001", 2, 0, false, EnrollmentStatus.IN_PROGRESS);
         fixtures.closure(SectionKind.PROGRAM, setup.section().getId(), ClosureStatus.CLOSED, setup.instructor().getPerson().getId());
@@ -144,7 +145,6 @@ class EvaluationFindingsReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("E34-A-S3")
     void h3EditingAGradeIsRejectedWhileTheClosureIsClosed() {
         Setup setup = setup("74000003", 2, 0, false, EnrollmentStatus.IN_PROGRESS);
         loadItem(setup, GradeItemType.EXAM, 1, 7.0);
@@ -155,7 +155,6 @@ class EvaluationFindingsReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("E34-A-S3")
     void h3h16RecoveryIsRejectedWhileTheClosureIsClosed() {
         Setup setup = setup("74000005", 2, 0, false, EnrollmentStatus.IN_PROGRESS);
         GradeItem exam = loadItem(setup, GradeItemType.EXAM, 1, 3.0);
@@ -169,7 +168,6 @@ class EvaluationFindingsReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("E34-A-S3")
     void h9CorrectionAfterTermEndIsAllowedWhenTheClosureWasReopened() {
         Setup setup = setup("74000007", 2, 0, false, EnrollmentStatus.IN_PROGRESS);
         GradeItem exam = loadItem(setup, GradeItemType.EXAM, 1, 3.0);
@@ -181,6 +179,44 @@ class EvaluationFindingsReproductionIT extends AbstractIntegrationTest {
         assertThatCode(() -> publishedGradeCorrector.correct(exam.getId(),
                 new CorrectGradeItemRequest(Grade.of(BigDecimal.valueOf(6.0)), "Error de carga detectado en la revision", null),
                 setup.enrollment().getStudent().getPerson().getId())).doesNotThrowAnyException();
+    }
+
+    @Test
+    void h9CorrectionOfAPublishedGradeIsRejectedWhileTheClosureIsClosed() {
+        Setup setup = setup("74000015", 2, 0, false, EnrollmentStatus.IN_PROGRESS);
+        GradeItem exam = loadItem(setup, GradeItemType.EXAM, 1, 3.0);
+        entityManager.flush();
+        publishExam(setup, 1);
+        fixtures.closure(SectionKind.PROGRAM, setup.section().getId(), ClosureStatus.CLOSED, setup.instructor().getPerson().getId());
+
+        assertThatThrownBy(() -> publishedGradeCorrector.correct(exam.getId(),
+                new CorrectGradeItemRequest(Grade.of(BigDecimal.valueOf(6.0)), "Error de carga detectado en la revision", null),
+                setup.enrollment().getStudent().getPerson().getId()))
+                .isInstanceOf(SectionClosureClosedException.class);
+    }
+
+    @Test
+    void h9CorrectionAfterTermEndIsRejectedWhenThereIsNoReopenedClosure() {
+        Setup setup = setup("74000017", 2, 0, false, EnrollmentStatus.IN_PROGRESS);
+        GradeItem exam = loadItem(setup, GradeItemType.EXAM, 1, 3.0);
+        entityManager.flush();
+        publishExam(setup, 1);
+        MutableClock.INSTANCE.setDate(LocalDate.of(3000, 1, 1));
+
+        assertThatThrownBy(() -> publishedGradeCorrector.correct(exam.getId(),
+                new CorrectGradeItemRequest(Grade.of(BigDecimal.valueOf(6.0)), "Error de carga detectado en la revision", null),
+                setup.enrollment().getStudent().getPerson().getId()))
+                .isInstanceOf(GradeCorrectionPeriodEndedException.class);
+    }
+
+    @Test
+    void h3FinalGradeFromAnExamBoardIsStillAcceptedWhileTheClosureIsClosed() {
+        Setup setup = setup("74000019", 1, 0, true, EnrollmentStatus.REGULAR);
+        ExamBoard board = scheduledBoard(setup, LocalDateTime.now().minusHours(2), null);
+        register(board, setup.enrollment());
+        fixtures.closure(SectionKind.PROGRAM, setup.section().getId(), ClosureStatus.CLOSED, setup.instructor().getPerson().getId());
+
+        assertThatCode(() -> loadFinal(setup, board, 5.0, null)).doesNotThrowAnyException();
     }
 
     @Test
