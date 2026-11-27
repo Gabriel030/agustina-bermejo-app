@@ -249,8 +249,22 @@ se implementa una pantalla "solo desktop" para adaptarla después. Breakpoints
 Tailwind default, mobile-first (clases sin prefijo = mobile, `md:`/`lg:`
 agregan desde ahí, nunca al revés):
 
-- **Layouts por rol** (`Sidebar.jsx` + contenido): el sidebar fijo a la
-  izquierda es el layout `lg:` (≥1024px). En mobile/tablet colapsa a un
+- **Menú aprobado (26-nov, Gabriel; plan #1589):** toda pantalla nueva usa el
+  `TopNav` del layout de su rol, con el patrón aprobado: pestañas en la barra
+  superior (sin hamburguesa en escritorio), hover abre y cambia cada nivel sin
+  clics intermedios, grilla con dos ejes (grupos | pantallas), el clic fija,
+  menú de usuario único (Mi perfil, Cambiar de rol, Cerrar sesión), móvil por
+  niveles con «Volver». Una pantalla nueva se registra en
+  `frontend/src/routes/navModel.js`; no se arma un menú propio ni se usa el
+  sidebar. Mockups de referencia: personal https://claude.ai/artifact/1hrEnhGQFFCWDu4ZwkNBDy,
+  Director https://claude.ai/artifact/KcQJCpWLaojL3SB28jkHw1, roles cortos
+  https://claude.ai/artifact/W8NNZwZAUuMLgqzFn44psx, menú de usuario
+  https://claude.ai/artifact/G2wUkJqbimmmftzqxNckVA, barra pública
+  https://claude.ai/artifact/Gx2rsFpaaBuBxnMVQb3Hin, cajón móvil
+  https://claude.ai/artifact/DmL28LFA8VgbnXwzfZz6wH y catálogo
+  https://claude.ai/artifact/JwUHLAWU1iQeqjys7tJgEJ.
+- **Layouts por rol** (histórico, `Sidebar.jsx` + contenido): el sidebar fijo a la
+  izquierda era el layout `lg:` (≥1024px). En mobile/tablet colapsa a un
   **menú hamburguesa** (`MobileMenu.jsx`, drawer lateral con los mismos
   ítems) — decisión revisada con el usuario; la versión anterior de esta
   convención pedía una bottom tab bar, descartada a pedido explícito.

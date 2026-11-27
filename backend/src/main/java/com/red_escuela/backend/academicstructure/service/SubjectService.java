@@ -5,8 +5,10 @@ import com.red_escuela.backend.academicstructure.dto.UpdateSubjectRequest;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectStatus;
 import com.red_escuela.backend.academicstructure.exception.SubjectAlreadyExistsException;
+import com.red_escuela.backend.academicstructure.exception.SubjectCriticalFieldsLockedException;
 import com.red_escuela.backend.academicstructure.api.SubjectNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.SubjectRepository;
+import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,9 +19,11 @@ import java.util.Optional;
 @Service
 public class SubjectService {
     private final SubjectRepository subjectRepository;
+    private final SubjectSectionRepository subjectSectionRepository;
 
-    public SubjectService(SubjectRepository subjectRepository) {
+    public SubjectService(SubjectRepository subjectRepository, SubjectSectionRepository subjectSectionRepository) {
         this.subjectRepository = subjectRepository;
+        this.subjectSectionRepository = subjectSectionRepository;
     }
 
     @Transactional
@@ -44,6 +48,10 @@ public class SubjectService {
     public Subject update(Long id, UpdateSubjectRequest request) {
         Subject subject = findOrThrow(id);
         subject.requireEditable();
+        if (subject.isCriticalFieldsChangeBlocked(subjectSectionRepository.existsBySubjectId(id), request.gradeMode(),
+                request.maxFinalExamAttempts(), request.weeklyHours(), request.weeklyHoursLab())) {
+            throw new SubjectCriticalFieldsLockedException(id);
+        }
         Optional.ofNullable(request.code()).ifPresent(subject::changeCode);
         Optional.ofNullable(request.name()).ifPresent(subject::setName);
         Optional.ofNullable(request.description()).ifPresent(subject::setDescription);

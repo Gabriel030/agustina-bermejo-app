@@ -33,6 +33,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import com.red_escuela.backend.academicstructure.api.SectionEnrollmentActivityPort;
 import com.red_escuela.backend.academicstructure.api.SectionEvaluationSetupPort;
+import com.red_escuela.backend.academicstructure.exception.SectionEvaluationSchemeLockedException;
 import com.red_escuela.backend.academicstructure.exception.SectionHasActiveEnrollmentsException;
 
 @Service
@@ -127,6 +128,7 @@ public class SubjectSectionService {
             identityAssigner.changeSubjectSectionShift(section, request.shift());
         }
         if (request.evaluationSchemeId() != null) {
+            requireEvaluationSchemeReassignable(section, request.evaluationSchemeId());
             section.setEvaluationScheme(resolveEvaluationScheme(request.evaluationSchemeId()));
         }
         if (request.maxAbsencePercent() != null) {
@@ -216,5 +218,15 @@ public class SubjectSectionService {
     private EvaluationScheme resolveEvaluationScheme(Long id) {
         evaluationSetupPort.requireEvaluationSchemeExists(id);
         return entityManager.find(EvaluationScheme.class, id);
+    }
+
+    private void requireEvaluationSchemeReassignable(SubjectSection section, Long newSchemeId) {
+        Long currentSchemeId = section.getEvaluationScheme() == null ? null : section.getEvaluationScheme().getId();
+        if (newSchemeId.equals(currentSchemeId)) {
+            return;
+        }
+        if (evaluationSetupPort.hasGradesLoadedInProgramSection(section.getId())) {
+            throw new SectionEvaluationSchemeLockedException(section.getId());
+        }
     }
 }

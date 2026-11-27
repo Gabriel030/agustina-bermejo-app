@@ -26,7 +26,7 @@ public class GradeItemSlotValidator {
 
     private void requireWithin(GradeItemType type, Integer sequenceNumber, int configuredCount) {
         if (sequenceNumber == null || sequenceNumber < 1 || sequenceNumber > configuredCount) {
-            throw new GradeItemOutsideConfiguredSlotsException(type, sequenceNumber, configuredCount);
+            throw new GradeItemOutsideConfiguredSlotsException(type.name(), sequenceNumber, configuredCount);
         }
     }
 }
