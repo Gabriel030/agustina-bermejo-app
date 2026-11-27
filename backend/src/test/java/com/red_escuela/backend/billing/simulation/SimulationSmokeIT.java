@@ -16,8 +16,16 @@ class SimulationSmokeIT extends AbstractSimulationTest {
     }
 
     private static Row installment(int month, String outstanding, String paymentStatus) {
-        return Row.of("MONTHLY_INSTALLMENT", YearMonth.of(2027, month), LocalDate.of(2027, month, 1), LocalDate.of(2027, month, 11), "48000.00", outstanding, "ISSUED",
+        return Row.of("MONTHLY_INSTALLMENT", YearMonth.of(2027, month), LocalDate.of(2027, month, 1), rolledToMonday(LocalDate.of(2027, month, 11)), "48000.00", outstanding, "ISSUED",
                 paymentStatus);
+    }
+
+    private static LocalDate rolledToMonday(LocalDate date) {
+        return switch (date.getDayOfWeek()) {
+            case SATURDAY -> date.plusDays(2);
+            case SUNDAY -> date.plusDays(1);
+            default -> date;
+        };
     }
 
     @Test

@@ -34,7 +34,15 @@ class SimulationDiscountsIT extends AbstractSimulationTest {
     }
 
     private static Row installment(YearMonth month, String total, String outstanding, String paymentStatus) {
-        return Row.of("MONTHLY_INSTALLMENT", month, month.atDay(1), month.atDay(11), total, outstanding, "ISSUED", paymentStatus);
+        return Row.of("MONTHLY_INSTALLMENT", month, month.atDay(1), rolledToMonday(month.atDay(11)), total, outstanding, "ISSUED", paymentStatus);
+    }
+
+    private static LocalDate rolledToMonday(LocalDate date) {
+        return switch (date.getDayOfWeek()) {
+            case SATURDAY -> date.plusDays(2);
+            case SUNDAY -> date.plusDays(1);
+            default -> date;
+        };
     }
 
     private long creditNotes() {
