@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.specialist;
 
+import com.red_escuela.backend.testsupport.ApprovedSectionConfigFixture;
 import com.red_escuela.backend.evaluation.api.ClosureReportNumberAllocator;
 import com.jayway.jsonpath.JsonPath;
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
@@ -264,6 +265,7 @@ class CommissionClosureQaIT extends AbstractIntegrationTest {
         section.setStatus(StatusType.ACTIVE);
         section.setEvaluationScheme(scheme);
         entityManager.persist(section);
+        ApprovedSectionConfigFixture.persistWhenSchemeExpectsCoursework(entityManager, section);
         Person teacherPerson = persistPerson("Docente", "Zoé", "DOCENTE");
         Instructor teacher = new Instructor();
         teacher.setPerson(teacherPerson);

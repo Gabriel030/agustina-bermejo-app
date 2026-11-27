@@ -1,5 +1,6 @@
 package com.red_escuela.backend.characterization.coursework;
 
+import com.red_escuela.backend.testsupport.ApprovedSectionConfigFixture;
 import com.red_escuela.backend.testsupport.TermFixtures;
 import tools.jackson.databind.JsonNode;
 import com.red_escuela.backend.testsupport.AsyncNotifications;
@@ -222,6 +223,7 @@ abstract class CourseworkCharacterizationSupport extends AbstractIntegrationTest
         section.setCapacity(30);
         section.setStatus(StatusType.ACTIVE);
         entityManager.persist(section);
+        ApprovedSectionConfigFixture.persistWhenSchemeExpectsCoursework(entityManager, section);
 
         SubjectSectionInstructor assignment = new SubjectSectionInstructor();
         assignment.setSection(section);

@@ -68,6 +68,7 @@ public class ClosureSheetAssembler {
     private final CommissionClosureStudentRepository closureStudentRepository;
     private final ClosureColumnsFinder closureColumnsFinder;
     private final CommissionClosureExceptionRepository exceptionRepository;
+    private final ApprovedCourseworkCountFinder courseworkCountFinder;
 
     public ClosureSheetAssembler(SectionFinder sectionFinder, SectionEnrollmentFinder sectionEnrollmentFinder,
             SectionInstructorFinder sectionInstructorFinder, SectionTermEndFinder sectionTermEndFinder,
@@ -75,7 +76,8 @@ public class ClosureSheetAssembler {
             StudentRequiredDocumentsFinder studentRequiredDocumentsFinder, GradeItemRepository gradeItemRepository,
             PublishedGradeItemSelector publishedGradeItemSelector,
             CommissionClosureStudentRepository closureStudentRepository, ClosureColumnsFinder closureColumnsFinder,
-            CommissionClosureExceptionRepository exceptionRepository) {
+            CommissionClosureExceptionRepository exceptionRepository,
+            ApprovedCourseworkCountFinder courseworkCountFinder) {
         this.sectionFinder = sectionFinder;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
         this.sectionInstructorFinder = sectionInstructorFinder;
@@ -87,6 +89,7 @@ public class ClosureSheetAssembler {
         this.closureStudentRepository = closureStudentRepository;
         this.closureColumnsFinder = closureColumnsFinder;
         this.exceptionRepository = exceptionRepository;
+        this.courseworkCountFinder = courseworkCountFinder;
     }
 
     @Transactional(readOnly = true)
@@ -164,7 +167,7 @@ public class ClosureSheetAssembler {
             return new ClosureSheetSchemeResponse(null, null, null, 0, 0, 0, context.maxAbsenceRate());
         }
         return new ClosureSheetSchemeResponse(scheme.getMinRegularGrade(), scheme.getMinApprovalGrade(),
-                scheme.getPromotionMinGrade(), countOf(scheme.getExamCountExpected()), countOf(scheme.getTpCountExpected()),
+                scheme.getPromotionMinGrade(), countOf(scheme.getExamCountExpected()), context.courseworkCountExpected(),
                 scheme.getRecoveryQuota(), context.maxAbsenceRate());
     }
 
@@ -185,7 +188,7 @@ public class ClosureSheetAssembler {
         EnrollmentRow enrollment = context.enrollmentsById().get(enrollmentId);
         List<GradeItem> items = published.getOrDefault(enrollmentId, List.of());
         List<ClosureSheetGradeResponse> grades = gradesOf(columns, items);
-        Boolean coursework = courseworkOf(context.scheme(), items);
+        Boolean coursework = courseworkOf(context.scheme(), context.courseworkCountExpected(), items);
         CommissionClosureStudent snapshot = snapshotRows.get(enrollmentId);
         ClosureSuggestedResult result = !closure.isOpenForTeacher() && snapshot != null && snapshot.getFinalCondition() != null
                 ? ClosureSuggestedResult.valueOf(snapshot.getFinalCondition().name())
@@ -196,7 +199,7 @@ public class ClosureSheetAssembler {
                 averageOf(context.scheme(), items).orElse(null), presence.get(enrollmentId), result,
                 new ClosureSheetRequirementsResponse(coursework, assessment.correlativesOk(), assessment.attendanceOk(),
                         assessment.gradeOk()),
-                administrativeOf(assessment, documents, viewer), alertsOf(assessment, context.scheme(), items, coursework),
+                administrativeOf(assessment, documents, viewer), alertsOf(assessment, context.scheme(), context.courseworkCountExpected(), items, coursework),
                 assessment.prerequisites().map(prerequisites -> prerequisites.outcome() == PrerequisiteOutcome.WAIVED)
                         .orElse(false),
                 snapshot == null ? null : snapshot.getTeacherObservation(), promotionExempted);
@@ -237,9 +240,8 @@ public class ClosureSheetAssembler {
         return Grade.average(exams);
     }
 
-    private Boolean courseworkOf(EvaluationScheme scheme, List<GradeItem> items) {
-        int expected = scheme == null ? 0 : countOf(scheme.getTpCountExpected());
-        if (expected == 0 || scheme.getMinRegularGrade() == null) {
+    private Boolean courseworkOf(EvaluationScheme scheme, int expected, List<GradeItem> items) {
+        if (scheme == null || expected == 0 || scheme.getMinRegularGrade() == null) {
             return null;
         }
         List<Grade> scores = items.stream().filter(item -> item.getType() == GradeItemType.TP && item.getScore() != null)
@@ -250,11 +252,12 @@ public class ClosureSheetAssembler {
         return scores.stream().allMatch(score -> score.meets(scheme.getMinRegularGrade()));
     }
 
-    private List<ClosureAlert> alertsOf(ClosureStudentAssessment assessment, EvaluationScheme scheme, List<GradeItem> items,
+    private List<ClosureAlert> alertsOf(ClosureStudentAssessment assessment, EvaluationScheme scheme, int courseworkCount,
+            List<GradeItem> items,
             Boolean coursework) {
         List<ClosureAlert> alerts = new ArrayList<>(assessment.alerts());
         boolean hasExamScore = items.stream().anyMatch(item -> item.getType() == GradeItemType.EXAM && item.getScore() != null);
-        boolean requiresCoursework = scheme != null && countOf(scheme.getTpCountExpected()) > 0;
+        boolean requiresCoursework = scheme != null && courseworkCount > 0;
         if (requiresCoursework && hasExamScore && !Boolean.TRUE.equals(coursework)) {
             alerts.add(ClosureAlert.EXAM_WITHOUT_COURSEWORK);
         }
@@ -293,7 +296,8 @@ public class ClosureSheetAssembler {
             return new SectionContext(section.getName(), section.getSubject().getName(),
                     cycle == null || cycle.getProgram() == null ? null : cycle.getProgram().getName(),
                     section.getTerm() == null ? null : section.getTerm().getDescription(), section.getEvaluationScheme(),
-                    section.getMaxAbsenceRate(), rows, items);
+                    section.getMaxAbsenceRate(), rows, items,
+                    courseworkCountFinder.findExpectedCount(kind, sectionId));
         }
         CourseSubjectSection section = sectionFinder.findCourseSectionEntity(sectionId);
         var enrollments = sectionEnrollmentFinder.findMembersWithStudentInCourseSection(sectionId);
@@ -307,7 +311,8 @@ public class ClosureSheetAssembler {
         return new SectionContext(section.getName(), section.getCourseSubject().getName(),
                 cycle == null || cycle.getCourse() == null ? null : cycle.getCourse().getName(),
                 section.getTerm() == null ? null : section.getTerm().getDescription(), section.getEvaluationScheme(),
-                section.getMaxAbsenceRate(), rows, items);
+                section.getMaxAbsenceRate(), rows, items,
+                    courseworkCountFinder.findExpectedCount(kind, sectionId));
     }
 
     private Map<Long, List<GradeItem>> groupByEnrollment(List<GradeItem> items, Function<GradeItem, Long> enrollmentIdOf) {
@@ -321,6 +326,6 @@ public class ClosureSheetAssembler {
 
     private record SectionContext(String sectionName, String subjectName, String programName, String termLabel,
             EvaluationScheme scheme, Percentage maxAbsenceRate, Map<Long, EnrollmentRow> enrollmentsById,
-            Map<Long, List<GradeItem>> itemsByEnrollment) {
+            Map<Long, List<GradeItem>> itemsByEnrollment, int courseworkCountExpected) {
     }
 }

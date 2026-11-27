@@ -57,6 +57,7 @@ public class TeacherGradeGridBuilder {
     private final SectionGradeItemPublicationRepository publicationRepository;
     private final GradeItemAuditRepository auditRepository;
     private final SectionTermEndFinder sectionTermEndFinder;
+    private final ApprovedCourseworkCountFinder courseworkCountFinder;
 
     public TeacherGradeGridBuilder(SectionFinder sectionFinder,
                                    SectionTeachingFinder sectionTeachingFinder,
@@ -66,7 +67,8 @@ public class TeacherGradeGridBuilder {
                                    SectionEvaluationConfigRepository configRepository,
                                    SectionGradeItemPublicationRepository publicationRepository,
                                    GradeItemAuditRepository auditRepository,
-                                   SectionTermEndFinder sectionTermEndFinder) {
+                                   SectionTermEndFinder sectionTermEndFinder,
+                                   ApprovedCourseworkCountFinder courseworkCountFinder) {
         this.sectionFinder = sectionFinder;
         this.sectionTeachingFinder = sectionTeachingFinder;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
@@ -76,6 +78,7 @@ public class TeacherGradeGridBuilder {
         this.publicationRepository = publicationRepository;
         this.auditRepository = auditRepository;
         this.sectionTermEndFinder = sectionTermEndFinder;
+        this.courseworkCountFinder = courseworkCountFinder;
     }
 
     @Transactional(readOnly = true)
@@ -205,14 +208,13 @@ public class TeacherGradeGridBuilder {
                 scheme.getMinRegularGrade(),
                 scheme.getMinApprovalGrade(),
                 scheme.getPromotionMinGrade(),
-                columns(scheme, config, publications), students, correctionDeadline);
+                columns(scheme, courseworkCountFinder.findExpectedCount(kind, sectionId), config, publications), students, correctionDeadline);
     }
 
-    private List<GradeGridColumnResponse> columns(EvaluationScheme scheme, SectionEvaluationConfig config,
+    private List<GradeGridColumnResponse> columns(EvaluationScheme scheme, int tps, SectionEvaluationConfig config,
                                                   Map<String, LocalDateTime> publications) {
         List<GradeGridColumnResponse> columns = new ArrayList<>();
         int exams = scheme.getExamCountExpected() == null ? 0 : scheme.getExamCountExpected();
-        int tps = scheme.getTpCountExpected() == null ? 0 : scheme.getTpCountExpected();
         for (int sequence = 1; sequence <= exams; sequence++) {
             columns.add(column(GradeItemType.EXAM, sequence, examDate(config, sequence), publications));
         }

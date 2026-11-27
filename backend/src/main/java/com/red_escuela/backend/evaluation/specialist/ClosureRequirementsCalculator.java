@@ -55,13 +55,15 @@ public class ClosureRequirementsCalculator {
     private final StudentRequiredDocumentsFinder studentRequiredDocumentsFinder;
     private final StudentPaymentsStandingPort studentPaymentsStandingPort;
     private final Clock clock;
+    private final ApprovedCourseworkCountFinder courseworkCountFinder;
 
     public ClosureRequirementsCalculator(SectionFinder sectionFinder, SectionEnrollmentFinder sectionEnrollmentFinder,
             SectionFreeByAbsencesFinder sectionFreeByAbsencesFinder, GradeItemRepository gradeItemRepository,
             PublishedGradeItemSelector publishedGradeItemSelector,
             ProgramPrerequisiteBatchEvaluator prerequisiteBatchEvaluator,
             StudentRequiredDocumentsFinder studentRequiredDocumentsFinder,
-            StudentPaymentsStandingPort studentPaymentsStandingPort, Clock clock) {
+            StudentPaymentsStandingPort studentPaymentsStandingPort, Clock clock,
+            ApprovedCourseworkCountFinder courseworkCountFinder) {
         this.sectionFinder = sectionFinder;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
         this.sectionFreeByAbsencesFinder = sectionFreeByAbsencesFinder;
@@ -71,6 +73,7 @@ public class ClosureRequirementsCalculator {
         this.studentRequiredDocumentsFinder = studentRequiredDocumentsFinder;
         this.studentPaymentsStandingPort = studentPaymentsStandingPort;
         this.clock = clock;
+        this.courseworkCountFinder = courseworkCountFinder;
     }
 
     @Transactional(readOnly = true)
@@ -122,9 +125,10 @@ public class ClosureRequirementsCalculator {
         Map<Long, StudentDocumentsStanding> documents = studentRequiredDocumentsFinder.findStandingOf(studentIds);
         Map<Long, List<GradeItem>> published = publishedGradeItemSelector.selectPublishedByEnrollment(
                 kind, sectionId, itemsByEnrollment);
+        int courseworkCount = courseworkCountFinder.findExpectedCount(kind, sectionId);
         List<ClosureStudentAssessment> assessments = new ArrayList<>();
         for (EnrollmentRow row : rows) {
-            assessments.add(assessRow(row, scheme, maxFinalExamAttempts, published.getOrDefault(row.enrollmentId(), List.of()),
+            assessments.add(assessRow(row, scheme, courseworkCount, maxFinalExamAttempts, published.getOrDefault(row.enrollmentId(), List.of()),
                     freeEnrollmentIds.contains(row.enrollmentId()), Optional.ofNullable(prerequisites.get(row.enrollmentId())),
                     payments.getOrDefault(row.studentId(), PaymentsStanding.NOT_VERIFIED),
                     documents.get(row.studentId()).complete()));
@@ -132,7 +136,8 @@ public class ClosureRequirementsCalculator {
         return assessments;
     }
 
-    private ClosureStudentAssessment assessRow(EnrollmentRow row, EvaluationScheme scheme, Integer maxFinalExamAttempts,
+    private ClosureStudentAssessment assessRow(EnrollmentRow row, EvaluationScheme scheme, int courseworkCount,
+            Integer maxFinalExamAttempts,
             List<GradeItem> items, boolean free, Optional<PrerequisiteBatchResult> prerequisites,
             PaymentsStanding payments, boolean documentsComplete) {
         boolean prerequisitesMet = prerequisites.map(PrerequisiteBatchResult::met).orElse(true);
@@ -140,7 +145,7 @@ public class ClosureRequirementsCalculator {
         EnrollmentStatus current = CourseworkOutcomeCalculator.isRebuildable(row.status(), row.finalGradeType())
                 ? EnrollmentStatus.ENROLLED : row.status();
         Optional<CourseworkOutcome> calculated = scheme == null ? Optional.empty()
-                : outcomeCalculator.calculate(scheme, items, current, maxFinalExamAttempts);
+                : outcomeCalculator.calculate(scheme, courseworkCount, items, current, maxFinalExamAttempts);
         PrerequisiteGatedOutcome gated = outcomeCalculator.promotionPolicy()
                 .restrictApprovalWhenPrerequisitesUnmet(calculated, () -> prerequisitesMet);
         boolean promotionCandidate = calculated.filter(CourseworkOutcome::isPromotion).isPresent();

@@ -117,6 +117,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `FINAL_EXAM_REQUIRES_REGULAR_STUDENT` | no | `FinalExamRequiresRegularStudentException` | evaluation |
 | `FINAL_GRADE_REQUIRES_EXAM_BOARD` | no | `FinalGradeRequiresExamBoardException` | evaluation |
 | `GATEWAY_CURRENCY_NOT_SUPPORTED` | no | `GatewayCurrencyNotSupportedException` | billing |
+| `GRADE_ITEM_OUTSIDE_CONFIGURED_SLOTS` | no | `GradeItemOutsideConfiguredSlotsException` | evaluation |
 | `GRADE_ITEM_TYPE_NOT_PUBLISHABLE` | no | `GradeItemTypeNotPublishableException` | evaluation |
 | `GUARDIAN_REQUIRED_FOR_MINOR` | no | `GuardianRequiredForMinorException` | identity |
 | `IDEMPOTENCY_KEY_INVALID` | no | `IdempotencyKeyInvalidException` | billing |
@@ -539,6 +540,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `IMPORT_BATCH_STATE_INVALID` | no | `ImportBatchStateInvalidException` | dataimport |
 | `IMPORT_NOT_VALIDATED` | no | `ImportNotValidatedException` | dataimport |
 | `IMPORT_ROLLBACK_BLOCKED` | no | `ImportRollbackBlockedException` | dataimport |
+| `INCOMPLETE_SECTION_EVALUATION_CONFIG` | no | `IncompleteSectionEvaluationConfigException` | evaluation |
 | `INCOMPLETE_SECTION_SETUP` | no | `IncompleteSectionSetupException` | enrollment |
 | `INSTITUTE_SETTING_ALREADY_IN_REQUESTED_STATE` | no | `InstituteSettingAlreadyInRequestedStateException` | platform |
 | `INSTRUCTOR_ALREADY_ASSIGNED` | no | `InstructorAlreadyAssignedException` | academicstructure |
