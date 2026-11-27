@@ -218,6 +218,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
     private ProgramSubject persistProgramSubject(Program program, Subject subject, int credits) {
         ProgramSubject ps = new ProgramSubject();
         ps.setProgram(program);
+        ps.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
         ps.setSubject(subject);
         ps.setCredits(credits);
         ps.setCurricularYear(1);

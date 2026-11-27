@@ -122,4 +122,10 @@ public class Program {
             throw new CurrencyMismatchException(currency, money.currency());
         }
     }
+
+    public void adoptCurriculumTotals(CurriculumPlan plan) {
+        this.totalYears = plan.getTotalYears();
+        this.totalCreditsRequired = plan.getTotalCreditsRequired();
+        this.totalHoursRequired = plan.getTotalHoursRequired();
+    }
 }

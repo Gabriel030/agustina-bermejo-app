@@ -14,8 +14,7 @@ public interface ProgramSubjectCorequisiteRepository extends JpaRepository<Progr
             select c from ProgramSubjectCorequisite c
             join fetch c.corequisiteProgramSubject corequisiteEntry
             join fetch corequisiteEntry.subject
-            where c.programSubject.program.id = :programId
-            """)
+            where c.programSubject.plan.id = """ + com.red_escuela.backend.academicstructure.repository.ProgramSubjectRepository.CURRENT_PLAN_ID_OF_PROGRAM)
     List<ProgramSubjectCorequisite> findAllOfProgram(@Param("programId") Long programId);
 
     boolean existsByProgramSubjectIdAndCorequisiteProgramSubjectId(

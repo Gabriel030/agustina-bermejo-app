@@ -1,0 +1,5 @@
+alter table curriculum_plan validate constraint curriculum_plan_status_enum;
+alter table curriculum_plan validate constraint curriculum_plan_version_positive;
+alter table curriculum_plan validate constraint curriculum_plan_validity_range;
+alter table curriculum_plan validate constraint curriculum_plan_graduation_deadline_after_validity;
+alter table curriculum_plan validate constraint curriculum_plan_totals_not_negative;
