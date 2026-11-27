@@ -528,6 +528,23 @@ from course_enrollment
 where status = 'WITHDRAWN' and withdrawal_registered_on is not null and withdrawal_effective_date is null;
 \endif
 
+select :current_version < 487 as run_block \gset
+\if :run_block
+\echo
+\echo [V487] Ciclos de oferta no rechazados repetidos para el mismo programa o curso y termino (V487 ABORTA al crear los unicos parciales uk_cycle_program_term_active / uk_cycle_course_term_active si hay filas; corregir antes rechazando o eliminando el ciclo sobrante; no se borran datos):
+select 'program' as owner_kind, program_id as owner_id, term_id, count(*) as live_cycles, min(id) as first_id
+from academic_offering_cycle
+where status <> 'REJECTED' and program_id is not null
+group by program_id, term_id
+having count(*) > 1
+union all
+select 'course', course_id, term_id, count(*), min(id)
+from academic_offering_cycle
+where status <> 'REJECTED' and course_id is not null
+group by course_id, term_id
+having count(*) > 1;
+\endif
+
 \echo
 \echo [V470] Franjas de aula solapadas (misma aula, mismo dia y hora, periodos de termino que se pisan, ambas de comisiones ACTIVE); V470 ABORTA al crear el EXCLUDE si hay filas (corregir antes: mover una franja a otra aula u horario o desactivar la comision; no se borran datos):
 with active_slots as (
