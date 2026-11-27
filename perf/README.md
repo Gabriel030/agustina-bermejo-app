@@ -1,6 +1,8 @@
 # Medicion de rendimiento (25-A P0)
 
-Los presupuestos de `perf/budget.json` son relativos a la medicion base A0 por 1,5 de holgura, no un SLA. Antes de medir correr `uptime` y anotar el load average junto al resultado: con carga ajena los absolutos son pesimistas.
+Los presupuestos de `perf/budget.json` son relativos a la medicion base A0 por 1,5 de holgura, no un SLA.
+
+Topes por endpoint: `p50` = p50 de `db-baseline.md` por 3 (corredor de CI ruidoso, un hilo); `p95` = el existente; `p99` = 2 por el tope de p95. La linea base no registra p99 a un hilo, asi que los `p99` son provisorios (no medidos) y se ajustan tras la primera corrida de `measure.py`. `pool:db.peakConnections` = 25: pico medido de 22 conexiones en `pg_stat_activity` (`db-baseline.md`, carga concurrente) mas holgura, con Hikari en `maximum-pool-size` 20 (`DB_POOL_MAX_SIZE`) y el resto de sesiones del servicio. `python3 perf/load.py` escribe `perf/out/pool.json`; se valida con `PERF_SCOPE=pool python3 perf/check_budget.py`. Ni los endpoints ni el pool corren en CI (hace falta Postgres perf y backend). Antes de medir correr `uptime` y anotar el load average junto al resultado: con carga ajena los absolutos son pesimistas.
 
 ## Reproducir
 
