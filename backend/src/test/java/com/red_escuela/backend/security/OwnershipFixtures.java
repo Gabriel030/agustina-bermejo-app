@@ -507,6 +507,10 @@ final class OwnershipFixtures {
         courseAssignment.setRole(InstructorRole.LEAD);
         entityManager.persist(courseAssignment);
         courseSectionId = courseSection.getId();
+        SectionEvaluationConfig courseEvaluationConfig = new SectionEvaluationConfig();
+        courseEvaluationConfig.setCourseSection(courseSection);
+        courseEvaluationConfig.setStatus(SectionEvaluationConfigStatus.DRAFT);
+        entityManager.persist(courseEvaluationConfig);
         CourseEnrollment courseEnrollment = new CourseEnrollment();
         courseEnrollment.setStudent(student);
         courseEnrollment.setCourse(course);

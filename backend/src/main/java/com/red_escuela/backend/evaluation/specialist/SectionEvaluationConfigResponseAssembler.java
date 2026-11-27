@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.specialist;
 
+import com.red_escuela.backend.evaluation.domain.SectionRef;
 import com.red_escuela.backend.evaluation.dto.SectionEvaluationConfigResponse;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
 import com.red_escuela.backend.evaluation.repository.SectionEvaluationConfigRepository;
@@ -25,15 +26,15 @@ public class SectionEvaluationConfigResponseAssembler {
 
     public SectionEvaluationConfigResponse assembleForStaff(SectionEvaluationConfig detachedConfig) {
         SectionEvaluationConfig config = reload(detachedConfig);
-        return SectionEvaluationConfigResponse.from(config, instructorAccess.listInstructors(config.getSubjectSection().getId()));
+        return SectionEvaluationConfigResponse.from(config, instructorAccess.listInstructors(SectionEvaluationConfigOwner.sectionRefOf(config)));
     }
 
     public SectionEvaluationConfigResponse assembleForInstructor(SectionEvaluationConfig detachedConfig, Long instructorId) {
         SectionEvaluationConfig config = reload(detachedConfig);
-        Long sectionId = config.getSubjectSection().getId();
-        boolean isLead = instructorAccess.isLeadInstructor(sectionId, instructorId);
+        SectionRef section = SectionEvaluationConfigOwner.sectionRefOf(config);
+        boolean isLead = instructorAccess.isLeadInstructor(section, instructorId);
         return SectionEvaluationConfigResponse.from(
-                config, instructorAccess.listInstructors(sectionId),
+                config, instructorAccess.listInstructors(section),
                 isLead && config.isEditable(), isLead && config.withEvaluationConfigDueDays(dueDaysReader.read()).canBeSubmitted(ApplicationTime.now()));
     }
 

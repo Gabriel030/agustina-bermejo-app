@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.usecase.sectionconfig;
 
+import com.red_escuela.backend.evaluation.domain.SectionRef;
 import com.red_escuela.backend.evaluation.dto.SectionEvaluationConfigResponse;
 import com.red_escuela.backend.evaluation.specialist.SectionEvaluationConfigFinder;
 import com.red_escuela.backend.evaluation.specialist.SectionEvaluationConfigResponseAssembler;
@@ -18,7 +19,7 @@ public class GetSectionEvaluationConfigForStaffService implements GetSectionEval
     }
 
     @Override
-    public SectionEvaluationConfigResponse get(Long sectionId) {
-        return responseAssembler.assembleForStaff(configFinder.findOrThrow(sectionId));
+    public SectionEvaluationConfigResponse get(SectionRef section) {
+        return responseAssembler.assembleForStaff(configFinder.findOrThrow(section));
     }
 }

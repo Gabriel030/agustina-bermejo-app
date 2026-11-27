@@ -13,9 +13,15 @@ public interface SectionEvaluationConfigRepository extends JpaRepository<Section
 
     Optional<SectionEvaluationConfig> findBySubjectSectionId(Long subjectSectionId);
 
+    Optional<SectionEvaluationConfig> findByCourseSectionId(Long courseSectionId);
+
     List<SectionEvaluationConfig> findBySubjectSection_Instructors_InstructorId(Long instructorId);
 
-    List<SectionEvaluationConfig> findByStatus(SectionEvaluationConfigStatus status);
+    List<SectionEvaluationConfig> findByCourseSection_Instructors_InstructorId(Long instructorId);
+
+    List<SectionEvaluationConfig> findByStatusAndSubjectSectionIsNotNull(SectionEvaluationConfigStatus status);
+
+    List<SectionEvaluationConfig> findByStatusAndCourseSectionIsNotNull(SectionEvaluationConfigStatus status);
 
     List<SectionEvaluationConfig> findByStatusIn(List<SectionEvaluationConfigStatus> statuses);
 

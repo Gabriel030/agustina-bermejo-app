@@ -58,6 +58,13 @@ public class SectionInstructorFinder {
                 .map(link -> link.getInstructor().getPerson().getId());
     }
 
+    public Optional<Long> findCourseSectionLeadPersonId(Long courseSectionId) {
+        return courseInstructorRepository.findBySectionId(courseSectionId).stream()
+                .filter(link -> link.getRole() == InstructorRole.LEAD)
+                .findFirst()
+                .map(link -> link.getInstructor().getPerson().getId());
+    }
+
     private SectionInstructorView toView(SubjectSectionInstructor link) {
         return viewOf(link.getInstructor(), link.getRole());
     }
