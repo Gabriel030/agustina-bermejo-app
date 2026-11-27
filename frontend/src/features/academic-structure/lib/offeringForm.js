@@ -58,6 +58,10 @@ export function validateCourseDetail(values) {
   if (!isWholeNumber(values.durationMonths) || Number(values.durationMonths) < 1) {
     errors.durationMonths = 'La duración en meses es obligatoria y tiene que ser al menos 1.';
   }
+  const hours = String(values.durationHours ?? '').trim();
+  if (hours !== '' && (!/^\d+$/.test(hours) || Number(hours) < 1)) {
+    errors.durationHours = 'La carga horaria debe ser un número entero mayor que cero, o dejarla vacía.';
+  }
   if (values.registrationStart && values.registrationEnd && values.registrationEnd < values.registrationStart) {
     errors.registrationEnd = 'El cierre de inscripción no puede ser anterior a la apertura.';
   }

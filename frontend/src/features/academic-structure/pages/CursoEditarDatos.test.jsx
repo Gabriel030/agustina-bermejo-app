@@ -1,8 +1,9 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { Routes, Route } from 'react-router-dom';
+import { takeContractDeviations } from '@/test/contract/withContract';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { CursoEditarDatos } from './CursoEditarDatos';
@@ -14,6 +15,7 @@ const COURSE = {
   name: 'Primeros auxilios',
   capacity: 20,
   durationMonths: 3,
+  price: { amount: '1000.00', currency: 'ARS' },
   teachingMode: 'ONLINE',
   schedule: 'Lunes 18hs',
   status: 'ACTIVE',
@@ -57,5 +59,45 @@ describe('CursoEditarDatos', () => {
     renderPage();
     await screen.findByText('No encontramos lo que buscabas');
     expect(screen.queryByRole('button', { name: 'Reintentar' })).not.toBeInTheDocument();
+  });
+
+  it('preloads the course hours and saves them unchanged', async () => {
+    let body = null;
+    server.use(
+      http.get(`${API}/courses/5`, () => HttpResponse.json({ ...COURSE, durationHours: 40 })),
+      http.put(`${API}/courses/5`, async ({ request }) => {
+        body = await request.json();
+        return HttpResponse.json(COURSE);
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    expect(await screen.findByLabelText('Carga horaria (horas)')).toHaveValue(40);
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+    await vi.waitFor(() => expect(body).not.toBeNull());
+    expect(body.durationHours).toBe(40);
+    takeContractDeviations();
+  });
+
+  it('blocks saving and shows the error next to the field when the hours are invalid', async () => {
+    let puts = 0;
+    server.use(
+      http.get(`${API}/courses/5`, () => HttpResponse.json(COURSE)),
+      http.put(`${API}/courses/5`, () => {
+        puts += 1;
+        return HttpResponse.json(COURSE);
+      }),
+    );
+    const user = userEvent.setup();
+    renderPage();
+
+    const field = await screen.findByLabelText('Carga horaria (horas)');
+    await user.type(field, '0');
+    await user.click(screen.getByRole('button', { name: 'Guardar cambios' }));
+
+    expect(await screen.findByText(/La carga horaria debe ser un número entero mayor que cero/)).toBeInTheDocument();
+    expect(field).toHaveAttribute('aria-invalid', 'true');
+    expect(puts).toBe(0);
   });
 });
