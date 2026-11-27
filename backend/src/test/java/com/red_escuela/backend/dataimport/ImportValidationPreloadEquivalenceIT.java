@@ -48,9 +48,9 @@ class ImportValidationPreloadEquivalenceIT extends AbstractDataImportIT {
                     + "NT-" + suffix + "," + csv.subjectCode(0) + "," + (year + 3) + ",FIRST_SEMESTER,Sin ciclo,MORNING," + csv.instructorDni() + ",,,,,\n");
             upload(testBatch, "PROGRAM_ENROLLMENTS", HistoricalDatasetCsv.PROGRAM_ENROLLMENT_HEADER
                     + programEnrollment(5, csv)
-                    + "DNI," + csv.studentDni(0) + "," + program + "," + year + "-03-02,ENROLLED,,,,\n"
+                    + "DNI," + csv.studentDni(0) + "," + program + "," + year + "-03-02,ENROLLED,,," + year + ",FIRST\n"
                     + "DNI," + csv.studentDni(1) + "," + missingProgram + "," + year + "-03-01,ENROLLED,,,,\n"
-                    + "DNI," + unknownDni + "," + program + "," + year + "-03-01,ENROLLED,,,,\n");
+                    + "DNI," + unknownDni + "," + program + "," + year + "-03-01,ENROLLED,,," + year + ",FIRST\n");
             upload(testBatch, "SECTION_ENROLLMENTS", HistoricalDatasetCsv.SECTION_ENROLLMENT_HEADER
                     + sectionEnrollment(csv.studentDni(1), program, csv.sectionCode(0), 1, "8,50", finalDate)
                     + sectionEnrollment(csv.studentDni(0), program, csv.sectionCode(0), 2, "8,50", finalDate)
@@ -67,7 +67,7 @@ class ImportValidationPreloadEquivalenceIT extends AbstractDataImportIT {
             assertThat(jdbc.queryForList(ROWS_WITH_ERRORS_IN_STORED_ORDER, String.class, testBatch)).containsExactlyInAnyOrder(
                     "PROGRAM_ENROLLMENTS " + programKey(csv, 5) + " => VALID []",
                     "PROGRAM_ENROLLMENTS " + programKey(csv, 0) + " => CONFLICT [programName:PROGRAM_ENROLLMENT_ALREADY_EXISTS]",
-                    "PROGRAM_ENROLLMENTS DNI:" + csv.studentDni(1) + "|" + missingProgram + " => ERROR [programName:PROGRAM_NOT_FOUND]",
+                    "PROGRAM_ENROLLMENTS DNI:" + csv.studentDni(1) + "|" + missingProgram + " => ERROR [cohortYear:COHORT_YEAR_REQUIRED,intake:INTAKE_REQUIRED,programName:PROGRAM_NOT_FOUND]",
                     "PROGRAM_ENROLLMENTS DNI:" + unknownDni + "|" + program + " => ERROR [dni:STUDENT_NOT_FOUND]",
                     "SECTIONS AMB-" + suffix + " => ERROR [closedOn:CLOSED_ON_REQUIRED,year:TERM_AMBIGUOUS]",
                     "SECTIONS NT-" + suffix + " => ERROR [closedOn:CLOSED_ON_REQUIRED,year:TERM_NOT_FOUND]",
@@ -89,7 +89,7 @@ class ImportValidationPreloadEquivalenceIT extends AbstractDataImportIT {
     }
 
     private String programEnrollment(int student, HistoricalDatasetCsv csv) {
-        return "DNI," + csv.studentDni(student) + "," + csv.program() + "," + year + "-03-01,ENROLLED,,,,\n";
+        return "DNI," + csv.studentDni(student) + "," + csv.program() + "," + year + "-03-01,ENROLLED,,," + year + ",FIRST\n";
     }
 
     private static String sectionEnrollment(String dni, String program, String section, int attempt, String score, String finalDate) {
