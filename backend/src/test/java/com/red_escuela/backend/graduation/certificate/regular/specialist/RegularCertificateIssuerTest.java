@@ -4,6 +4,7 @@ import com.red_escuela.backend.graduation.certificate.engine.CertificateFileStor
 import com.red_escuela.backend.graduation.certificate.engine.CertificatePdfRenderer;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateSnapshot;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateTemplateDefinition;
+import com.red_escuela.backend.graduation.certificate.template.specialist.CertificateTemplateRenderSource;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertificateResponse;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularityReason;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularityVerdict;
@@ -19,6 +20,7 @@ import com.red_escuela.backend.graduation.certificate.regular.entity.StandingBas
 import com.red_escuela.backend.graduation.certificate.regular.exception.ConcurrentRegularCertificateIssueException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.NotRegularException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.RegularCertificateAlreadyIssuedException;
+import com.red_escuela.backend.graduation.certificate.regular.exception.RegularEnrollmentNotFoundException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.StandingNotConfirmedException;
 import com.red_escuela.backend.graduation.certificate.regular.exception.StudentDocumentMissingException;
 import com.red_escuela.backend.graduation.certificate.regular.repository.RegularCertificateRequestRepository;
@@ -99,7 +101,7 @@ class RegularCertificateIssuerTest {
         return new RegularCertificateIssuer(certificateRepository, requestRepository, regularityEvaluator, standingGate,
                 factsFinder, template, renderer, fileStore, verificationUrl, new CertificateDigest(), currentActorFinder,
                 eventPublisher, new SimpleMeterRegistry(), clock, settingsFinderOf(validityDays), exceptionConsumer,
-                mock(VerifiableDocumentRegistry.class));
+                mock(VerifiableDocumentRegistry.class), mock(CertificateTemplateRenderSource.class));
     }
 
     @BeforeEach
@@ -317,6 +319,69 @@ class RegularCertificateIssuerTest {
         issuer(30).issue(command);
 
         verify(exceptionConsumer, never()).consume(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void debtExceptionIssuanceUsesExceptionStandingStaffChannelAndNeverTouchesTheLegacyConsumer() {
+        when(standingGate.resolveByException(STUDENT_ID, RegularityKind.PROGRAM, ENROLLMENT_ID))
+                .thenReturn(new StandingResolution(StandingBasis.EXCEPTION_APPROVED, BillingMode.FULL, null, null, null));
+        when(certificateRepository.saveAndFlush(any(RegularStudentCertificate.class))).thenAnswer(invocation -> {
+            RegularStudentCertificate certificate = invocation.getArgument(0);
+            assertThat(certificate.getStandingBasis()).isEqualTo(StandingBasis.EXCEPTION_APPROVED);
+            assertThat(certificate.getExceptionId()).isNull();
+            assertThat(certificate.getIssueChannel()).isEqualTo(RegularCertificateChannel.STAFF);
+            assertThat(certificate.getIssuedById()).isEqualTo(ACTOR_ID);
+            return certificate;
+        });
+
+        issuer(30).issueUnderDebtException(STUDENT_ID, ENROLLMENT_ID);
+
+        verify(standingGate, never()).resolve(any(), any(), any(), any());
+        verify(exceptionConsumer, never()).consume(any(), any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void debtExceptionIssuanceRejectsAnEnrollmentOfAnotherStudentBeforeStoringAnything() {
+        when(factsFinder.findOwnedBy(RegularityKind.PROGRAM, ENROLLMENT_ID, 999L)).thenThrow(new RegularEnrollmentNotFoundException());
+
+        assertThatThrownBy(() -> issuer(30).issueUnderDebtException(999L, ENROLLMENT_ID))
+                .isInstanceOf(RegularEnrollmentNotFoundException.class);
+
+        verify(certificateRepository, never()).saveAndFlush(any(RegularStudentCertificate.class));
+        verify(fileStore, never()).save(anyString(), any());
+    }
+
+    @Test
+    void debtExceptionIssuanceStillRequiresInstitutionalRegularity() {
+        when(regularityEvaluator.evaluate(RegularityKind.PROGRAM, ENROLLMENT_ID))
+                .thenReturn(verdict(false, List.of(RegularityReason.values()[0])));
+
+        assertThatThrownBy(() -> issuer(30).issueUnderDebtException(STUDENT_ID, ENROLLMENT_ID)).isInstanceOf(NotRegularException.class);
+
+        verify(standingGate, never()).resolveByException(any(), any(), any());
+        verify(certificateRepository, never()).saveAndFlush(any(RegularStudentCertificate.class));
+    }
+
+    @Test
+    void debtExceptionIssuanceWithoutDebtRecordsARejectionAndStoresNothing() {
+        when(standingGate.resolveByException(STUDENT_ID, RegularityKind.PROGRAM, ENROLLMENT_ID))
+                .thenThrow(new com.red_escuela.backend.graduation.certificate.regular.exception.NoDebtToExceptException());
+
+        assertThatThrownBy(() -> issuer(30).issueUnderDebtException(STUDENT_ID, ENROLLMENT_ID))
+                .isInstanceOf(com.red_escuela.backend.graduation.certificate.regular.exception.NoDebtToExceptException.class);
+
+        assertThat(capturedRequest().getOutcome()).isEqualTo(RegularRequestOutcome.REJECTED);
+        verify(certificateRepository, never()).saveAndFlush(any(RegularStudentCertificate.class));
+    }
+
+    @Test
+    void pendingRequestConflictIsReportedAsConcurrentIssue() {
+        when(standingGate.requiresStaffConfirmation()).thenReturn(true);
+        when(requestRepository.findFirstByProgramEnrollmentIdAndOutcomeOrderByRequestedAtDesc(ENROLLMENT_ID, RegularRequestOutcome.PENDING_STAFF))
+                .thenReturn(Optional.empty());
+        when(requestRepository.saveAndFlush(any())).thenThrow(new DataIntegrityViolationException("uq_regular_cert_request_pending_per_enrollment"));
+
+        assertThatThrownBy(() -> issuer(30).submitFromPortal(command)).isInstanceOf(ConcurrentRegularCertificateIssueException.class);
     }
 
     @Test

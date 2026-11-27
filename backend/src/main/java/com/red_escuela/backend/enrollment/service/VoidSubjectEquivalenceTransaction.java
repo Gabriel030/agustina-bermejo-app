@@ -1,11 +1,13 @@
 package com.red_escuela.backend.enrollment.service;
 
+import com.red_escuela.backend.academicstructure.api.ProgramCurriculumFinder;
+import com.red_escuela.backend.academicstructure.api.ProgramSubjectView;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.SubjectEquivalence;
 import com.red_escuela.backend.enrollment.entity.SubjectEquivalenceStatus;
 import com.red_escuela.backend.enrollment.events.SubjectEquivalenceVoidedEvent;
 import com.red_escuela.backend.enrollment.exception.EquivalenceAlreadyVoidedException;
-import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.exception.SubjectEquivalenceNotFoundException;
 import com.red_escuela.backend.enrollment.policy.SubjectEquivalencePolicy;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
@@ -27,6 +29,7 @@ public class VoidSubjectEquivalenceTransaction {
 
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final SubjectEquivalenceRepository subjectEquivalenceRepository;
+    private final ProgramCurriculumFinder programCurriculumFinder;
     private final StaffPersonResolver staffPersonResolver;
     private final AuditTrail auditTrail;
     private final ApplicationEventPublisher eventPublisher;
@@ -34,14 +37,21 @@ public class VoidSubjectEquivalenceTransaction {
 
     public VoidSubjectEquivalenceTransaction(ProgramEnrollmentRepository programEnrollmentRepository,
                                              SubjectEquivalenceRepository subjectEquivalenceRepository,
-                                             StaffPersonResolver staffPersonResolver, AuditTrail auditTrail,
+                                             ProgramCurriculumFinder programCurriculumFinder, StaffPersonResolver staffPersonResolver, AuditTrail auditTrail,
                                              ApplicationEventPublisher eventPublisher, Clock clock) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.subjectEquivalenceRepository = subjectEquivalenceRepository;
+        this.programCurriculumFinder = programCurriculumFinder;
         this.staffPersonResolver = staffPersonResolver;
         this.auditTrail = auditTrail;
         this.eventPublisher = eventPublisher;
         this.clock = clock;
+    }
+
+    private String subjectNameOf(ProgramEnrollment enrollment, Long subjectId) {
+        return programCurriculumFinder.findProgramSubject(enrollment.getProgram().getId(), subjectId)
+                .map(ProgramSubjectView::subjectName)
+                .orElse(null);
     }
 
     @Transactional
@@ -65,6 +75,6 @@ public class VoidSubjectEquivalenceTransaction {
         auditTrail.record(new AuditRecord(AuditAction.SUBJECT_EQUIVALENCE_VOIDED, AuditEntityType.SUBJECT_EQUIVALENCE,
                 equivalenceId, null, null, reason));
         eventPublisher.publishEvent(SubjectEquivalenceVoidedEvent.voidedFor(equivalenceId, programEnrollmentId,
-                equivalence.getSubjectId(), enrollment.getStudent().getPerson().getId()));
+                equivalence.getSubjectId(), enrollment.getStudent().getPerson().getId(), subjectNameOf(enrollment, equivalence.getSubjectId())));
     }
 }

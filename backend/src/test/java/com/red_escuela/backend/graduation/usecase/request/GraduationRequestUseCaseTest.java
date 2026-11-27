@@ -33,7 +33,7 @@ import com.red_escuela.backend.graduation.exception.GraduationRequestAlreadyActi
 import com.red_escuela.backend.graduation.exception.GraduationRequirementsNotMetException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentRequiredException;
 import com.red_escuela.backend.graduation.exception.NotEligibleForGraduationException;
-import com.red_escuela.backend.billing.exception.PendingDebtException;
+import com.red_escuela.backend.graduation.exception.PendingDebtException;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -331,6 +331,7 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
         GraduationRequest request = requestAndVerify(enrollment, "ADMIN80000009");
 
         enrollment.setStatus(ProgramEnrollmentStatus.WITHDRAWN);
+        enrollment.setWithdrawalEffectiveDate(java.time.LocalDate.now());
         entityManager.flush();
         authenticateAsPerson("DIRECTOR80000009");
 

@@ -103,14 +103,16 @@ function AvisoItem({ aviso, expandidoPorUrl, refProp, onAbrir }) {
             <span className="sr-only">Sin leer</span>
           </>
         )}
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="row"
           aria-expanded={expandido}
           onClick={alternar}
-          className="min-h-11 w-full text-left text-size-13-5 font-semibold text-ink"
+          className="min-h-11 justify-start rounded-none border-0 p-0 text-size-13-5 font-semibold text-ink hover:bg-transparent"
         >
           {aviso.title}
-        </button>
+        </Button>
       </div>
       <div
         ref={measureBody}

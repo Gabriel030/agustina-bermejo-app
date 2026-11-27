@@ -138,8 +138,8 @@ class SubjectApprovalPortTest {
         when(curriculumFinder.findProgramSubject(PROGRAM_ID, 3L))
                 .thenReturn(Optional.of(new ProgramSubjectView(33L, 3L, "Analisis", 4, 1, null, null)));
         when(curriculumFinder.findPrerequisites(33L)).thenReturn(List.of(
-                new PrerequisiteView(1L, "Algebra", RequirementType.APPROVED, "S1"),
-                new PrerequisiteView(2L, "Fisica", RequirementType.PASSED_COURSEWORK, "S2")));
+                new PrerequisiteView(1L, "Algebra", RequirementType.APPROVED, "S1", null),
+                new PrerequisiteView(2L, "Fisica", RequirementType.PASSED_COURSEWORK, "S2", null)));
         recognized(ENROLLMENT_ID, 1L, "8.00");
         recognized(ENROLLMENT_ID, 2L, null);
 
@@ -165,7 +165,7 @@ class SubjectApprovalPortTest {
         when(curriculumFinder.findProgramSubjects(PROGRAM_ID))
                 .thenReturn(List.of(new ProgramSubjectView(33L, 3L, "Analisis", 4, 1, null, null)));
         when(curriculumFinder.findProgramPrerequisites(PROGRAM_ID)).thenReturn(Map.of(33L,
-                List.of(new PrerequisiteView(1L, "Algebra", RequirementType.APPROVED, "S1"))));
+                List.of(new PrerequisiteView(1L, "Algebra", RequirementType.APPROVED, "S1", null))));
         when(approvalRepository.findProgramEnrollmentIdsWithRequest(any(), any(), any(), any())).thenReturn(List.of());
         recognized(ENROLLMENT_ID, 1L, null);
 

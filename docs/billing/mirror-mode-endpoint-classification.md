@@ -77,6 +77,8 @@ Billing tiene tres modos (`BillingMode`): `OFF`, `MIRROR` y `FULL`. Con `OFF` to
 | DiscountDefinitionController | validateDiscountDefinition | POST | `/discount-definitions/validation` | READ | Validación de una promoción: ValidateDiscountDefinitionService no persiste |
 | DiscountDefinitionController | findDiscountDefinition | GET | `/discount-definitions/{id}` | READ | Lectura |
 | DiscountDefinitionController | closeDiscountDefinition | POST | `/discount-definitions/{id}/closure` | WRITE | Configuración: crea o cierra una promoción |
+| EnrollmentAdHocInvoiceController | createCourseAdHocInvoice | POST | `/course-enrollments/{id}/invoices/ad-hoc` | WRITE | Emite una factura ad hoc |
+| EnrollmentAdHocInvoiceController | createProgramAdHocInvoice | POST | `/program-enrollments/{id}/invoices/ad-hoc` | WRITE | Emite una factura ad hoc |
 | EnrollmentPaymentStandingController | getCourseEnrollmentStanding | GET | `/course-enrollments/{id}/payment-standing` | READ | Lectura |
 | EnrollmentPaymentStandingController | listCourseEnrollmentStandingHistory | GET | `/course-enrollments/{id}/payment-standing/history` | READ | Lectura |
 | EnrollmentPaymentStandingController | getProgramEnrollmentStanding | GET | `/program-enrollments/{id}/payment-standing` | READ | Lectura |

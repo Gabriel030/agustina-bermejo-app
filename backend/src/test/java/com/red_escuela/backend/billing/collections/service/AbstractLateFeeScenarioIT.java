@@ -173,6 +173,7 @@ abstract class AbstractLateFeeScenarioIT extends AbstractIntegrationTest {
     protected void withdrawCourseEnrollmentOn(LocalDate date) {
         enrollment.setStatus(EnrollmentStatus.WITHDRAWN);
         enrollment.setCompletionDate(date.atTime(10, 0));
+        enrollment.setWithdrawalEffectiveDate(date);
         courseEnrollmentRepository.save(enrollment);
     }
 

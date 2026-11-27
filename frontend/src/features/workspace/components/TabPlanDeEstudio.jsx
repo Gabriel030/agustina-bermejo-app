@@ -1,4 +1,4 @@
-import { Fragment, useMemo } from 'react';
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { ListFilter } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
@@ -11,6 +11,9 @@ import { Button } from '@/components/ui/button';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Table, TableHeader, TableBody, TableRow, TableHead, TableCell, TableCaption } from '@/components/ui/table';
 import { AnioGroupHeaderRow } from '@/components/alumno/AnioGroupHeaderRow';
+import { CurriculumSummaryBar } from '@/features/workspace/components/CurriculumSummaryBar';
+import { CurriculumMap } from '@/features/workspace/components/CurriculumMap';
+import { PlanViewSwitch } from '@/features/workspace/components/PlanViewSwitch';
 import { PlanStatusFilter } from '@/features/workspace/components/PlanStatusFilter';
 import { PlanStatusPill } from '@/features/workspace/components/PlanStatusPill';
 import { PLAN_STATUS_PILL } from '@/features/workspace/components/planStatusPills';
@@ -18,8 +21,9 @@ import { PlanSubjectCard } from '@/features/workspace/components/PlanSubjectCard
 import { PlanBlockedHint } from '@/features/workspace/components/PlanBlockedHint';
 import { ElectiveGroupsSummary } from '@/features/workspace/components/ElectiveGroupsSummary';
 import { GraduationProjectionCard } from '@/features/workspace/components/GraduationProjectionCard';
-import { useCurriculumProgress } from '@/features/enrollment';
+import { useCurriculumProgressFor } from '@/features/enrollment';
 import { useMediaQuery } from '@/hooks/useMediaQuery';
+import { smoothScrollBehavior } from '@/lib/scrollBehavior';
 import {
   buildPlanRows,
   describeCorequisite,
@@ -33,13 +37,27 @@ const COLUMN_COUNT = 5;
 
 const WARNING_MESSAGES = {
   PLAN_WITHOUT_CREDITS: 'El plan no define créditos: el avance se calcula por materias aprobadas.',
-  PLAN_CHANGED_AFTER_ENROLLMENT: 'El plan de estudios cambió desde tu inscripción.',
+  PLAN_CHANGED_AFTER_ENROLLMENT: {
+    student: 'El plan de estudios cambió desde tu inscripción.',
+    staff: 'El plan de estudios cambió desde la inscripción del alumno.',
+  },
 };
 
-function PlanWarnings({ warnings }) {
+const EMPTY_PLAN_DESCRIPTION = {
+  student: 'Cuando se carguen las vas a ver acá.',
+  staff: 'Cuando se carguen van a aparecer acá.',
+};
+
+function describeWarning(warning, audience) {
+  const message = WARNING_MESSAGES[warning.code];
+  if (message && typeof message === 'object') return message[audience];
+  return message ?? warning.message;
+}
+
+function PlanWarnings({ warnings, audience }) {
   return warnings.map((warning) => (
     <Notice key={warning.code} tone="warning">
-      {WARNING_MESSAGES[warning.code] ?? warning.message}
+      {describeWarning(warning, audience)}
     </Notice>
   ));
 }
@@ -85,18 +103,42 @@ function PlanRowCells({ row }) {
   );
 }
 
-export function TabPlanDeEstudio({ carreraId }) {
+export function TabPlanDeEstudio({ carreraId, audience = 'student', onViewEnrollment, equivalencesAnchorId }) {
   const compact = useMediaQuery('(max-width: 767px)');
   const [searchParams, setSearchParams] = useSearchParams();
   const statusFilter = normalizeStatusFilter(searchParams.get('estado'));
-  const { data: progress, isLoading, isError, error, refetch } = useCurriculumProgress(carreraId);
+  const view = searchParams.get('vista') === 'mapa' ? 'mapa' : 'lista';
+  const forbiddenDistinguished = view === 'mapa' || audience === 'staff';
+  const { data: progress, isLoading, isError, error, refetch } = useCurriculumProgressFor(audience, carreraId);
 
   const rows = useMemo(() => buildPlanRows(progress?.subjects, progress?.summary.requiredCredits > 0), [progress]);
   const visibleRows = useMemo(() => filterPlanRows(rows, statusFilter), [rows, statusFilter]);
 
+  const listHeadingRef = useRef(null);
+  const [listFocusRequest, setListFocusRequest] = useState(0);
+  const hasAvailableSubjects = rows.some((row) => row.estado === 'disponible');
+
+  useEffect(() => {
+    if (listFocusRequest === 0 || !listHeadingRef.current) return;
+    listHeadingRef.current.scrollIntoView({ behavior: smoothScrollBehavior(), block: 'start' });
+    listHeadingRef.current.focus({ preventScroll: true });
+  }, [listFocusRequest]);
+
+  function viewAvailableSubjects() {
+    searchParams.set('estado', 'disponibles');
+    searchParams.set('vista', 'lista');
+    setSearchParams(searchParams, { replace: true });
+    setListFocusRequest((request) => request + 1);
+  }
+
   function changeStatusFilter(next) {
     if (next === 'todas') searchParams.delete('estado');
     else searchParams.set('estado', next);
+    setSearchParams(searchParams, { replace: true });
+  }
+
+  function changeView(next) {
+    searchParams.set('vista', next);
     setSearchParams(searchParams, { replace: true });
   }
 
@@ -117,16 +159,49 @@ export function TabPlanDeEstudio({ carreraId }) {
 
   return (
     <div className="flex flex-1 flex-col gap-5">
-      <GraduationProjectionCard carreraId={carreraId} />
-      {progress && <PlanWarnings warnings={progress.warnings} />}
-      <ul aria-label="Referencia de estados" className="flex flex-wrap gap-1.5">
-        {Object.keys(PLAN_STATUS_PILL).map((status) => (
-          <li key={status}>
-            <PlanStatusPill status={status} />
-          </li>
-        ))}
-      </ul>
-      {compact ? (
+      {view === 'mapa' && progress && (
+        <CurriculumSummaryBar audience={audience} summary={progress.summary} equivalencesAnchorId={equivalencesAnchorId} />
+      )}
+      <GraduationProjectionCard
+        audience={audience} carreraId={carreraId} collapsible={view === 'mapa'}
+        onViewAvailableSubjects={hasAvailableSubjects ? viewAvailableSubjects : undefined}
+      />
+      {progress && <PlanWarnings warnings={progress.warnings} audience={audience} />}
+      <PlanViewSwitch value={view} onChange={changeView} />
+      <h2 ref={listHeadingRef} tabIndex={-1} className="sr-only">
+        Materias del plan
+      </h2>
+      {view === 'lista' && (
+        <ul aria-label="Referencia de estados" className="flex flex-wrap gap-1.5">
+          {Object.keys(PLAN_STATUS_PILL).map((status) => (
+            <li key={status}>
+              <PlanStatusPill status={status} />
+            </li>
+          ))}
+        </ul>
+      )}
+      {view === 'mapa' ? (
+        isLoading ? (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <Skeleton className="h-64" />
+            <Skeleton className="h-64" />
+            <Skeleton className="h-64" />
+          </div>
+        ) : isError ? (
+          <LoadErrorState error={error} onRetry={refetch} resource="el plan de estudio" bare distinguishForbidden={forbiddenDistinguished} />
+        ) : rows.length === 0 ? (
+          <EmptyState title="El plan todavía no tiene materias" description={EMPTY_PLAN_DESCRIPTION[audience]} />
+        ) : (
+          <CurriculumMap
+            subjects={progress.subjects}
+            statusFilter={statusFilter}
+            onStatusFilterChange={changeStatusFilter}
+            creditsDefined={progress.summary.requiredCredits > 0}
+            audience={audience}
+            onViewEnrollment={onViewEnrollment}
+          />
+        )
+      ) : compact ? (
         <div className="flex flex-col gap-2.5">
           <PlanStatusFilter value={statusFilter} onChange={changeStatusFilter} className="w-full" />
           {isLoading ? (
@@ -135,9 +210,9 @@ export function TabPlanDeEstudio({ carreraId }) {
               <Skeleton className="h-24" />
             </>
           ) : isError ? (
-            <LoadErrorState error={error} onRetry={refetch} resource="el plan de estudio" bare />
+            <LoadErrorState error={error} onRetry={refetch} resource="el plan de estudio" bare distinguishForbidden={forbiddenDistinguished} />
           ) : rows.length === 0 ? (
-            <EmptyState title="El plan todavía no tiene materias" description="Cuando se carguen las vas a ver acá." />
+            <EmptyState title="El plan todavía no tiene materias" description={EMPTY_PLAN_DESCRIPTION[audience]} />
           ) : visibleRows.length === 0 ? (
             filterEmptyState
           ) : (
@@ -198,13 +273,13 @@ export function TabPlanDeEstudio({ carreraId }) {
                   ) : isError ? (
                     <TableRow>
                       <TableCell colSpan={COLUMN_COUNT}>
-                        <LoadErrorState error={error} onRetry={refetch} resource="el plan de estudio" bare />
+                        <LoadErrorState error={error} onRetry={refetch} resource="el plan de estudio" bare distinguishForbidden={forbiddenDistinguished} />
                       </TableCell>
                     </TableRow>
                   ) : rows.length === 0 ? (
                     <TableRow>
                       <TableCell colSpan={COLUMN_COUNT}>
-                        <EmptyState title="El plan todavía no tiene materias" description="Cuando se carguen las vas a ver acá." />
+                        <EmptyState title="El plan todavía no tiene materias" description={EMPTY_PLAN_DESCRIPTION[audience]} />
                       </TableCell>
                     </TableRow>
                   ) : visibleRows.length === 0 ? (

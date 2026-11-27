@@ -111,6 +111,7 @@ export const PROJECTION_REASON_MESSAGE = {
   ENROLLMENT_PAUSED: 'Tu matrícula está pausada.',
   PLAN_WITHOUT_DURATION: 'Todavía no hay historial ni duración del plan para estimar.',
   CREDITS_UNREACHABLE: 'Con las materias disponibles no se llega a los créditos que pide el plan.',
+  PROJECTION_HORIZON_EXCEEDED: 'A tu ritmo actual la estimación supera los 20 años (40 cuatrimestres), así que no la mostramos. Consultá con Administración o con tu plan de estudios.',
   PREREQUISITE_CYCLE: 'Hay un error en las correlativas del plan. Consultá con Administración.',
   REQUIRED_SUBJECT_INACTIVE: 'Una materia obligatoria ya no está activa en el plan.',
 };
@@ -121,7 +122,15 @@ export const PROJECTION_CONFIDENCE = {
   LOW: { label: 'Confianza baja', tone: 'warning' },
 };
 
-export function describeProjectionReason(code) {
+const STAFF_PROJECTION_REASON_MESSAGE = {
+  ENROLLMENT_WITHDRAWN: 'La matrícula está dada de baja.',
+  ENROLLMENT_PAUSED: 'La matrícula está pausada.',
+};
+
+export function describeProjectionReason(code, audience = 'student') {
+  if (audience === 'staff') {
+    return STAFF_PROJECTION_REASON_MESSAGE[code] ?? PROJECTION_REASON_MESSAGE[code] ?? 'No se pudo estimar el egreso con los datos actuales.';
+  }
   return PROJECTION_REASON_MESSAGE[code] ?? 'No pudimos estimar tu egreso con los datos actuales.';
 }
 

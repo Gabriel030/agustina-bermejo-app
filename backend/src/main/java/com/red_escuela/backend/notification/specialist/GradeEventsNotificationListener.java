@@ -7,7 +7,7 @@ import com.red_escuela.backend.evaluation.events.SubjectApprovalRevertedEvent;
 import com.red_escuela.backend.evaluation.events.GradeCorrectedEvent;
 import com.red_escuela.backend.evaluation.events.GradesPublishedEvent;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
+import com.red_escuela.backend.shared.event.service.ProcessedEffectGuard;
 import jakarta.persistence.EntityManager;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.modulith.events.ApplicationModuleListener;
@@ -43,7 +43,7 @@ public class GradeEventsNotificationListener {
     public void notifyGradeCorrected(GradeCorrectedEvent event) {
         effectGuard.runEffectOnce(DerivedEventIdentity.of(event), NOTIFY_GRADE_CORRECTED_HANDLER, () -> eventPublisher.publishEvent(
                 new GradeCorrectedNotification(event.gradeItemId(), event.sectionName(), event.gradeTypeLabel(), event.sequenceNumber(),
-                        entityManager.getReference(Person.class, event.studentPersonId()))));
+                        event.reason(), entityManager.getReference(Person.class, event.studentPersonId()))));
     }
 
     @ApplicationModuleListener

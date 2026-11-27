@@ -11,9 +11,15 @@ export function notifyInvitationError(err, access, capability) {
   toast.error(message, { description: err?.code ? `Código: ${err.code}` : undefined });
 }
 
-function successDescription(key, wave) {
+export function requeuedMessage(requeued) {
+  if (requeued === 1) return '1 destinatario en cola de reintento';
+  if (requeued > 0) return `${requeued} destinatarios en cola de reintento`;
+  return 'No había destinatarios para reintentar ahora';
+}
+
+function successDescription(key, result) {
   if (key === 'cancel') return 'Los pendientes quedaron liberados.';
-  if (key === 'retry') return `${wave.failedTotal} envíos vuelven a la cola.`;
+  if (key === 'retry') return requeuedMessage(result?.requeued ?? 0);
   return undefined;
 }
 
@@ -28,9 +34,9 @@ export function useWaveActionController({ wave, access }) {
     const definition = ACTION_DEFINITIONS[key];
     setRunningKey(key);
     mutation.mutate(definition.endpoint, {
-      onSuccess: () => {
+      onSuccess: (result) => {
         setConfirming(null);
-        toast.success(definition.success, { description: successDescription(key, wave) });
+        toast.success(definition.success, { description: successDescription(key, result) });
       },
       onError: (err) => {
         setConfirming(null);

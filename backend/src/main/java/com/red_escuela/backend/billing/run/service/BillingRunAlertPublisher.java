@@ -8,7 +8,7 @@ import com.red_escuela.backend.billing.events.NightlyBillingRunFailedEvent;
 import com.red_escuela.backend.billing.events.NightlyBillingRunMissedEvent;
 import com.red_escuela.backend.billing.run.domain.MonthlyInvoiceRunItem;
 import com.red_escuela.backend.shared.event.DeduplicableDomainEvent;
-import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
+import com.red_escuela.backend.shared.event.service.ProcessedEffectGuard;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;

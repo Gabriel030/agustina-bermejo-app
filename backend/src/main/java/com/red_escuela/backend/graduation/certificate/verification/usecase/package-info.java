@@ -5,6 +5,6 @@
  *
  * <p><b>No hacer</b>: llamar a repositorios ni a otro caso de uso; repetir el nombre del módulo en el subpaquete.
  *
- * <p><b>Ejemplo</b>: {@code VerifyPublicCertificateService} implementa {@code VerifyPublicCertificateUseCase}.
+ * <p><b>Ejemplo</b>: {@code VerifyPublicDocumentService} implementa {@code VerifyPublicDocumentUseCase}.
  */
 package com.red_escuela.backend.graduation.certificate.verification.usecase;

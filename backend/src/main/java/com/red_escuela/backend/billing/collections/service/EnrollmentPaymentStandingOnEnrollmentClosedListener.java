@@ -3,7 +3,7 @@ package com.red_escuela.backend.billing.collections.service;
 import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.RequiresModule;
 import com.red_escuela.backend.billing.collections.domain.EnrollmentClosedWhileSuspendedEvent;
-import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
+import com.red_escuela.backend.shared.event.service.ProcessedEffectGuard;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 

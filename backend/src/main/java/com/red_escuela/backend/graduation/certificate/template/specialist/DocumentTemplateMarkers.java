@@ -12,9 +12,10 @@ public class DocumentTemplateMarkers {
 
     public Set<String> allowedFor(DocumentTemplateType type) {
         return switch (type) {
-            case REGULAR_STUDENT_CERTIFICATE -> with("titleName", "recipient");
+            case REGULAR_STUDENT_CERTIFICATE -> with("titleName", "recipient", "validUntil");
             case APPROVED_SUBJECTS_CERTIFICATE -> with("titleName", "average", "completionPercent");
-            case EXAM_REGISTRATION_CERTIFICATE, EXAM_CERTIFICATE -> with("subjectName", "examDate", "recipient");
+            case EXAM_REGISTRATION_CERTIFICATE -> with("subjectName", "examDate", "recipient");
+            case EXAM_CERTIFICATE -> with("subjectName", "examDate", "recipient", "validUntil");
         };
     }
 

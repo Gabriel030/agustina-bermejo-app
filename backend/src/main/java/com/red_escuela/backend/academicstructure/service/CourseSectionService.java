@@ -1,5 +1,7 @@
 package com.red_escuela.backend.academicstructure.service;
 
+import com.red_escuela.backend.academicstructure.exception.InstructorScheduleConflictException;
+import com.red_escuela.backend.academicstructure.entity.SectionScheduleSlot;
 import com.red_escuela.backend.academicstructure.dto.AssignInstructorRequest;
 import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateSectionRequest;
@@ -8,6 +10,7 @@ import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSectionInstructor;
 import com.red_escuela.backend.academicstructure.api.SectionEnrollmentActivityPort;
 import com.red_escuela.backend.academicstructure.api.SectionEvaluationSetupPort;
+import com.red_escuela.backend.academicstructure.exception.SectionEvaluationSchemeLockedException;
 import com.red_escuela.backend.academicstructure.exception.SectionHasActiveEnrollmentsException;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
@@ -18,7 +21,7 @@ import com.red_escuela.backend.academicstructure.exception.InstructorAlreadyAssi
 import com.red_escuela.backend.academicstructure.exception.InstructorNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.SectionInstructorNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
-import com.red_escuela.backend.academicstructure.exception.TermNotFoundException;
+import com.red_escuela.backend.academicstructure.api.TermNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionInstructorRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionRepository;
@@ -125,6 +128,7 @@ public class CourseSectionService {
             identityAssigner.changeCourseSectionShift(section, request.shift());
         }
         if (request.evaluationSchemeId() != null) {
+            requireEvaluationSchemeReassignable(section, request.evaluationSchemeId());
             section.setEvaluationScheme(resolveEvaluationScheme(request.evaluationSchemeId()));
         }
         CourseSubjectSection saved = sectionRepository.save(section);
@@ -149,7 +153,7 @@ public class CourseSectionService {
             throw new SectionHasActiveEnrollmentsException(id);
         }
         section.setStatus(StatusType.INACTIVE);
-        sectionRepository.save(section);
+        sectionRepository.saveAndFlush(section);
     }
 
     @Transactional
@@ -165,8 +169,8 @@ public class CourseSectionService {
         CourseSubjectSection section = findOrThrow(sectionId);
         Instructor instructor = instructorRepository.findById(request.instructorId())
                 .orElseThrow(() -> new InstructorNotFoundException(request.instructorId()));
-        conflictChecker.checkInstructorAvailability(
-                section.getTerm(), instructor.getId(), slotRepository.findByCourseSectionId(sectionId));
+        List<SectionScheduleSlot> sectionSlots = slotRepository.findByCourseSectionId(sectionId);
+        conflictChecker.checkInstructorAvailability(section.getTerm(), instructor.getId(), sectionSlots);
 
         CourseSubjectSectionInstructor assignment = new CourseSubjectSectionInstructor();
         assignment.setSection(section);
@@ -180,6 +184,14 @@ public class CourseSectionService {
         try {
             return sectionInstructorRepository.saveAndFlush(assignment);
         } catch (DataIntegrityViolationException e) {
+            if (ScheduleExclusionViolation.isInstructorOverlap(e) && !sectionSlots.isEmpty()) {
+                SectionScheduleSlot slot = sectionSlots.get(0);
+                throw new InstructorScheduleConflictException(
+                        request.instructorId(), slot.getDayOfWeek(), slot.getStartTime(), slot.getEndTime());
+            }
+            if (ScheduleExclusionViolation.isInstructorOverlap(e)) {
+                throw e;
+            }
             throw new InstructorAlreadyAssignedException(request.instructorId(), sectionId);
         }
     }
@@ -203,5 +215,15 @@ public class CourseSectionService {
     private EvaluationScheme resolveEvaluationScheme(Long id) {
         evaluationSetupPort.requireEvaluationSchemeExists(id);
         return entityManager.find(EvaluationScheme.class, id);
+    }
+
+    private void requireEvaluationSchemeReassignable(CourseSubjectSection section, Long newSchemeId) {
+        Long currentSchemeId = section.getEvaluationScheme() == null ? null : section.getEvaluationScheme().getId();
+        if (newSchemeId.equals(currentSchemeId)) {
+            return;
+        }
+        if (evaluationSetupPort.hasGradesLoadedInCourseSection(section.getId())) {
+            throw new SectionEvaluationSchemeLockedException(section.getId());
+        }
     }
 }

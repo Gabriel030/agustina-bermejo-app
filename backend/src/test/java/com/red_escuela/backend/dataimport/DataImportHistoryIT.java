@@ -206,8 +206,9 @@ class DataImportHistoryIT extends AbstractIntegrationTest {
         Long templateId = transactions.execute(status -> {
             var enrollment = entityManager.find(com.red_escuela.backend.enrollment.entity.ProgramEnrollment.class, enrollmentId);
             assertThat(enrollment.getCurrentBillingTemplate()).isNull();
-            assertThat(enrollment.effectiveBillingTemplate().termYear()).isEqualTo(year);
-            return enrollment.effectiveBillingTemplate().getId();
+            var template = entityManager.find(com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate.class, enrollment.getProgramCohort().getTemplateId());
+            assertThat(template.termYear()).isEqualTo(year);
+            return template.getId();
         });
         assertThat(templateId).isNotNull();
         assertThat(sideEffectCounts()).isEqualTo(before);

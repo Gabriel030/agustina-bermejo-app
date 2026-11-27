@@ -77,6 +77,11 @@ class FinalExamApprovedPrerequisitesTest extends ExamBoardChangeFixture {
     }
 
     private Setup setup(String dni, EnrollmentStatus prerequisiteStatus, LocalDateTime examDate) {
+        return setup(dni, prerequisiteStatus, examDate, RequirementType.PASSED_COURSEWORK, null, null);
+    }
+
+    private Setup setup(String dni, EnrollmentStatus prerequisiteStatus, LocalDateTime examDate,
+            RequirementType requirementType, String minGrade, String prerequisiteScore) {
         Subject subject = subject("Materia con correlativa " + dni, null);
         Term term = term();
         ExamBoard board = examBoard(subject, term, examDate);
@@ -90,9 +95,11 @@ class FinalExamApprovedPrerequisitesTest extends ExamBoardChangeFixture {
         ProgramSubjectPrerequisite link = new ProgramSubjectPrerequisite();
         link.setProgramSubject(target);
         link.setPrerequisiteProgramSubject(required);
-        link.setRequirementType(RequirementType.PASSED_COURSEWORK);
+        link.setRequirementType(requirementType);
+        link.setMinGrade(minGrade == null ? null : Grade.of(new BigDecimal(minGrade)));
         entityManager.persist(link);
         SubjectSectionEnrollment taken = studentTook(enrollment, prerequisite, term, prerequisiteStatus);
+        taken.setFinalScore(prerequisiteScore == null ? null : Grade.of(new BigDecimal(prerequisiteScore)));
         entityManager.flush();
         return new Setup(board, tribunal, enrollment, subject, taken);
     }
@@ -155,6 +162,52 @@ class FinalExamApprovedPrerequisitesTest extends ExamBoardChangeFixture {
                             .containsEntry("subjectName", PREREQUISITE_NAME)
                             .containsEntry("standing", "REGULAR");
                 });
+    }
+
+    @Test
+    void registrationIsRejectedWhenTheApprovedPrerequisiteScoreIsBelowTheMinimumAndExposesBothGrades() {
+        Setup setup = setup("75000041", EnrollmentStatus.APPROVED, LocalDateTime.now().plusDays(1),
+                RequirementType.APPROVED, "6", "5");
+
+        assertThatThrownBy(() -> registrationManager.registerProgramEnrollment(
+                setup.board().getId(), setup.enrollment().getId()))
+                .isInstanceOf(FinalExamPrerequisitesNotApprovedException.class)
+                .satisfies(failure -> {
+                    @SuppressWarnings("unchecked")
+                    Map<String, Object> first = (Map<String, Object>) ((List<?>) ((FinalExamPrerequisitesNotApprovedException) failure)
+                            .details().get("pendingPrerequisites")).get(0);
+                    assertThat(first)
+                            .containsEntry("subjectName", PREREQUISITE_NAME)
+                            .containsEntry("standing", "APPROVED")
+                            .containsEntry("minGrade", new BigDecimal("6.00"))
+                            .containsEntry("approvedScore", new BigDecimal("5.00"));
+                });
+    }
+
+    @Test
+    void registrationIsAcceptedWhenTheApprovedPrerequisiteScoreEqualsTheMinimum() {
+        Setup setup = setup("75000051", EnrollmentStatus.APPROVED, LocalDateTime.now().plusDays(1),
+                RequirementType.APPROVED, "6", "6");
+
+        ExamBoardRegistration registration = registrationManager.registerProgramEnrollment(
+                setup.board().getId(), setup.enrollment().getId());
+
+        assertThat(registration.getId()).isNotNull();
+    }
+
+    @Test
+    void batchRowIsRejectedWhenTheApprovedPrerequisiteScoreIsBelowTheMinimumAndNothingIsSaved() {
+        Setup setup = setup("75000061", EnrollmentStatus.APPROVED, LocalDateTime.now().minusDays(1),
+                RequirementType.APPROVED, "6", "5");
+        ExamBoardRegistration registration = registration(setup.board(), setup.enrollment());
+        entityManager.flush();
+
+        assertThatThrownBy(() -> finalGradesRecorder.record(setup.board().getId(), setup.tribunal().getId(),
+                List.of(new ExamBoardFinalGradeEntryRequest(registration.getId(), Grade.of(new BigDecimal("8")), null, null))))
+                .isInstanceOf(ExamBoardFinalGradeRowRejectedException.class)
+                .satisfies(failure -> assertThat(((ExamBoardFinalGradeRowRejectedException) failure).details())
+                        .containsEntry("causeCode", "FINAL_EXAM_PREREQUISITES_NOT_APPROVED"));
+        assertThat(gradeItemRecorder.listByProgramEnrollment(setup.enrollment().getId())).isEmpty();
     }
 
     @Test
@@ -352,6 +405,7 @@ class FinalExamApprovedPrerequisitesTest extends ExamBoardChangeFixture {
         Setup setup = approvedByFinalThenLosingPrerequisite("75000131");
         graduationRequest(setup, GraduationRequestStatus.REQUESTED);
         setup.enrollment().getProgramEnrollment().setStatus(ProgramEnrollmentStatus.COMPLETED);
+        setup.enrollment().getProgramEnrollment().setCompletionDate(java.time.LocalDateTime.now());
         entityManager.flush();
 
         gradeItemRecorder.recalculateProgramEnrollmentCondition(setup.enrollment().getId());

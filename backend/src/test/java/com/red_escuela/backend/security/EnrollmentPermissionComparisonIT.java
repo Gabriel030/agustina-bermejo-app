@@ -41,7 +41,8 @@ class EnrollmentPermissionComparisonIT extends AuthorizationMatrixSupport {
         return AuthorizationMatrixFile.read().stream()
                 .filter(row -> endpoints.containsKey(row.key()))
                 .filter(row -> endpoints.get(row.key()).handler().getMethodAnnotation(RequiresPermission.class) != null)
-                .filter(row -> endpoints.get(row.key()).handler().getBeanType().getPackageName().startsWith("com.red_escuela.backend.enrollment"))
+                .filter(row -> endpoints.get(row.key()).handler().getBeanType().getPackageName().startsWith("com.red_escuela.backend.enrollment")
+                        || endpoints.get(row.key()).handler().getBeanType() == com.red_escuela.backend.billing.payment.controller.EnrollmentAdHocInvoiceController.class)
                 .toList();
     }
 
@@ -64,7 +65,7 @@ class EnrollmentPermissionComparisonIT extends AuthorizationMatrixSupport {
     private void assertDecisionsMatchLegacy(String mode) throws Exception {
         List<AuthorizationMatrixRow> rows = enrollmentRows();
         Map<String, MappedEndpoint> endpoints = endpointsByKey();
-        assertThat(rows).hasSize(54);
+        assertThat(rows).hasSize(57);
         List<String> mismatches = new ArrayList<>();
         for (AuthorizationMatrixRow row : rows) {
             assertThat(endpoints.get(row.key())).as(row.key()).isNotNull();

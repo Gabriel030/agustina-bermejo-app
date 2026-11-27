@@ -82,7 +82,7 @@ Objects `Money`, `Percentage`, `Grade`, etc., más `StatusType` y `Address`),
   de uso de su módulo (y DTOs), nunca de `service` ni de `repository` (regla R4,
   congelada). Además, `@Transactional` ya no se declara en los casos de uso nuevos:
   vive en el especialista (`service` o `..api..`) que es el compositor más externo
-  de las escrituras; los casos de uso existentes que lo tienen quedan congelados.
+  de las escrituras; la regla R10 corre sin congelar.
   Ver `adr/0002-patron-de-modulos.md`.
 - **La persona autenticada nunca se resuelve de un id de la URL.** Se resuelve
   del `sub` del JWT vía `CurrentPersonService.resolveCurrentPerson()`
@@ -350,10 +350,7 @@ duplicando el mismo mecanismo.
 Trámite de egreso y constancias (`GraduationRequest`, `CertificateIssuance`)
 viven en `com.red_escuela.backend.graduation.*`.
 
-**`ProgramCertificateIssuer` queda cohesivo, sin Use Case** — emitir la
-constancia de materias aprobadas es generar un documento a pedido, nunca
-persistido, para el Alumno (autoservicio vía `MeCertificateController`). La
-constancia de alumno regular ya no se emite al instante: se pide y la confirma
+**Constancias** — la constancia de alumno regular no se emite al instante: se pide y la confirma
 administración (`graduation/certificate/regular`).
 
 **`GraduationRequestService` sí es una excepción real** — mismo patrón que
@@ -437,7 +434,7 @@ los perfiles `local` o `demo`.
 
 ## Transacciones: del caso de uso al compositor (D4, regla R10)
 
-Los casos de uso nuevos no declaran `@Transactional` (regla R10, `transactionsAreDeclaredOnlyInSpecialists`; los casos de uso existentes están congelados y la Épica 22 los migra). La transacción la abre un especialista de `service/`, `operation/`, `repository/` o `api/`.
+Los casos de uso nuevos no declaran `@Transactional` (regla R10, `transactionsAreDeclaredOnlyInSpecialists`, sin violaciones congeladas: la Épica 22 migró los casos de uso existentes). La transacción la abre un especialista de `service/`, `operation/`, `repository/` o `api/`.
 
 **Plantilla "caso de uso → compositor transaccional"** (un compositor por caso de uso que escribe en más de un lugar):
 
@@ -451,8 +448,6 @@ Los casos de uso nuevos no declaran `@Transactional` (regla R10, `transactionsAr
 **Open-in-view.** `spring.jpa.open-in-view` no está definido en `backend/src/main/resources`: rige el valor por defecto de Spring Boot (`true`), verificado por `AtomicityTestSupportIT.openInViewInterceptorIsRegisteredBecauseNoPropertyDisablesIt`. Efecto: durante una petición HTTP el `EntityManager` sigue abierto en el caso de uso y puede tapar un acceso perezoso fuera de transacción; no se apoyen en eso: los lectores devuelven records resueltos.
 
 **Test de atomicidad.** `AtomicityTestSupport` (`testsupport/`) observa un conjunto de tablas y ejecuta el flujo con un `FailingStep` que falla en el paso N; verifica con `count(*)` que el flujo falló por esa inyección y que no quedó ninguna fila nueva. El test no debe ser `@Transactional` (el soporte lo rechaza): una transacción de test esconde la falta de transacción del flujo. Ejemplo de uso en `AtomicityTestSupportIT`.
-
-**Progreso de R10.** `scripts/r10-progress` cuenta las líneas del almacén de R10 por módulo.
 
 ## Reglas de arquitectura
 
@@ -528,6 +523,33 @@ propia transacción, así `VALIDATE` toma SHARE UPDATE EXCLUSIVE y no bloquea es
 pide ACCESS EXCLUSIVE hasta el COMMIT de su archivo, y la app corre con `lock_timeout` de 10 s
 (`application.properties:151`): desplegar estas migraciones con la app parada, o al menos sin transacciones
 largas ni el job nocturno vivo, o el `ADD` fallará por timeout.
+
+### Invariantes de horarios e inscripciones en la base (E25 B2)
+
+Segunda red de integridad: el código sigue validando y traduce la violación a su excepción de dominio; la base
+rechaza lo que el código se olvide. Todo cambio que afloje una de estas reglas necesita migración y decisión.
+
+| Regla | Constraint | Migración | Excepción de dominio |
+|---|---|---|---|
+| Una franja `section_schedule_slot` tiene `end_time > start_time` | `chk_schedule_slot_valid_range` | V62 | — |
+| Un aula no aloja dos franjas activas que se pisan en el mismo período | `ex_schedule_slot_classroom_overlap` (EXCLUDE gist sobre `classroom_id`, `time_span`, `term_period`, solo `active`) | V463, V470 | `SectionScheduleConflictException` (SQLState 23P01) |
+| Un docente no está en dos franjas activas que se pisan | `ex_schedule_slot_instructor_overlap` sobre la proyección `section_schedule_slot_instructor` (triggers) | V470 | `SectionScheduleConflictException` (23P01) |
+| Una inscripción a carrera `ENROLLED` o `PAUSED` por alumno y carrera | `uk_program_enrollment_student_program_active` (único parcial) | V474 | `AlreadyEnrolledInProgramException` |
+| Una solicitud de constancia `PENDING_STAFF` por inscripción | `uq_regular_cert_request_pending_per_enrollment` (único parcial sobre `kind` y la inscripción) | V475 | `ConcurrentRegularCertificateIssueException` |
+| Una baja (`WITHDRAWN`) de carrera lleva `withdrawal_effective_date` | `ck_program_enrollment_withdrawn_has_effective_date` (CHECK `NOT VALID`) | V476 | — (lo garantiza `markWithdrawn`) |
+| Una carrera `COMPLETED` lleva `completion_date` | `ck_program_enrollment_completed_has_completion_date` (CHECK `NOT VALID`) | V476 | — |
+| Una baja de curso registrada (`withdrawal_registered_on` no nula) lleva `withdrawal_effective_date` | `ck_course_enrollment_registered_withdrawal_has_effective_date` (CHECK `NOT VALID`; exceptúa la baja de lista de espera por staff, que no registra `withdrawal_registered_on`) | V479 | — (lo garantiza `markWithdrawn`) |
+| El alumno de una inscripción a comisión es el de su inscripción padre (materia y curso) | `fk_subject_section_enrollment_parent_student` y `fk_course_section_enrollment_parent_student` (FK compuesta `NOT VALID` sobre `(id, student_id)` del padre, con `uk_program_enrollment_id_student` y `uk_course_enrollment_id_student`) | V478 | — |
+
+`time_span`, `term_period`, `occupies` y `active` de la franja los mantiene el trigger
+`trg_section_schedule_slot_occupancy`; el código no los escribe. Un IT de constraint prueba cada regla en
+ambos lados (sin la constraint el test de la versión anterior acepta el duplicado): ver
+`SectionScheduleSlotExcludeMigrationTest`, `ProgramEnrollmentActiveUniqueMigrationTest` y
+`RegularCertificateRequestPendingUniqueMigrationTest`. Los pre-chequeos de datos previos al deploy están en
+`docs/release/pre-migration-checks.sql` (bloques `[V470]`, `[V474]` a `[V479]`). Los CHECK de V476 y V479 quedan `NOT VALID`: protegen
+las filas nuevas y no tocan las existentes; el `VALIDATE` va en una migración aparte tras correr los pre-chequeos en
+producción (la corrección de datos violadores es decisión de producto). `CourseWaitlistQueue.remove` da de baja sin fecha efectiva ni `withdrawal_registered_on`: V479 lo exceptúa y no se toca, decisión de producto pendiente. Pendientes: el `VALIDATE` de R2 y de R5 (FK compuesta alumno-inscripción padre de V478, `NOT VALID`; se valida aparte tras el pre-chequeo en producción). Informe de origen:
+`docs/cell/reports/e25-b2-invariantes.md`.
 
 ## Seguridad
 

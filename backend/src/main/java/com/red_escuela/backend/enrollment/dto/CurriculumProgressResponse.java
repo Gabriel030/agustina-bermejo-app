@@ -50,7 +50,8 @@ public record CurriculumProgressResponse(
 
     public record CurriculumBlockingPrerequisiteResponse(
             Long subjectId, String subjectCode, String subjectName, RequirementType requirementType,
-            PrerequisiteStanding standing) {
+            PrerequisiteStanding standing, @Schema(nullable = true) BigDecimal minGrade,
+            @Schema(nullable = true) BigDecimal approvedScore) {
     }
 
     public record CurriculumCorequisiteResponse(Long subjectId, String subjectCode, String subjectName,
@@ -91,7 +92,8 @@ public record CurriculumProgressResponse(
         return prerequisites.stream()
                 .map(prerequisite -> new CurriculumBlockingPrerequisiteResponse(prerequisite.subjectId(),
                         prerequisite.subjectCode(), prerequisite.subjectName(), prerequisite.requirementType(),
-                        prerequisite.standing()))
+                        prerequisite.standing(), Optional.ofNullable(prerequisite.minGrade()).map(Grade::value).orElse(null),
+                        Optional.ofNullable(prerequisite.approvedScore()).map(Grade::value).orElse(null)))
                 .toList();
     }
 

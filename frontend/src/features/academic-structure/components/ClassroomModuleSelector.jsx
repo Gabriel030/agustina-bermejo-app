@@ -30,16 +30,17 @@ export function ClassroomModuleSelector({ shift, selection, onChange }) {
         {modules.map((module) => {
           const selected = selection.includes(module.index);
           return (
-            <button
+            <Button
               key={module.index}
               type="button"
+              variant="ghost"
               aria-pressed={selected}
               aria-label={`Módulo ${module.index + 1}, ${module.startTime} a ${module.endTime}`}
               onClick={() => handleToggle(module.index)}
               className={cn(
-                'flex min-h-11 flex-col items-center justify-center rounded-lg border px-2 py-1 text-size-12 transition-colors',
+                'h-auto min-h-11 flex-col rounded-lg border px-2 py-1 text-size-12 transition-colors',
                 selected
-                  ? 'border-accent bg-accent text-on-accent'
+                  ? 'border-accent bg-accent text-on-accent hover:bg-accent hover:text-on-accent'
                   : 'border-surface-border bg-surface/50 text-ink hover:border-accent',
               )}
             >
@@ -48,7 +49,7 @@ export function ClassroomModuleSelector({ shift, selection, onChange }) {
                 {module.startTime}–{module.endTime}
               </span>
               {module.recessAfter && <span className="text-size-10 opacity-60">recreo después</span>}
-            </button>
+            </Button>
           );
         })}
       </div>

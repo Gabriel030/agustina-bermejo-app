@@ -10,7 +10,7 @@ import com.red_escuela.backend.academicstructure.exception.ElectiveGroupAlreadyE
 import com.red_escuela.backend.academicstructure.exception.ElectiveGroupInUseException;
 import com.red_escuela.backend.academicstructure.exception.ElectiveGroupNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.InvalidElectiveRangeException;
-import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
+import com.red_escuela.backend.academicstructure.domain.ProgramNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.ElectiveGroupRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramElectiveGroupRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;

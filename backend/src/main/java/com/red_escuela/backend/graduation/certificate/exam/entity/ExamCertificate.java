@@ -83,6 +83,9 @@ public class ExamCertificate {
     @Column(name = "template_ref", nullable = false, length = 40, updatable = false)
     private String templateRef;
 
+    @Column(name = "template_version_id", updatable = false)
+    private Long templateVersionId;
+
     @Column(name = "registry_number", length = 20)
     private String registryNumber;
 
@@ -112,6 +115,16 @@ public class ExamCertificate {
         if (status == DocumentValidityStatus.VALID) {
             this.status = DocumentValidityStatus.EXPIRED;
         }
+    }
+
+    public void markReplaced() {
+        if (status == DocumentValidityStatus.VALID) {
+            this.status = DocumentValidityStatus.REPLACED;
+        }
+    }
+
+    public boolean isValidAt(LocalDateTime now) {
+        return status == DocumentValidityStatus.VALID && !expiresAt.isBefore(now);
     }
 
     public boolean isRevocable() {

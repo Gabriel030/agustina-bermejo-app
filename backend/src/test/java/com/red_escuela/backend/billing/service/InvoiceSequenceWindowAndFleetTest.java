@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.billing.entity.BillingConfigurationAlert;
-import com.red_escuela.backend.billing.entity.CohortIntake;
+import com.red_escuela.backend.academicstructure.domain.CohortIntake;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;

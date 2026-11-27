@@ -108,17 +108,19 @@ export function PricesPage() {
         <>
           <div className="grid gap-3 sm:grid-cols-3">
             {FILTERS.map((item) => (
-              <button
+              <Button
                 key={item.key}
                 type="button"
+                variant="ghost"
+                size="inline"
                 aria-pressed={filter === item.key}
                 onClick={() => setFilter(filter === item.key ? null : item.key)}
-                className="rounded-3xl text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-brand/40"
+                className="min-h-11 w-full justify-start rounded-3xl text-left font-normal hover:bg-transparent focus-visible:ring-2 focus-visible:ring-brand/40"
               >
                 <StatCard label={item.label} className={filter === item.key ? 'ring-2 ring-brand/50' : ''}>
                   <span className="font-heading text-3xl font-bold text-ink">{counts[item.key]}</span>
                 </StatCard>
-              </button>
+              </Button>
             ))}
           </div>
           <div className="flex flex-wrap items-center gap-3">

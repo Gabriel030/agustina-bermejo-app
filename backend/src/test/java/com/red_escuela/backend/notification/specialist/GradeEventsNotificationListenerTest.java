@@ -8,15 +8,19 @@ import com.red_escuela.backend.evaluation.events.GradesPublishedEvent;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.NotificationEvent;
 import com.red_escuela.backend.notification.entity.NotificationType;
-import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
+import com.red_escuela.backend.shared.event.service.ProcessedEffectGuard;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.modulith.events.ApplicationModuleListener;
 import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -73,12 +77,12 @@ class GradeEventsNotificationListenerTest {
 
     @Test
     void correctedEventNotifiesOnlyTheAffectedStudent() {
-        listener.notifyGradeCorrected(new GradeCorrectedEvent("c", Instant.EPOCH, 55L, 10L, "Algebra - Com A", "TP", 2));
+        listener.notifyGradeCorrected(new GradeCorrectedEvent("c", Instant.EPOCH, 55L, 10L, "Algebra - Com A", "TP", 2, "Error de carga"));
 
         DomainNotificationEvent notification = published();
         assertThat(notification.type()).isEqualTo(NotificationType.GRADE_CORRECTED);
         assertThat(recipientIds(notification)).containsExactly(10L);
-        assertThat(notification.message()).isEqualTo("Se corrigió tu nota de TP 2 en Algebra - Com A");
+        assertThat(notification.message()).isEqualTo("Se corrigió tu nota de TP 2 en Algebra - Com A. Motivo: Error de carga");
         assertThat(notification.relatedEntityId()).isEqualTo(55L);
     }
 
@@ -106,5 +110,15 @@ class GradeEventsNotificationListenerTest {
     void bothGradeNotificationTypesRespectThePostedGradePreference() {
         assertThat(UserPreferenceEventResolver.resolve(NotificationType.GRADES_PUBLISHED)).contains(NotificationEvent.GRADE_POSTED);
         assertThat(UserPreferenceEventResolver.resolve(NotificationType.GRADE_CORRECTED)).contains(NotificationEvent.GRADE_POSTED);
+    }
+
+    @Test
+    void everyEventMappedToThePostedGradePreferenceHasAListenerEmitter() {
+        Set<Class<?>> handledEvents = Arrays.stream(GradeEventsNotificationListener.class.getDeclaredMethods())
+                .filter(method -> method.isAnnotationPresent(ApplicationModuleListener.class))
+                .map(method -> method.getParameterTypes()[0])
+                .collect(Collectors.toSet());
+
+        assertThat(handledEvents).contains(GradesPublishedEvent.class, GradeCorrectedEvent.class);
     }
 }

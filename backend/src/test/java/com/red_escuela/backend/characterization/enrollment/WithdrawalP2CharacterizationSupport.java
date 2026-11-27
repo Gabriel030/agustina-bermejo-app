@@ -120,6 +120,12 @@ abstract class WithdrawalP2CharacterizationSupport extends AbstractIntegrationTe
         enrollment.setStudent(student);
         enrollment.setProgram(program);
         enrollment.setStatus(status);
+        if (status == ProgramEnrollmentStatus.WITHDRAWN) {
+            enrollment.setWithdrawalEffectiveDate(java.time.LocalDate.now());
+        }
+        if (status == ProgramEnrollmentStatus.COMPLETED) {
+            enrollment.setCompletionDate(LocalDateTime.now());
+        }
         enrollment.setEnrollmentDate(LocalDateTime.now().minusMonths(6));
         return programEnrollmentRepository.save(enrollment);
     }

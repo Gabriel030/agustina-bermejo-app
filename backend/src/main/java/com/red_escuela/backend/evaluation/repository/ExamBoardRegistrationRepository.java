@@ -80,4 +80,20 @@ public interface ExamBoardRegistrationRepository extends JpaRepository<ExamBoard
             """)
     List<ExamBoardRegistration> findActiveCourseRegistrationsOfStudentFrom(@Param("studentId") Long studentId,
                                                                            @Param("notBefore") LocalDateTime notBefore);
+
+    @Query("""
+            select r from ExamBoardRegistration r join fetch r.examBoard b join fetch b.subject
+            join fetch r.programSubjectSectionEnrollment e join fetch e.programEnrollment pe join fetch pe.program
+            where e.student.id = :studentId and r.status = com.red_escuela.backend.evaluation.entity.ExamBoardRegistrationStatus.GRADED
+              and b.status = com.red_escuela.backend.evaluation.entity.ExamBoardStatus.CLOSED
+            """)
+    List<ExamBoardRegistration> findAttendedProgramRegistrationsOfStudent(@Param("studentId") Long studentId);
+
+    @Query("""
+            select r from ExamBoardRegistration r join fetch r.examBoard b join fetch b.courseSubject cs join fetch cs.course
+            join fetch r.courseSubjectSectionEnrollment e
+            where e.student.id = :studentId and r.status = com.red_escuela.backend.evaluation.entity.ExamBoardRegistrationStatus.GRADED
+              and b.status = com.red_escuela.backend.evaluation.entity.ExamBoardStatus.CLOSED
+            """)
+    List<ExamBoardRegistration> findAttendedCourseRegistrationsOfStudent(@Param("studentId") Long studentId);
 }

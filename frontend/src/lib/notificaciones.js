@@ -21,6 +21,10 @@ export const TIPO_NOTIFICACION_LABEL = {
   STUDENT_REACTIVATED: 'Cuenta reactivada',
   SUBJECT_WITHDRAWN: 'Baja de materia',
   WAITLIST_PROMOTED: 'Pasaste de la lista de espera',
+  WAITLIST_PAUSED_BY_SCHEDULE_OVERLAP: 'Lugar en pausa',
+  WAITLIST_EXPIRING_SOON: 'Tu lugar en espera está por vencer',
+  WAITLIST_REMOVED_BY_STAFF: 'Te quitaron de la lista de espera',
+  WAITLIST_ENTRY_EXPIRED: 'Lugar en espera vencido',
   SUBJECT_WITHDRAWN_TEACHER: 'Baja de alumno en tu comisión',
   SECTION_CHANGED: 'Cambio de comisión',
   SECTION_CHANGED_TEACHER: 'Cambio de comisión de un alumno',
@@ -71,6 +75,8 @@ export const TIPO_NOTIFICACION_LABEL = {
   GRADES_PUBLISHED: 'Notas publicadas',
   GRADE_CORRECTED: 'Nota corregida',
   SUBJECT_APPROVAL_REVERTED: 'Cursada otra vez regular',
+  SUBJECT_EQUIVALENCE_RECORDED: 'Equivalencia reconocida',
+  SUBJECT_EQUIVALENCE_VOIDED: 'Equivalencia anulada',
   LATE_PAYMENT_SETTINGS_CREATED: 'Nueva configuración de mora',
   AUTHORIZATION_REQUESTED: 'Autorización pendiente',
   AUTHORIZATION_REQUEST_EXPIRED: 'Propuesta vencida sin decidir',
@@ -86,6 +92,7 @@ export const TIPO_NOTIFICACION_LABEL = {
   SECTION_MODIFICATION_REQUESTED: 'Pedido de cambio de horario',
   SECTION_MODIFICATION_APPROVED: 'Cambio de horario aprobado',
   SECTION_MODIFICATION_REJECTED: 'Cambio de horario rechazado',
+  EXAM_CERTIFICATE_ISSUED: 'Constancia de examen emitida',
 };
 
 export const TONO_NOTIFICACION = {
@@ -111,6 +118,10 @@ export const TONO_NOTIFICACION = {
   STUDENT_REACTIVATED: 'success',
   SUBJECT_WITHDRAWN: 'warning',
   WAITLIST_PROMOTED: 'success',
+  WAITLIST_PAUSED_BY_SCHEDULE_OVERLAP: 'warning',
+  WAITLIST_EXPIRING_SOON: 'warning',
+  WAITLIST_REMOVED_BY_STAFF: 'warning',
+  WAITLIST_ENTRY_EXPIRED: 'warning',
   SUBJECT_WITHDRAWN_TEACHER: 'warning',
   SECTION_CHANGED: 'accent',
   SECTION_CHANGED_TEACHER: 'accent',
@@ -161,6 +172,8 @@ export const TONO_NOTIFICACION = {
   GRADES_PUBLISHED: 'success',
   GRADE_CORRECTED: 'accent',
   SUBJECT_APPROVAL_REVERTED: 'warning',
+  SUBJECT_EQUIVALENCE_RECORDED: 'success',
+  SUBJECT_EQUIVALENCE_VOIDED: 'warning',
   LATE_PAYMENT_SETTINGS_CREATED: 'accent',
   AUTHORIZATION_REQUESTED: 'warning',
   AUTHORIZATION_REQUEST_EXPIRED: 'warning',
@@ -176,6 +189,7 @@ export const TONO_NOTIFICACION = {
   SECTION_MODIFICATION_REQUESTED: 'warning',
   SECTION_MODIFICATION_APPROVED: 'success',
   SECTION_MODIFICATION_REJECTED: 'danger',
+  EXAM_CERTIFICATE_ISSUED: 'success',
 };
 
 export const ETIQUETA_NOTIFICACION_DESCONOCIDA = 'Notificación';

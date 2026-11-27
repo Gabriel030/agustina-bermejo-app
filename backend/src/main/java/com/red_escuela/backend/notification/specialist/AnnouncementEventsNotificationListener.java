@@ -9,7 +9,7 @@ import com.red_escuela.backend.announcement.events.AnnouncementReadEvent;
 import com.red_escuela.backend.announcement.events.AnnouncementUpdatedEvent;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.notification.repository.NotificationRepository;
-import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
+import com.red_escuela.backend.shared.event.service.ProcessedEffectGuard;
 import jakarta.persistence.EntityManager;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.modulith.events.ApplicationModuleListener;

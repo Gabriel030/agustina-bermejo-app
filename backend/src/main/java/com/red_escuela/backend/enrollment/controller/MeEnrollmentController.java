@@ -16,7 +16,7 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.exception.InvalidSectionOverridesException;
-import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.service.CourseEnrollmentApplicationService;
 import com.red_escuela.backend.identity.specialist.CurrentStudentService;

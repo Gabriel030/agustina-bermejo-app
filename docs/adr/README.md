@@ -12,3 +12,4 @@ Decisiones de arquitectura del repo, numeradas. No existe el 0001 (la numeració
 | [0005](0005-venta-por-instituto-y-modulos-activables.md) | Venta por instituto y módulos activables (`platform`, `PLATFORM_ADMIN`) | aceptado, sin implementar |
 | [0006](0006-modo-espejo-de-facturacion.md) | Modo espejo (`MIRROR`) de facturación | propuesto |
 | [0007](0007-vocabulario-de-roles-y-migracion-de-carpetas.md) | Vocabulario de roles (`service` a `specialist`) y migración de carpetas | aceptado |
+| [0008](0008-vistas-materializadas.md) | Vistas materializadas: no por ahora; qué medición reabre el tema | aceptado |

@@ -52,6 +52,9 @@ public interface PersonRepository extends JpaRepository<Person, Long>, JpaSpecif
             """)
     List<Person> findStudentsPendingActivationByIdIn(@Param("ids") Collection<Long> ids);
 
+    @Query(value = "select p.id as id, p.birth_date as birthDate from person p where p.id = any(:ids) and p.birth_date is not null and p.birth_date > :earliestBirthDateOfAdults", nativeQuery = true)
+    List<PersonBirthDateRow> findBirthDatesNewerThan(@Param("ids") Long[] ids, @Param("earliestBirthDateOfAdults") java.time.LocalDate earliestBirthDateOfAdults);
+
     @Query("select p.address.id from Person p where p.id in :ids and p.address is not null")
     List<Long> findAddressIdsByIdIn(@Param("ids") Collection<Long> ids);
 

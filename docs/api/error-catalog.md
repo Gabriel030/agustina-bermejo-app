@@ -79,7 +79,12 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CHARGEBACK_DATE_INVALID` | no | `ChargebackDateInvalidException` | billing |
 | `CHARGEBACK_REFERENCE_INVALID` | no | `ChargebackReferenceInvalidException` | billing |
 | `CIRCULAR_PREREQUISITE` | no | `CircularPrerequisiteException` | academicstructure |
+| `CLASS_DATE_AFTER_TERM_END` | no | `ClassDateAfterTermEndException` | attendance |
+| `CLASS_DATE_BEFORE_TERM_START` | no | `ClassDateBeforeTermStartException` | attendance |
+| `CLASS_DATE_IN_FUTURE` | no | `ClassDateInFutureException` | attendance |
+| `CLASS_DAY_WITHOUT_SCHEDULE_SLOT` | no | `ClassDayWithoutScheduleSlotException` | attendance |
 | `CLASS_ON_HOLIDAY` | no | `ClassOnHolidayException` | attendance |
+| `CLASS_ON_WEEKEND` | no | `ClassOnWeekendException` | attendance |
 | `CONSENT_CATEGORY_NOT_OPTIONAL` | no | `ConsentCategoryNotOptionalException` | notification |
 | `CONSENT_CATEGORY_REPEATED` | no | `ConsentCategoryRepeatedException` | notification |
 | `CONSENT_SOURCE_NOT_ACCEPTED` | no | `ConsentSourceNotAcceptedException` | notification |
@@ -316,6 +321,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `HOLIDAY_NOT_FOUND` | no | `HolidayNotFoundException` | academicstructure |
 | `IMPORT_BATCH_NOT_FOUND` | no | `ImportBatchNotFoundException` | dataimport |
 | `IMPORT_INSTITUTION_NOT_FOUND` | no | `ImportInstitutionNotFoundException` | dataimport |
+| `INFORMATIVE_SESSION_NOT_FOUND` | no | `InformativeSessionNotFoundException` | enrollment |
 | `INSTITUTION_NOT_FOUND` | no | `InstitutionNotFoundException` | identity |
 | `INSTRUCTOR_NOT_FOUND` | no | `InstructorNotFoundException` | academicstructure |
 | `INVALID_UNSUBSCRIBE_TOKEN` | no | `InvalidUnsubscribeTokenException` | notification |
@@ -343,7 +349,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `PRICE_NOT_FOUND` | no | `PriceNotFoundException` | billing |
 | `PRICE_VERSION_NOT_FOUND` | no | `PriceVersionNotFoundException` | billing |
 | `PROCEDURE_DOCUMENT_NOT_FOUND` | no | `ProcedureDocumentNotFoundException` | graduation |
-| `PROGRAM_COHORT_NOT_FOUND` | no | `ProgramCohortNotFoundException` | billing |
+| `PROGRAM_COHORT_NOT_FOUND` | no | `ProgramCohortNotFoundException` | academicstructure |
 | `PROGRAM_ENROLLMENT_APPLICATION_NOT_FOUND` | no | `ProgramEnrollmentApplicationNotFoundException` | enrollment |
 | `PROGRAM_ENROLLMENT_NOT_FOUND` | no | `ProgramEnrollmentNotFoundException` | enrollment |
 | `PROGRAM_NOT_FOUND` | no | `ProgramNotFoundException` | academicstructure |
@@ -385,6 +391,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ALREADY_ENROLLED_IN_PROGRAM` | no | `AlreadyEnrolledInProgramException` | enrollment |
 | `ALREADY_ENROLLED_IN_SUBJECT` | no | `AlreadyEnrolledInSubjectException` | enrollment |
 | `ALREADY_HAS_PENDING_APPLICATION` | no | `AlreadyHasPendingApplicationException` | enrollment |
+| `ALREADY_REGISTERED_FOR_INFORMATIVE_SESSION` | no | `AlreadyRegisteredForInformativeSessionException` | enrollment |
 | `ALREADY_REGISTERED_IN_ANOTHER_EXAM_BOARD` | no | `AlreadyRegisteredInAnotherExamBoardException` | evaluation |
 | `ALREADY_REGISTERED_IN_EXAM_BOARD` | no | `AlreadyRegisteredInExamBoardException` | evaluation |
 | `ANNOUNCEMENT_ALREADY_SENT` | no | `AnnouncementAlreadySentException` | announcement |
@@ -399,6 +406,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `APPLICATION_DOCUMENTS_LOCKED` | no | `ApplicationDocumentsLockedException` | enrollment |
 | `APPROVED_SUBJECTS_CERTIFICATE_NOT_AVAILABLE` | no | `ApprovedSubjectsCertificateNotAvailableException` | graduation |
 | `ATTENDANCE_ALREADY_RECORDED` | no | `AttendanceAlreadyRecordedException` | attendance |
+| `ATTENDANCE_CHANGE_REQUEST_NOT_DECIDED` | no | `AttendanceChangeRequestNotDecidedException` | attendance |
+| `ATTENDANCE_DECISION_REVERT_WINDOW_EXPIRED` | no | `AttendanceDecisionRevertWindowExpiredException` | attendance |
 | `AUTHORIZATION_PENDING` | no | `AuthorizationPendingException` | billing |
 | `BILLING_CONFIGURATION_FROZEN` | no | `BillingConfigurationFrozenException` | billing |
 | `BILLING_MODE_NOT_OFF` | no | `BillingModeNotOffException` | dataimport |
@@ -427,7 +436,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CLOSURE_NOT_CONFIRMED` | no | `ClosureNotConfirmedException` | evaluation |
 | `CLOSURE_NOT_REOPENABLE` | no | `ClosureNotReopenableException` | evaluation |
 | `CLOSURE_SNAPSHOT_NOT_RECALCULABLE` | no | `ClosureSnapshotNotRecalculableException` | evaluation |
-| `COHORT_ADMISSION_WINDOW_CLOSED` | no | `CohortAdmissionWindowClosedException` | billing |
+| `COHORT_ADMISSION_WINDOW_CLOSED` | no | `CohortAdmissionWindowClosedException` | enrollment |
 | `COHORT_PROMOTION_ALREADY_ACQUIRED` | no | `CohortPromotionAlreadyAcquiredException` | billing |
 | `CONCURRENT_REGULAR_CERTIFICATE_ISSUE` | no | `ConcurrentRegularCertificateIssueException` | graduation |
 | `COREQUISITE_ALREADY_EXISTS` | no | `CorequisiteAlreadyExistsException` | academicstructure |
@@ -598,7 +607,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `PENDING_BANK_TRANSFER_ON_INVOICE` | no | `PendingBankTransferOnInvoiceException` | billing |
 | `PENDING_COURSEWORK` | no | `PendingCourseworkException` | evaluation |
 | `PENDING_COURSE_ENROLLMENT_APPLICATION` | no | `PendingCourseEnrollmentApplicationException` | enrollment |
-| `PENDING_DEBT` | no | `PendingDebtException` | billing |
+| `PENDING_DEBT` | no | `PendingDebtException` | graduation |
 | `PERSON_ALREADY_ACTIVATED` | no | `PersonAlreadyActivatedException` | identity |
 | `PERSON_NOT_ELIGIBLE_FOR_ACTIVATION` | no | `PersonNotEligibleForActivationException` | identity |
 | `POSSIBLE_DUPLICATE_BANK_TRANSFER` | no | `PossibleDuplicateBankTransferException` | billing |
@@ -630,6 +639,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SCHOLARSHIP_NOT_AVAILABLE_WITH_ANNUAL_UPFRONT` | no | `ScholarshipNotAvailableWithAnnualUpfrontException` | billing |
 | `SCHOLARSHIP_START_BEFORE_NEXT_INSTALLMENT` | no | `ScholarshipStartBeforeNextInstallmentException` | billing |
 | `SECTION_CODE_ALREADY_EXISTS` | no | `SectionCodeAlreadyExistsException` | academicstructure |
+| `SECTION_EVALUATION_SCHEME_LOCKED` | no | `SectionEvaluationSchemeLockedException` | academicstructure |
 | `SECTION_FULL` | no | `SectionFullException` | enrollment |
 | `SECTION_HAS_ACTIVE_ENROLLMENTS` | no | `SectionHasActiveEnrollmentsException` | academicstructure |
 | `SECTION_HAS_RECORDS` | no | `SectionHasRecordsException` | enrollment |
@@ -640,6 +650,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SECTION_SCHEDULE_CONFLICT` | no | `SectionScheduleConflictException` | academicstructure |
 | `SECTION_SCHEDULE_OVERLAP` | no | `SectionScheduleOverlapException` | enrollment |
 | `SEGMENT_NOT_AVAILABLE` | no | `SegmentNotAvailableException` | notification |
+| `SESSION_FULL` | no | `SessionFullException` | enrollment |
 | `SIGNATORY_INACTIVE` | no | `SignatoryInactiveException` | graduation |
 | `SIGNATORY_NOT_ALLOWED_FOR_DOCUMENT_TYPE` | no | `SignatoryNotAllowedForDocumentTypeException` | graduation |
 | `STAFF_PASSWORD_RESET_BLOCKED` | no | `StaffPasswordResetBlockedException` | identity |
@@ -648,6 +659,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `STALE_INSTITUTE_SETTING_VERSION` | no | `StaleInstituteSettingVersionException` | platform |
 | `STUDENT_DISCOUNT_OVERLAP` | no | `StudentDiscountOverlapException` | billing |
 | `STUDENT_DISCOUNT_PROPOSAL_EXPIRED` | no | `StudentDiscountProposalExpiredException` | billing |
+| `STUDENT_DOCUMENT_ALREADY_EXISTS` | no | `StudentDocumentAlreadyExistsException` | identity |
 | `STUDENT_DOCUMENT_MISSING` | no | `StudentDocumentMissingException` | graduation |
 | `STUDENT_FREE_BY_ABSENCES` | no | `StudentFreeByAbsencesException` | evaluation |
 | `STUDENT_HAS_ACTIVE_ENROLLMENTS` | no | `StudentHasActiveEnrollmentsException` | identity |
@@ -657,6 +669,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SUBJECT_ALREADY_EXISTS` | no | `SubjectAlreadyExistsException` | academicstructure |
 | `SUBJECT_ALREADY_REGULAR` | no | `SubjectAlreadyRegularException` | enrollment |
 | `SUBJECT_APPROVED_BY_EQUIVALENCE` | no | `SubjectApprovedByEquivalenceException` | enrollment |
+| `SUBJECT_CRITICAL_FIELDS_LOCKED` | no | `SubjectCriticalFieldsLockedException` | academicstructure |
 | `SUBJECT_INVALID_TRANSITION` | no | `SubjectInvalidTransitionException` | academicstructure |
 | `SUBJECT_IN_PROGRESS` | no | `SubjectInProgressException` | enrollment |
 | `SUBJECT_NOT_ASSIGNABLE_TO_PLAN` | no | `SubjectNotAssignableToPlanException` | academicstructure |
@@ -682,6 +695,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 
 | Código | Reintentable | Excepción | Módulo |
 |---|---|---|---|
+| `APPROVED_SUBJECTS_GRADE_UNAVAILABLE` | no | `ApprovedSubjectsGradeUnavailableException` | graduation |
 | `DIRECTOR_PERMISSIONS_NOT_EDITABLE` | no | `DirectorPermissionsNotEditableException` | identity |
 | `DOCUMENT_OPERATION_PENDING` | no | `DocumentOperationPendingException` | graduation |
 | `DUPLICATE_PERMISSION_GRID_CHANGE` | no | `DuplicatePermissionGridChangeException` | identity |
@@ -692,6 +706,9 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `EXAM_CERTIFICATE_REGISTRATION_NOT_ELIGIBLE` | no | `ExamCertificateRegistrationNotEligibleException` | graduation |
 | `FIXED_TO_DIRECTOR_PERMISSION_NOT_EDITABLE` | no | `FixedToDirectorPermissionNotEditableException` | identity |
 | `FUTURE_DATE` | no | `FutureDateException` | enrollment |
+| `INFORMATIVE_SESSION_ALREADY_STARTED` | no | `InformativeSessionAlreadyStartedException` | enrollment |
+| `INFORMATIVE_SESSION_CAPACITY_BELOW_REGISTRATIONS` | no | `InformativeSessionCapacityBelowRegistrationsException` | enrollment |
+| `INFORMATIVE_SESSION_NOT_SCHEDULED` | no | `InformativeSessionNotScheduledException` | enrollment |
 | `INVALID_SCORE` | no | `InvalidScoreException` | enrollment |
 | `MISSING_REQUIRED_VARIABLE` | no | `MissingRequiredVariableException` | notification |
 | `PROCEDURE_NOT_ELIGIBLE` | no | `ProcedureNotEligibleException` | graduation |
@@ -699,6 +716,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SIGNATORY_DUPLICATED_IN_TEMPLATE` | no | `SignatoryDuplicatedInTemplateException` | graduation |
 | `SIGNATORY_ROLE_INVALID` | no | `SignatoryRoleInvalidException` | graduation |
 | `SIGNATORY_SIGNATURE_INVALID` | no | `SignatorySignatureInvalidException` | graduation |
+| `STUDENT_EMAIL_CHANGE_GOOGLE_ACCOUNT` | no | `StudentEmailChangeGoogleAccountException` | identity |
 | `SUBJECT_NOT_IN_PLAN` | no | `SubjectNotInPlanException` | enrollment |
 | `TEMPLATE_IMAGE_INVALID` | no | `TemplateImageInvalidException` | graduation |
 | `TEMPLATE_INCOMPLETE` | no | `TemplateIncompleteException` | graduation |
@@ -770,7 +788,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 |---|---|---|
 | POST | `/academic-offering-cycles/{id}/approve` | `AcademicOfferingCycleController#approve` |
 | POST | `/academic-offering-cycles/{id}/reject` | `AcademicOfferingCycleController#reject` |
-| POST | `/course-enrollments/{id}/invoices/ad-hoc` | `CourseEnrollmentController#createAdHocInvoice` |
+| POST | `/course-enrollments/{id}/invoices/ad-hoc` | `EnrollmentAdHocInvoiceController#createCourseAdHocInvoice` |
 | POST | `/invoices/{invoiceId}/credit-notes` | `CreditNoteController#issueOrRequestCreditNote` |
 | POST | `/me/bank-transfer-receipts` | `BankTransferReceiptSubmissionController#submitOwnReceipt` |
 | POST | `/me/course-enrollments` | `MeEnrollmentController#enrollInCourse` |
@@ -778,7 +796,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/platform/provisioning/first-director` | `PlatformProvisioningController#provisionFirstDirector` |
 | POST | `/program-enrollment-applications/{id}/approve` | `ProgramEnrollmentApplicationController#approve` |
 | POST | `/program-enrollment-applications/{id}/reject` | `ProgramEnrollmentApplicationController#reject` |
-| POST | `/program-enrollments/{id}/invoices/ad-hoc` | `ProgramEnrollmentController#createAdHocInvoice` |
+| POST | `/program-enrollments/{id}/invoices/ad-hoc` | `EnrollmentAdHocInvoiceController#createProgramAdHocInvoice` |
 | POST | `/students/{studentId}/annual-upfront-requests/{requestId}/cash-payment` | `AnnualUpfrontCashPaymentController#registerAnnualUpfrontCashPayment` |
 | POST | `/students/{studentId}/bank-transfer-receipts` | `BankTransferReceiptSubmissionController#submitReceiptOnBehalfOfStudent` |
 | POST | `/students/{studentId}/cash-payments` | `StudentPaymentController#registerCashPayment` |
@@ -796,6 +814,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/approved-subjects-certificates/{id}/revoke` | `ApprovedSubjectsCertificateController#revoke` |
 | POST | `/attendance/change-requests/{id}/approve` | `AttendanceChangeRequestController#approve` |
 | POST | `/attendance/change-requests/{id}/reject` | `AttendanceChangeRequestController#reject` |
+| POST | `/attendance/change-requests/{id}/revert` | `AttendanceChangeRequestController#revert` |
 | POST | `/attendance/{id}/approve-justification` | `AttendanceController#approveJustification` |
 | POST | `/attendance/{id}/change-requests` | `AttendanceChangeRequestController#create` |
 | POST | `/attendance/{id}/justification-proof` | `AttendanceController#submitJustificationProof` |
@@ -918,6 +937,9 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/graduation-requests/{id}/reject` | `GraduationRequestController#reject` |
 | POST | `/graduation-requests/{id}/verify-debt` | `GraduationRequestController#verifyDebt` |
 | POST | `/holidays` | `HolidayController#create` |
+| POST | `/informative-sessions` | `InformativeSessionController#create` |
+| POST | `/informative-sessions/{id}/cancel` | `InformativeSessionController#cancel` |
+| POST | `/informative-sessions/{id}/register` | `MeInformativeSessionController#register` |
 | POST | `/institute-settings/notifications/whatsapp/templates` | `WhatsAppTemplateMappingController#createMapping` |
 | POST | `/invitation-waves` | `InvitationWaveController#createInvitationWave` |
 | POST | `/invitation-waves/{id}/cancel` | `InvitationWaveController#cancelInvitationWave` |

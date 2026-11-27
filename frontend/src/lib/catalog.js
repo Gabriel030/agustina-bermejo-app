@@ -1,7 +1,5 @@
 import { TEACHING_MODE_LABELS } from '@/lib/teachingMode';
 import { formatCourseDuration } from '@/lib/courseDuration';
-export const CATALOG_TABS = ['carreras', 'cursos', 'mis-solicitudes'];
-
 export const TEACHING_MODE_LABEL = TEACHING_MODE_LABELS;
 
 export function normalizeForSearch(text) {

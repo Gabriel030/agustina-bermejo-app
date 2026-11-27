@@ -174,7 +174,13 @@ class StudentControllerTest extends AbstractIntegrationTest {
         String directorToken = tokenWithRole("director.motivo", "DIRECTOR");
         String administrativeToken = tokenWithRole("administrativo.motivo", "ADMINISTRATIVO");
         String preceptorToken = tokenWithRole("preceptor.motivo", "PRECEPTOR");
+        String deputyDirectorToken = tokenWithRole("subdirector.motivo", "SUBDIRECTOR");
 
+        mockMvc.perform(get("/students").param("search", "42555666").header("Authorization", "Bearer " + deputyDirectorToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].withdrawalReason").doesNotExist());
+        mockMvc.perform(get("/students/{id}", student.getId()).header("Authorization", "Bearer " + deputyDirectorToken))
+                .andExpect(jsonPath("$.motivoBaja").doesNotExist());
         mockMvc.perform(get("/students").param("search", "42555666").header("Authorization", "Bearer " + directorToken))
                 .andExpect(jsonPath("$.items[0].withdrawalReason").value("ABANDONO"));
         mockMvc.perform(get("/students").param("search", "42555666").header("Authorization", "Bearer " + administrativeToken))
@@ -363,6 +369,12 @@ class StudentControllerTest extends AbstractIntegrationTest {
         enrollment.setProgram(fixtures.program());
         enrollment.setStatus(enrollmentStatus);
         enrollment.setEnrollmentDate(java.time.LocalDateTime.now().minusYears(2));
+        if (enrollmentStatus == ProgramEnrollmentStatus.WITHDRAWN) {
+            enrollment.setWithdrawalEffectiveDate(java.time.LocalDate.now());
+        }
+        if (enrollmentStatus == ProgramEnrollmentStatus.COMPLETED) {
+            enrollment.setCompletionDate(java.time.LocalDateTime.now());
+        }
         entityManager.persist(enrollment);
         entityManager.flush();
         return enrollment;

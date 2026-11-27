@@ -4,10 +4,15 @@ import com.red_escuela.backend.graduation.certificate.engine.CertificateCode;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateFileStore;
 import com.red_escuela.backend.graduation.certificate.engine.CertificatePdfRenderer;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateSnapshot;
+import com.red_escuela.backend.graduation.certificate.engine.CertificateTemplateDefinition;
+import com.red_escuela.backend.graduation.certificate.template.dto.DocumentTemplateType;
+import com.red_escuela.backend.graduation.certificate.template.entity.CertificateTemplateVersion;
+import com.red_escuela.backend.graduation.certificate.template.specialist.CertificateTemplateRenderSource;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertificateResponse;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertificateSubmissionResponse;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularityReason;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularityVerdict;
+import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateChannel;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateRequest;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateStatus;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularRequestOutcome;
@@ -70,6 +75,7 @@ public class RegularCertificateIssuer {
     private final RegularCertificateSettingsFinder settingsFinder;
     private final CertificateExceptionConsumer exceptionConsumer;
     private final VerifiableDocumentRegistry verifiableDocumentRegistry;
+    private final CertificateTemplateRenderSource templateSource;
     private final SecureRandom random = new SecureRandom();
 
     public RegularCertificateIssuer(RegularStudentCertificateRepository certificateRepository,
@@ -82,7 +88,8 @@ public class RegularCertificateIssuer {
                                     MeterRegistry meterRegistry, Clock clock,
                                     RegularCertificateSettingsFinder settingsFinder,
                                     CertificateExceptionConsumer exceptionConsumer,
-                                    VerifiableDocumentRegistry verifiableDocumentRegistry) {
+                                    VerifiableDocumentRegistry verifiableDocumentRegistry,
+                                    CertificateTemplateRenderSource templateSource) {
         this.certificateRepository = certificateRepository;
         this.requestRepository = requestRepository;
         this.regularityEvaluator = regularityEvaluator;
@@ -100,6 +107,7 @@ public class RegularCertificateIssuer {
         this.settingsFinder = settingsFinder;
         this.exceptionConsumer = exceptionConsumer;
         this.verifiableDocumentRegistry = verifiableDocumentRegistry;
+        this.templateSource = templateSource;
     }
 
     @Transactional(noRollbackFor = {NotRegularException.class, RegularCertificateAlreadyIssuedException.class,
@@ -130,6 +138,27 @@ public class RegularCertificateIssuer {
         IssuanceContext context = prepare(command);
         StandingResolution standing = resolveSelfIssueStanding(command, context.studentId(), context.actorId(), context.now());
         return create(command, context.facts(), standing, context.actorId(), context.now());
+    }
+
+    @Transactional(noRollbackFor = {NotRegularException.class, RegularCertificateAlreadyIssuedException.class,
+            NoDebtToExceptException.class})
+    public RegularCertificateResponse issueUnderDebtException(Long studentId, Long enrollmentId) {
+        IssueRegularCertificateCommand command = new IssueRegularCertificateCommand(RegularityKind.PROGRAM, enrollmentId, false, null,
+                RegularCertificateChannel.STAFF, null, null);
+        factsFinder.findOwnedBy(RegularityKind.PROGRAM, enrollmentId, studentId);
+        IssuanceContext context = prepare(command);
+        StandingResolution standing = resolveDebtExceptionStanding(command, context);
+        return create(command, context.facts(), standing, context.actorId(), context.now());
+    }
+
+    private StandingResolution resolveDebtExceptionStanding(IssueRegularCertificateCommand command, IssuanceContext context) {
+        try {
+            return standingGate.resolveByException(context.studentId(), command.kind(), command.enrollmentId());
+        } catch (NoDebtToExceptException e) {
+            recordRequest(command, context.studentId(), context.actorId(), context.now(), RegularRequestOutcome.REJECTED,
+                    List.of(reasonCodeOf(e)));
+            throw e;
+        }
     }
 
     private IssuanceContext prepare(IssueRegularCertificateCommand command) {
@@ -174,8 +203,12 @@ public class RegularCertificateIssuer {
 
     private RegularCertificateRequest pendingRequestOf(IssueRegularCertificateCommand command, Long studentId, Long actorId,
                                                        LocalDateTime now) {
-        return findPendingRequest(command).orElseGet(() -> recordRequest(command, studentId, actorId, now,
-                RegularRequestOutcome.PENDING_STAFF, List.of()));
+        try {
+            return findPendingRequest(command).orElseGet(() -> recordRequest(command, studentId, actorId, now,
+                    RegularRequestOutcome.PENDING_STAFF, List.of()));
+        } catch (DataIntegrityViolationException violation) {
+            throw new ConcurrentRegularCertificateIssueException();
+        }
     }
 
     private Optional<RegularCertificateRequest> findPendingRequest(IssueRegularCertificateCommand command) {
@@ -233,11 +266,19 @@ public class RegularCertificateIssuer {
                                               StandingResolution standing, Long actorId, LocalDateTime now) {
         Long studentId = facts.student().getId();
         CertificateCode code = newUniqueCode();
-        CertificateSnapshot snapshot = template.snapshotOf(facts, now.toLocalDate()).withRecipientLabel(command.recipientLabel());
         ValidityDays validityDays = settingsFinder.current().validityDays();
         LocalDateTime expiresAt = now.plusDays(validityDays.value());
+        CertificateSnapshot builtInSnapshot = template.snapshotOf(facts, now.toLocalDate()).withRecipientLabel(command.recipientLabel());
+        Optional<CertificateTemplateVersion> publishedVersion = templateSource.findCurrentPublished(DocumentTemplateType.REGULAR_STUDENT_CERTIFICATE);
+        CertificateSnapshot snapshot = publishedVersion
+                .map(version -> templateSource.snapshotWith(builtInSnapshot.withExtraMarkers(template.extraMarkersOf(command.recipientLabel(), expiresAt.toLocalDate())), version)
+                        .withRecipientLabel(command.recipientLabel()))
+                .orElse(builtInSnapshot);
         String url = verificationUrl.of(code);
-        byte[] pdf = renderer.render(template.definitionFor(snapshot, expiresAt.toLocalDate()), snapshot, code, url);
+        CertificateTemplateDefinition definition = template.definitionFor(snapshot, expiresAt.toLocalDate());
+        byte[] pdf = publishedVersion
+                .map(version -> renderer.render(definition, snapshot, code, url, templateSource.assetsOf(version, null)))
+                .orElseGet(() -> renderer.render(definition, snapshot, code, url));
         String path = fileStore.save(code.value(), pdf);
         try {
             Optional<RegularCertificateRequest> pending = findPendingRequest(command);
@@ -264,6 +305,7 @@ public class RegularCertificateIssuer {
                     .exceptionId(command.exceptionId())
                     .snapshot(snapshot)
                     .templateRef(snapshot.templateRef())
+                    .templateVersionId(publishedVersion.map(CertificateTemplateVersion::getId).orElse(null))
                     .pdfSha256(digest.sha256(pdf))
                     .renderEngineVersion(CertificatePdfRenderer.ENGINE_VERSION)
                     .pdfPath(path)

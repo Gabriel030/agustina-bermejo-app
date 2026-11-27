@@ -1,26 +1,29 @@
 import { Link, useLocation } from 'react-router-dom';
+import { cn } from '@/lib/utils';
 import { GlassCard } from '@/components/GlassCard';
 import { MobileMenu } from '@/components/MobileMenu';
 import { NotificationBell } from '@/features/notifications';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useAuth } from '@/context/AuthContext';
 import { useActiveRole } from '@/hooks/useActiveRole';
+import { TOP_NAV_BREAKPOINTS } from '@/components/topNavBreakpoint';
 import { usePerfilPropio, useAvatar } from '@/features/identity';
 
 function iniciales(nombre, apellido) {
   return `${nombre?.[0] ?? ''}${apellido?.[0] ?? ''}`.toUpperCase();
 }
 
-const MENU_PATH_ALIASES = [['/cierre-de-comision/', '/cierres-de-comision/']];
+const MENU_PATH_ALIASES = [{ from: '/cierre-de-comision/', title: 'Cierre de comisión' }];
 
 function pageTitleFor(items, pathname, fallback) {
-  const menuPathname = MENU_PATH_ALIASES.reduce((path, [from, to]) => path.replace(from, to), pathname);
-  const matches = items.filter((item) => menuPathname === item.to || menuPathname.startsWith(`${item.to}/`));
+  const alias = MENU_PATH_ALIASES.find(({ from }) => pathname.includes(from));
+  if (alias) return alias.title;
+  const matches = items.filter((item) => pathname === item.to || pathname.startsWith(`${item.to}/`));
   const current = matches.sort((a, b) => b.to.length - a.to.length)[0];
   return current?.label ?? fallback;
 }
 
-export function TopHeader({ titulo, items, groups }) {
+export function TopHeader({ titulo, items, groups, className, breakpoint = TOP_NAV_BREAKPOINTS.standard }) {
   const { usuario } = useAuth();
   const { pathname } = useLocation();
   const { canSwitch } = useActiveRole();
@@ -29,12 +32,12 @@ export function TopHeader({ titulo, items, groups }) {
   const { data: avatarUrl } = useAvatar(!!perfil && !!perfil.hasAvatar);
 
   return (
-    <div className="mx-auto w-full max-w-none shrink-0">
+    <div className={cn('mx-auto w-full max-w-none shrink-0', className)}>
       <GlassCard className="rounded-none border-0 border-b px-3 py-3 sm:px-8">
         <div className="mx-auto flex w-full max-w-[1200px] items-center justify-between gap-2 sm:gap-3">
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-            <MobileMenu titulo={titulo} items={items} groups={groups} />
-            <div className="font-heading text-size-15 font-bold sm:text-base text-ink lg:hidden whitespace-nowrap truncate">{mobileTitle}</div>
+            <MobileMenu titulo={titulo} items={items} groups={groups} hiddenFrom={breakpoint.mobileHidden} />
+            <div className={cn('font-heading text-size-15 font-bold sm:text-base text-ink whitespace-nowrap truncate', breakpoint.mobileHidden)}>{mobileTitle}</div>
           </div>
 
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-3">

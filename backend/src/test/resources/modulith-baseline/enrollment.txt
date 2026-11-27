@@ -1,2 +1,1 @@
-COUNT attendance 2
-COUNT billing 59
+COUNT billing 25

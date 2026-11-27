@@ -27,6 +27,18 @@ public class SectionTermEndFinder {
         };
     }
 
+    public LocalDate termStartDate(SectionKind kind, Long sectionId) {
+        return switch (kind) {
+            case PROGRAM -> programTermStartDate(sectionFinder.findProgramSectionEntity(sectionId));
+            case COURSE -> courseSectionTermEndResolver.termStartDate(sectionFinder.findCourseSectionEntity(sectionId));
+        };
+    }
+
+    private LocalDate programTermStartDate(SubjectSection section) {
+        AcademicOfferingCycle cycle = section.getAcademicOfferingCycle();
+        return (cycle != null ? cycle.getTerm() : section.getTerm()).getStartDate().toLocalDate();
+    }
+
     private LocalDate programTermEndDate(SubjectSection section) {
         AcademicOfferingCycle cycle = section.getAcademicOfferingCycle();
         return (cycle != null ? cycle.getTerm() : section.getTerm()).getEndDate().toLocalDate();

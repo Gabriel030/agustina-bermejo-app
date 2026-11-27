@@ -46,6 +46,8 @@ public final class CertificateMarkers {
             case "graduationDate" -> snapshot.graduationDate().format(DATE_FORMAT);
             case "issuedOn" -> snapshot.issuedOn().format(DATE_FORMAT);
             case "registryNumber" -> registryNumber == null ? "" : registryNumber;
+            case "recipient", "average", "completionPercent", "subjectName", "examDate", "validUntil" ->
+                    snapshot.extraMarkers().getOrDefault(name, "");
             default -> original;
         };
     }

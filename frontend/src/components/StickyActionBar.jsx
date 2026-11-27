@@ -90,7 +90,7 @@ function MenuLayout({ summary, hint, hintId, compactSummary, compactHint, primar
           <>
             <div aria-hidden="true" className="min-w-0">
               <b className="block truncate text-base leading-5 tabular-nums text-ink">{compactSummary ?? summary}</b>
-              <small className="block truncate text-xs leading-4 text-ink-faint">{compactHint ?? hint}</small>
+              <small className="line-clamp-2 text-xs leading-4 text-ink-faint">{compactHint ?? hint}</small>
             </div>
             <div className="sr-only">
               <b>{summary}</b>
@@ -101,7 +101,7 @@ function MenuLayout({ summary, hint, hintId, compactSummary, compactHint, primar
           <>
             <b className="block truncate text-base leading-5 tabular-nums text-ink">{summary}</b>
             {hint && (
-              <small id={hintId} className="block truncate text-xs leading-4 text-ink-faint">
+              <small id={hintId} className="line-clamp-2 text-xs leading-4 text-ink-faint">
                 {hint}
               </small>
             )}

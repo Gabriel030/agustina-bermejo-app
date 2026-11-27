@@ -53,15 +53,24 @@ public class SubjectApprovalLookup {
 
     public Map<Long, Map<Long, SubjectStanding>> findStandings(Collection<Long> programEnrollmentIds,
             Collection<Long> subjectIds, Collection<EnrollmentStatus> courseworkStatuses) {
+        return findStandings(programEnrollmentIds, subjectIds, courseworkStatuses, null);
+    }
+
+    public Map<Long, Map<Long, SubjectStanding>> findStandings(Collection<Long> programEnrollmentIds,
+            Collection<Long> subjectIds, Collection<EnrollmentStatus> courseworkStatuses, Long ignoreRegularInTermId) {
         if (programEnrollmentIds.isEmpty() || subjectIds.isEmpty()) {
             return Map.of();
         }
         Map<Long, Map<Long, List<CourseworkEntry>>> coursework = new HashMap<>();
         for (PrerequisiteStatusRow row : subjectSectionEnrollmentRepository.findPrerequisiteStatusRows(
                 programEnrollmentIds, subjectIds, courseworkStatuses)) {
+            if (ignoreRegularInTermId != null && row.getStatus() == EnrollmentStatus.REGULAR
+                    && ignoreRegularInTermId.equals(row.getTermId())) {
+                continue;
+            }
             coursework.computeIfAbsent(row.getProgramEnrollmentId(), id -> new HashMap<>())
                     .computeIfAbsent(row.getSubjectId(), id -> new ArrayList<>())
-                    .add(new CourseworkEntry(row.getStatus(), null, null));
+                    .add(new CourseworkEntry(row.getStatus(), row.getFinalScore(), null));
         }
         Map<Long, Map<Long, RecognizedEquivalence>> equivalences = activeEquivalencesBySubject(programEnrollmentIds, subjectIds);
         Map<Long, Map<Long, SubjectStanding>> standings = new HashMap<>();

@@ -41,8 +41,7 @@ function PublishHeader({ column, students, hasDrafts, boardHref, onPublish }) {
   const label = gradeColumnLabel(column);
   if (isColumnLocked(column)) {
     return (
-      <StatusPill tone="success" className="px-2 py-0.5 normal-case tracking-normal">
-        <Lock aria-hidden="true" className="size-3" />
+      <StatusPill tone="success" className="px-2 py-0.5 normal-case tracking-normal" icon={Lock}>
         Publicada
       </StatusPill>
     );
@@ -293,8 +292,9 @@ export function GradeGridTable({ students, columns = NO_COLUMNS, mode = 'course'
       </div>
       <div
         aria-hidden="true"
+        data-testid="overflow-indicator"
         className={cn(
-          'pointer-events-none absolute inset-y-0 right-[56px] flex w-9 items-center justify-end rounded-r-xl bg-gradient-to-r from-transparent to-dialog-bg pr-1 text-ink-soft transition-opacity md:right-[72px]',
+          'pointer-events-none absolute inset-y-0 right-[56px] flex w-9 items-center justify-end rounded-r-xl bg-dialog-bg pr-1 text-ink-soft shadow-(--sh-sticky-right) transition-opacity md:right-[72px]',
           moreToRight ? 'opacity-100' : 'opacity-0',
         )}
       >

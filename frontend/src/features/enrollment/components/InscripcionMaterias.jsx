@@ -119,18 +119,20 @@ export function InscripcionMaterias({ carreraId, onCerrar }) {
           ) : (
             <div className="flex flex-col gap-1">
               {disponibles.map((fila) => (
-                <button
+                <Button
                   key={fila.key}
                   type="button"
+                  variant="row-card"
+                  size="row"
                   onClick={() => elegirMateria(fila)}
-                  className="flex items-center justify-between rounded-xl border border-border px-4 py-3 text-left transition-colors hover:border-brand hover:bg-neutral-bg"
+                  className="min-h-11 hover:border-brand"
                 >
                   <div>
                     <div className="text-size-13-5 font-semibold text-ink">{fila.subjectName}</div>
                     <div className="text-xs text-ink-faint">{fila.curricularYear ? `${fila.curricularYear}° año` : ''}</div>
                   </div>
                   <ChevronRight className="h-4 w-4 text-ink-faint" />
-                </button>
+                </Button>
               ))}
             </div>
           )}
@@ -164,17 +166,19 @@ export function InscripcionMaterias({ carreraId, onCerrar }) {
                 const conflicto = horariosComprometidos.find((h) => seSuperponen(h, horario));
                 const seleccionada = comisionSeleccionada?.id === comision.id;
                 return (
-                  <button
+                  <Button
                     key={comision.id}
                     type="button"
+                    variant="row-card"
+                    size="row"
                     disabled={!!conflicto}
                     onClick={() => setComisionSeleccionada(comision)}
-                    className={`flex flex-col gap-1 rounded-xl border px-4 py-3 text-left transition-colors ${
+                    className={`min-h-11 flex-col items-stretch justify-center gap-1 ${
                       conflicto
-                        ? 'cursor-not-allowed border-border bg-neutral-bg opacity-60'
+                        ? 'cursor-not-allowed bg-neutral-bg opacity-60'
                         : seleccionada
-                          ? 'border-brand bg-accent-soft'
-                          : 'border-border hover:border-brand hover:bg-neutral-bg'
+                          ? 'border-brand bg-accent-soft hover:bg-accent-soft'
+                          : 'hover:border-brand'
                     }`}
                   >
                     <div className="flex items-center justify-between">
@@ -187,7 +191,7 @@ export function InscripcionMaterias({ carreraId, onCerrar }) {
                         Se pisa con {conflicto.subjectName} ({conflicto.sectionName}, {conflicto.label})
                       </div>
                     )}
-                  </button>
+                  </Button>
                 );
               })}
             </div>

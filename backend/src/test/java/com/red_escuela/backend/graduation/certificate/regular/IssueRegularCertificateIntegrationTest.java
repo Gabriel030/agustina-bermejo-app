@@ -546,7 +546,6 @@ class IssueRegularCertificateIntegrationTest extends AbstractIntegrationTest {
     @Test
     void issuedCertificateKeepsItsSnapshotWhenSettingsChangeAfterwards() throws Exception {
         RegularCertificateResponse response = issueConfirmed();
-        String originalValidUntil = response.expiresAt().toLocalDate().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
         settingsUpdater.update(RegularCertificateSettings.of(90, 14, true), currentSettingsVersion());
         jdbc.update("update regular_student_certificate set pdf_path = 'missing/file.pdf' where id = ?", response.id());
 
@@ -555,7 +554,8 @@ class IssueRegularCertificateIntegrationTest extends AbstractIntegrationTest {
         RegularStudentCertificate stored = certificateRepository.findById(response.id()).orElseThrow();
         assertThat(stored.getValidityDays()).isEqualTo(30);
         assertThat(stored.getExpiresAt()).isEqualTo(response.expiresAt());
-        assertThat(pdfText(regenerated.content())).contains(originalValidUntil);
+        assertThat(new com.red_escuela.backend.graduation.certificate.specialist.CertificateDigest().sha256(regenerated.content()))
+                .isEqualTo(stored.getPdfSha256());
     }
 
     @Test

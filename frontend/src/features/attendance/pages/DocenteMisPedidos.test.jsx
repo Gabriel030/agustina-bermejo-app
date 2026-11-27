@@ -61,23 +61,36 @@ function renderPage(route) {
 describe('DocenteTomarAsistencia pedidos tab', () => {
   installFixedClock();
 
-  it('shows the pending count on the Mis pedidos tab', async () => {
+  it('names the pending count in the Mis pedidos header link', async () => {
     mockApi();
     renderPage('/docente/tomar-asistencia');
 
-    const tab = await screen.findByRole('tab', { name: /Mis pedidos/ });
-    expect(await within(tab).findByText('1')).toBeInTheDocument();
+    expect(await screen.findByRole('link', { name: 'Mis pedidos, 1 pendiente' })).toBeInTheDocument();
   });
 
-  it('lists the requests newest first and keeps both top tabs visible', async () => {
+  it('pluralizes the pending count in the accessible name', async () => {
+    mockApi({
+      requests: [
+        attendanceChangeRequest({ id: 50, status: 'PENDING' }),
+        attendanceChangeRequest({ id: 51, status: 'PENDING' }),
+      ],
+    });
+    renderPage('/docente/tomar-asistencia');
+
+    expect(await screen.findByRole('link', { name: 'Mis pedidos, 2 pendientes' })).toBeInTheDocument();
+  });
+
+  it('lists the requests newest first inside a subview with the header kept', async () => {
     mockApi();
     renderPage('/docente/tomar-asistencia?tab=pedidos');
 
     await screen.findByText('Joaquín Benítez');
     const rows = screen.getAllByRole('row').slice(1);
     expect(within(rows[0]).getByText('Valentina Suárez')).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: 'Tomar asistencia' })).toBeInTheDocument();
-    expect(screen.getByRole('tab', { name: /Mis pedidos/ })).toHaveAttribute('aria-selected', 'true');
+    expect(screen.getByRole('heading', { level: 1, name: 'Tomar asistencia' })).toBeInTheDocument();
+    expect(screen.getByRole('heading', { level: 2, name: 'Mis pedidos' })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /Mis pedidos/ })).toHaveAttribute('aria-current', 'page');
+    expect(screen.queryByRole('tab')).not.toBeInTheDocument();
   });
 
   it('expands a rejected request showing the rejection reason and a re-request link to the history', async () => {
@@ -156,14 +169,14 @@ describe('DocenteTomarAsistencia pedidos tab', () => {
     expect(await screen.findByText('Joaquín Benítez')).toBeInTheDocument();
   });
 
-  it('switches tabs updating the url', async () => {
+  it('opens and leaves the subview updating the url', async () => {
     const user = userEvent.setup();
     mockApi();
     renderPage('/docente/tomar-asistencia');
 
-    await user.click(await screen.findByRole('tab', { name: /Mis pedidos/ }));
+    await user.click(await screen.findByRole('link', { name: /Mis pedidos/ }));
     expect(screen.getByTestId('location')).toHaveTextContent('/docente/tomar-asistencia?tab=pedidos');
-    await user.click(screen.getByRole('tab', { name: 'Tomar asistencia' }));
+    await user.click(screen.getByRole('link', { name: 'Volver a Pasar lista' }));
     expect(screen.getByTestId('location')).toHaveTextContent(/^\/docente\/tomar-asistencia$/);
   });
 });
@@ -192,7 +205,7 @@ describe('DocenteTomarAsistencia deep link to the history', () => {
     await user.click(await screen.findByTitle('Ausente'));
 
     expect(await screen.findByText('Pedido pendiente')).toBeInTheDocument();
-    expect(screen.getByRole('link', { name: 'Ver pedido #41' })).toHaveAttribute('href', '/docente/tomar-asistencia?tab=pedidos&pedido=41');
+    expect(screen.getByRole('link', { name: 'Ver pedido #41' })).toHaveAttribute('href', '/docente/tomar-asistencia?tab=pedidos&seccion=PROGRAM-5&pedido=41');
     expect(screen.queryByRole('button', { name: 'Solicitar modificación' })).not.toBeInTheDocument();
   });
 

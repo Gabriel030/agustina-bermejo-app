@@ -36,7 +36,7 @@ async function signInAs(role, path) {
     http.get(`${API}/students`, () => HttpResponse.json({ items: [], page: 0, size: 25, totalElements: 0 })),
     http.get(`${API}/financial-dashboard`, () => HttpResponse.json({ studentsInDebt: 1, studentsUpToDate: 2, totalsByCurrency: [] })),
     http.get(`${API}/billing/metrics/:panel`, ({ params }) =>
-      HttpResponse.json({ panel: params.panel, available: true, partial: false, months: ['2026-10'], series: [] }),
+      HttpResponse.json({ panel: params.panel, currency: 'ARS', available: true, partial: false, months: ['2026-10'], series: [] }),
     ),
   );
   renderApp(path);
@@ -51,8 +51,8 @@ describe('Financiero access by role', () => {
     await signInAs('ADMINISTRATIVO', '/administrativo/alumnos');
     await screen.findByRole('heading', { name: 'Padrón de alumnos' });
 
-    const links = await screen.findAllByRole('link', { name: 'Financiero' });
-    await userEvent.click(links[0]);
+    await userEvent.click(await screen.findByRole('button', { name: 'Facturación' }));
+    await userEvent.click(await screen.findByRole('link', { name: 'Financiero' }));
 
     expect(await screen.findByRole('heading', { name: 'Financiero' })).toBeInTheDocument();
     expect(await screen.findByText('Pago a término', { selector: 'div' })).toBeInTheDocument();
@@ -61,8 +61,9 @@ describe('Financiero access by role', () => {
   it('d2-02 keeps the administrative menu with a single Facturación entry and no billing sub-menu (D-355)', async () => {
     await signInAs('ADMINISTRATIVO', '/administrativo/alumnos');
 
+    await screen.findByRole('heading', { name: 'Padrón de alumnos' });
     const nav = (await screen.findAllByRole('navigation'))[0];
-    await within(nav).findByRole('link', { name: 'Facturación' });
+    await userEvent.click(await within(nav).findByRole('button', { name: 'Facturación' }));
     const labels = within(nav).getAllByRole('link').map((link) => link.textContent.trim());
     expect(labels).toContain('Facturación');
     expect(labels).toContain('Financiero');

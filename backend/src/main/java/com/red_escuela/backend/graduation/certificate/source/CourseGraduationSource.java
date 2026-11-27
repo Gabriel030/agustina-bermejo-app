@@ -68,7 +68,8 @@ public class CourseGraduationSource implements GraduationSource {
     public CertificateSnapshot snapshotOf(Long enrollmentId) {
         CourseEnrollment enrollment = courseEnrollmentFinder.requireById(enrollmentId);
         LocalDate graduationDate = courseSectionOutcomeFinder.outcomeOf(enrollmentId).lastTermEndDate();
-        return snapshotFactory.create(enrollment.getStudent(), "el curso", enrollment.getCourse().getName(), null, null,
+        return snapshotFactory.create(enrollment.getStudent(), "el curso", enrollment.getCourse().getName(), null,
+                enrollment.getCourse().getDurationHours(),
                 graduationDate);
     }
 

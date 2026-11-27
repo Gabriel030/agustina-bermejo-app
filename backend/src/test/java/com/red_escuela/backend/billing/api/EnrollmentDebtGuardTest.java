@@ -160,6 +160,7 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
         enrollment.setStudent(student);
         enrollment.setProgram(program);
         enrollment.setStatus(ProgramEnrollmentStatus.WITHDRAWN);
+        enrollment.setWithdrawalEffectiveDate(java.time.LocalDate.now());
         enrollment.setEnrollmentDate(LocalDateTime.now().minusMonths(6));
         enrollment = programEnrollmentRepository.save(enrollment);
         PaymentStandingSeed.seedProgramEnrollmentStanding(jdbc, enrollment.getId(), EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);
@@ -329,6 +330,7 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
         enrollment.setStudent(student);
         enrollment.setProgram(program);
         enrollment.setStatus(ProgramEnrollmentStatus.WITHDRAWN);
+        enrollment.setWithdrawalEffectiveDate(java.time.LocalDate.now());
         enrollment.setEnrollmentDate(LocalDateTime.now().minusMonths(6));
         ProgramEnrollment saved = programEnrollmentRepository.save(enrollment);
         PaymentStandingSeed.seedProgramEnrollmentStanding(jdbc, saved.getId(), EnrollmentPaymentStatus.WITHDRAWN_FOR_NONPAYMENT);

@@ -15,7 +15,7 @@ import com.red_escuela.backend.academicstructure.service.TermDeactivation;
 import com.red_escuela.backend.enrollment.dto.ChangeSectionRequest;
 import com.red_escuela.backend.enrollment.dto.CreateSectionEnrollmentRequest;
 import com.red_escuela.backend.shared.domain.Address;
-import com.red_escuela.backend.billing.entity.CohortIntake;
+import com.red_escuela.backend.academicstructure.domain.CohortIntake;
 import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
 import com.red_escuela.backend.academicstructure.domain.RequirementType;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubjectPrerequisite;
@@ -27,11 +27,12 @@ import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
+import com.red_escuela.backend.shared.domain.Grade;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.entity.StudentOnboardingStatus;
@@ -44,6 +45,13 @@ import com.red_escuela.backend.enrollment.exception.EnrollmentFeeNotPaidExceptio
 import com.red_escuela.backend.identity.exception.StudentNotActiveException;
 import com.red_escuela.backend.enrollment.exception.SubjectNotInProgramPlanException;
 import com.red_escuela.backend.enrollment.exception.TermEnrollmentOverrideClosedException;
+import com.red_escuela.backend.academicstructure.entity.Instructor;
+import com.red_escuela.backend.attendance.entity.Attendance;
+import com.red_escuela.backend.attendance.entity.AttendanceStatus;
+import com.red_escuela.backend.attendance.repository.AttendanceRepository;
+import com.red_escuela.backend.evaluation.entity.GradeItem;
+import com.red_escuela.backend.evaluation.entity.GradeItemType;
+import com.red_escuela.backend.evaluation.repository.GradeItemRepository;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -60,6 +68,7 @@ import java.time.YearMonth;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 import com.red_escuela.backend.enrollment.exception.EnrollmentWindowClosedException;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 
@@ -84,6 +93,12 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
 
     @Autowired
     private EntityManager entityManager;
+
+    @Autowired
+    private GradeItemRepository gradeItemRepository;
+
+    @Autowired
+    private AttendanceRepository attendanceRepository;
 
     private Institution persistInstitution() {
         Institution institution = new Institution();
@@ -172,6 +187,12 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         enrollment.setProgram(program);
         enrollment.setStatus(status);
         enrollment.setEnrollmentDate(LocalDateTime.now());
+        if (status == ProgramEnrollmentStatus.WITHDRAWN) {
+            enrollment.setWithdrawalEffectiveDate(java.time.LocalDate.now());
+        }
+        if (status == ProgramEnrollmentStatus.COMPLETED) {
+            enrollment.setCompletionDate(java.time.LocalDateTime.now());
+        }
         entityManager.persist(enrollment);
         return enrollment;
     }
@@ -292,6 +313,141 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         row.setAttemptNumber(1);
         entityManager.persist(row);
         return row;
+    }
+
+    private record MinGradeScenario(ProgramEnrollment enrollment, SubjectSection section, ProgramSubject target,
+                                    ProgramSubject prerequisite, Student student, Term term, Subject prerequisiteSubject) {
+    }
+
+    private MinGradeScenario persistMinGradeScenario(String documentNumber, String suffix) {
+        Institution institution = persistInstitution();
+        Student student = persistStudent(documentNumber, StatusType.ACTIVE, institution);
+        Subject subject = persistSubject("MateriaNotaMinima" + suffix);
+        Subject prerequisiteSubject = persistSubject("CorrelativaNotaMinima" + suffix);
+        Program program = persistProgram("CarreraNotaMinima" + suffix);
+        ProgramSubject target = persistProgramSubject(program, subject);
+        ProgramSubject prerequisite = persistProgramSubject(program, prerequisiteSubject);
+        Term term = persistTerm(null, null);
+        SubjectSection section = persistSubjectSection(subject, term, null);
+        ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
+        entityManager.flush();
+        return new MinGradeScenario(enrollment, section, target, prerequisite, student, term, prerequisiteSubject);
+    }
+
+    private void persistPrerequisiteWithMinGrade(MinGradeScenario scenario, String minGrade) {
+        ProgramSubjectPrerequisite link = new ProgramSubjectPrerequisite();
+        link.setProgramSubject(scenario.target());
+        link.setPrerequisiteProgramSubject(scenario.prerequisite());
+        link.setRequirementType(RequirementType.APPROVED);
+        link.setMinGrade(Grade.of(new BigDecimal(minGrade)));
+        entityManager.persist(link);
+    }
+
+    private SubjectSectionEnrollment persistApprovedPrerequisiteAttempt(
+            MinGradeScenario scenario, Student student, ProgramEnrollment enrollment, String score) {
+        SubjectSectionEnrollment attempt = new SubjectSectionEnrollment();
+        attempt.setStudent(student);
+        attempt.setProgramEnrollment(enrollment);
+        attempt.setSubjectSection(persistSubjectSection(scenario.prerequisiteSubject(), scenario.term(), null));
+        attempt.setStatus(EnrollmentStatus.APPROVED);
+        attempt.setFinalScore(score == null ? null : Grade.of(new BigDecimal(score)));
+        attempt.setEnrolledAt(LocalDateTime.of(2025, 1, 1, 10, 0));
+        attempt.setAttemptNumber(1);
+        entityManager.persist(attempt);
+        return attempt;
+    }
+
+    @Test
+    void enrollIsRejectedWhenTheApprovedCorrelativeScoreIsBelowTheMinimumGrade() {
+        MinGradeScenario scenario = persistMinGradeScenario("64100001", "Bajo");
+        persistPrerequisiteWithMinGrade(scenario, "6");
+        persistApprovedPrerequisiteAttempt(scenario, scenario.student(), scenario.enrollment(), "5");
+        entityManager.flush();
+
+        assertThatThrownBy(() -> subjectSectionEnrollmentService.enroll(
+                scenario.enrollment().getId(), new CreateSectionEnrollmentRequest(scenario.section().getId())))
+                .isInstanceOf(PrerequisiteNotMetException.class)
+                .hasMessageContaining("CorrelativaNotaMinimaBajo")
+                .hasMessageContaining("(nota mínima 6, tu nota 5)");
+    }
+
+    @Test
+    void enrollSucceedsWhenTheApprovedCorrelativeScoreEqualsTheMinimumGrade() {
+        MinGradeScenario scenario = persistMinGradeScenario("64100002", "Igual");
+        persistPrerequisiteWithMinGrade(scenario, "6");
+        persistApprovedPrerequisiteAttempt(scenario, scenario.student(), scenario.enrollment(), "6");
+        entityManager.flush();
+
+        SubjectSectionEnrollment enrolled = subjectSectionEnrollmentService.enroll(
+                scenario.enrollment().getId(), new CreateSectionEnrollmentRequest(scenario.section().getId()));
+
+        assertThat(enrolled.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+    }
+
+    @Test
+    void enrollSucceedsWhenTheApprovedCorrelativeHasNoScore() {
+        MinGradeScenario scenario = persistMinGradeScenario("64100003", "SinNota");
+        persistPrerequisiteWithMinGrade(scenario, "6");
+        persistApprovedPrerequisiteAttempt(scenario, scenario.student(), scenario.enrollment(), null);
+        entityManager.flush();
+
+        SubjectSectionEnrollment enrolled = subjectSectionEnrollmentService.enroll(
+                scenario.enrollment().getId(), new CreateSectionEnrollmentRequest(scenario.section().getId()));
+
+        assertThat(enrolled.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+    }
+
+    @Test
+    void changeSectionIsRejectedWhenTheCorrelativeScoreIsBelowTheMinimumGradeAndKeepsTheOriginEnrollment() {
+        MinGradeScenario scenario = persistMinGradeScenario("64100004", "Cambio");
+        SubjectSection otherSection = persistSubjectSection(scenario.section().getSubject(), scenario.term(), null);
+        entityManager.flush();
+        SubjectSectionEnrollment original = subjectSectionEnrollmentService.enroll(
+                scenario.enrollment().getId(), new CreateSectionEnrollmentRequest(scenario.section().getId()));
+        persistPrerequisiteWithMinGrade(scenario, "6");
+        persistApprovedPrerequisiteAttempt(scenario, scenario.student(), scenario.enrollment(), "5");
+        entityManager.flush();
+
+        assertThatThrownBy(() -> subjectSectionEnrollmentService.changeSection(
+                original.getId(), new ChangeSectionRequest(otherSection.getId())))
+                .isInstanceOf(PrerequisiteNotMetException.class);
+        assertThat(subjectSectionEnrollmentService.get(original.getId()).getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+    }
+
+    @Test
+    void waitlistPromotionSkipsACandidateWhoseCorrelativeScoreIsBelowTheMinimumGrade() {
+        Institution institution = persistInstitution();
+        Subject subject = persistSubject("MateriaNotaMinimaLista");
+        Subject prerequisiteSubject = persistSubject("CorrelativaNotaMinimaLista");
+        Program program = persistProgram("CarreraNotaMinimaLista");
+        ProgramSubject target = persistProgramSubject(program, subject);
+        ProgramSubject prerequisite = persistProgramSubject(program, prerequisiteSubject);
+        Term term = persistTerm(null, null);
+        SubjectSection section = persistSubjectSection(subject, term, 1);
+        Student seatedStudent = persistStudent("64100005", StatusType.ACTIVE, institution);
+        Student lowScoreStudent = persistStudent("64100006", StatusType.ACTIVE, institution);
+        Student minimumScoreStudent = persistStudent("64100007", StatusType.ACTIVE, institution);
+        ProgramEnrollment seatedEnrollment = persistProgramEnrollment(seatedStudent, program, ProgramEnrollmentStatus.ENROLLED);
+        ProgramEnrollment lowScoreEnrollment = persistProgramEnrollment(lowScoreStudent, program, ProgramEnrollmentStatus.ENROLLED);
+        ProgramEnrollment minimumScoreEnrollment = persistProgramEnrollment(minimumScoreStudent, program, ProgramEnrollmentStatus.ENROLLED);
+        entityManager.flush();
+        SubjectSectionEnrollment seated = subjectSectionEnrollmentService.enroll(
+                seatedEnrollment.getId(), new CreateSectionEnrollmentRequest(section.getId()));
+        SubjectSectionEnrollment lowScore = persistWaitlisted(
+                lowScoreStudent, lowScoreEnrollment, section, LocalDateTime.of(2026, 1, 1, 10, 0));
+        SubjectSectionEnrollment minimumScore = persistWaitlisted(
+                minimumScoreStudent, minimumScoreEnrollment, section, LocalDateTime.of(2026, 1, 2, 10, 0));
+        MinGradeScenario scenario = new MinGradeScenario(
+                seatedEnrollment, section, target, prerequisite, seatedStudent, term, prerequisiteSubject);
+        persistPrerequisiteWithMinGrade(scenario, "6");
+        persistApprovedPrerequisiteAttempt(scenario, lowScoreStudent, lowScoreEnrollment, "5");
+        persistApprovedPrerequisiteAttempt(scenario, minimumScoreStudent, minimumScoreEnrollment, "6");
+        entityManager.flush();
+
+        subjectSectionEnrollmentService.withdraw(seated.getId());
+
+        assertThat(subjectSectionEnrollmentService.get(lowScore.getId()).getStatus()).isEqualTo(EnrollmentStatus.WAITLISTED);
+        assertThat(subjectSectionEnrollmentService.get(minimumScore.getId()).getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
     }
 
     @Test
@@ -508,7 +664,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         com.red_escuela.backend.billing.planning.TestTemplateTerms.publish(entityManager, template);
 
         ProgramCohort cohort = new ProgramCohort();
-        cohort.setTemplate(template);
+        cohort.setTemplateId(template.getId());
         cohort.setIntake(CohortIntake.FIRST);
         cohort.setAdmissionStart(LocalDate.now().minusDays(60));
         cohort.setAdmissionEnd(LocalDate.now().minusDays(1));
@@ -890,5 +1046,88 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         termDeactivation.deactivate(term.getId());
 
         assertThat(term.getStatus()).isEqualTo(StatusType.INACTIVE);
+    }
+
+    @Test
+    void changeSectionMidTermKeepsGradesAndAttendanceOfTheOriginSectionReadable() {
+        Institution institution = persistInstitution();
+        Student student = persistStudent("66400001", StatusType.ACTIVE, institution);
+        Subject subject = persistSubject("MateriaCambioMitadDeCuatrimestre");
+        Program program = persistProgram("CarreraCambioMitadDeCuatrimestre");
+        persistProgramSubject(program, subject);
+        Term term = persistTerm(null, null);
+        SubjectSection sectionA = persistSubjectSection(subject, term, null);
+        SubjectSection sectionB = persistSubjectSection(subject, term, null);
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
+        Instructor instructor = persistInstructor("66400002");
+        entityManager.flush();
+        SubjectSectionEnrollment origin = subjectSectionEnrollmentService.enroll(
+                programEnrollment.getId(), new CreateSectionEnrollmentRequest(sectionA.getId()));
+        GradeItem firstExam = persistExamGrade(origin, 1, "7.5");
+        GradeItem secondExam = persistExamGrade(origin, 2, "9.0");
+        Attendance present = persistAttendance(origin, instructor, LocalDate.of(2026, 4, 6), AttendanceStatus.PRESENT);
+        Attendance absent = persistAttendance(origin, instructor, LocalDate.of(2026, 4, 8), AttendanceStatus.ABSENT);
+        entityManager.flush();
+
+        SubjectSectionEnrollment destination = subjectSectionEnrollmentService.changeSection(
+                origin.getId(), new ChangeSectionRequest(sectionB.getId()),
+                EnrollmentChange.byStaff("Cambio de turno solicitado por el alumno", instructor.getPerson().getId()));
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(destination.getId()).isNotEqualTo(origin.getId());
+        assertThat(destination.getSubjectSection().getId()).isEqualTo(sectionB.getId());
+        assertThat(entityManager.find(SubjectSectionEnrollment.class, origin.getId()).getStatus()).isEqualTo(EnrollmentStatus.WITHDRAWN);
+        assertThat(gradeItemRepository.findByProgramSubjectSectionEnrollmentId(origin.getId()))
+                .extracting(GradeItem::getId, item -> item.getScore().value().doubleValue())
+                .containsExactlyInAnyOrder(
+                        tuple(firstExam.getId(), 7.5),
+                        tuple(secondExam.getId(), 9.0));
+        assertThat(attendanceRepository.findByProgramSubjectSectionEnrollmentId(origin.getId()))
+                .extracting(Attendance::getId, Attendance::getStatus)
+                .containsExactlyInAnyOrder(
+                        tuple(present.getId(), AttendanceStatus.PRESENT),
+                        tuple(absent.getId(), AttendanceStatus.ABSENT));
+        assertThat(gradeItemRepository.findByProgramSubjectSectionEnrollmentId(destination.getId())).isEmpty();
+        assertThat(attendanceRepository.findByProgramSubjectSectionEnrollmentId(destination.getId())).isEmpty();
+    }
+
+    private Instructor persistInstructor(String dni) {
+        Address address = new Address();
+        entityManager.persist(address);
+        Person person = new Person();
+        person.setName("Docente");
+        person.setLastname(dni);
+        person.setDni(dni);
+        person.setUsername(dni);
+        person.setEmail(dni + "@example.com");
+        person.setAddress(address);
+        person.setStatus(StatusType.ACTIVE);
+        entityManager.persist(person);
+        Instructor instructor = new Instructor();
+        instructor.setPerson(person);
+        entityManager.persist(instructor);
+        return instructor;
+    }
+
+    private GradeItem persistExamGrade(SubjectSectionEnrollment enrollment, int sequence, String score) {
+        GradeItem item = new GradeItem();
+        item.setProgramSubjectSectionEnrollment(enrollment);
+        item.setType(GradeItemType.EXAM);
+        item.setSequenceNumber(sequence);
+        item.setDate(LocalDateTime.of(2026, 4, 10, 10, 0));
+        item.setScore(Grade.of(new BigDecimal(score)));
+        entityManager.persist(item);
+        return item;
+    }
+
+    private Attendance persistAttendance(SubjectSectionEnrollment enrollment, Instructor instructor, LocalDate classDate, AttendanceStatus status) {
+        Attendance attendance = new Attendance();
+        attendance.setProgramSubjectSectionEnrollment(enrollment);
+        attendance.setClassDate(classDate);
+        attendance.setStatus(status);
+        attendance.setRecordedBy(instructor);
+        entityManager.persist(attendance);
+        return attendance;
     }
 }

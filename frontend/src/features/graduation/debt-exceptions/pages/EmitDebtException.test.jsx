@@ -27,6 +27,8 @@ const student = {
   emailVerified: true,
   status: 'ACTIVE',
   onboardingStatus: 'CONFIRMADO',
+  attendanceRisk: 'NONE',
+  missingRequiredDocuments: [],
 };
 const REASON_OK = 'Cuota abonada en efectivo pendiente';
 

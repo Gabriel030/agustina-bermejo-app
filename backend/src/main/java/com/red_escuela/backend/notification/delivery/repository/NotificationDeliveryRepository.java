@@ -64,6 +64,9 @@ public interface NotificationDeliveryRepository extends JpaRepository<Notificati
                                                           @Param("statuses") List<DeliveryStatus> statuses,
                                                           @Param("scheduledFor") LocalDate scheduledFor, @Param("now") Instant now);
 
+    @Query(value = "select count(*) from (select pg_advisory_xact_lock(:lockKey)) lock_acquired", nativeQuery = true)
+    long lockDailyEmailSendingTurnUntilTransactionEnds(@Param("lockKey") long lockKey);
+
     @Query("""
             select count(d) from NotificationDelivery d
             where d.channel = :channel and d.category = :category and d.status in :statuses and d.sentAt >= :from and d.sentAt < :until""")

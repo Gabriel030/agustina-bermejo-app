@@ -60,7 +60,7 @@ class AttendancePermissionComparisonIT extends AuthorizationMatrixSupport {
     private void assertDecisionsMatchLegacy(String mode) throws Exception {
         List<AuthorizationMatrixRow> rows = attendanceRows();
         Map<String, MappedEndpoint> endpoints = endpointsByKey();
-        assertThat(rows).hasSize(29);
+        assertThat(rows).hasSize(31);
         List<String> mismatches = new ArrayList<>();
         for (AuthorizationMatrixRow row : rows) {
             assertThat(endpoints.get(row.key())).as(row.key()).isNotNull();

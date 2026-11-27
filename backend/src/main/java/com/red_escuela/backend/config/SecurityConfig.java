@@ -110,7 +110,6 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/approve-email-change").permitAll()
                 .requestMatchers(HttpMethod.GET, "/public/modules").permitAll()
                 .requestMatchers(HttpMethod.GET, "/legal/documents/current").permitAll()
-                .requestMatchers(HttpMethod.GET, "/public/certificates/*").permitAll()
                 .requestMatchers(HttpMethod.GET, "/public/documents/*").permitAll()
                 .requestMatchers(HttpMethod.GET, "/public/calendar/*.ics").permitAll()
                 .requestMatchers(HttpMethod.GET, "/public/unsubscribe/*").permitAll()

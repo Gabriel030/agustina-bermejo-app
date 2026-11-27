@@ -1,4 +1,5 @@
 import { http, HttpResponse } from 'msw';
+import { studentFixture } from '@/test/fixtures/students';
 import { annualTerms, auditedAnnualTerms } from '@/test/fixtures/annualTerms';
 import { backupStatusForPlatformAdmin } from '@/test/fixtures/backupStatus';
 import {
@@ -18,6 +19,7 @@ import { signatoryDetail, signatoryList } from '@/test/fixtures/signatories';
 import { constanciasHandlers } from '@/test/mocks/constanciasHandlers';
 import { subjectEquivalenceHandlers } from '@/test/mocks/subjectEquivalenceHandlers';
 import { invitationWaveHandlers } from '@/test/mocks/invitationWaveHandlers';
+import { informativeSessionHandlers } from '@/test/mocks/informativeSessionHandlers';
 
 import { permissionCatalog, permissionDiscrepancy, permissionDiscrepancySummary, permissionGrid } from '@/test/fixtures/permissions';
 
@@ -99,10 +101,10 @@ const curriculumProgress = (programEnrollmentId) => ({
       finalScore: null,
       attempts: 0,
       blockedBy: [
-        { subjectId: 12, subjectCode: 'MAT100', subjectName: 'Álgebra', requirementType: 'APPROVED', standing: 'NOT_TAKEN' },
+        { subjectId: 12, subjectCode: 'MAT100', subjectName: 'Álgebra', requirementType: 'APPROVED', standing: 'NOT_TAKEN', minGrade: null, approvedScore: null },
       ],
       prerequisites: [
-        { subjectId: 12, subjectCode: 'MAT100', subjectName: 'Álgebra', requirementType: 'APPROVED', standing: 'NOT_TAKEN' },
+        { subjectId: 12, subjectCode: 'MAT100', subjectName: 'Álgebra', requirementType: 'APPROVED', standing: 'NOT_TAKEN', minGrade: null, approvedScore: null },
       ],
       currentEnrollmentId: null,
       corequisites: [],
@@ -307,6 +309,9 @@ export const handlers = [
   http.post(`${API}/certificate-templates/:kind/preview`, () => pdfResponse()),
   http.get(`${API}/regular-certificates`, () => HttpResponse.json([])),
   http.get(`${API}/me/attendance-change-requests`, () => HttpResponse.json([])),
+  http.get(`${API}/attendance/change-requests/resolved`, () =>
+    HttpResponse.json({ items: [], page: 0, size: 20, totalElements: 0 }),
+  ),
   http.get(`${API}/institution/academic-settings`, () =>
     HttpResponse.json({
       announcementEmailEnabled: false,
@@ -477,6 +482,18 @@ export const handlers = [
   http.get(`${API}/academic-offering-cycles`, () => HttpResponse.json([])),
   http.get(`${API}/academic-offering-cycles/:id/occupancy`, ({ params }) => HttpResponse.json({ cycleId: Number(params.id), sections: [] })),
   http.get(`${API}/course-subjects/:id/sections`, () => HttpResponse.json([])),
+  http.put(`${API}/students/:id`, async ({ params, request }) => {
+    const body = await request.json().catch(() => ({}));
+    return HttpResponse.json(
+      studentFixture({
+        id: Number(params.id),
+        ...(body.firstName && { nombre: body.firstName }),
+        ...(body.lastName && { apellido: body.lastName }),
+        ...(body.documentNumber && { dni: body.documentNumber }),
+        ...(body.email && { email: body.email }),
+      }),
+    );
+  }),
   http.post(`${API}/students/:id/program-enrollments`, ({ params }) =>
     HttpResponse.json(
       { id: 1, studentId: Number(params.id), programId: 1, programName: 'Carrera de prueba', status: 'ACTIVE', enrollmentDate: '2026-11-05T12:00:00', completionDate: null },
@@ -491,12 +508,14 @@ export const handlers = [
   ),
   http.get(`${API}/programs/:id/subjects`, () => HttpResponse.json([])),
   http.get(`${API}/courses`, () => HttpResponse.json([])),
+  http.get(`${API}/informative-sessions`, () => HttpResponse.json([])),
   http.get(`${API}/courses/:id`, ({ params }) =>
     HttpResponse.json({ id: Number(params.id), name: 'Curso de prueba', durationMonths: 3, registrationOpen: true, full: false }),
   ),
   http.get(`${API}/courses/:id/pricing`, ({ params }) => HttpResponse.json({ courseId: Number(params.id), cuotaMensual: { amount: '8000.00', currency: 'ARS' } })),
   http.get(`${API}/courses/:id/subjects`, () => HttpResponse.json([])),
   http.get(`${API}/me/program-enrollment-applications`, () => HttpResponse.json([])),
+  http.get(`${API}/me/waitlist-positions`, () => HttpResponse.json([])),
   http.get(`${API}/waitlists`, () => HttpResponse.json({ items: [], page: 0, size: 20, totalElements: 0 })),
   http.get(`${API}/waitlists/:kind/:id`, () => HttpResponse.json({ code: 'WAITLIST_QUEUE_NOT_FOUND', requestId: 'req-test-0001', retryable: false, violations: [] }, { status: 404 })),
   http.post(`${API}/waitlists/:kind/entries/:enrollmentId/promote`, () => HttpResponse.json({})),
@@ -665,4 +684,5 @@ export const handlers = [
   ...constanciasHandlers,
   ...subjectEquivalenceHandlers,
   ...invitationWaveHandlers,
+  ...informativeSessionHandlers,
 ];

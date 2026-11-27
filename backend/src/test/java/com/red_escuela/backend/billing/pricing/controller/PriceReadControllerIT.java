@@ -144,6 +144,9 @@ class PriceReadControllerIT extends AbstractIntegrationTest {
         enrollment.setProgram(entityManager.find(Program.class, programId));
         enrollment.setStatus(status);
         enrollment.setEnrollmentDate(LocalDateTime.of(2027, 3, 1, 10, 0));
+        if (status == ProgramEnrollmentStatus.WITHDRAWN) {
+            enrollment.setWithdrawalEffectiveDate(LocalDate.of(2027, 3, 1));
+        }
         entityManager.persist(enrollment);
         PaymentStandingSeed.seedProgramEnrollmentStanding(entityManager, enrollment.getId(), payment);
         PaymentPlanSelection selection = new PaymentPlanSelection();

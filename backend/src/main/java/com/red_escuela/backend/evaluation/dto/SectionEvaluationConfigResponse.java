@@ -19,6 +19,7 @@ public record SectionEvaluationConfigResponse(
         @Schema(nullable = true) String rejectionReason, LocalDateTime submittedAt,
         String reviewedByName, LocalDateTime reviewedAt,
         LocalDateTime termStartDate, LocalDateTime termEndDate, LocalDateTime termEnrollmentStart,
+        @Schema(nullable = true) LocalDate evaluationConfigDeadline,
         String evaluationSchemeName, Integer examCountExpected, Boolean hasFinal,
         BigDecimal minRegularGrade, BigDecimal minApprovalGrade, BigDecimal promotionMinGrade,
         List<SectionInstructorSummary> instructors, boolean canEdit, boolean canSubmit) {
@@ -43,12 +44,26 @@ public record SectionEvaluationConfigResponse(
                 config.getReviewedBy() == null ? null : config.getReviewedBy().getName() + " " + config.getReviewedBy().getLastname(),
                 config.getReviewedAt(),
                 term.getStartDate(), term.getEndDate(), term.getEnrollmentStart(),
+                null,
                 scheme == null ? null : scheme.getName(),
                 scheme == null ? null : scheme.getExamCountExpected(),
                 scheme == null ? null : scheme.getHasFinal(),
                 scheme == null ? null : Grade.valueOrNull(scheme.getMinRegularGrade()),
                 scheme == null ? null : Grade.valueOrNull(scheme.getMinApprovalGrade()),
                 scheme == null ? null : Grade.valueOrNull(scheme.getPromotionMinGrade()),
+                instructors, canEdit, canSubmit);
+    }
+
+    public SectionEvaluationConfigResponse withEvaluationConfigDueDays(int dueDays) {
+        LocalDate deadline = termStartDate == null ? null : termStartDate.toLocalDate().plusDays(dueDays);
+        return new SectionEvaluationConfigResponse(
+                id, subjectSectionId, subjectName, sectionName, status,
+                tpCount, tp1DueDate, tp2DueDate, tp3DueDate,
+                exam1Date, exam2Date, exam3Date, exam4Date, finalCall1Date, finalCall2Date,
+                rejectionReason, submittedAt, reviewedByName, reviewedAt,
+                termStartDate, termEndDate, termEnrollmentStart, deadline,
+                evaluationSchemeName, examCountExpected, hasFinal,
+                minRegularGrade, minApprovalGrade, promotionMinGrade,
                 instructors, canEdit, canSubmit);
     }
 }

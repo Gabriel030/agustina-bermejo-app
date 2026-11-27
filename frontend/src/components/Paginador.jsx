@@ -9,7 +9,7 @@ export function Paginador({ page, totalPages, onChange }) {
         type="button"
         disabled={page <= 1}
         onClick={() => onChange(page - 1)}
-        className="min-h-11 px-3 text-size-12-5 font-semibold text-ink disabled:opacity-40 md:min-h-0">
+        className="min-h-11 px-3 text-size-12-5 font-semibold text-ink disabled:text-(--disabled-fg) md:min-h-0">
         ← Anterior
       </Button>
       <span className="text-size-12-5 text-ink-faint">
@@ -21,7 +21,7 @@ export function Paginador({ page, totalPages, onChange }) {
         type="button"
         disabled={page >= totalPages}
         onClick={() => onChange(page + 1)}
-        className="min-h-11 px-3 text-size-12-5 font-semibold text-ink disabled:opacity-40 md:min-h-0">
+        className="min-h-11 px-3 text-size-12-5 font-semibold text-ink disabled:text-(--disabled-fg) md:min-h-0">
         Siguiente →
       </Button>
     </div>

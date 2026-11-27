@@ -92,10 +92,15 @@ public interface SubjectSectionEnrollmentRepository extends JpaRepository<Subjec
         Long getSubjectId();
 
         EnrollmentStatus getStatus();
+
+        com.red_escuela.backend.shared.domain.Grade getFinalScore();
+
+        Long getTermId();
     }
 
     @Query("""
-            select e.programEnrollment.id as programEnrollmentId, e.subjectSection.subject.id as subjectId, e.status as status
+            select e.programEnrollment.id as programEnrollmentId, e.subjectSection.subject.id as subjectId, e.status as status,
+            e.finalScore as finalScore, e.subjectSection.term.id as termId
             from SubjectSectionEnrollment e
             where e.programEnrollment.id in :programEnrollmentIds and e.subjectSection.subject.id in :subjectIds
             and e.status in :statuses
@@ -184,6 +189,16 @@ public interface SubjectSectionEnrollmentRepository extends JpaRepository<Subjec
     @Query("select new com.red_escuela.backend.enrollment.repository.SectionEnrollmentPairRow(e.student.id, e.subjectSection.id) from SubjectSectionEnrollment e where e.student.id in :studentIds and e.subjectSection.id in :sectionIds")
     List<SectionEnrollmentPairRow> findPairRowsByStudentIdInAndSubjectSectionIdIn(@Param("studentIds") java.util.Collection<Long> studentIds, @Param("sectionIds") java.util.Collection<Long> sectionIds);
 
+    @Query("""
+            select new com.red_escuela.backend.enrollment.repository.PersonCurrentCourseRow(
+                e.student.person.id, pe.program.name, e.subjectSection.subject.name, e.subjectSection.name)
+            from SubjectSectionEnrollment e join e.programEnrollment pe
+            where e.student.person.id in :personIds and e.status in :statuses
+            order by e.student.person.id, e.enrolledAt desc nulls last, e.id desc
+            """)
+    List<PersonCurrentCourseRow> findCurrentCourseRowsByPersonIdIn(@Param("personIds") Collection<Long> personIds,
+                                                                   @Param("statuses") Collection<EnrollmentStatus> statuses);
+
     @Query("select distinct e.student.person.id from SubjectSectionEnrollment e where e.subjectSection.subject.id = :subjectId and e.status in :statuses and e.student.person.status = com.red_escuela.backend.shared.domain.StatusType.ACTIVE")
     java.util.List<Long> findStudentPersonIdsBySubjectAndStatusIn(Long subjectId, java.util.Collection<EnrollmentStatus> statuses);
 
@@ -195,4 +210,7 @@ public interface SubjectSectionEnrollmentRepository extends JpaRepository<Subjec
 
     @Query("select e.id from SubjectSectionEnrollment e where e.status = :waiting and e.waitlistExpiryRemindedAt is null and e.subjectSection.term.enrollmentEnd > :now and e.subjectSection.term.enrollmentEnd <= :until and (e.subjectSection.term.enrollmentOverride is null or e.subjectSection.term.enrollmentOverride <> com.red_escuela.backend.academicstructure.entity.TermEnrollmentOverride.CLOSED) order by e.id")
     List<Long> findWaitlistedIdsToRemind(@Param("now") LocalDateTime now, @Param("until") LocalDateTime until, @Param("waiting") EnrollmentStatus waiting);
+
+    @Query("select new com.red_escuela.backend.enrollment.repository.ActiveEnrollmentLimitRow(e.id, e.student.id, e.subjectSection.maxAbsenceRate) from SubjectSectionEnrollment e where e.student.id in :studentIds and e.status in :statuses")
+    List<ActiveEnrollmentLimitRow> findActiveLimitRowsByStudentIdIn(@Param("studentIds") java.util.Collection<Long> studentIds, @Param("statuses") java.util.Collection<EnrollmentStatus> statuses);
 }

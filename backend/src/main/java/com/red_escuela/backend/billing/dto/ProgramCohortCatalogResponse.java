@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.dto;
 
-import com.red_escuela.backend.billing.entity.CohortIntake;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.domain.CohortIntake;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;

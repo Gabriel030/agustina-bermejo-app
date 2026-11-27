@@ -465,7 +465,7 @@ class StudentRegularCertificateIntegrationTest extends AbstractIntegrationTest {
 
     private ResultActions publicView(String code) throws Exception {
         String client = "10." + ThreadLocalRandom.current().nextInt(1, 250) + "." + ThreadLocalRandom.current().nextInt(1, 250) + ".7";
-        return mockMvc.perform(get("/public/certificates/" + code).with(request -> {
+        return mockMvc.perform(get("/public/documents/" + code).with(request -> {
             request.setRemoteAddr(client);
             return request;
         }));

@@ -19,6 +19,7 @@ const billingStaff = (slug) => staff(STAFF_BILLING, slug);
 const withId = (build, fallback) => ({ id, base }) => (id ? build({ id, base }) : fallback({ base }));
 
 const SUBJECTS_TAB = alumno('/alumno/mis-carreras?tab=materias');
+const STUDY_PLAN_TAB = alumno('/alumno/mis-carreras?tab=plan-de-estudio');
 const PAYMENTS = alumno('/alumno/pagos');
 const TEACHER_SECTIONS = docente('/docente/mis-comisiones');
 const CLOSURES = staff(STAFF_BILLING, 'cierres-de-comision');
@@ -64,11 +65,16 @@ export const NOTIFICATION_DESTINATIONS = {
   STUDENT_REACTIVATED: [alumno('/alumno/inicio')],
   SUBJECT_WITHDRAWN: [SUBJECTS_TAB],
   WAITLIST_PROMOTED: [SUBJECTS_TAB],
+  WAITLIST_PAUSED_BY_SCHEDULE_OVERLAP: [SUBJECTS_TAB],
+  WAITLIST_EXPIRING_SOON: [SUBJECTS_TAB],
+  WAITLIST_REMOVED_BY_STAFF: [SUBJECTS_TAB],
+  WAITLIST_ENTRY_EXPIRED: [SUBJECTS_TAB],
   SUBJECT_WITHDRAWN_TEACHER: [TEACHER_SECTIONS],
   SECTION_CHANGED: [SUBJECTS_TAB],
   SECTION_CHANGED_TEACHER: [TEACHER_SECTIONS],
   REGULAR_CERTIFICATE_READY: [alumno('/alumno/mis-carreras?tab=tramites')],
   GRADUATION_CERTIFICATE_ISSUED: [alumno('/alumno/mis-carreras?tab=tramites')],
+  EXAM_CERTIFICATE_ISSUED: [alumno('/alumno/mis-carreras?tab=tramites')],
   GRADUATION_CERTIFICATE_REVOKED: [alumno('/alumno/mis-carreras?tab=tramites')],
   GRADUATION_CERTIFICATE_REISSUED: [alumno('/alumno/mis-carreras?tab=tramites')],
   REGULAR_CERTIFICATE_REJECTED: [alumno('/alumno/mis-carreras?tab=tramites')],
@@ -88,6 +94,8 @@ export const NOTIFICATION_DESTINATIONS = {
   GRADES_PUBLISHED: [STUDENT_GRADES],
   GRADE_CORRECTED: [STUDENT_GRADES],
   SUBJECT_APPROVAL_REVERTED: [SUBJECTS_TAB],
+  SUBJECT_EQUIVALENCE_RECORDED: [STUDY_PLAN_TAB],
+  SUBJECT_EQUIVALENCE_VOIDED: [STUDY_PLAN_TAB],
   ENROLLMENT_FEE_EXEMPTION_GRANTED: [PAYMENTS],
   ENROLLMENT_FEE_EXEMPTION_REVOKED: [PAYMENTS],
   LATE_PAYMENT_SETTINGS_CREATED: [PAYMENT_PROOF_BILLING],

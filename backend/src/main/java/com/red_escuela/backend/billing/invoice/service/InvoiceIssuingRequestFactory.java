@@ -2,7 +2,7 @@ package com.red_escuela.backend.billing.invoice.service;
 
 import com.red_escuela.backend.billing.configuration.domain.YearBillingTerms;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingReason;
@@ -26,8 +26,7 @@ public final class InvoiceIssuingRequestFactory {
     private InvoiceIssuingRequestFactory() {
     }
 
-    public static InvoiceIssuingRequest createProgramAdmissionRequest(Long studentId, Program program, ProgramCohort cohort, YearBillingTerms terms, LocalDate today) {
-        ProgramYearBillingTemplate template = cohort.getTemplate();
+    public static InvoiceIssuingRequest createProgramAdmissionRequest(Long studentId, Program program, ProgramCohort cohort, ProgramYearBillingTemplate template, YearBillingTerms terms, LocalDate today) {
         YearMonth entryMonth = YearMonth.from(cohort.getCursadaStart());
         int slot = YearCycle.of(template, terms, entryMonth.getYear()).slotOf(entryMonth);
         return new InvoiceIssuingRequest(studentId, null, null, program.getId(), null, cohort.getId(), FeeType.ENROLLMENT_FEE, entryMonth, today.plusDays(terms.lateEnrollmentFeeDueDays()), today,

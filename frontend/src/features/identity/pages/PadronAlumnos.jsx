@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useActiveRole } from '@/hooks/useActiveRole';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Search, ChevronRight } from 'lucide-react';
+import { Search, ChevronRight, MailWarning, FileWarning, CalendarX, MessageSquareText } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -10,6 +10,8 @@ import { Skeleton } from '@/components/Skeleton';
 import { EmptyState } from '@/components/EmptyState';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { Button } from '@/components/ui/button';
+import { StatusPill } from '@/components/StatusPill';
+import { formatDate } from '@/lib/billing';
 import { Paginador } from '@/components/Paginador';
 import { useAlumnos } from '@/features/identity/hooks/useAlumnos';
 import { useStaffProspects } from '@/features/identity/hooks/useProspectos';
@@ -37,19 +39,55 @@ function useDebounce(value, delay) {
   return debounced;
 }
 
-function FilaAlumno({ alumno, onClick }) {
+function activeStudentSignals(alumno) {
+  const signals = [];
+  if (alumno.attendanceRisk === 'FREE') {
+    signals.push(<StatusPill key="attendance" tone="danger">Libre por inasistencias</StatusPill>);
+  } else if (alumno.attendanceRisk === 'NEAR_LIMIT') {
+    signals.push(<StatusPill key="attendance" tone="warning">Asistencia en riesgo</StatusPill>);
+  }
+  if (alumno.emailVerified === false) {
+    signals.push(<StatusPill key="email" tone="neutral" icon={MailWarning}>Email sin verificar</StatusPill>);
+  }
+  const missingDocuments = alumno.missingRequiredDocuments ?? [];
+  if (missingDocuments.length > 0) {
+    const detail = missingDocumentsSummary(missingDocuments);
+    signals.push(
+      <StatusPill key="documents" tone="warning" icon={FileWarning}>
+        <span title={detail}>Documentación pendiente</span>
+        <span className="sr-only">. {detail}</span>
+      </StatusPill>,
+    );
+  }
+  return signals.slice(0, 3);
+}
+
+function withdrawnStudentSignals(alumno) {
+  const signals = [];
+  if (alumno.withdrawnAt) {
+    signals.push(<StatusPill key="withdrawnAt" tone="neutral" icon={CalendarX}>Baja el {formatDate(alumno.withdrawnAt)}</StatusPill>);
+  }
+  if (alumno.withdrawalReason) {
+    signals.push(<StatusPill key="reason" tone="neutral" icon={MessageSquareText}>Motivo: {alumno.withdrawalReason}</StatusPill>);
+  }
+  return signals;
+}
+
+function FilaAlumno({ alumno, onClick, withdrawn }) {
+  const signals = withdrawn ? withdrawnStudentSignals(alumno) : activeStudentSignals(alumno);
   return (
     <Button
       variant="row"
       size="row"
       type="button"
       onClick={onClick}
+      className="flex-wrap gap-y-1.5"
       >
-      <div className="flex min-w-0 flex-col">
-        <span className="truncate text-size-14 font-medium text-ink">
+      <div className="flex min-w-0 flex-1 flex-col items-start">
+        <span className="max-w-full truncate text-size-14 font-medium text-ink">
           {alumno.apellido}, {alumno.nombre}
         </span>
-        <span className="text-size-12 text-ink-faint">{alumno.email}</span>
+        <span className="max-w-full truncate text-size-12 text-ink-faint">{alumno.email}</span>
       </div>
       <div className="flex shrink-0 items-center gap-3">
         <div className="flex flex-col items-end gap-0.5">
@@ -60,12 +98,9 @@ function FilaAlumno({ alumno, onClick }) {
         </div>
         <ChevronRight className="h-4 w-4 shrink-0 text-ink-faint" />
       </div>
+      {signals.length > 0 && <div className="flex basis-full flex-wrap gap-1.5 text-left">{signals}</div>}
     </Button>
   );
-}
-
-function normalizeSearch(text) {
-  return (text ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 }
 
 function FilaProspecto({ prospect, onClick }) {
@@ -93,8 +128,8 @@ function FilaProspecto({ prospect, onClick }) {
   );
 }
 
-function ListaProspectos({ search, navigate, rolBase, tabActivo }) {
-  const { data, isLoading, isError, error, refetch } = useStaffProspects();
+function ListaProspectos({ search, page, onPageChange, navigate, rolBase, tabActivo }) {
+  const { data, isLoading, isError, error, refetch } = useStaffProspects({ search: search || undefined, page });
   if (isLoading) {
     return (
       <div className="flex flex-col gap-1">
@@ -105,32 +140,33 @@ function ListaProspectos({ search, navigate, rolBase, tabActivo }) {
     );
   }
   if (isError) return <LoadErrorState bare error={error} onRetry={refetch} resource="los prospectos" />;
-  const term = normalizeSearch(search);
-  const prospects = (data ?? []).filter(
-    (p) => !term || normalizeSearch(`${p.nombre} ${p.apellido} ${p.email}`).includes(term),
-  );
+  const prospects = data?.items ?? [];
+  const totalPages = data ? Math.max(1, Math.ceil(data.totalElements / data.size)) : 1;
   if (!prospects.length) {
     return (
       <EmptyState
-        title={term ? 'Ningún prospecto coincide con la búsqueda' : 'No hay prospectos'}
-        description={term ? 'Probá con otro nombre o email.' : 'Los alumnos dados de alta sin confirmar aparecen acá.'}
+        title={search ? 'Ningún prospecto coincide con la búsqueda' : 'No hay prospectos'}
+        description={search ? 'Probá con otro nombre o email.' : 'Los alumnos dados de alta sin confirmar aparecen acá.'}
       />
     );
   }
   return (
-    <div className="flex flex-col gap-1">
-      {prospects.map((prospect) => (
-        <FilaProspecto
-          key={prospect.id}
-          prospect={prospect}
-          onClick={() => navigate(`/${rolBase}/alumnos/${prospect.id}?tab=${tabActivo}`)}
-        />
-      ))}
-    </div>
+    <>
+      <div className="flex flex-col gap-1">
+        {prospects.map((prospect) => (
+          <FilaProspecto
+            key={prospect.id}
+            prospect={prospect}
+            onClick={() => navigate(`/${rolBase}/alumnos/${prospect.id}?tab=${tabActivo}`)}
+          />
+        ))}
+      </div>
+      <Paginador page={page + 1} totalPages={totalPages} onChange={(next) => onPageChange(next - 1)} />
+    </>
   );
 }
 
-function ListaAlumnos({ alumnos, isLoading, navigate, rolBase, tabActivo }) {
+function ListaAlumnos({ alumnos, isLoading, isError, error, onRetry, navigate, rolBase, tabActivo }) {
   if (isLoading) {
     return (
       <div className="flex flex-col gap-1">
@@ -140,6 +176,8 @@ function ListaAlumnos({ alumnos, isLoading, navigate, rolBase, tabActivo }) {
       </div>
     );
   }
+
+  if (isError) return <LoadErrorState bare error={error} onRetry={onRetry} resource="los alumnos" />;
 
   if (!alumnos?.length) {
     return (
@@ -155,6 +193,7 @@ function ListaAlumnos({ alumnos, isLoading, navigate, rolBase, tabActivo }) {
         <FilaAlumno
           key={alumno.id}
           alumno={alumno}
+          withdrawn={tabActivo === 'bajas'}
           onClick={() => navigate(`/${rolBase}/alumnos/${alumno.id}?tab=${tabActivo}`)}
         />
       ))}
@@ -181,7 +220,7 @@ export function PadronAlumnos() {
 
   const tabParams = TABS.find((t) => t.id === tabActivo)?.params ?? {};
   const [page, setPage] = useState(0);
-  const { data: alumnosPage, isLoading } = useAlumnos({ ...tabParams, search: searchDebounced || undefined, page, enabled: tabActivo !== 'prospectos' });
+  const { data: alumnosPage, isLoading, isError, error, refetch } = useAlumnos({ ...tabParams, search: searchDebounced || undefined, page, enabled: tabActivo !== 'prospectos' });
   const alumnos = alumnosPage?.items;
   const totalPages = alumnosPage ? Math.max(1, Math.ceil(alumnosPage.totalElements / alumnosPage.size)) : 1;
 
@@ -223,6 +262,8 @@ export function PadronAlumnos() {
                 {tab.id === 'prospectos' ? (
                   <ListaProspectos
                     search={searchDebounced}
+                    page={page}
+                    onPageChange={setPage}
                     navigate={navigate}
                     rolBase={rolBase}
                     tabActivo={tabActivo}
@@ -232,6 +273,9 @@ export function PadronAlumnos() {
                     <ListaAlumnos
                       alumnos={alumnos}
                       isLoading={isLoading}
+                      isError={isError}
+                      error={error}
+                      onRetry={refetch}
                       navigate={navigate}
                       rolBase={rolBase}
                       tabActivo={tabActivo}

@@ -36,7 +36,7 @@ public record CurriculumProgressView(
 
     public record BlockingPrerequisite(
             Long subjectId, String subjectCode, String subjectName, RequirementType requirementType,
-            PrerequisiteStanding standing) {
+            PrerequisiteStanding standing, Grade minGrade, Grade approvedScore) {
     }
 
     public record Corequisite(Long subjectId, String subjectCode, String subjectName, CurriculumSubjectState state) {

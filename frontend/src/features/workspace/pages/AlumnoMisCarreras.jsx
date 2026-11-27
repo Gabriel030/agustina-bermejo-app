@@ -49,6 +49,7 @@ export function AlumnoMisCarreras() {
   const graduated = matricula?.status === 'COMPLETED';
   const requestedTab = searchParams.get('tab') ?? 'materias';
   const tab = requestedTab === 'egreso' ? 'tramites' : requestedTab;
+  const showsPlanMap = tab === 'plan-de-estudio' && searchParams.get('vista') === 'mapa';
 
   const { data: progreso } = useMiProgreso(matricula?.id);
   const { data: regularity } = useMyRegularity('PROGRAM', graduated ? null : matricula?.id);
@@ -63,12 +64,14 @@ export function AlumnoMisCarreras() {
   function cambiarCarrera(value) {
     searchParams.set('carrera', value);
     searchParams.delete('estado');
+    searchParams.delete('materia');
     setSearchParams(searchParams, { replace: true });
   }
 
   function cambiarTab(nuevoTab) {
     searchParams.set('tab', nuevoTab);
     searchParams.delete('estado');
+    searchParams.delete('materia');
     setSearchParams(searchParams, { replace: true });
   }
 
@@ -125,8 +128,7 @@ export function AlumnoMisCarreras() {
           <div className="flex flex-wrap items-center gap-2.5">
             <h1 className="font-heading text-2xl font-bold tracking-tight text-ink">Mis carreras</h1>
             {graduated && (
-              <StatusPill tone="success">
-                <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+              <StatusPill tone="success" icon={CheckCircle2}>
                 Carrera finalizada
               </StatusPill>
             )}
@@ -180,9 +182,11 @@ export function AlumnoMisCarreras() {
               )}
             </div>
           </StatCard>
-          <StatCard label={<StatLabel icon={TrendingUp}>Avance del plan</StatLabel>}>
-            <ProgressBar value={porcentajeAvance} label="Avance del plan" className="mt-1.5" />
-          </StatCard>
+          {!showsPlanMap && (
+            <StatCard label={<StatLabel icon={TrendingUp}>Avance del plan</StatLabel>}>
+              <ProgressBar value={porcentajeAvance} label="Avance del plan" className="mt-1.5" />
+            </StatCard>
+          )}
         </Stagger>
       </div>
 

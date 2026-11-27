@@ -1,5 +1,6 @@
 package com.red_escuela.backend.shared.event;
 
+import com.red_escuela.backend.shared.event.service.ProcessedEffectGuard;
 import com.red_escuela.backend.testsupport.SlowTest;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import org.junit.jupiter.api.Tag;

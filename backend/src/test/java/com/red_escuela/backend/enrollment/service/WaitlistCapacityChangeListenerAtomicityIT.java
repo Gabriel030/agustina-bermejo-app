@@ -11,7 +11,7 @@ import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.TeachingMode;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.events.CourseCapacityChangedEvent;
-import com.red_escuela.backend.academicstructure.exception.CourseNotFoundException;
+import com.red_escuela.backend.academicstructure.domain.CourseNotFoundException;
 import com.red_escuela.backend.academicstructure.events.CourseSectionCapacityChangedEvent;
 import com.red_escuela.backend.academicstructure.events.SectionCapacityChangedEvent;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
@@ -244,7 +244,7 @@ class WaitlistCapacityChangeListenerAtomicityIT extends AbstractIntegrationTest 
             entityManager.persist(section);
             CourseEnrollment parent = courseEnrollment(fixtures, course, EnrollmentStatus.ENROLLED);
             CourseSubjectSectionEnrollment waiting = new CourseSubjectSectionEnrollment();
-            waiting.setStudent(student(fixtures));
+            waiting.setStudent(parent.getStudent());
             waiting.setCourseEnrollment(parent);
             waiting.setCourseSubjectSection(section);
             waiting.setStatus(EnrollmentStatus.WAITLISTED);

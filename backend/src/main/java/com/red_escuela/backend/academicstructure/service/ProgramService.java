@@ -4,10 +4,12 @@ import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import com.red_escuela.backend.academicstructure.dto.CreateProgramRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateProgramRequest;
 import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.academicstructure.domain.CatalogArea;
 import com.red_escuela.backend.academicstructure.entity.Program;
+import com.red_escuela.backend.academicstructure.entity.ProgramLevel;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.exception.OfferingListPriceNotPositiveException;
-import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
+import com.red_escuela.backend.academicstructure.domain.ProgramNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -92,9 +94,19 @@ public class ProgramService {
     }
 
     public List<Program> list(StatusType status, Boolean visibleInCatalog) {
+        return list(status, visibleInCatalog, null, null);
+    }
+
+    public List<Program> list(StatusType status, Boolean visibleInCatalog, CatalogArea area) {
+        return list(status, visibleInCatalog, area, null);
+    }
+
+    public List<Program> list(StatusType status, Boolean visibleInCatalog, CatalogArea area, ProgramLevel level) {
         List<Program> programs = programRepository.findAll(Sort.by("name", "id")).stream()
                 .filter(program -> status == null || program.getStatus() == status)
                 .filter(program -> visibleInCatalog == null || program.isVisibleInCatalog() == visibleInCatalog)
+                .filter(program -> area == null || program.getCatalogArea() == area)
+                .filter(program -> level == null || program.getLevel() == level)
                 .toList();
         List<Long> ids = programs.stream().map(Program::getId).toList();
         Map<Long, Money> tuitions = listPriceReader.findProgramTuitions(ids);

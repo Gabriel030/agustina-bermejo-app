@@ -22,7 +22,7 @@ class QualityRulesTest {
 
     @Test
     void transactionsAreDeclaredOnlyInSpecialists() {
-        FreezingArchRule.freeze(QualityRules.transactionsAreDeclaredOnlyInSpecialists()).check(MAIN_CLASSES);
+        QualityRules.transactionsAreDeclaredOnlyInSpecialists().check(MAIN_CLASSES);
     }
 
     @Test
@@ -37,7 +37,7 @@ class QualityRulesTest {
 
     @Test
     void eventListenersDoNotDeclareTheirOwnTransaction() {
-        FreezingArchRule.freeze(QualityRules.eventListenersDoNotDeclareTheirOwnTransaction()).check(MAIN_CLASSES);
+        QualityRules.eventListenersDoNotDeclareTheirOwnTransaction().check(MAIN_CLASSES);
     }
 
     @Test

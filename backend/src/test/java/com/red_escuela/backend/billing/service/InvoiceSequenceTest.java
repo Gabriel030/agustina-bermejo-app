@@ -2,7 +2,7 @@ package com.red_escuela.backend.billing.service;
 
 import com.red_escuela.backend.testsupport.SlowTest;
 import com.red_escuela.backend.billing.entity.BillingConfigurationAlert;
-import com.red_escuela.backend.billing.entity.CohortIntake;
+import com.red_escuela.backend.academicstructure.domain.CohortIntake;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
@@ -70,7 +70,7 @@ class InvoiceSequenceTest extends AbstractInvoiceSequenceScenarioTest {
         Year y26 = newYear(career, 2026, 10, 1, 2, null);
         Long cohort = newCohort(y26, CohortIntake.SECOND, date(2026, 8, 3));
         transactionTemplate.executeWithoutResult(s -> com.red_escuela.backend.billing.planning.TestTemplateTerms.publishCohortEntryDiscount(entityManager,
-                entityManager.find(com.red_escuela.backend.billing.entity.ProgramCohort.class, cohort), com.red_escuela.backend.shared.domain.Percentage.ofPoints(java.math.BigDecimal.ZERO)));
+                entityManager.find(com.red_escuela.backend.academicstructure.entity.ProgramCohort.class, cohort), com.red_escuela.backend.shared.domain.Percentage.ofPoints(java.math.BigDecimal.ZERO)));
         today(date(2026, 7, 20));
         Long enrollment = newEnrollment(career, cohort, PaymentPlanCadence.MONTHLY, YearMonth.of(2026, 7), date(2026, 7, 20));
         issueEntryFee(enrollment);

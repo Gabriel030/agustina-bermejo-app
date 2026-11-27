@@ -5,7 +5,7 @@ import com.red_escuela.backend.notification.domain.BillingOperationNotification;
 import com.red_escuela.backend.billing.events.MonthlyInvoiceItemRetriesExhaustedEvent;
 import com.red_escuela.backend.billing.events.MonthlyInvoiceRunMissedEvent;
 import com.red_escuela.backend.notification.entity.NotificationType;
-import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
+import com.red_escuela.backend.shared.event.service.ProcessedEffectGuard;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;

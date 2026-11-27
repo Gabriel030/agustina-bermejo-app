@@ -66,9 +66,9 @@ describe('flujo de login end-to-end', () => {
     // la visibilidad entre ellos es puramente CSS (hidden/lg:hidden/sm:block),
     // jsdom no oculta ninguno.
     expect(await screen.findAllByText('Preceptor')).toHaveLength(3);
-    // "Prueba Login" aparece 2 veces (Sidebar desktop + TopHeader) — mismo
-    // criterio que "Preceptor" arriba.
-    expect(await screen.findAllByText('Prueba Login')).toHaveLength(2);
+    // "Prueba Login" aparece 3 veces (botón y encabezado del menú de usuario de
+    // la barra superior + TopHeader) — mismo criterio que "Preceptor" arriba.
+    expect(await screen.findAllByText('Prueba Login')).toHaveLength(3);
   });
 
   it('un Preceptor logueado que entra a /director/aprobaciones es redirigido a No autorizado', async () => {
@@ -93,11 +93,12 @@ describe('flujo de login end-to-end', () => {
       ),
       ...DIRECTOR_HOME_SOURCES.map((path) => http.get(`http://localhost:8080${path}`, () => HttpResponse.json(contractList(path, [])))),
     );
-    await user.click(screen.getAllByRole('button', { name: 'Cerrar sesión' })[0]);
+    await user.click(screen.getByRole('button', { name: 'Abrir menú' }));
+    await user.click(await screen.findByRole('button', { name: 'Cerrar sesión' }));
     await screen.findByPlaceholderText('DNI o email');
     await login();
 
-    expect(await screen.findAllByText('Otra Persona')).toHaveLength(2);
+    expect(await screen.findAllByText('Otra Persona')).toHaveLength(3);
     expect(screen.queryByText('No autorizado')).not.toBeInTheDocument();
   });
 
@@ -120,6 +121,6 @@ describe('flujo de login end-to-end', () => {
     localStorage.setItem('sessionHint', '1');
     renderApp('/preceptor/inicio');
 
-    expect(await screen.findAllByText('Prueba Login')).toHaveLength(2);
+    expect(await screen.findAllByText('Prueba Login')).toHaveLength(3);
   });
 });

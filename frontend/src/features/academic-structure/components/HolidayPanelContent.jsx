@@ -89,13 +89,14 @@ export function HolidayPanelContent({ holiday, initialDate, findByDate, titleId,
             <div id="holiday-date-error" role="alert" className="mt-1.5 flex flex-wrap items-center gap-x-3 text-size-12-5 text-danger">
               <span>Ya hay un feriado cargado en esta fecha.</span>
               {conflictingHoliday && (
-                <button
+                <Button
                   type="button"
-                  className="min-h-8 font-bold underline"
+                  variant="link"
+                  className="min-h-8 px-0 font-bold text-current underline"
                   onClick={() => onEditExisting(conflictingHoliday)}
                 >
                   Editar ese feriado
-                </button>
+                </Button>
               )}
             </div>
           )}

@@ -5,7 +5,7 @@ import com.red_escuela.backend.billing.discount.domain.EnrollmentReference;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscount;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscountGrantRequest;
 import com.red_escuela.backend.billing.discount.repository.StudentDiscountRepository;
-import com.red_escuela.backend.billing.entity.CohortIntake;
+import com.red_escuela.backend.academicstructure.domain.CohortIntake;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.invoice.domain.DiscountType;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;

@@ -12,7 +12,7 @@ import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.billing.entity.CohortIntake;
+import com.red_escuela.backend.academicstructure.domain.CohortIntake;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
@@ -20,7 +20,7 @@ import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
@@ -180,7 +180,7 @@ class MonthlyInvoiceRunIssuanceTest extends AbstractIntegrationTest {
             com.red_escuela.backend.billing.planning.TestTemplateTerms.publish(entityManager, template);
 
             ProgramCohort cohort = new ProgramCohort();
-            cohort.setTemplate(template);
+            cohort.setTemplateId(template.getId());
             cohort.setIntake(intake);
             cohort.setAdmissionStart(LocalDate.of(2026, 1, 1));
             cohort.setAdmissionEnd(LocalDate.of(2026, 2, 28));
@@ -257,7 +257,7 @@ class MonthlyInvoiceRunIssuanceTest extends AbstractIntegrationTest {
 
     private void setEnrollmentFeeMonth(Fixture fixture, int month) {
         transactionTemplate.executeWithoutResult(tx -> {
-            var template = entityManager.find(ProgramEnrollment.class, fixture.enrollment().getId()).getProgramCohort().getTemplate();
+            var template = entityManager.find(com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate.class, entityManager.find(ProgramEnrollment.class, fixture.enrollment().getId()).getProgramCohort().getTemplateId());
             com.red_escuela.backend.billing.planning.TestTemplateTerms.load(entityManager, template);
             com.red_escuela.backend.billing.planning.TestTemplateTerms.configureEnrollmentFees(template, 1, month, null);
             com.red_escuela.backend.billing.planning.TestTemplateTerms.publish(entityManager, template);
@@ -382,7 +382,11 @@ class MonthlyInvoiceRunIssuanceTest extends AbstractIntegrationTest {
     void doesNotIssueToEnrollmentsThatAreNoLongerActive() {
         Fixture fixture = monthlyFixture("94100061");
         transactionTemplate.executeWithoutResult(tx ->
-                entityManager.find(ProgramEnrollment.class, fixture.enrollment().getId()).setStatus(ProgramEnrollmentStatus.WITHDRAWN));
+                {
+                    ProgramEnrollment withdrawn = entityManager.find(ProgramEnrollment.class, fixture.enrollment().getId());
+                    withdrawn.setStatus(ProgramEnrollmentStatus.WITHDRAWN);
+                    withdrawn.setWithdrawalEffectiveDate(java.time.LocalDate.now());
+                });
 
         job.run(MARCH);
 

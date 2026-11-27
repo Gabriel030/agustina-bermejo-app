@@ -3,7 +3,7 @@ package com.red_escuela.backend.enrollment.api;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
-import com.red_escuela.backend.enrollment.exception.CourseEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.CourseEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.identity.entity.Student;
 import org.junit.jupiter.api.Test;

@@ -66,21 +66,21 @@ export function FirstDirectorSuccess({ institutionName, directorName, documentTy
             state="done"
             title="Alta registrada"
             detail="Quedó registrado en la Auditoría."
-            pill={<StatusPill tone="success"><CheckIcon className="h-3.5 w-3.5" aria-hidden="true" />Hecho</StatusPill>}
+            pill={<StatusPill tone="success" icon={CheckIcon}>Hecho</StatusPill>}
           />
           <TimelineStep
             index={2}
             state="now"
             title="Email con el código"
             detail="Puede tardar unos minutos."
-            pill={<StatusPill tone="accent"><Mail className="h-3.5 w-3.5" aria-hidden="true" />Enviando</StatusPill>}
+            pill={<StatusPill tone="accent" icon={Mail}>Enviando</StatusPill>}
           />
           <TimelineStep
             index={3}
             state="pending"
             title="El Director crea su contraseña"
             detail="El código vale 15 minutos."
-            pill={<StatusPill tone="neutral"><Clock className="h-3.5 w-3.5" aria-hidden="true" />Pendiente</StatusPill>}
+            pill={<StatusPill tone="neutral" icon={Clock}>Pendiente</StatusPill>}
           />
         </ol>
       </div>

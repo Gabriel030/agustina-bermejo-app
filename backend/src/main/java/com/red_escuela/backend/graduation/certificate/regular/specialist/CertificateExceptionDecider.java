@@ -21,14 +21,17 @@ public class CertificateExceptionDecider {
     private final CurrentActorFinder currentActorFinder;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
+    private final CertificateExceptionResponses responses;
 
     public CertificateExceptionDecider(CertificateExceptionApprovalRepository repository, RegularCertificateSettingsFinder settingsFinder,
-                                       CurrentActorFinder currentActorFinder, ApplicationEventPublisher eventPublisher, Clock clock) {
+                                       CurrentActorFinder currentActorFinder, ApplicationEventPublisher eventPublisher, Clock clock,
+                                       CertificateExceptionResponses responses) {
         this.repository = repository;
         this.settingsFinder = settingsFinder;
         this.currentActorFinder = currentActorFinder;
         this.eventPublisher = eventPublisher;
         this.clock = clock;
+        this.responses = responses;
     }
 
     @Transactional
@@ -53,14 +56,14 @@ public class CertificateExceptionDecider {
             throw new CertificateExceptionNotFoundException();
         }
         approval.withdraw(currentActorFinder.currentPersonId(), LocalDateTime.now(clock));
-        return CertificateExceptionResponses.of(repository.saveAndFlush(approval));
+        return responses.of(repository.saveAndFlush(approval));
     }
 
     private CertificateExceptionResponse decided(CertificateExceptionApproval approval, boolean approved) {
         CertificateExceptionApproval saved = repository.saveAndFlush(approval);
         eventPublisher.publishEvent(CertificateExceptionDecidedEvent.of(saved.getId(), saved.getStudentId(), saved.getRequestedById(),
                 approved, saved.getDecisionReason()));
-        return CertificateExceptionResponses.of(saved);
+        return responses.of(saved);
     }
 
     private CertificateExceptionApproval lock(Long exceptionId) {

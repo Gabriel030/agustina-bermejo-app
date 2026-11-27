@@ -24,7 +24,6 @@ const MONEY_MONO_PENDING = [
 const ARBITRARY_RADIUS_PENDING = [
   '/src/components/InstitutionBrand.jsx',
   '/src/features/billing/components/MonthPicker.jsx',
-  '/src/components/MobileMenu.jsx',
   '/src/components/Sidebar.jsx',
   '/src/features/evaluation/pages/PreceptorMesaExamen.jsx',
 ];
@@ -64,6 +63,12 @@ const RULES = [
     allowed: [...SHELL_ALLOWED, ...SHELL_PENDING, '/src/components/ui/button.jsx'],
     exemptUi: false,
   },
+  {
+    name: 'gradient background utility',
+    pattern: /(?<![\w-])(?:[a-z-]+:)*bg-gradient-to-/g,
+    allowed: [],
+    exemptUi: true,
+  },
 ];
 
 function isExempt(path, rule) {
@@ -86,6 +91,13 @@ describe('restyle regression guards', () => {
   it('flags an arbitrary rounded value but not rounded-[inherit]', () => {
     expect(findViolations('/src/features/x/A.jsx', 'const a = "rounded-[17px] md:rounded-t-[3px]";')).toHaveLength(2);
     expect(findViolations('/src/features/x/A.jsx', 'const a = "rounded-[inherit] rounded-2xl rounded-control";')).toEqual([]);
+  });
+
+  it('flags a gradient background outside ui but not inside it', () => {
+    const sample = 'const a = "md:bg-gradient-to-r from-transparent to-dialog-bg";';
+    expect(findViolations('/src/features/x/Fade.jsx', sample)).toHaveLength(1);
+    expect(findViolations('/src/components/table/DataTable.jsx', sample)).toHaveLength(1);
+    expect(findViolations('/src/components/ui/card.jsx', sample)).toEqual([]);
   });
 
   it('flags font-mono in a file that is not allowed', () => {

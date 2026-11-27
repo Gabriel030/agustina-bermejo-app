@@ -5,5 +5,5 @@ import { visibleMenuItems } from '@/routes/menuAccess';
 const ITEMS = menuItemsFor('platform_admin');
 
 export function PlatformLayout() {
-  return <RoleShell titulo="Plataforma" items={visibleMenuItems('platform_admin', ITEMS)} />;
+  return <RoleShell titulo="Plataforma" items={visibleMenuItems('platform_admin', ITEMS)} topNav />;
 }

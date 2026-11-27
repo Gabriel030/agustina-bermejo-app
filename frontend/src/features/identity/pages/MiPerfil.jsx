@@ -1,6 +1,5 @@
 import { useRef, useState } from 'react';
 import { Camera, Eye, EyeOff } from 'lucide-react';
-import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { useAuth } from '@/context/AuthContext';
 import { SEX_LABEL } from '@/features/identity/lib/person';
@@ -62,15 +61,17 @@ function InputContrasena({ value, onChange, required, placeholder, ...rest }) {
         className="pr-10"
         {...rest}
       />
-      <button
+      <Button
         type="button"
+        variant="subtle"
+        size="inline"
         onClick={() => setVisible((v) => !v)}
         tabIndex={-1}
         aria-label={visible ? 'Ocultar contraseña' : 'Ver contraseña'}
-        className="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint transition-colors hover:text-ink"
+        className="absolute right-3 top-1/2 -translate-y-1/2"
       >
         {visible ? <EyeOff size={15} /> : <Eye size={15} />}
-      </button>
+      </Button>
     </div>
   );
 }
@@ -106,11 +107,13 @@ function AvatarUpload() {
 
   return (
     <div className="flex items-center gap-4">
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="inline"
         onClick={() => fileRef.current?.click()}
         disabled={subir.isPending}
-        className="group relative h-16 w-16 shrink-0 overflow-hidden rounded-2xl transition-opacity hover:opacity-90"
+        className="group relative size-16 shrink-0 overflow-hidden rounded-2xl hover:bg-transparent hover:opacity-90"
       >
         {avatarUrl ? (
           <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
@@ -122,7 +125,7 @@ function AvatarUpload() {
         <div className="absolute inset-0 flex items-center justify-center bg-(--overlay-bg) opacity-0 transition-opacity group-hover:opacity-100">
           <Camera size={18} className="text-on-overlay" />
         </div>
-      </button>
+      </Button>
       <div>
         <p className="text-size-13 font-medium text-ink">Foto de perfil</p>
         <p className="text-size-11 text-ink-faint">JPG o PNG, máx. 5 MB</p>
@@ -622,8 +625,6 @@ export function TabSeguridad() {
 
 
 export function MiPerfil() {
-  const { roles } = useAuth();
-  const isStudent = roles.includes('ALUMNO');
   return (
     <PageContainer>
       <div>
@@ -634,38 +635,25 @@ export function MiPerfil() {
       <InstallPrompt />
 
       <GlassCard className="flex flex-col gap-6 p-5 sm:p-7">
-        {isStudent && (
-          <Link
-            to="/alumno/opciones"
-            className="flex items-center justify-between gap-4 rounded-lg border border-border px-4 py-3 text-size-14 font-medium text-ink"
-          >
-            Seguridad, notificaciones y apariencia
-            <span className="text-brand">Ir a Opciones</span>
-          </Link>
-        )}
         <Tabs defaultValue="datos">
           <TabsList variant="segmented" className="mb-6">
             <TabsTrigger value="datos">Mis datos</TabsTrigger>
-            {!isStudent && <TabsTrigger value="seguridad">Seguridad</TabsTrigger>}
-            {!isStudent && <TabsTrigger value="notificaciones">Notificaciones</TabsTrigger>}
+            <TabsTrigger value="seguridad">Seguridad</TabsTrigger>
+            <TabsTrigger value="notificaciones">Notificaciones</TabsTrigger>
             <TabsTrigger value="legales">Mis aceptaciones</TabsTrigger>
           </TabsList>
           <TabsContent value="datos">
             <TabDatosPropios />
           </TabsContent>
-          {!isStudent && (
-            <TabsContent value="seguridad">
-              <TabSeguridad />
-            </TabsContent>
-          )}
-          {!isStudent && (
-            <TabsContent value="notificaciones">
-              <div className="flex flex-col gap-8">
-                <NotificationMatrix />
-                <ContactConsentMatrix />
-              </div>
-            </TabsContent>
-          )}
+          <TabsContent value="seguridad">
+            <TabSeguridad />
+          </TabsContent>
+          <TabsContent value="notificaciones">
+            <div className="flex flex-col gap-8">
+              <NotificationMatrix />
+              <ContactConsentMatrix />
+            </div>
+          </TabsContent>
           <TabsContent value="legales">
             <LegalAcceptancesTab />
           </TabsContent>

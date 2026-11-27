@@ -1,5 +1,6 @@
 package com.red_escuela.backend.enrollment.service;
 
+import com.red_escuela.backend.academicstructure.api.ProgramCurriculumEntryView;
 import com.red_escuela.backend.academicstructure.api.ProgramCurriculumFinder;
 import com.red_escuela.backend.enrollment.dto.RecordSubjectEquivalenceRequest;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -9,7 +10,7 @@ import com.red_escuela.backend.enrollment.entity.SubjectEquivalenceStatus;
 import com.red_escuela.backend.enrollment.events.SubjectEquivalenceRecordedEvent;
 import com.red_escuela.backend.enrollment.exception.EquivalenceAlreadyActiveException;
 import com.red_escuela.backend.enrollment.exception.EquivalenceDocumentInvalidException;
-import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.exception.SubjectNotInPlanException;
 import com.red_escuela.backend.enrollment.policy.SubjectEquivalencePolicy;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
@@ -67,10 +68,10 @@ public class RecordSubjectEquivalenceTransaction {
         SubjectEquivalencePolicy.requireActiveEnrollment(programEnrollmentId, enrollment.getStatus());
         Long subjectId = request.subjectId();
         Long programId = enrollment.getProgram().getId();
-        if (programCurriculumFinder.findActiveCurriculumEntries(programId).stream()
-                .noneMatch(entry -> entry.subjectId().equals(subjectId))) {
-            throw new SubjectNotInPlanException(subjectId, programId);
-        }
+        ProgramCurriculumEntryView planEntry = programCurriculumFinder.findActiveCurriculumEntries(programId).stream()
+                .filter(entry -> entry.subjectId().equals(subjectId))
+                .findFirst()
+                .orElseThrow(() -> new SubjectNotInPlanException(subjectId, programId));
         Grade originScore = SubjectEquivalencePolicy.parseOriginScore(request.originMark());
         SubjectEquivalencePolicy.requireNotFuture(request.recognizedOn(), LocalDate.now(clock));
         String reason = SubjectEquivalencePolicy.normalizeReason(request.reason());
@@ -84,7 +85,7 @@ public class RecordSubjectEquivalenceTransaction {
         auditTrail.record(new AuditRecord(AuditAction.SUBJECT_EQUIVALENCE_RECORDED, AuditEntityType.SUBJECT_EQUIVALENCE,
                 saved.getId(), null, null, reason));
         eventPublisher.publishEvent(SubjectEquivalenceRecordedEvent.recordedFor(saved.getId(), programEnrollmentId,
-                subjectId, enrollment.getStudent().getPerson().getId()));
+                subjectId, enrollment.getStudent().getPerson().getId(), planEntry.subjectName()));
         return saved.getId();
     }
 

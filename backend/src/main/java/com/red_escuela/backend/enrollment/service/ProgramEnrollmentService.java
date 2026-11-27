@@ -1,7 +1,6 @@
 package com.red_escuela.backend.enrollment.service;
 import java.time.Clock;
 import com.red_escuela.backend.shared.domain.Grade;
-import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.identity.api.StudentEnrollmentEligibility;
 import com.red_escuela.backend.identity.api.StudentFinder;
@@ -18,23 +17,24 @@ import com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort;
 import com.red_escuela.backend.enrollment.api.ProgramProgressReader;
 import com.red_escuela.backend.enrollment.api.ProgramProgressView;
 import com.red_escuela.backend.enrollment.api.WithdrawnEnrollmentFacts;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
-import com.red_escuela.backend.billing.exception.CohortAdmissionWindowClosedException;
+import com.red_escuela.backend.enrollment.exception.CohortAdmissionWindowClosedException;
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInProgramException;
 import com.red_escuela.backend.enrollment.exception.CannotWithdrawException;
-import com.red_escuela.backend.enrollment.exception.InvalidWindowConfigurationException;
-import com.red_escuela.backend.billing.exception.ProgramCohortNotFoundException;
-import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.InvalidWindowConfigurationException;
+import com.red_escuela.backend.academicstructure.api.ProgramCohortFinder;
+import com.red_escuela.backend.enrollment.api.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateMismatchException;
 import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateNotFoundException;
-import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,19 +43,21 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import com.red_escuela.backend.enrollment.api.EnrollmentDebtGuardPort;
-import com.red_escuela.backend.attendance.api.AttendanceStandingReader;
+import com.red_escuela.backend.enrollment.api.AttendanceStandingPort;
 
 @Service
 public class ProgramEnrollmentService {
+    private static final String ACTIVE_PROGRAM_ENROLLMENT_INDEX = "uk_program_enrollment_student_program_active";
+
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final StudentFinder studentFinder;
     private final StudentEnrollmentEligibility studentEnrollmentEligibility;
     private final AcademicReferenceFinder academicReferenceFinder;
     private final ProgramProgressReader programProgressReader;
     private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
-    private final ProgramCohortRepository programCohortRepository;
+    private final ProgramCohortFinder programCohortFinder;
     private final ProgramYearBillingTemplateRepository programYearBillingTemplateRepository;
-    private final AttendanceStandingReader attendanceStandingReader;
+    private final AttendanceStandingPort attendanceStandingPort;
     private final EnrollmentDebtGuardPort enrollmentDebtGuard;
     private final EnrollmentWithdrawalDateResolver withdrawalDateResolver;
     private final EnrollmentWithdrawalBillingPort withdrawalBillingPort;
@@ -69,9 +71,9 @@ public class ProgramEnrollmentService {
             AcademicReferenceFinder academicReferenceFinder,
             ProgramProgressReader programProgressReader,
             SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
-            ProgramCohortRepository programCohortRepository,
+            ProgramCohortFinder programCohortFinder,
             ProgramYearBillingTemplateRepository programYearBillingTemplateRepository,
-            AttendanceStandingReader attendanceStandingReader,
+            AttendanceStandingPort attendanceStandingPort,
             EnrollmentDebtGuardPort enrollmentDebtGuard,
             EnrollmentWithdrawalDateResolver withdrawalDateResolver,
             EnrollmentWithdrawalBillingPort withdrawalBillingPort,
@@ -84,9 +86,9 @@ public class ProgramEnrollmentService {
         this.academicReferenceFinder = academicReferenceFinder;
         this.programProgressReader = programProgressReader;
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
-        this.programCohortRepository = programCohortRepository;
+        this.programCohortFinder = programCohortFinder;
         this.programYearBillingTemplateRepository = programYearBillingTemplateRepository;
-        this.attendanceStandingReader = attendanceStandingReader;
+        this.attendanceStandingPort = attendanceStandingPort;
         this.enrollmentDebtGuard = enrollmentDebtGuard;
         this.withdrawalDateResolver = withdrawalDateResolver;
         this.withdrawalBillingPort = withdrawalBillingPort;
@@ -124,8 +126,7 @@ public class ProgramEnrollmentService {
 
         ProgramCohort cohort = null;
         if (request.cohortId() != null) {
-            cohort = programCohortRepository.findById(request.cohortId())
-                    .orElseThrow(() -> new ProgramCohortNotFoundException(request.cohortId()));
+            cohort = programCohortFinder.findOrThrow(request.cohortId());
             if (validateAdmissionWindow) {
                 validateAdmissionWindow(cohort);
             }
@@ -145,7 +146,19 @@ public class ProgramEnrollmentService {
         enrollment.setAdmissionApplication(admissionApplication);
         enrollment.setStatus(ProgramEnrollmentStatus.ENROLLED);
         enrollment.setEnrollmentDate(now);
-        return programEnrollmentRepository.save(enrollment);
+        try {
+            return programEnrollmentRepository.saveAndFlush(enrollment);
+        } catch (DataIntegrityViolationException violation) {
+            if (!violatesActiveProgramEnrollmentIndex(violation)) {
+                throw violation;
+            }
+            throw new AlreadyEnrolledInProgramException(studentId, program.getId());
+        }
+    }
+
+    private static boolean violatesActiveProgramEnrollmentIndex(DataIntegrityViolationException violation) {
+        return violation.getCause() instanceof ConstraintViolationException constraint
+                && ACTIVE_PROGRAM_ENROLLMENT_INDEX.equals(constraint.getConstraintName());
     }
 
     @Transactional
@@ -201,15 +214,13 @@ public class ProgramEnrollmentService {
 
     public List<SubjectAttendanceSummaryResponse> attendanceSummaryBySubject(Long programEnrollmentId) {
         var enrollments = subjectSectionEnrollmentRepository.findWithSectionByProgramEnrollmentId(programEnrollmentId);
-        var standings = attendanceStandingReader.readProgramEnrollmentStandings(
+        var standings = attendanceStandingPort.readProgramSectionAttendance(
                 enrollments.stream().map(SubjectSectionEnrollment::getId).toList());
         return enrollments.stream()
                 .map(enrollment -> {
-                    var standing = standings.get(enrollment.getId());
-                    Percentage asistencia = !standing.calculable() || standing.presencePercent() == null ? null
-                            : standing.presencePercent();
+                    var attendance = standings.get(enrollment.getId());
                     return new SubjectAttendanceSummaryResponse(
-                            enrollment.getSubjectSection().getSubject().getName(), asistencia);
+                            enrollment.getSubjectSection().getSubject().getName(), attendance.presencePercent());
                 })
                 .toList();
     }

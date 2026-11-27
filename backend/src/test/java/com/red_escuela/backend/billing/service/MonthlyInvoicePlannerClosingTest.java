@@ -8,7 +8,7 @@ import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeObligationSt
 import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeRequirementScope;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.billing.dto.SelectPaymentPlanRequest;
-import com.red_escuela.backend.billing.entity.CohortIntake;
+import com.red_escuela.backend.academicstructure.domain.CohortIntake;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.discount.domain.EnrollmentReference;
 import com.red_escuela.backend.billing.discount.domain.StudentDiscountGrantRequest;
@@ -33,7 +33,7 @@ import com.red_escuela.backend.enrollment.dto.CreateSectionEnrollmentRequest;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
-import com.red_escuela.backend.enrollment.exception.EnrollmentFeeNotPaidForTermException;
+import com.red_escuela.backend.enrollment.api.EnrollmentFeeNotPaidForTermException;
 import com.red_escuela.backend.enrollment.service.SubjectSectionEnrollmentService;
 import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.ApproveProgramEnrollmentApplicationCommand;
 import com.red_escuela.backend.enrollment.usecase.programenrollmentapplication.ApproveProgramEnrollmentApplicationUseCase;

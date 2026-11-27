@@ -1,7 +1,11 @@
 package com.red_escuela.backend.evaluation.specialist;
 
 import com.red_escuela.backend.evaluation.domain.CourseworkOutcome;
+import com.red_escuela.backend.evaluation.entity.SectionGradeItemPublication;
+import com.red_escuela.backend.evaluation.events.GradeCorrectedEvent;
+import com.red_escuela.backend.evaluation.events.GradesPublishedEvent;
 import com.red_escuela.backend.evaluation.events.SubjectApprovalRevertedEvent;
+import com.red_escuela.backend.evaluation.events.SubjectApprovalStandingChangedEvent;
 import com.red_escuela.backend.identity.entity.Person;
 import org.springframework.context.ApplicationEventPublisher;
 import com.red_escuela.backend.evaluation.domain.PrerequisiteGatedOutcome;
@@ -148,10 +152,14 @@ public class GradeItemRecorder {
         requirePrerequisitesApprovedForFinalExam(request, enrollment, correction);
         auditFinalRevert(gradeItem, request, correction, instructorId, SectionKind.PROGRAM,
                 enrollment.getSubjectSection().getId(), enrollmentId);
+        Grade previousScore = gradeItem.getScore();
         gradeItem.setProgramSubjectSectionEnrollment(enrollment);
         applyData(gradeItem, request, examBoard);
         gradeItem = gradeItemRepository.save(gradeItem);
         applyProgramEnrollmentCondition(enrollment, correction, false);
+        announceFinalSaved(gradeItem, previousScore, correction, request.reason(),
+                enrollment.getSubjectSection().getId(), enrollment.getSubjectSection().getName(),
+                enrollment.getStudent().getPerson().getId());
         return gradeItem;
     }
 
@@ -263,7 +271,16 @@ public class GradeItemRecorder {
             } else if (losesApproval) {
                 graduationRequestTrigger.flagGraduationRequestOutdated(programEnrollmentId);
             }
+            if (wasApproved != (result.status() == EnrollmentStatus.APPROVED)) {
+                publishApprovalStandingChanged(enrollment, result.status() == EnrollmentStatus.APPROVED);
+            }
         }
+    }
+
+    private void publishApprovalStandingChanged(SubjectSectionEnrollment enrollment, boolean approved) {
+        eventPublisher.publishEvent(SubjectApprovalStandingChangedEvent.changedFor(
+                enrollment.getProgramEnrollment().getId(), enrollment.getProgramEnrollment().getProgram().getId(),
+                enrollment.subjectId(), approved));
     }
 
     private void revertApprovalLosingPrerequisites(SubjectSectionEnrollment enrollment) {
@@ -286,6 +303,7 @@ public class GradeItemRecorder {
                 enrollment.getSubjectSection().getId(), enrollment.getId());
         sectionEnrollmentOutcomeRecorder.recordProgramOutcome(enrollment.getId(), EnrollmentStatus.REGULAR, null, null, true);
         graduationRequestTrigger.flagGraduationRequestOutdated(programEnrollmentId);
+        publishApprovalStandingChanged(enrollment, false);
         Person student = enrollment.getStudent().getPerson();
         eventPublisher.publishEvent(SubjectApprovalRevertedEvent.revertedFor(
                 student.getId(), enrollment.getSubjectSection().getSubject().getName(), unmetNames));
@@ -327,10 +345,14 @@ public class GradeItemRecorder {
         requireEligibleForFinalExam(request, correction, () -> finalExamEligibilityEvaluator.requireEligibleToLoad(enrollment));
         auditFinalRevert(gradeItem, request, correction, instructorId, SectionKind.COURSE,
                 enrollment.getCourseSubjectSection().getId(), enrollmentId);
+        Grade previousScore = gradeItem.getScore();
         gradeItem.setCourseSubjectSectionEnrollment(enrollment);
         applyData(gradeItem, request, examBoard);
         gradeItem = gradeItemRepository.save(gradeItem);
         applyCourseEnrollmentCondition(enrollment, correction, false);
+        announceFinalSaved(gradeItem, previousScore, correction, request.reason(),
+                enrollment.getCourseSubjectSection().getId(), enrollment.getCourseSubjectSection().getName(),
+                enrollment.getStudent().getPerson().getId());
         return gradeItem;
     }
 
@@ -464,6 +486,23 @@ public class GradeItemRecorder {
     private void requireEligibleForFinalExam(CreateGradeItemRequest request, boolean correction, Runnable eligibilityCheck) {
         if (request.type() == GradeItemType.FINAL && !correction) {
             eligibilityCheck.run();
+        }
+    }
+
+    private void announceFinalSaved(GradeItem gradeItem, Grade previousScore, boolean correction, String reason,
+                                    Long sectionId, String sectionName, Long studentPersonId) {
+        if (gradeItem.getType() != GradeItemType.FINAL) {
+            return;
+        }
+        int sequence = SectionGradeItemPublication.sequenceKey(gradeItem.getSequenceNumber());
+        if (!correction) {
+            eventPublisher.publishEvent(GradesPublishedEvent.publishedFor(
+                    sectionId, sectionName, gradeItem.getType().displayName(), sequence, List.of(studentPersonId)));
+            return;
+        }
+        if (!gradeItem.getScore().equals(previousScore)) {
+            eventPublisher.publishEvent(GradeCorrectedEvent.correctedFor(
+                    gradeItem.getId(), studentPersonId, sectionName, gradeItem.getType().displayName(), sequence, reason));
         }
     }
 

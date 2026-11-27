@@ -116,6 +116,10 @@ public class Person {
         this.email = email == null ? null : EmailAddress.of(email);
     }
 
+    public boolean isEmailEditableByStaff() {
+        return googleSubjectId == null || (password != null && !password.isBlank());
+    }
+
     public String emailValue() {
         return email == null ? null : email.value();
     }

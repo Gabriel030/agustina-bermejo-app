@@ -7,4 +7,8 @@ public class TemplateSignatureMissingException extends UnprocessableEntityExcept
     public TemplateSignatureMissingException(String signatoryName) {
         super("El firmante " + signatoryName + " no tiene la firma cargada");
     }
+
+    public TemplateSignatureMissingException() {
+        super("La plantilla necesita al menos un firmante con la firma cargada");
+    }
 }

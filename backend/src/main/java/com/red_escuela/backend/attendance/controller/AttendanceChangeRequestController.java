@@ -1,20 +1,27 @@
 package com.red_escuela.backend.attendance.controller;
 
 import com.red_escuela.backend.academicstructure.entity.Instructor;
+import com.red_escuela.backend.attendance.domain.AttendanceChangeRequestResult;
 import com.red_escuela.backend.attendance.dto.AttendanceChangeRequestResponse;
 import com.red_escuela.backend.attendance.dto.CreateAttendanceChangeRequestRequest;
 import com.red_escuela.backend.attendance.dto.RejectAttendanceChangeRequestRequest;
+import com.red_escuela.backend.attendance.dto.RevertAttendanceChangeRequestDecisionRequest;
 import com.red_escuela.backend.attendance.entity.AttendanceChangeRequest;
 import com.red_escuela.backend.attendance.entity.AttendanceChangeRequestStatus;
 import com.red_escuela.backend.attendance.usecase.changerequest.ApproveAttendanceChangeRequestUseCase;
 import com.red_escuela.backend.attendance.usecase.changerequest.ListAttendanceChangeRequestsByStatusUseCase;
 import com.red_escuela.backend.attendance.usecase.changerequest.ListMyAttendanceChangeRequestsUseCase;
+import com.red_escuela.backend.attendance.usecase.changerequest.ListResolvedAttendanceChangeRequestsCommand;
+import com.red_escuela.backend.attendance.usecase.changerequest.ListResolvedAttendanceChangeRequestsUseCase;
 import com.red_escuela.backend.attendance.usecase.changerequest.RejectAttendanceChangeRequestCommand;
 import com.red_escuela.backend.attendance.usecase.changerequest.RejectAttendanceChangeRequestUseCase;
 import com.red_escuela.backend.attendance.usecase.changerequest.RequestAttendanceChangeCommand;
 import com.red_escuela.backend.attendance.usecase.changerequest.RequestAttendanceChangeUseCase;
+import com.red_escuela.backend.attendance.usecase.changerequest.RevertAttendanceChangeRequestDecisionCommand;
+import com.red_escuela.backend.attendance.usecase.changerequest.RevertAttendanceChangeRequestDecisionUseCase;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.service.CurrentInstructorService;
+import com.red_escuela.backend.shared.pagination.PageResponse;
 import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -36,6 +43,8 @@ public class AttendanceChangeRequestController {
     private final ListMyAttendanceChangeRequestsUseCase listMyAttendanceChangeRequestsUseCase;
     private final ApproveAttendanceChangeRequestUseCase approveAttendanceChangeRequestUseCase;
     private final RejectAttendanceChangeRequestUseCase rejectAttendanceChangeRequestUseCase;
+    private final RevertAttendanceChangeRequestDecisionUseCase revertAttendanceChangeRequestDecisionUseCase;
+    private final ListResolvedAttendanceChangeRequestsUseCase listResolvedAttendanceChangeRequestsUseCase;
     private final CurrentInstructorService currentInstructorService;
 
     public AttendanceChangeRequestController(
@@ -44,12 +53,16 @@ public class AttendanceChangeRequestController {
             ListMyAttendanceChangeRequestsUseCase listMyAttendanceChangeRequestsUseCase,
             ApproveAttendanceChangeRequestUseCase approveAttendanceChangeRequestUseCase,
             RejectAttendanceChangeRequestUseCase rejectAttendanceChangeRequestUseCase,
+            RevertAttendanceChangeRequestDecisionUseCase revertAttendanceChangeRequestDecisionUseCase,
+            ListResolvedAttendanceChangeRequestsUseCase listResolvedAttendanceChangeRequestsUseCase,
             CurrentInstructorService currentInstructorService) {
         this.requestAttendanceChangeUseCase = requestAttendanceChangeUseCase;
         this.listAttendanceChangeRequestsByStatusUseCase = listAttendanceChangeRequestsByStatusUseCase;
         this.listMyAttendanceChangeRequestsUseCase = listMyAttendanceChangeRequestsUseCase;
         this.approveAttendanceChangeRequestUseCase = approveAttendanceChangeRequestUseCase;
         this.rejectAttendanceChangeRequestUseCase = rejectAttendanceChangeRequestUseCase;
+        this.revertAttendanceChangeRequestDecisionUseCase = revertAttendanceChangeRequestDecisionUseCase;
+        this.listResolvedAttendanceChangeRequestsUseCase = listResolvedAttendanceChangeRequestsUseCase;
         this.currentInstructorService = currentInstructorService;
     }
 
@@ -68,6 +81,15 @@ public class AttendanceChangeRequestController {
     public List<AttendanceChangeRequestResponse> listByStatus(
             @RequestParam(defaultValue = "PENDING") AttendanceChangeRequestStatus status) {
         return listAttendanceChangeRequestsByStatusUseCase.list(status).stream().map(this::toResponse).toList();
+    }
+
+    @GetMapping("/attendance/change-requests/resolved")
+    @RequiresPermission(code = "attendance.read_change_requests", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
+    public PageResponse<AttendanceChangeRequestResponse> listResolved(
+            @RequestParam(required = false) AttendanceChangeRequestResult result,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        return listResolvedAttendanceChangeRequestsUseCase.list(new ListResolvedAttendanceChangeRequestsCommand(result, page, size));
     }
 
     @GetMapping("/me/attendance-change-requests")
@@ -89,6 +111,12 @@ public class AttendanceChangeRequestController {
         return toResponse(rejectAttendanceChangeRequestUseCase.reject(new RejectAttendanceChangeRequestCommand(id, request.reason())));
     }
 
+    @PostMapping("/attendance/change-requests/{id}/revert")
+    @RequiresPermission(code = "attendance.review_change_request", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
+    public AttendanceChangeRequestResponse revert(@PathVariable Long id, @Valid @RequestBody RevertAttendanceChangeRequestDecisionRequest request) {
+        return revertAttendanceChangeRequestDecisionUseCase.revert(new RevertAttendanceChangeRequestDecisionCommand(id, request.reason()));
+    }
+
     private AttendanceChangeRequestResponse toResponse(AttendanceChangeRequest request) {
         var attendance = request.getAttendance();
         Person studentPerson;
@@ -106,9 +134,11 @@ public class AttendanceChangeRequestController {
             sectionName = enrollment.getCourseSubjectSection().getName();
         }
         Person requestedByPerson = request.getRequestedBy().getPerson();
+        Person decidedByPerson = request.getApprovedBy();
         return AttendanceChangeRequestResponse.from(
                 request, fullName(requestedByPerson), subjectName, sectionName,
-                attendance.getClassDate(), fullName(studentPerson));
+                attendance.getClassDate(), fullName(studentPerson),
+                decidedByPerson == null ? null : fullName(decidedByPerson));
     }
 
     private String fullName(Person person) {

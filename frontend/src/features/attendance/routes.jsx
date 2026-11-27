@@ -7,6 +7,6 @@ export const routes = {
   shared: [],
   role: [
     { roles: ['docente'], path: 'tomar-asistencia', element: <DocenteTomarAsistencia /> },
-    { roles: ['preceptor', 'administrativo'], path: 'solicitudes-de-asistencia', element: <SolicitudesAsistencia /> },
+    { roles: ['preceptor', 'administrativo', 'director'], path: 'solicitudes-de-asistencia', element: <SolicitudesAsistencia /> },
   ],
 };

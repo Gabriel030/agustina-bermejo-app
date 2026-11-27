@@ -3,11 +3,31 @@
     "allow": [
       "mcp__claude-code-remote__get_session",
       "mcp__claude-code-remote__list_sessions",
+      "mcp__claude-code-remote__add_repo",
       "Bash(git commit:*)",
       "Bash(git push origin feature/*)",
       "Bash(git push origin fix/*)",
       "Bash(git push origin contract/*)",
-      "Bash(git push origin docs/*)"
+      "Bash(git push origin docs/*)",
+      "Bash(gh pr merge * --squash --auto)",
+      "Bash(gh pr merge * --auto --squash)",
+      "Bash(git push origin feat/*)",
+      "Bash(git push origin refactor/*)",
+      "Bash(git push origin perf/*)",
+      "Bash(git push origin chore/*)",
+      "Bash(git merge origin/develop)"
+    ],
+    "deny": [
+      "Bash(git push --force*)",
+      "Bash(git push * --force*)",
+      "Bash(git push -f *)",
+      "Bash(git push * -f)",
+      "Bash(git push origin develop)",
+      "Bash(git push origin master)",
+      "Bash(gh pr merge * --admin*)",
+      "Bash(git reset --hard origin/*)",
+      "Bash(rm -rf *)",
+      "Bash(rm -fr *)"
     ]
   },
   "hooks": {

@@ -1,12 +1,7 @@
-import { useId, useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { useId } from 'react';
 import { cn } from '@/lib/utils';
 
 const GROUP_HEADING = 'text-size-11 font-bold uppercase tracking-[0.08em] text-ink-faint';
-
-function isActivePath(item, pathname) {
-  return pathname === item.to || pathname.startsWith(`${item.to}/`);
-}
 
 function ItemList({ items, startIndex, renderItem, ...listProps }) {
   return (
@@ -20,6 +15,21 @@ function ItemList({ items, startIndex, renderItem, ...listProps }) {
   );
 }
 
+function GroupItems({ group, startIndex, renderItem, ...listProps }) {
+  if (!group.sections) return <ItemList items={group.items} startIndex={startIndex} renderItem={renderItem} {...listProps} />;
+  const offsets = group.sections.reduce((acc, section, index) => [...acc, acc[index] + section.items.length], [startIndex]);
+  return (
+    <div role="group" className="flex flex-col gap-2" {...listProps}>
+      {group.sections.map((section, index) => (
+        <div key={section.id} className="flex flex-col gap-1">
+          <p className={cn(GROUP_HEADING, 'px-3 pt-1')}>{section.label}</p>
+          <ItemList items={section.items} startIndex={offsets[index]} renderItem={renderItem} aria-label={section.label} />
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function StaticGroup({ group, startIndex, renderItem }) {
   const headingId = useId();
   return (
@@ -27,53 +37,12 @@ function StaticGroup({ group, startIndex, renderItem }) {
       <p id={headingId} className={cn(GROUP_HEADING, 'px-3 pb-1 pt-1')}>
         {group.label}
       </p>
-      <ItemList items={group.items} startIndex={startIndex} renderItem={renderItem} aria-labelledby={headingId} />
+      <GroupItems group={group} startIndex={startIndex} renderItem={renderItem} aria-labelledby={headingId} />
     </div>
   );
 }
 
-function CollapsibleGroup({ group, startIndex, renderItem, open, onToggle }) {
-  const headingId = useId();
-  const listId = useId();
-  return (
-    <div className="mt-1 flex flex-col gap-1 first:mt-0">
-      <button
-        type="button"
-        id={headingId}
-        aria-expanded={open}
-        aria-controls={listId}
-        onClick={onToggle}
-        className={cn(GROUP_HEADING, 'flex min-h-11 w-full items-center justify-between rounded-control px-3 text-left')}
-      >
-        {group.label}
-        <ChevronDown aria-hidden="true" className={cn('h-4 w-4 transition-transform', open && 'rotate-180')} />
-      </button>
-      <ItemList
-        items={group.items}
-        startIndex={startIndex}
-        renderItem={renderItem}
-        id={listId}
-        aria-labelledby={headingId}
-        hidden={!open}
-      />
-    </div>
-  );
-}
-
-export function NavGroups({ groups, renderItem, collapsible = false, pathname = '' }) {
-  const [openIds, setOpenIds] = useState(
-    () => new Set(groups.filter((group) => group.items.some((item) => isActivePath(item, pathname))).map((group) => group.id)),
-  );
-
-  function toggle(id) {
-    setOpenIds((current) => {
-      const next = new Set(current);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  }
-
+export function NavGroups({ groups, renderItem }) {
   const startIndexes = groups.reduce((acc, group, index) => [...acc, acc[index] + group.items.length], [0]);
   return (
     <div className="flex flex-col">
@@ -81,18 +50,6 @@ export function NavGroups({ groups, renderItem, collapsible = false, pathname = 
         const groupStart = startIndexes[index];
         if (!group.label) {
           return <ItemList key={group.id} items={group.items} startIndex={groupStart} renderItem={renderItem} />;
-        }
-        if (collapsible) {
-          return (
-            <CollapsibleGroup
-              key={group.id}
-              group={group}
-              startIndex={groupStart}
-              renderItem={renderItem}
-              open={openIds.has(group.id)}
-              onToggle={() => toggle(group.id)}
-            />
-          );
         }
         return <StaticGroup key={group.id} group={group} startIndex={groupStart} renderItem={renderItem} />;
       })}

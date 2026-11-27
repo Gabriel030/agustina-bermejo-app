@@ -22,6 +22,12 @@ async function pedirCodigo(user, email = 'persona@example.com') {
 }
 
 describe('ForgotPassword', () => {
+  it('exposesRecoverPasswordAsTheSingleH1', () => {
+    renderForgotPassword();
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+    expect(screen.getByRole('heading', { level: 1, name: 'Recuperar contraseña' })).toBeInTheDocument();
+  });
+
   it('al pedir el código, la misma pantalla pasa a mostrar el mensaje de éxito y el campo de código, sin navegar', async () => {
     const user = userEvent.setup();
     renderForgotPassword();
