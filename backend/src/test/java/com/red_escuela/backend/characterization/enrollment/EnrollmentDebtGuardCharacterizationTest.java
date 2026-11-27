@@ -12,6 +12,7 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.identity.entity.Student;
+import com.red_escuela.backend.testsupport.JdbcCurriculumPlans;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
@@ -31,7 +32,16 @@ class EnrollmentDebtGuardCharacterizationTest extends WithdrawalP2Characterizati
     private ProgramEnrollmentService programEnrollmentService;
 
     private String enrollBody(Program program) {
-        return "{\"programId\":" + program.getId() + "}";
+        return "{\"programId\":" + program.getId() + ",\"cohortId\":" + cohortIdOf(program) + "}";
+    }
+
+    private Long cohortIdOf(Program program) {
+        entityManager.flush();
+        return JdbcCurriculumPlans.openCohortIdOf(jdbc, program.getId());
+    }
+
+    private CreateProgramEnrollmentRequest requestFor(Program program) {
+        return new CreateProgramEnrollmentRequest(program.getId(), cohortIdOf(program));
     }
 
     private long enrollmentCountOf(Student student) {
@@ -88,7 +98,7 @@ class EnrollmentDebtGuardCharacterizationTest extends WithdrawalP2Characterizati
         ProgramEnrollment active = persistProgramEnrollment(student, persistProgram(), ProgramEnrollmentStatus.ENROLLED);
         persistOverdueInstallment(active, 5000);
 
-        assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(persistProgram().getId())))
+        assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), requestFor(persistProgram())))
                 .isInstanceOf(OverdueDebtBlocksNewEnrollmentException.class);
     }
 
@@ -98,7 +108,7 @@ class EnrollmentDebtGuardCharacterizationTest extends WithdrawalP2Characterizati
         ProgramEnrollment active = persistProgramEnrollment(student, persistProgram(), ProgramEnrollmentStatus.ENROLLED);
         persistPendingInstallment(active, YearMonth.now(), LocalDate.now().plusDays(10), 5000);
 
-        ProgramEnrollment created = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(persistProgram().getId()));
+        ProgramEnrollment created = programEnrollmentService.enroll(student.getId(), requestFor(persistProgram()));
 
         assertThat(created.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
@@ -110,7 +120,7 @@ class EnrollmentDebtGuardCharacterizationTest extends WithdrawalP2Characterizati
         Invoice overdue = persistOverdueInstallment(active, 5000);
         BillingTestFixtures.payInvoiceInFull(overdue);
 
-        ProgramEnrollment created = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(persistProgram().getId()));
+        ProgramEnrollment created = programEnrollmentService.enroll(student.getId(), requestFor(persistProgram()));
 
         assertThat(created.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
@@ -121,9 +131,9 @@ class EnrollmentDebtGuardCharacterizationTest extends WithdrawalP2Characterizati
         withdrawnForNonpaymentWithOverdueDebt(student, 5000);
         Program program = persistProgram();
 
-        assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())))
+        assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), requestFor(program)))
                 .isInstanceOf(OutstandingDebtBlocksReenrollmentException.class);
-        ProgramEnrollment created = programEnrollmentService.enrollAfterAdmissionPayment(student.getId(), new CreateProgramEnrollmentRequest(program.getId()));
+        ProgramEnrollment created = programEnrollmentService.enrollAfterAdmissionPayment(student.getId(), requestFor(program));
 
         assertThat(created.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }

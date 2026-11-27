@@ -12,7 +12,6 @@ import com.red_escuela.backend.billing.cohort.exception.HistoricalCohortReferenc
 import com.red_escuela.backend.academicstructure.api.ProgramCohortFinder;
 import com.red_escuela.backend.academicstructure.api.ProgramCohortRecorder;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
-import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
 import com.red_escuela.backend.identity.entity.Person;
 import jakarta.persistence.EntityManager;
@@ -46,11 +45,8 @@ public class HistoricalProgramCohortRecorder {
     }
 
     @Transactional
-    public Long assignCohort(Long programEnrollmentId, HistoricalProgramCohort historical) {
-        ProgramCohort cohort = findOrCreateCohort(historical);
-        ProgramEnrollment enrollment = entityManager.getReference(ProgramEnrollment.class, programEnrollmentId);
-        enrollment.setProgramCohort(cohort);
-        return cohort.getId();
+    public Long findOrCreateCohortId(HistoricalProgramCohort historical) {
+        return findOrCreateCohort(historical).getId();
     }
 
     private ProgramCohort findOrCreateCohort(HistoricalProgramCohort historical) {

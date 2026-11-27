@@ -68,7 +68,8 @@ public class RecordSubjectEquivalenceTransaction {
         SubjectEquivalencePolicy.requireActiveEnrollment(programEnrollmentId, enrollment.getStatus());
         Long subjectId = request.subjectId();
         Long programId = enrollment.getProgram().getId();
-        ProgramCurriculumEntryView planEntry = programCurriculumFinder.findActiveCurriculumEntries(programId).stream()
+        ProgramCurriculumEntryView planEntry = programCurriculumFinder
+                .findActiveCurriculumEntriesOfPlan(enrollment.getPlan().getId()).stream()
                 .filter(entry -> entry.subjectId().equals(subjectId))
                 .findFirst()
                 .orElseThrow(() -> new SubjectNotInPlanException(subjectId, programId));

@@ -1,7 +1,9 @@
 package com.red_escuela.backend.enrollment.api;
 
 import com.red_escuela.backend.academicstructure.api.HistoricalProgramRecorder;
+import com.red_escuela.backend.academicstructure.api.ProgramCohortFinder;
 import com.red_escuela.backend.academicstructure.entity.Program;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
@@ -40,16 +42,19 @@ public class HistoricalEnrollmentRecorder {
     private final StudentFinder studentFinder;
     private final HistoricalProgramRecorder programRecorder;
     private final EntityManager entityManager;
+    private final ProgramCohortFinder cohortFinder;
 
     public HistoricalEnrollmentRecorder(ProgramEnrollmentRepository programEnrollmentRepository,
             SubjectSectionEnrollmentRepository sectionEnrollmentRepository, HistoricalPersonRecorder personRecorder,
-            StudentFinder studentFinder, HistoricalProgramRecorder programRecorder, EntityManager entityManager) {
+            StudentFinder studentFinder, HistoricalProgramRecorder programRecorder, EntityManager entityManager,
+            ProgramCohortFinder cohortFinder) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.sectionEnrollmentRepository = sectionEnrollmentRepository;
         this.personRecorder = personRecorder;
         this.studentFinder = studentFinder;
         this.programRecorder = programRecorder;
         this.entityManager = entityManager;
+        this.cohortFinder = cohortFinder;
     }
 
     @Transactional(readOnly = true)
@@ -142,16 +147,20 @@ public class HistoricalEnrollmentRecorder {
     }
 
     @Transactional
-    public Long recordProgramEnrollment(HistoricalProgramEnrollment historical) {
+    public Long recordProgramEnrollment(HistoricalProgramEnrollment historical, Long cohortId) {
         Long studentId = requireStudentId(historical.documentType(), historical.documentNumber());
         Long programId = programRecorder.findProgramIdByName(historical.programName())
                 .orElseThrow(() -> new HistoricalEnrollmentReferenceMissingException(historical.programName()));
-        return recordProgramEnrollment(historical, studentId, programId);
+        return recordProgramEnrollment(historical, studentId, programId, cohortId);
     }
 
     @Transactional
-    public Long recordProgramEnrollment(HistoricalProgramEnrollment historical, Long studentId, Long programId) {
+    public Long recordProgramEnrollment(HistoricalProgramEnrollment historical, Long studentId, Long programId,
+            Long cohortId) {
+        ProgramCohort cohort = cohortFinder.findOrThrow(cohortId);
         ProgramEnrollment enrollment = new ProgramEnrollment();
+        enrollment.setProgramCohort(cohort);
+        enrollment.setPlan(cohort.getPlan());
         enrollment.setStudent(entityManager.getReference(Student.class, studentId));
         enrollment.setProgram(entityManager.getReference(Program.class, programId));
         enrollment.setStatus(historical.status());

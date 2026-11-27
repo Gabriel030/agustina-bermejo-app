@@ -44,16 +44,16 @@ class ImportCommitPreloadEquivalenceIT extends AbstractDataImportIT {
         long structureBatch = createBatch();
         long testBatch = createBatch();
         try {
-            importBaseStructure(structureBatch, csv, HistoricalDatasetCsv.PROGRAM_ENROLLMENT_HEADER);
+            importBaseStructure(structureBatch, csv, HistoricalDatasetCsv.PROGRAM_ENROLLMENT_HEADER, csv.terms());
             upload(testBatch, "TERMS", HistoricalDatasetCsv.TERM_HEADER
                     + year + ",ANNUAL,Año lectivo," + year + "-03-01,15/12/" + year + "," + program + "\n");
             upload(testBatch, "PROGRAM_ENROLLMENTS", HistoricalDatasetCsv.PROGRAM_ENROLLMENT_HEADER
-                    + "DNI," + csv.studentDni(0) + "," + program + "," + year + "-03-01,ENROLLED,,,,\n"
-                    + "DNI," + csv.studentDni(1) + "," + program + "," + year + "-03-02,ENROLLED,,,,\n"
-                    + "DNI," + csv.studentDni(2) + "," + program + "," + year + "-03-03,COMPLETED," + year + "-12-15,,,\n"
-                    + "DNI," + csv.studentDni(3) + "," + program + "," + year + "-03-04,WITHDRAWN," + year + "-09-01," + year + "-08-30,,\n"
+                    + "DNI," + csv.studentDni(0) + "," + program + "," + year + "-03-01,ENROLLED,,," + year + ",FIRST\n"
+                    + "DNI," + csv.studentDni(1) + "," + program + "," + year + "-03-02,ENROLLED,,," + year + ",FIRST\n"
+                    + "DNI," + csv.studentDni(2) + "," + program + "," + year + "-03-03,COMPLETED," + year + "-12-15,," + year + ",FIRST\n"
+                    + "DNI," + csv.studentDni(3) + "," + program + "," + year + "-03-04,WITHDRAWN," + year + "-09-01," + year + "-08-30," + year + ",FIRST\n"
                     + "DNI," + csv.studentDni(4) + "," + program + "," + year + "-03-05,ENROLLED,,," + year + ",SECOND\n"
-                    + "DNI," + csv.studentDni(5) + "," + program + "," + year + "-03-06,WITHDRAWN," + year + "-09-10,,,\n");
+                    + "DNI," + csv.studentDni(5) + "," + program + "," + year + "-03-06,WITHDRAWN," + year + "-09-10,," + year + ",FIRST\n");
             upload(testBatch, "SECTION_ENROLLMENTS", HistoricalDatasetCsv.SECTION_ENROLLMENT_HEADER
                     + row(csv.studentDni(0), program, csv.sectionCode(0), 1, "APPROVED", "\"8,50\"", "PROMOTION", year + "-07-20")
                     + row(csv.studentDni(0), program, csv.sectionCode(1), 1, "APPROVED", "7", "FINAL_EXAM", year + "-07-21")
@@ -68,12 +68,12 @@ class ImportCommitPreloadEquivalenceIT extends AbstractDataImportIT {
 
             String start = year + "-03-15";
             assertThat(jdbc.queryForList(PROGRAM_ENROLLMENTS_OF_BATCH, String.class, testBatch)).containsExactly(
-                    csv.studentDni(0) + " ENROLLED " + year + "-03-01 completion=- withdrawal=- entryYear=- cohort=- cohortStart=-",
-                    csv.studentDni(1) + " ENROLLED " + year + "-03-02 completion=- withdrawal=- entryYear=- cohort=- cohortStart=-",
-                    csv.studentDni(2) + " COMPLETED " + year + "-03-03 completion=" + year + "-12-15 withdrawal=- entryYear=- cohort=- cohortStart=-",
-                    csv.studentDni(3) + " WITHDRAWN " + year + "-03-04 completion=" + year + "-09-01 withdrawal=" + year + "-08-30 entryYear=- cohort=- cohortStart=-",
+                    csv.studentDni(0) + " ENROLLED " + year + "-03-01 completion=- withdrawal=- entryYear=" + year + " cohort=FIRST cohortStart=" + year + "-03-01",
+                    csv.studentDni(1) + " ENROLLED " + year + "-03-02 completion=- withdrawal=- entryYear=" + year + " cohort=FIRST cohortStart=" + year + "-03-01",
+                    csv.studentDni(2) + " COMPLETED " + year + "-03-03 completion=" + year + "-12-15 withdrawal=- entryYear=" + year + " cohort=FIRST cohortStart=" + year + "-03-01",
+                    csv.studentDni(3) + " WITHDRAWN " + year + "-03-04 completion=" + year + "-09-01 withdrawal=" + year + "-08-30 entryYear=" + year + " cohort=FIRST cohortStart=" + year + "-03-01",
                     csv.studentDni(4) + " ENROLLED " + year + "-03-05 completion=- withdrawal=- entryYear=" + year + " cohort=SECOND cohortStart=" + year + "-08-01",
-                    csv.studentDni(5) + " WITHDRAWN " + year + "-03-06 completion=" + year + "-09-10 withdrawal=" + year + "-09-10 entryYear=- cohort=- cohortStart=-");
+                    csv.studentDni(5) + " WITHDRAWN " + year + "-03-06 completion=" + year + "-09-10 withdrawal=" + year + "-09-10 entryYear=" + year + " cohort=FIRST cohortStart=" + year + "-03-01");
             assertThat(jdbc.queryForList(SECTION_ENROLLMENTS_OF_BATCH, String.class, testBatch)).containsExactly(
                     csv.studentDni(0) + " " + csv.sectionCode(0) + " attempt=1 APPROVED score=8.50 type=PROMOTION finalDate=" + year
                             + "-07-20 enrolledAt=" + start + " programEnrollmentStatus=ENROLLED closure=PROMOTES/8.50",

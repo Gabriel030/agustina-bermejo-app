@@ -8,6 +8,8 @@ import com.red_escuela.backend.enrollment.dto.CreateProgramEnrollmentRequest;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInProgramException;
+import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentCohortProgramMismatchException;
+import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentCohortRequiredException;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import com.red_escuela.backend.identity.entity.Student;
 import org.junit.jupiter.api.Test;
@@ -135,26 +137,28 @@ class CohortAdmissionCharacterizationTest extends CohortP3CharacterizationSuppor
     }
 
     @Test
-    void currentBehaviorToReviewEnrollingInAProgramWithACohortOfAnotherProgramIsAcceptedWithoutCheckingTheyMatch() {
+    void enrollingInAProgramWithACohortOfAnotherProgramIsRejectedAndPersistsNothing() {
         Student student = persistStudent();
         Program program = persistProgram();
         ProgramCohort cohortOfOtherProgram = persistOpenCohortOf(persistProgram());
 
-        ProgramEnrollment created = programEnrollmentService.enroll(student.getId(),
-                new CreateProgramEnrollmentRequest(program.getId(), cohortOfOtherProgram.getId()));
+        assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(),
+                new CreateProgramEnrollmentRequest(program.getId(), cohortOfOtherProgram.getId())))
+                .isInstanceOf(ProgramEnrollmentCohortProgramMismatchException.class);
 
-        assertThat(storedCohortIdOf(created.getId())).isEqualTo(cohortOfOtherProgram.getId());
-        assertThat(created.getProgram().getId()).isEqualTo(program.getId());
-        assertThat(templateRepository.findById(cohortOfOtherProgram.getTemplateId()).orElseThrow().getProgram().getId()).isNotEqualTo(program.getId());
+        entityManager.flush();
+        assertThat(jdbc.queryForObject("select count(*) from program_enrollment where student_id = ?", Long.class, student.getId())).isZero();
     }
 
     @Test
-    void enrollmentWithoutCohortSkipsTheAdmissionWindowCheckAndStoresNoCohort() {
+    void enrollmentWithoutCohortIsRejectedAndPersistsNothing() {
         Student student = persistStudent();
+        Program program = persistProgram();
 
-        ProgramEnrollment created = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(persistProgram().getId()));
+        assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())))
+                .isInstanceOf(ProgramEnrollmentCohortRequiredException.class);
 
-        assertThat(storedCohortIdOf(created.getId())).isNull();
-        assertThat(storedTemplateIdOf(created.getId())).isNull();
+        entityManager.flush();
+        assertThat(jdbc.queryForObject("select count(*) from program_enrollment where student_id = ?", Long.class, student.getId())).isZero();
     }
 }

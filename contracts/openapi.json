@@ -3257,6 +3257,22 @@
         "required" : [ "amount", "changeReason", "effectiveFrom" ],
         "type" : "object"
       },
+      "ChangeProgramEnrollmentPlanRequest" : {
+        "properties" : {
+          "equivalences" : {
+            "items" : {
+              "$ref" : "#/components/schemas/RecordSubjectEquivalenceRequest"
+            },
+            "type" : "array"
+          },
+          "targetPlanId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "equivalences", "targetPlanId" ],
+        "type" : "object"
+      },
       "ChangeReminderScheduleRequest" : {
         "properties" : {
           "changeReason" : {
@@ -13669,9 +13685,13 @@
           },
           "intake" : {
             "type" : "string"
+          },
+          "planId" : {
+            "format" : "int64",
+            "type" : "integer"
           }
         },
-        "required" : [ "admissionEnd", "admissionStart", "createdAt", "createdByName", "cursadaStart", "id", "intake" ],
+        "required" : [ "admissionEnd", "admissionStart", "createdAt", "createdByName", "cursadaStart", "id", "intake", "planId" ],
         "type" : "object"
       },
       "ProgramElectiveGroupResponse" : {
@@ -13807,6 +13827,27 @@
           }
         },
         "required" : [ "admissionInvoice", "decidedAt", "decidedByName", "documentation", "id", "programCohortId", "programCohortName", "programEnrollmentId", "programId", "programName", "rejectionReason", "requestedAt", "status", "studentDni", "studentEmail", "studentFullName", "studentId" ],
+        "type" : "object"
+      },
+      "ProgramEnrollmentPlanChangeResponse" : {
+        "properties" : {
+          "equivalenceIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "type" : "array"
+          },
+          "planId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "programEnrollmentId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "equivalenceIds", "planId", "programEnrollmentId" ],
         "type" : "object"
       },
       "ProgramEnrollmentResponse" : {
@@ -14048,6 +14089,10 @@
           "intake" : {
             "type" : "string"
           },
+          "planId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
           "programId" : {
             "format" : "int64",
             "type" : "integer"
@@ -14057,7 +14102,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "admissionEnd", "admissionStart", "createdAt", "cursadaStart", "id", "intake", "programId", "termId" ],
+        "required" : [ "admissionEnd", "admissionStart", "createdAt", "cursadaStart", "id", "intake", "planId", "programId", "termId" ],
         "type" : "object"
       },
       "ProgramYearBillingTemplateResponse" : {
@@ -85591,6 +85636,143 @@
           }
         },
         "tags" : [ "enrollment-payment-standing-controller" ]
+      }
+    },
+    "/program-enrollments/{id}/plan-change" : {
+      "post" : {
+        "operationId" : "SubjectEquivalence_changePlan",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/ChangeProgramEnrollmentPlanRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProgramEnrollmentPlanChangeResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "subject-equivalence-controller" ]
       }
     },
     "/program-enrollments/{id}/progress" : {

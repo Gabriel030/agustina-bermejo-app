@@ -155,6 +155,11 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
         return programRepository.save(program);
     }
 
+    private CreateProgramEnrollmentRequest requestWithCohortOf(Program program) {
+        return new CreateProgramEnrollmentRequest(program.getId(),
+                com.red_escuela.backend.testsupport.JdbcCurriculumPlans.openCohortIdOf(jdbc, program.getId()));
+    }
+
     private ProgramEnrollment persistOldWithdrawnCycle(Student student, Program program, BigDecimal deuda) {
         ProgramEnrollment enrollment = new ProgramEnrollment();
         enrollment.setStudent(student);
@@ -175,7 +180,7 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
         Student student = persistStudent("88010001");
         Program program = persistProgram();
 
-        var enrollment = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId()));
+        var enrollment = programEnrollmentService.enroll(student.getId(), requestWithCohortOf(program));
 
         assertThat(enrollment.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
@@ -188,7 +193,7 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
         persistOldWithdrawnCycle(student, programConDeuda, BigDecimal.valueOf(5000));
         Program programNuevo = persistProgram();
 
-        assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(programNuevo.getId())))
+        assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), requestWithCohortOf(programNuevo)))
                 .isInstanceOf(OutstandingDebtBlocksReenrollmentException.class);
     }
 
@@ -205,7 +210,7 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
         Invoice invoice = BillingTestFixtures.invoice().forProgramEnrollment(enrollment).ofType(FeeType.MONTHLY_INSTALLMENT).forPeriod(YearMonth.now()).dueOn(LocalDate.now().plusDays(5)).withBaseAmount(ars(5000)).build();
 
         Program programNuevo = persistProgram();
-        var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(programNuevo.getId()));
+        var nuevaMatricula = programEnrollmentService.enroll(student.getId(), requestWithCohortOf(programNuevo));
 
         assertThat(nuevaMatricula.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
@@ -220,7 +225,7 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
 
         BillingTestFixtures.registerApprovedBankTransferPayment(deudaVieja.getId(), admin.getId());
 
-        var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId()));
+        var nuevaMatricula = programEnrollmentService.enroll(student.getId(), requestWithCohortOf(program));
 
         assertThat(nuevaMatricula.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
@@ -235,7 +240,7 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
 
         BillingTestFixtures.registerApprovedGatewayPayment(deudaVieja.getId(), ars(2000));
 
-        assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())))
+        assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), requestWithCohortOf(program)))
                 .isInstanceOf(OutstandingDebtBlocksReenrollmentException.class);
         Invoice reloaded = invoiceRepository.findById(deudaVieja.getId()).orElseThrow();
         assertThat(reloaded.getPaymentStatus()).isNotEqualTo(InvoicePaymentStatus.PAID);
@@ -263,7 +268,7 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
                 director.getId(), null, java.time.Instant.parse("2027-02-01T10:00:00Z")));
 
         payInFull(director, invoiceRepository.findInvoiceWithLinesById(invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(cicloViejo.getId()).get(0).getId()).orElseThrow());
-        var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId()));
+        var nuevaMatricula = programEnrollmentService.enroll(student.getId(), requestWithCohortOf(program));
 
         assertThat(studentDiscountRepository.findByProgramEnrollmentIdOrderByIdDesc(nuevaMatricula.getId())).isEmpty();
         assertThat(studentDiscountRepository.findByProgramEnrollmentIdOrderByIdDesc(cicloViejo.getId())).hasSize(1);
@@ -281,14 +286,14 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
                 invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(ciclo1.getId()).get(0).getId()).orElseThrow();
         Invoice deuda2 = invoiceRepository.findInvoiceWithLinesById(
                 invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(ciclo2.getId()).get(0).getId()).orElseThrow();
-        assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())))
+        assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), requestWithCohortOf(program)))
                 .isInstanceOf(OutstandingDebtBlocksReenrollmentException.class);
         payInFull(director, deuda1);
-        assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())))
+        assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), requestWithCohortOf(program)))
                 .isInstanceOf(OutstandingDebtBlocksReenrollmentException.class);
         payInFull(director, deuda2);
 
-        var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId()));
+        var nuevaMatricula = programEnrollmentService.enroll(student.getId(), requestWithCohortOf(program));
         assertThat(nuevaMatricula.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
 
@@ -300,13 +305,13 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
         ProgramEnrollment cicloViejo = persistOldWithdrawnCycle(student, programConDeudaVieja, BigDecimal.valueOf(5000));
         Program programNuevo = persistProgram();
 
-        assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(programNuevo.getId())))
+        assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), requestWithCohortOf(programNuevo)))
                 .isInstanceOf(OutstandingDebtBlocksReenrollmentException.class);
 
         Invoice deudaVieja = invoiceRepository.findByProgramEnrollmentIdOrderByPeriod(cicloViejo.getId()).get(0);
         BillingTestFixtures.registerApprovedBankTransferPayment(deudaVieja.getId(), admin.getId());
 
-        var nuevaMatricula = programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(programNuevo.getId()));
+        var nuevaMatricula = programEnrollmentService.enroll(student.getId(), requestWithCohortOf(programNuevo));
         assertThat(nuevaMatricula.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
 
@@ -316,7 +321,7 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
         Program program = persistProgram();
         persistOldWithdrawnCycle(student, program, BigDecimal.valueOf(5000));
 
-        assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())))
+        assertThatThrownBy(() -> programEnrollmentService.enroll(student.getId(), requestWithCohortOf(program)))
                 .isInstanceOf(OutstandingDebtBlocksReenrollmentException.class);
     }
 
@@ -352,14 +357,14 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
 
     private java.util.List<String> newEnrollmentViolationCodesOf(Student student, Program program) {
         Throwable thrown = org.assertj.core.api.Assertions.catchThrowable(
-                () -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())));
+                () -> programEnrollmentService.enroll(student.getId(), requestWithCohortOf(program)));
         assertThat(thrown).isInstanceOf(OverdueDebtBlocksNewEnrollmentException.class);
         return ((OverdueDebtBlocksNewEnrollmentException) thrown).violations().stream().map(PolicyViolation::code).toList();
     }
 
     private java.util.List<String> violationCodesOf(Student student, Program program) {
         Throwable thrown = org.assertj.core.api.Assertions.catchThrowable(
-                () -> programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())));
+                () -> programEnrollmentService.enroll(student.getId(), requestWithCohortOf(program)));
         assertThat(thrown).isInstanceOf(OutstandingDebtBlocksReenrollmentException.class);
         return ((OutstandingDebtBlocksReenrollmentException) thrown).violations().stream().map(PolicyViolation::code).toList();
     }
@@ -376,7 +381,7 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
         assertThat(violationCodesOf(student, program)).containsExactly("OUTSTANDING_DEBT_OF_WITHDRAWN_ENROLLMENT");
         BillingTestFixtures.registerApprovedBankTransferPayment(debt.getId(), admin.getId());
 
-        assertThat(programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())).getStatus())
+        assertThat(programEnrollmentService.enroll(student.getId(), requestWithCohortOf(program)).getStatus())
                 .isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
 
@@ -401,7 +406,7 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
         Invoice debt = persistNotYetDueInvoiceOfWithdrawnCycle(persistWithdrawnEnrollment(student, program), ars(5000));
         markAsCancelled(debt);
 
-        assertThat(programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())).getStatus())
+        assertThat(programEnrollmentService.enroll(student.getId(), requestWithCohortOf(program)).getStatus())
                 .isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
 
@@ -421,7 +426,7 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
         assertThat(violationCodesOf(student, program)).containsExactly("OUTSTANDING_DEBT_OF_WITHDRAWN_ENROLLMENT");
 
         markAsCancelled(debt);
-        assertThat(programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())).getStatus())
+        assertThat(programEnrollmentService.enroll(student.getId(), requestWithCohortOf(program)).getStatus())
                 .isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
 
@@ -485,7 +490,7 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
         Invoice invoice = persistNotYetDueInvoiceOfWithdrawnCycle(persistWithdrawnEnrollment(student, program), ars(5000));
         jdbc.update("update invoice set document_status = 'DISCARDED', discarded_reason = 'prueba', invoice_number = null, issue_date = null, due_date = null, student_snapshot = null, payment_status = null where id = ?", invoice.getId());
 
-        assertThat(programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())).getStatus())
+        assertThat(programEnrollmentService.enroll(student.getId(), requestWithCohortOf(program)).getStatus())
                 .isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
 
@@ -511,7 +516,7 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
                 .forPeriod(YearMonth.now().plusMonths(1)).dueOn(LocalDate.now().plusDays(20)).withBaseAmount(ars(5000)).build();
         persistPendingRequestOn(invoice, requester);
 
-        assertThat(programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(persistProgram().getId())).getStatus())
+        assertThat(programEnrollmentService.enroll(student.getId(), requestWithCohortOf(persistProgram())).getStatus())
                 .isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
 
@@ -527,7 +532,7 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
         Student student = persistStudent("88012001");
         persistInstallmentOfActiveEnrollment(student, LocalDate.now().minusDays(GRACE_DAYS));
 
-        assertThat(programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(persistProgram().getId())).getStatus())
+        assertThat(programEnrollmentService.enroll(student.getId(), requestWithCohortOf(persistProgram())).getStatus())
                 .isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
 
@@ -555,7 +560,7 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
         LocalDate dueDate = LocalDate.now().minusDays(GRACE_DAYS + 1);
         placeReceiptUnderReview(persistInstallmentOfActiveEnrollment(student, dueDate), dueDate);
 
-        assertThat(programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(persistProgram().getId())).getStatus())
+        assertThat(programEnrollmentService.enroll(student.getId(), requestWithCohortOf(persistProgram())).getStatus())
                 .isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
 
@@ -617,7 +622,7 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
 
         payInFull(admin, installment);
 
-        assertThat(programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(persistProgram().getId())).getStatus())
+        assertThat(programEnrollmentService.enroll(student.getId(), requestWithCohortOf(persistProgram())).getStatus())
                 .isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
 
@@ -638,7 +643,7 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
         persistInstallmentOfActiveEnrollment(indebted, LocalDate.now().minusDays(10));
         Student clean = persistStudent("88012007");
 
-        assertThat(programEnrollmentService.enroll(clean.getId(), new CreateProgramEnrollmentRequest(persistProgram().getId())).getStatus())
+        assertThat(programEnrollmentService.enroll(clean.getId(), requestWithCohortOf(persistProgram())).getStatus())
                 .isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
 
@@ -649,7 +654,7 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
         persistInstallmentOfActiveEnrollment(student, LocalDate.now().minusDays(10));
         setBillingMode("OFF");
         try {
-            assertThat(programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(persistProgram().getId())).getStatus())
+            assertThat(programEnrollmentService.enroll(student.getId(), requestWithCohortOf(persistProgram())).getStatus())
                     .isEqualTo(ProgramEnrollmentStatus.ENROLLED);
         } finally {
             setBillingMode("FULL");
@@ -687,7 +692,7 @@ class EnrollmentDebtGuardTest extends AbstractIntegrationTest {
         assertThat(violationCodesOf(student, program)).containsExactly("OUTSTANDING_DEBT_OF_WITHDRAWN_ENROLLMENT");
 
         payInFull(admin, lateFee);
-        assertThat(programEnrollmentService.enroll(student.getId(), new CreateProgramEnrollmentRequest(program.getId())).getStatus())
+        assertThat(programEnrollmentService.enroll(student.getId(), requestWithCohortOf(program)).getStatus())
                 .isEqualTo(ProgramEnrollmentStatus.ENROLLED);
     }
 

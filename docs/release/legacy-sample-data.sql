@@ -22,10 +22,22 @@ overriding system value values
 insert into holiday (date, name, description, type) values ('2025-05-01', 'Dia del Trabajador', 'Dia del Trabajador', 'NATIONAL'), ('2025-07-09', 'Dia de la Independencia', 'Dia de la Independencia', 'NATIONAL');
 
 insert into program (id, currency) overriding system value values (9001, 'ARS');
-insert into program_enrollment (id, program_id, student_id, status, completion_date)
-overriding system value values
-    (9001, 9001, 9001, 'COMPLETED', '2025-08-01 10:00:00'),
-    (9002, 9001, 9002, 'COMPLETED', '2025-08-01 10:00:00');
+do $$
+begin
+    if to_regclass('curriculum_plan') is null then
+        insert into program_enrollment (id, program_id, student_id, status, completion_date)
+        overriding system value values
+            (9001, 9001, 9001, 'COMPLETED', '2025-08-01 10:00:00'),
+            (9002, 9001, 9002, 'COMPLETED', '2025-08-01 10:00:00');
+    else
+        insert into curriculum_plan (id, program_id, version_number, name, status, valid_from, total_credits_required)
+        overriding system value values (9001, 9001, 1, 'Plan legacy', 'ACTIVE', '2025-01-01', 0);
+        insert into program_enrollment (id, program_id, student_id, status, completion_date, plan_id)
+        overriding system value values
+            (9001, 9001, 9001, 'COMPLETED', '2025-08-01 10:00:00', 9001),
+            (9002, 9001, 9002, 'COMPLETED', '2025-08-01 10:00:00', 9001);
+    end if;
+end $$;
 
 insert into graduation_request (id, program_enrollment_id, status, requested_at, decided_by_id, decided_at)
 overriding system value values

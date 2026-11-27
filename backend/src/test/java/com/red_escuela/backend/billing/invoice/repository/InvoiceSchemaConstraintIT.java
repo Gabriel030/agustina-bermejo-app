@@ -245,8 +245,7 @@ class InvoiceSchemaConstraintIT extends AbstractIntegrationTest {
         long studentId = newPersistedStudent();
         Long personId = jdbc.queryForObject("select person_id from student where id = ?", Long.class, studentId);
         Long programId = jdbc.queryForObject("insert into program (name, currency) values (?, 'ARS') returning id", Long.class, "Schema " + System.nanoTime());
-        Long enrollmentId = jdbc.queryForObject("insert into program_enrollment (student_id, program_id, status, enrollment_date) values (?, ?, 'ENROLLED', now()) returning id",
-                Long.class, studentId, programId);
+        Long enrollmentId = com.red_escuela.backend.testsupport.JdbcCurriculumPlans.enrollmentOf(jdbc, studentId, programId);
         return jdbc.queryForObject("""
                 insert into student_discount (program_enrollment_id, student_id, currency, discount_type, applicable_invoice_type, origin, calculation, priority, from_period,
                     to_period, status, granted_at, granted_by_id, reason)

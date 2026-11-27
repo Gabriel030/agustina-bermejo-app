@@ -45,6 +45,7 @@ describe('NuevaCohortDialog', () => {
         return HttpResponse.json(
           {
             id: 1,
+            planId: 21,
             intake: 'FIRST',
             admissionStart: '2027-02-01',
             admissionEnd: '2027-03-01',

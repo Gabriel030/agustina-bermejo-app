@@ -1,8 +1,10 @@
 package com.red_escuela.backend.demo;
 
 import org.springframework.context.annotation.Profile;
+import tools.jackson.databind.JsonNode;
 import org.springframework.stereotype.Component;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -15,6 +17,7 @@ public class DemoEnrollmentSeedStep implements DemoSeedStep {
     private static final int COURSE_STUDENT_INTERVAL = 4;
 
     private final DemoSeedSession session;
+    private final Map<Long, Long> cohortIdsByProgramId = new HashMap<>();
 
     public DemoEnrollmentSeedStep(DemoSeedSession session) {
         this.session = session;
@@ -54,12 +57,31 @@ public class DemoEnrollmentSeedStep implements DemoSeedStep {
     private void enrollInProgram(long studentId, DemoCatalog.ProgramSpec program) {
         long programId = session.programIdsByName().get(program.name());
         long programEnrollmentId = session.api().post(DemoPersona.ADMIN, "/students/" + studentId + "/program-enrollments",
-                Map.of("programId", programId)).get("id").asLong();
+                Map.of("programId", programId, "cohortId", findOrCreateCohort(programId))).get("id").asLong();
         List<Long> sectionIds = session.firstYearSectionIdsByProgram().get(program.name());
         for (Long sectionId : sectionIds.subList(0, Math.min(SECTIONS_PER_STUDENT, sectionIds.size()))) {
             session.api().post(DemoPersona.ADMIN, "/program-enrollments/" + programEnrollmentId + "/section-enrollments",
                     Map.of("sectionId", sectionId));
         }
+    }
+
+    private long findOrCreateCohort(long programId) {
+        return cohortIdsByProgramId.computeIfAbsent(programId, id -> {
+            long termId = findAnnualTermId(2026);
+            long templateId = session.api().post(DemoPersona.DIRECTOR, "/programs/" + id + "/year-billing-templates",
+                    Map.of("termId", termId)).get("id").asLong();
+            return session.api().post(DemoPersona.ADMIN, "/year-billing-templates/" + templateId + "/cohorts",
+                    Map.of("intake", "FIRST", "admissionStart", "2020-01-01", "admissionEnd", "2099-12-31", "cursadaStart", "2026-03-01")).get("id").asLong();
+        });
+    }
+
+    private long findAnnualTermId(int year) {
+        for (JsonNode term : session.api().get(DemoPersona.ADMIN, "/terms")) {
+            if (term.path("year").asInt() == year && "ANNUAL".equals(term.path("type").asString(""))) {
+                return term.get("id").asLong();
+            }
+        }
+        throw new IllegalStateException("No existe el ciclo lectivo " + year);
     }
 
     private void enrollInCourse(long studentId, DemoCatalog.CourseSpec course) {

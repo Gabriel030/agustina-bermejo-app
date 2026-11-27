@@ -89,7 +89,7 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
         List<Long> sectionIds = createSectionsWithLeadTeacher(api, subjectIds, cycleId, schemeId, instructorId);
         approveCycle(api, cycleId);
         long regularStudentId = findStudentId(api, REGULAR_STUDENT);
-        enrollRegularStudent(api, regularStudentId, programId, sectionIds);
+        enrollRegularStudent(api, regularStudentId, programId, termId, sectionIds);
         limitAbsencesOfSection(sectionIds.get(1));
         enrollGraduatingStudent(api, termId, schemeId, instructorId);
         seedLooseCourse(api, termId, schemeId, instructorId);
@@ -221,8 +221,15 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
         throw new IllegalStateException("No existe el alumno " + username);
     }
 
-    private void enrollRegularStudent(DemoApiClient api, long studentId, long programId, List<Long> sectionIds) {
-        long programEnrollmentId = api.post(ADMIN, "/students/" + studentId + "/program-enrollments", Map.of("programId", programId)).get("id").asLong();
+    private long createOpenCohort(DemoApiClient api, long programId, long termId) {
+        long templateId = api.post(DIRECTOR, "/programs/" + programId + "/year-billing-templates", Map.of("termId", termId)).get("id").asLong();
+        return api.post(ADMIN, "/year-billing-templates/" + templateId + "/cohorts",
+                Map.of("intake", "FIRST", "admissionStart", "2020-01-01", "admissionEnd", "2099-12-31", "cursadaStart", "2026-03-01")).get("id").asLong();
+    }
+
+    private void enrollRegularStudent(DemoApiClient api, long studentId, long programId, long termId, List<Long> sectionIds) {
+        long programEnrollmentId = api.post(ADMIN, "/students/" + studentId + "/program-enrollments",
+                Map.of("programId", programId, "cohortId", createOpenCohort(api, programId, termId))).get("id").asLong();
         List<Long> sectionEnrollmentIds = new ArrayList<>();
         for (Long sectionId : sectionIds.subList(0, 2)) {
             sectionEnrollmentIds.add(api.post(ADMIN, "/program-enrollments/" + programEnrollmentId + "/section-enrollments", Map.of("sectionId", sectionId)).get("id").asLong());
@@ -245,7 +252,8 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
         long sectionId = createSectionWithLeadTeacher(api, subjectId, cycleId, schemeId, instructorId, "Comisión A");
         approveCycle(api, cycleId);
         long studentId = findStudentId(api, GRADUATING_STUDENT);
-        long programEnrollmentId = api.post(ADMIN, "/students/" + studentId + "/program-enrollments", Map.of("programId", programId)).get("id").asLong();
+        long programEnrollmentId = api.post(ADMIN, "/students/" + studentId + "/program-enrollments",
+                Map.of("programId", programId, "cohortId", createOpenCohort(api, programId, termId))).get("id").asLong();
         long sectionEnrollmentId = api.post(ADMIN, "/program-enrollments/" + programEnrollmentId + "/section-enrollments", Map.of("sectionId", sectionId)).get("id").asLong();
         FinalExamBoard board = new FinalExamBoard("subjectId", subjectId, "programSectionEnrollmentId", sectionEnrollmentId, termId, instructorId);
         loadApprovingGrades(api, "/section-enrollments/" + sectionEnrollmentId + "/grade-items", "/program-sections/" + sectionId + "/grade-items/publish", board);

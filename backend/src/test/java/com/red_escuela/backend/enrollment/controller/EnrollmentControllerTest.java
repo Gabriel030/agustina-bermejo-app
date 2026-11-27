@@ -348,9 +348,11 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         Institution institution = persistInstitution();
         Student student = persistStudent("50000002", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
         Program program = persistProgram("Tecnicatura2", 100);
+        java.time.LocalDate today = java.time.LocalDate.now();
+        ProgramCohort cohort = persistProgramCohort(program, today.minusDays(10), today.plusDays(10));
         entityManager.flush();
         String token = tokenWithRole("preceptor-insc2", "PRECEPTOR");
-        CreateProgramEnrollmentRequest request = new CreateProgramEnrollmentRequest(program.getId());
+        CreateProgramEnrollmentRequest request = new CreateProgramEnrollmentRequest(program.getId(), cohort.getId());
 
         mockMvc.perform(post("/students/{id}/program-enrollments", student.getId())
                         .contentType(MediaType.APPLICATION_JSON)

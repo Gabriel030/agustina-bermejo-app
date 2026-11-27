@@ -22,7 +22,7 @@ public class CurriculumPlanEnrollmentActivityLookup implements CurriculumPlanEnr
     }
 
     @Override
-    public boolean hasEnrolledStudentsInProgram(Long programId) {
-        return programEnrollmentRepository.existsByProgramIdAndStatusIn(programId, STATUSES_BOUND_TO_PLAN);
+    public boolean hasEnrolledStudentsInPlan(Long planId) {
+        return programEnrollmentRepository.existsByPlanIdAndStatusIn(planId, STATUSES_BOUND_TO_PLAN);
     }
 }

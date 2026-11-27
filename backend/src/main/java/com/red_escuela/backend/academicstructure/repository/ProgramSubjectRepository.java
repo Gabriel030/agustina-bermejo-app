@@ -39,6 +39,15 @@ public interface ProgramSubjectRepository extends JpaRepository<ProgramSubject, 
     @Query("select ps from ProgramSubject ps where ps.status = :status and ps.plan.id = " + CURRENT_PLAN_ID_OF_PROGRAM + " order by ps.id")
     List<ProgramSubject> findByProgramIdAndStatus(@Param("programId") Long programId, @Param("status") StatusType status);
 
+    @EntityGraph(attributePaths = "subject")
+    @Query("""
+            select ps from ProgramSubject ps
+            where ps.plan.id = :planId
+            and (ps.status is null or ps.status = com.red_escuela.backend.shared.domain.StatusType.ACTIVE)
+            order by ps.id
+            """)
+    List<ProgramSubject> findActiveByPlanId(@Param("planId") Long planId);
+
     @Query("select ps from ProgramSubject ps where ps.subject.id = :subjectId and ps.plan.id = " + CURRENT_PLAN_ID_OF_PROGRAM)
     Optional<ProgramSubject> findByProgramIdAndSubjectId(@Param("programId") Long programId, @Param("subjectId") Long subjectId);
 

@@ -430,12 +430,20 @@ class EnrollmentWithdrawalIT extends AbstractCreditNoteIT {
         StudentWithAccount student = newStudentWithAccount();
         Long programId = jdbc.queryForObject("insert into program (name, status, total_years, currency) values (?, 'ACTIVE', 1, 'ARS') returning id", Long.class,
                 "Race " + System.nanoTime());
+        Long planId = jdbc.queryForObject("insert into curriculum_plan (program_id, version_number, name, status, valid_from, total_credits_required) "
+                + "values (?, 1, 'Race plan', 'ACTIVE', current_date, 0) returning id", Long.class, programId);
+        Long termId = jdbc.queryForObject("insert into term (year_number, status, start_date, end_date, enrollment_start, enrollment_end) "
+                + "values (2027, 'ACTIVE', timestamp '2027-03-01 00:00:00', timestamp '2027-12-15 00:00:00', timestamp '2000-01-01 00:00:00', timestamp '2999-12-31 00:00:00') returning id", Long.class);
+        Long cohortId = jdbc.queryForObject("insert into program_cohort (program_id, term_id, plan_id, intake, admission_start, admission_end, cursada_start, "
+                + "created_by_id, created_at) "
+                + "values (?, ?, ?, 'FIRST', date '2027-01-01', date '2027-02-01', date '2027-03-01', (select min(id) from person), now()) returning id",
+                Long.class, programId, termId, planId);
         Staff administrative = newStaff("ADMINISTRATIVO");
         CountDownLatch enrollmentInserted = new CountDownLatch(1);
         CountDownLatch releaseEnrollment = new CountDownLatch(1);
         ExecutorService pool = Executors.newFixedThreadPool(2);
         Future<Object> enrolling = pool.submit(() -> transactionTemplate.execute(status -> {
-            programEnrollmentService.enrollAfterAdmissionPayment(student.studentId(), new CreateProgramEnrollmentRequest(programId, null));
+            programEnrollmentService.enrollAfterAdmissionPayment(student.studentId(), new CreateProgramEnrollmentRequest(programId, cohortId));
             enrollmentInserted.countDown();
             awaitQuietly(releaseEnrollment);
             return null;

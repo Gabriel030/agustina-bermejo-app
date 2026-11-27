@@ -89,6 +89,10 @@ final class HistoricalDatasetCsv {
         return TERM_HEADER + year + ",FIRST_SEMESTER,Primer cuatrimestre," + year + "-03-15,15/07/" + year + "," + program() + "\n";
     }
 
+    String termsWithAnnualCycle() {
+        return terms() + year + ",ANNUAL,Año lectivo," + year + "-03-01,15/12/" + year + "," + program() + "\n";
+    }
+
     String sections() {
         StringBuilder csv = new StringBuilder(SECTION_HEADER);
         for (int i = 0; i < sectionCount; i++) {
@@ -102,7 +106,7 @@ final class HistoricalDatasetCsv {
     String programEnrollments() {
         StringBuilder csv = new StringBuilder(PROGRAM_ENROLLMENT_HEADER);
         for (int i = 0; i < studentCount; i++) {
-            csv.append("DNI,").append(studentDni(i)).append(',').append(program()).append(',').append(year).append("-03-01,ENROLLED,,,,\n");
+            csv.append("DNI,").append(studentDni(i)).append(',').append(program()).append(',').append(year).append("-03-01,ENROLLED,,,").append(year).append(",FIRST\n");
         }
         return csv.toString();
     }
