@@ -737,6 +737,10 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         Person preceptor = persistPersonBase("80000047");
         SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(preceptor.getId().toString(), null));
         entityManager.flush();
+        entityManager.createNativeQuery("insert into preceptor_assignment (person_id, subject_section_id, created_by) values (?1, ?2, ?1)")
+                .setParameter(1, preceptor.getId())
+                .setParameter(2, attendance.getProgramSubjectSectionEnrollment().getSubjectSection().getId())
+                .executeUpdate();
 
         assertThatThrownBy(() -> approveAttendanceChangeRequestUseCase.approve(pending.getId()))
                 .isInstanceOf(AttendanceStatusNotRecordableException.class);

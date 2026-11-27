@@ -12,6 +12,8 @@ create table preceptor_assignment (
 create unique index preceptor_assignment_person_subject_section_uq on preceptor_assignment (person_id, subject_section_id) where subject_section_id is not null;
 create unique index preceptor_assignment_person_course_section_uq on preceptor_assignment (person_id, course_section_id) where course_section_id is not null;
 create unique index preceptor_assignment_person_program_cohort_uq on preceptor_assignment (person_id, program_cohort_id) where program_cohort_id is not null;
+create index preceptor_assignment_person_idx on preceptor_assignment (person_id);
+create index preceptor_assignment_created_by_idx on preceptor_assignment (created_by);
 create index preceptor_assignment_subject_section_idx on preceptor_assignment (subject_section_id) where subject_section_id is not null;
 create index preceptor_assignment_course_section_idx on preceptor_assignment (course_section_id) where course_section_id is not null;
 create index preceptor_assignment_program_cohort_idx on preceptor_assignment (program_cohort_id) where program_cohort_id is not null;
