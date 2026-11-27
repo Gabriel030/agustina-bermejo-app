@@ -567,8 +567,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaSinCantidadDeTp");
         Term term = persistTerm(LocalDateTime.now().plusDays(30), LocalDateTime.now().plusMonths(4));
         entityManager.flush();
-        SubjectSection section = subjectSectionService.create(subject.getId(),
-                new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
+        SubjectSection section = sectionFactory.create(subject, term, "Comisión A", 30, null);
         Instructor leadInstructor = persistInstructor("90000031");
         assignInstructor(section, leadInstructor, InstructorRole.LEAD);
         Person actor = persistPersonWithRole("90000032", "DIRECTOR");
