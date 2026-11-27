@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
+import com.red_escuela.backend.academicstructure.entity.CurriculumPlan;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentRequiredException;
 
@@ -41,6 +42,10 @@ public class ProgramEnrollment implements BillableEnrollment {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "program_id", nullable = false)
     private Program program;
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "plan_id", nullable = false)
+    private CurriculumPlan plan;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "program_cohort_id")

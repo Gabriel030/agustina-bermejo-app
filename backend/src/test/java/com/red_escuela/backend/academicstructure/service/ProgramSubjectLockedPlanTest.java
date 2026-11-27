@@ -56,7 +56,7 @@ class ProgramSubjectLockedPlanTest {
         curriculumPlanRepository = Mockito.mock(CurriculumPlanRepository.class);
         enrollmentActivityPort = Mockito.mock(CurriculumPlanEnrollmentActivityPort.class);
         program = Program.builder().id(1L).name("Enfermería").totalYears(3).build();
-        when(enrollmentActivityPort.hasEnrolledStudentsInProgram(1L)).thenReturn(true);
+        when(enrollmentActivityPort.hasEnrolledStudentsInPlan(5L)).thenReturn(true);
         service = new ProgramSubjectService(programSubjectRepository, Mockito.mock(ProgramRepository.class),
                 Mockito.mock(SubjectRepository.class), Mockito.mock(ElectiveGroupRepository.class),
                 Mockito.mock(ProgramElectiveGroupRepository.class), prerequisiteRepository, corequisiteRepository,
@@ -109,7 +109,7 @@ class ProgramSubjectLockedPlanTest {
 
     @Test
     void editingCreditsOfActivePlanWithoutStudentsIsAllowed() {
-        when(enrollmentActivityPort.hasEnrolledStudentsInProgram(1L)).thenReturn(false);
+        when(enrollmentActivityPort.hasEnrolledStudentsInPlan(5L)).thenReturn(false);
         ProgramSubject entry = entry(10L, plan(5L, CurriculumPlanStatus.ACTIVE));
         when(programSubjectRepository.save(entry)).thenReturn(entry);
 

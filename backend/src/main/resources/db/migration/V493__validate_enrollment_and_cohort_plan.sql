@@ -1,0 +1,2 @@
+alter table program_cohort validate constraint program_cohort_plan_required;
+alter table program_enrollment validate constraint program_enrollment_plan_required;

@@ -354,6 +354,7 @@ POST,/program-enrollments/{id}/enrollment-fee-exemptions,DENY,DENY,DENY,DENY,ALL
 GET,/program-enrollments/{id}/enrollment-fee-status,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/program-enrollments/{id}/equivalences,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/program-enrollments/{id}/equivalences,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+POST,/program-enrollments/{id}/plan-change,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/program-enrollments/{id}/equivalences/{equivalenceId}/void,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/program-enrollments/{id}/graduation-requests,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/program-enrollments/{id}/invoices,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,

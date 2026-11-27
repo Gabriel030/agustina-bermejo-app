@@ -60,6 +60,8 @@ public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnroll
 
     boolean existsByProgramIdAndStatusIn(Long programId, Collection<ProgramEnrollmentStatus> statuses);
 
+    boolean existsByPlanIdAndStatusIn(Long planId, Collection<ProgramEnrollmentStatus> statuses);
+
     boolean existsByStudentIdAndStatusIn(Long studentId, Collection<ProgramEnrollmentStatus> statuses);
 
     List<ProgramEnrollment> findByStudentId(Long studentId);

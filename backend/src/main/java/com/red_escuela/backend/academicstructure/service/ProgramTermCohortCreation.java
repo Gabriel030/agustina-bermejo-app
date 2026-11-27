@@ -1,6 +1,7 @@
 package com.red_escuela.backend.academicstructure.service;
 
 import com.red_escuela.backend.academicstructure.api.AcademicReferenceFinder;
+import com.red_escuela.backend.academicstructure.api.ProgramCohortRecorder;
 import com.red_escuela.backend.academicstructure.dto.CreateProgramTermCohortRequest;
 import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.academicstructure.exception.ProgramCohortAlreadyExistsException;
@@ -16,13 +17,16 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProgramTermCohortCreation {
 
     private final ProgramCohortRepository cohortRepository;
+    private final ProgramCohortRecorder cohortRecorder;
     private final AcademicReferenceFinder referenceFinder;
     private final CurrentPersonService currentPersonService;
     private final CurrentBillingModePort billingMode;
 
-    public ProgramTermCohortCreation(ProgramCohortRepository cohortRepository, AcademicReferenceFinder referenceFinder,
+    public ProgramTermCohortCreation(ProgramCohortRepository cohortRepository, ProgramCohortRecorder cohortRecorder,
+                                     AcademicReferenceFinder referenceFinder,
                                      CurrentPersonService currentPersonService, CurrentBillingModePort billingMode) {
         this.cohortRepository = cohortRepository;
+        this.cohortRecorder = cohortRecorder;
         this.referenceFinder = referenceFinder;
         this.currentPersonService = currentPersonService;
         this.billingMode = billingMode;
@@ -46,6 +50,6 @@ public class ProgramTermCohortCreation {
         cohort.setAdmissionEnd(request.admissionEnd());
         cohort.setCursadaStart(request.cursadaStart());
         cohort.setCreatedBy(currentPersonService.resolveCurrentPerson());
-        return cohortRepository.save(cohort);
+        return cohortRecorder.save(cohort);
     }
 }

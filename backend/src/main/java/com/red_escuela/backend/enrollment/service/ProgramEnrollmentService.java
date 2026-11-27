@@ -12,6 +12,8 @@ import com.red_escuela.backend.enrollment.dto.ProgramProgressResponse;
 import com.red_escuela.backend.enrollment.dto.SubjectAttendanceSummaryResponse;
 import com.red_escuela.backend.academicstructure.api.AcademicReferenceFinder;
 import com.red_escuela.backend.academicstructure.api.ProgramSubjectView;
+import com.red_escuela.backend.academicstructure.api.CurriculumPlanEnrollmentLock;
+import com.red_escuela.backend.academicstructure.entity.CurriculumPlan;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort;
 import com.red_escuela.backend.enrollment.api.ProgramProgressReader;
@@ -25,6 +27,7 @@ import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.enrollment.exception.CohortAdmissionWindowClosedException;
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInProgramException;
 import com.red_escuela.backend.enrollment.exception.CannotWithdrawException;
+import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentCohortRequiredException;
 import com.red_escuela.backend.enrollment.api.InvalidWindowConfigurationException;
 import com.red_escuela.backend.academicstructure.api.ProgramCohortFinder;
 import com.red_escuela.backend.enrollment.api.ProgramEnrollmentNotFoundException;
@@ -63,6 +66,7 @@ public class ProgramEnrollmentService {
     private final EnrollmentWithdrawalBillingPort withdrawalBillingPort;
     private final ProgramApplicationDocumentCompletenessGuard documentCompletenessGuard;
     private final ProgramEnrollmentSectionWithdrawer sectionWithdrawer;
+    private final CurriculumPlanEnrollmentLock curriculumPlanEnrollmentLock;
     private final Clock clock;
 
     public ProgramEnrollmentService(ProgramEnrollmentRepository programEnrollmentRepository,
@@ -79,6 +83,7 @@ public class ProgramEnrollmentService {
             EnrollmentWithdrawalBillingPort withdrawalBillingPort,
             ProgramApplicationDocumentCompletenessGuard documentCompletenessGuard,
             ProgramEnrollmentSectionWithdrawer sectionWithdrawer,
+            CurriculumPlanEnrollmentLock curriculumPlanEnrollmentLock,
             Clock clock) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.studentFinder = studentFinder;
@@ -94,6 +99,7 @@ public class ProgramEnrollmentService {
         this.withdrawalBillingPort = withdrawalBillingPort;
         this.documentCompletenessGuard = documentCompletenessGuard;
         this.sectionWithdrawer = sectionWithdrawer;
+        this.curriculumPlanEnrollmentLock = curriculumPlanEnrollmentLock;
         this.clock = clock;
     }
 
@@ -117,6 +123,9 @@ public class ProgramEnrollmentService {
 
     private ProgramEnrollment createEnrollment(Long studentId, CreateProgramEnrollmentRequest request, boolean validateAdmissionWindow,
                                                boolean validateEligibility, ProgramEnrollmentApplication admissionApplication) {
+        if (request.cohortId() == null) {
+            throw new ProgramEnrollmentCohortRequiredException(request.programId());
+        }
         Student student = studentFinder.requireByIdForUpdate(studentId);
         if (validateEligibility) {
             studentEnrollmentEligibility.requireConfirmedAndActive(student);
@@ -124,13 +133,11 @@ public class ProgramEnrollmentService {
 
         Program program = academicReferenceFinder.findProgram(request.programId());
 
-        ProgramCohort cohort = null;
-        if (request.cohortId() != null) {
-            cohort = programCohortFinder.findOrThrow(request.cohortId());
-            if (validateAdmissionWindow) {
-                validateAdmissionWindow(cohort);
-            }
+        ProgramCohort cohort = programCohortFinder.findOrThrow(request.cohortId());
+        if (validateAdmissionWindow) {
+            validateAdmissionWindow(cohort);
         }
+        CurriculumPlan plan = curriculumPlanEnrollmentLock.lockOpenForNewStudents(cohort.getPlan().getId());
 
         LocalDateTime now = LocalDateTime.now(clock);
         List<ProgramEnrollment> activas = programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusIn(
@@ -143,6 +150,7 @@ public class ProgramEnrollmentService {
         enrollment.setStudent(student);
         enrollment.setProgram(program);
         enrollment.setProgramCohort(cohort);
+        enrollment.setPlan(plan);
         enrollment.setAdmissionApplication(admissionApplication);
         enrollment.setStatus(ProgramEnrollmentStatus.ENROLLED);
         enrollment.setEnrollmentDate(now);
