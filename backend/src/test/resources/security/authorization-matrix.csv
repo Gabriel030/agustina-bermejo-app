@@ -154,6 +154,7 @@ POST,/exam-board-registrations/{id}/withdraw,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DE
 GET,/exam-boards,DENY,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/exam-boards,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
 GET,/exam-boards/{id},DENY,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,exam-board-tribunal,
+GET,/exam-boards/{id}/acta,DENY,DENY,OWNER,ALLOW,ALLOW,ALLOW,ALLOW,DENY,exam-board-tribunal,
 POST,/exam-boards/{id}/cancel,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,"{""reason"":""Motivo suficiente""}"
 POST,/exam-boards/{id}/close,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
 PUT,/exam-boards/{id}/final-grades,DENY,DENY,OWNER,DENY,DENY,DENY,DENY,DENY,exam-board-tribunal,"{""items"":[{""registrationId"":1,""absent"":true}]}"
