@@ -4,18 +4,40 @@
       "mcp__claude-code-remote__get_session",
       "mcp__claude-code-remote__list_sessions",
       "mcp__claude-code-remote__add_repo",
+      "mcp__claude-code-remote__archive_session",
+      "mcp__claude-code-remote__create_trigger",
+      "mcp__claude-code-remote__create_session",
+      "mcp__claude-code-remote__send_message",
       "Bash(git commit:*)",
+      "Bash(git add:*)",
+      "Bash(git fetch:*)",
+      "Bash(git checkout:*)",
+      "Bash(git switch:*)",
+      "Bash(git cherry-pick:*)",
+      "Bash(git rebase origin/develop*)",
+      "Bash(git merge origin/develop*)",
+      "Bash(git push -u origin *)",
       "Bash(git push origin feature/*)",
       "Bash(git push origin fix/*)",
-      "Bash(git push origin contract/*)",
-      "Bash(git push origin docs/*)",
-      "Bash(gh pr merge * --squash --auto)",
-      "Bash(gh pr merge * --auto --squash)",
       "Bash(git push origin feat/*)",
       "Bash(git push origin refactor/*)",
+      "Bash(git push origin contract/*)",
+      "Bash(git push origin docs/*)",
       "Bash(git push origin perf/*)",
       "Bash(git push origin chore/*)",
-      "Bash(git merge origin/develop)"
+      "Bash(git push origin HEAD:feature/*)",
+      "Bash(git push origin HEAD:fix/*)",
+      "Bash(git push origin HEAD:feat/*)",
+      "Bash(git push origin HEAD:refactor/*)",
+      "Bash(git push origin HEAD:contract/*)",
+      "Bash(git push origin HEAD:docs/*)",
+      "Bash(git push origin HEAD:chore/*)",
+      "Bash(git push origin HEAD:perf/*)",
+      "Bash(gh pr merge * --squash --auto)",
+      "Bash(gh pr merge * --auto --squash)",
+      "Bash(gh api -X PUT repos/Gabriel030/agustina-bermejo-app/pulls/*/merge*)",
+      "Bash(scripts/next-migration.sh*)",
+      "Bash(bash scripts/next-migration.sh*)"
     ],
     "deny": [
       "Bash(git push --force*)",
@@ -40,28 +62,6 @@
             "statusMessage": "Validando CI local antes de abrir el PR...",
             "timeout": 300,
             "command": "input=$(cat); command=$(echo \"$input\" | jq -r '.tool_input.command // empty'); echo \"$command\" | grep -qE 'gh pr create|git push' || exit 0; (cd frontend && npm run lint 2>&1); lint_exit=$?; (cd backend && ./mvnw compile -q 2>&1); compile_exit=$?; if [ $lint_exit -ne 0 ] || [ $compile_exit -ne 0 ]; then echo '{\"continue\":false,\"stopReason\":\"CI local fallido — corregí errores de lint o compile antes de pushear.\"}'; exit 1; fi"
-          }
-        ]
-      }
-    ],
-    "SessionStart": [
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "timeout": 60,
-            "statusMessage": "Preparando entorno de la sesión...",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/cloud-session-bootstrap.sh\" || true"
-          }
-        ]
-      },
-      {
-        "hooks": [
-          {
-            "type": "command",
-            "timeout": 60,
-            "statusMessage": "Actualizando índice de código...",
-            "command": "bash \"$CLAUDE_PROJECT_DIR/scripts/update-code-index.sh\" || true"
           }
         ]
       }
