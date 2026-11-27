@@ -704,6 +704,66 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
         assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.APPROVED);
     }
 
+    private SubjectSectionEnrollment regularFinalEnrollment(String studentDni, Instructor instructor, String suffix) {
+        Student student = persistStudent(studentDni, persistInstitution());
+        SubjectSection section = persistSection(persistSubject("MateriaFinalEvento" + suffix), persistTerm(), persistScheme(0, 0, true));
+        assignInstructor(section, instructor);
+        SubjectSectionEnrollment enrollment = persistEnrollment(
+                student, persistProgramEnrollment(student, persistProgram("CarreraFinalEvento" + suffix)), section);
+        enrollment.setStatus(EnrollmentStatus.REGULAR);
+        entityManager.flush();
+        return enrollment;
+    }
+
+    private GradeItem resaveFinal(GradeItem saved, SubjectSectionEnrollment enrollment, Instructor instructor, double score, String reason) {
+        return gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
+                new CreateGradeItemRequest(GradeItemType.FINAL, saved.getSequenceNumber(), null, LocalDateTime.now(),
+                        BigDecimal.valueOf(score), null, saved.getExamBoard().getId(), reason));
+    }
+
+    @Test
+    void savingAFinalGradePublishesItOnceForTheStudent() {
+        Instructor instructor = persistInstructor("71000602");
+        SubjectSectionEnrollment enrollment = regularFinalEnrollment("71000601", instructor, "A");
+
+        loadFinalThroughBoard(enrollment, instructor, 1, 7.0);
+
+        var events = applicationEvents.stream(GradesPublishedEvent.class).toList();
+        assertThat(events).hasSize(1);
+        assertThat(events.get(0).sectionId()).isEqualTo(enrollment.getSubjectSection().getId());
+        assertThat(events.get(0).gradeTypeLabel()).isEqualTo(GradeItemType.FINAL.displayName());
+        assertThat(events.get(0).studentPersonIds()).containsExactly(enrollment.getStudent().getPerson().getId());
+        assertThat(applicationEvents.stream(GradeCorrectedEvent.class)).isEmpty();
+    }
+
+    @Test
+    void resavingAFinalGradeWithoutChangeEmitsNothingMore() {
+        Instructor instructor = persistInstructor("71000604");
+        SubjectSectionEnrollment enrollment = regularFinalEnrollment("71000603", instructor, "B");
+        GradeItem saved = loadFinalThroughBoard(enrollment, instructor, 1, 7.0);
+
+        resaveFinal(saved, enrollment, instructor, 7.0, null);
+
+        assertThat(applicationEvents.stream(GradesPublishedEvent.class)).hasSize(1);
+        assertThat(applicationEvents.stream(GradeCorrectedEvent.class)).isEmpty();
+    }
+
+    @Test
+    void correctingASavedFinalGradeNotifiesTheChangeWithItsReason() {
+        Instructor instructor = persistInstructor("71000606");
+        SubjectSectionEnrollment enrollment = regularFinalEnrollment("71000605", instructor, "C");
+        GradeItem saved = loadFinalThroughBoard(enrollment, instructor, 1, 7.0);
+
+        resaveFinal(saved, enrollment, instructor, 8.0, "Error de carga en el acta");
+
+        assertThat(applicationEvents.stream(GradesPublishedEvent.class)).hasSize(1);
+        var corrections = applicationEvents.stream(GradeCorrectedEvent.class).toList();
+        assertThat(corrections).hasSize(1);
+        assertThat(corrections.get(0).reason()).isEqualTo("Error de carga en el acta");
+        assertThat(corrections.get(0).studentPersonId()).isEqualTo(enrollment.getStudent().getPerson().getId());
+        assertThat(corrections.get(0).gradeItemId()).isEqualTo(saved.getId());
+    }
+
     @Test
     void bothExamsAbovePromotionGradePromotesWithoutFinal() {
         Institution institution = persistInstitution();

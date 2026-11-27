@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useActiveRole } from '@/hooks/useActiveRole';
+import { hasRealScreen } from '@/routes/menuAccess';
 import { useNavigate } from 'react-router-dom';
 import { useForm, useWatch } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -93,6 +94,8 @@ const CAMPOS_POR_PASO = {
   2: ['dni', 'street', 'city', 'birthDate', 'nationality'],
   [GUARDIANS_STEP]: GUARDIAN_FIELDS,
 };
+
+const ENROLL_STUDENT_SLUG = 'alumnos/:id/inscribir';
 
 const LAST_STEP = REGISTRATION_STEPS.length - 1;
 const REVIEW_STEP = LAST_STEP - 1;
@@ -259,6 +262,7 @@ function RegistrationWizard({ onRegisterAnother }) {
               missingDocuments={missingDocuments}
               onOpenRecord={() => navigate(`/${rolBase}/alumnos/${studentId}`)}
               onRegisterAnother={onRegisterAnother}
+              onEnrollNow={hasRealScreen(rolBase, ENROLL_STUDENT_SLUG) ? () => navigate(`/${rolBase}/alumnos/${studentId}/inscribir`) : undefined}
             />
           )}
         </form>
