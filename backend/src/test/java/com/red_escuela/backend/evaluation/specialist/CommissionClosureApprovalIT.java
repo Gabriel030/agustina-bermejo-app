@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.specialist;
 
+import com.red_escuela.backend.testsupport.ApprovedSectionConfigFixture;
 import com.red_escuela.backend.evaluation.api.ClosureReportNumberAllocator;
 import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.evaluation.domain.ClosureExportFormat;
@@ -168,6 +169,7 @@ class CommissionClosureApprovalIT extends AbstractIntegrationTest {
         section.setStatus(StatusType.ACTIVE);
         section.setEvaluationScheme(scheme);
         entityManager.persist(section);
+        ApprovedSectionConfigFixture.persistWhenSchemeExpectsCoursework(entityManager, section);
         Person teacherPerson = persistPerson();
         teacherPersonId = teacherPerson.getId();
         Instructor teacher = persistInstructor(teacherPerson);

@@ -7,7 +7,6 @@ import com.red_escuela.backend.config.TestSubjectCodes;
 import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.academicstructure.dto.AssignInstructorRequest;
-import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
@@ -64,6 +63,9 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     private JwtService jwtService;
 
     @Autowired
+    private com.red_escuela.backend.testsupport.ActiveProgramSectionTestFactory sectionFactory;
+
+    @Autowired
     private SubjectSectionRepository subjectSectionRepository;
 
     private String tokenWithRole(String username, String roleName) {
@@ -104,63 +106,23 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void creatingSectionOverASubjectSharedByTwoProgramsEndsUpAsOneSingleRow() throws Exception {
+    void creatingSectionThroughTheRemovedSubjectEndpointIsNotAllowed() throws Exception {
         Subject subject = new Subject();
         subject.setStatus(SubjectStatus.ACTIVE);
         subject.setCode(TestSubjectCodes.next());
-        subject.setName("Inglés Compartido");
+        subject.setName("Inglés sin alta directa");
         entityManager.persist(subject);
-
-        Program carreraA = new Program();
-        carreraA.setName("Tecnicatura Compartida A");
-        carreraA.setTotalYears(3);
-        entityManager.persist(carreraA);
-
-        Program carreraB = new Program();
-        carreraB.setName("Tecnicatura Compartida B");
-        carreraB.setTotalYears(3);
-        entityManager.persist(carreraB);
-
-        ProgramSubject entradaA = new ProgramSubject();
-        entradaA.setProgram(carreraA);
-        entradaA.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(carreraA));
-        entradaA.setSubject(subject);
-        entradaA.setCurricularYear(1);
-        entradaA.setCurricularTerm(CurricularTerm.FIRST);
-        entradaA.setCredits(5);
-        entityManager.persist(entradaA);
-
-        ProgramSubject entradaB = new ProgramSubject();
-        entradaB.setProgram(carreraB);
-        entradaB.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(carreraB));
-        entradaB.setSubject(subject);
-        entradaB.setCurricularYear(2);
-        entradaB.setCurricularTerm(CurricularTerm.SECOND);
-        entradaB.setCredits(3);
-        entityManager.persist(entradaB);
-
-        Term term = TermFixtures.newTerm();
-        term.setYear(2026);
-        term.setDescription("2026 1C");
-        term.setType(TermType.FIRST_SEMESTER);
-        term.setStartDate(LocalDateTime.now());
-        term.setEndDate(LocalDateTime.now().plusMonths(4));
-        entityManager.persist(term);
         entityManager.flush();
 
-        String token = tokenWithRole("preceptor-shared", "PRECEPTOR");
-        CreateSectionRequest request = new CreateSectionRequest("Comisión Única", term.getId(), "Lunes 18hs", 30, null);
+        String token = tokenWithRole("preceptor-alta-removida", "PRECEPTOR");
 
         mockMvc.perform(post("/subjects/{id}/sections", subject.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.subjectId").value(subject.getId()));
+                        .content("{\"name\":\"Comisión A\",\"termId\":1,\"capacity\":10}"))
+                .andExpect(status().isMethodNotAllowed());
 
-        List<SubjectSection> sections = subjectSectionRepository.findBySubjectId(subject.getId());
-        assertThat(sections).hasSize(1);
-        assertThat(sections.get(0).getSubject().getId()).isEqualTo(subject.getId());
+        assertThat(subjectSectionRepository.findBySubjectId(subject.getId())).isEmpty();
     }
 
     @Test
@@ -206,52 +168,6 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
                         .header("Authorization", "Bearer " + token)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict());
-    }
-
-    @Test
-    void creatingSectionWithoutPreceptorOrAdministrativeRoleReturns403() throws Exception {
-        Subject subject = new Subject();
-        subject.setStatus(SubjectStatus.ACTIVE);
-        subject.setCode(TestSubjectCodes.next());
-        subject.setName("Subject sin permiso");
-        entityManager.persist(subject);
-        entityManager.flush();
-
-        String token = tokenWithRole("alumno-sin-permiso", "ALUMNO");
-        CreateSectionRequest request = new CreateSectionRequest("Comisión A", 1L, null, 10, null);
-
-        mockMvc.perform(post("/subjects/{id}/sections", subject.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + token)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
-    void creatingSectionWithNonExistentEvaluationSchemeReturns404() throws Exception {
-        Subject subject = new Subject();
-        subject.setStatus(SubjectStatus.ACTIVE);
-        subject.setCode(TestSubjectCodes.next());
-        subject.setName("Subject con esquema inválido");
-        entityManager.persist(subject);
-
-        Term term = TermFixtures.newTerm();
-        term.setYear(2026);
-        term.setDescription("2026 term eval");
-        term.setType(TermType.FIRST_SEMESTER);
-        term.setStartDate(LocalDateTime.now());
-        term.setEndDate(LocalDateTime.now().plusMonths(4));
-        entityManager.persist(term);
-        entityManager.flush();
-
-        String token = tokenWithRole("preceptor-eval-invalido", "PRECEPTOR");
-        CreateSectionRequest request = new CreateSectionRequest("Comisión A", term.getId(), null, 10, 999999L);
-
-        mockMvc.perform(post("/subjects/{id}/sections", subject.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + token)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isNotFound());
     }
 
     @Test
@@ -343,14 +259,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         String token = tokenWithRole("preceptor-baja-comision", "PRECEPTOR");
-        CreateSectionRequest request = new CreateSectionRequest("Comisión Baja", term.getId(), null, 10, null);
-        String body = mockMvc.perform(post("/subjects/{id}/sections", subject.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + token)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(jsonPath("$.status").value("ACTIVE"))
-                .andReturn().getResponse().getContentAsString();
-        Long sectionId = objectMapper.readTree(body).get("id").asLong();
+        Long sectionId = sectionFactory.create(subject, term, "Comisión Baja", 10, null).getId();
 
         mockMvc.perform(post("/program-sections/{id}/deactivate", sectionId).header("Authorization", "Bearer " + token))
                 .andExpect(status().isNoContent());
@@ -430,13 +339,7 @@ class SubjectSectionControllerTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         String token = tokenWithRole("preceptor-editar-comision", "PRECEPTOR");
-        String body = mockMvc.perform(post("/subjects/{id}/sections", subject.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + token)
-                        .content(objectMapper.writeValueAsString(
-                                new CreateSectionRequest("Comisión Original", term.getId(), null, 10, null))))
-                .andReturn().getResponse().getContentAsString();
-        Long sectionId = objectMapper.readTree(body).get("id").asLong();
+        Long sectionId = sectionFactory.create(subject, term, "Comisión Original", 10, null).getId();
 
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
                         .put("/program-sections/{id}", sectionId)

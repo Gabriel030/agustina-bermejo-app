@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.specialist;
 
+import com.red_escuela.backend.testsupport.ApprovedSectionConfigFixture;
 import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistrationStatus;
@@ -255,6 +256,7 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
         section.setEvaluationScheme(scheme);
         section.setStatus(StatusType.ACTIVE);
         entityManager.persist(section);
+        ApprovedSectionConfigFixture.persistWhenSchemeExpectsCoursework(entityManager, section);
         return section;
     }
 
@@ -1035,7 +1037,7 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         assertThatThrownBy(() -> gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.TP, 3, null, LocalDateTime.now(), BigDecimal.valueOf(15.0), null, null, null)))
+                new CreateGradeItemRequest(GradeItemType.TP, 1, null, LocalDateTime.now(), BigDecimal.valueOf(15.0), null, null, null)))
                 .isInstanceOf(InvalidGradeException.class);
         assertThat(gradeItemService.listByProgramEnrollment(enrollment.getId())).isEmpty();
     }

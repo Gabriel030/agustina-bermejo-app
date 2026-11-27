@@ -20,10 +20,9 @@ class BillingCourseAdmissionInvoiceAdapterTest {
     private final CurrentBillingModePort billingMode = mock(CurrentBillingModePort.class);
     private final BillingCourseAdmissionInvoiceAdapter adapter = new BillingCourseAdmissionInvoiceAdapter(issuer, billingMode);
 
-    @ParameterizedTest
-    @EnumSource(value = BillingMode.class, names = {"OFF", "MIRROR"})
-    void returnsNeutralValueWhenBillingIsNotFull(BillingMode mode) {
-        when(billingMode.currentMode()).thenReturn(mode);
+    @Test
+    void returnsNeutralValueWhenBillingIsOff() {
+        when(billingMode.currentMode()).thenReturn(BillingMode.OFF);
 
         CourseAdmissionInvoiceView view = adapter.issueCourseAdmissionInvoice(1L, 2L);
         adapter.assignInvoiceToCourseEnrollment(3L, 4L);
@@ -33,9 +32,10 @@ class BillingCourseAdmissionInvoiceAdapterTest {
         verifyNoInteractions(issuer);
     }
 
-    @Test
-    void delegatesToTheIssuerWhenBillingIsFull() {
-        when(billingMode.currentMode()).thenReturn(BillingMode.FULL);
+    @ParameterizedTest
+    @EnumSource(value = BillingMode.class, names = {"MIRROR", "FULL"})
+    void delegatesToTheIssuerWhenBillingIsMirrorOrFull(BillingMode mode) {
+        when(billingMode.currentMode()).thenReturn(mode);
         CourseAdmissionInvoiceView issued = new CourseAdmissionInvoiceView(9L, true);
         when(issuer.issueCourseAdmissionInvoice(1L, 2L)).thenReturn(issued);
 

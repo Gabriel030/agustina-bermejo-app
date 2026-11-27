@@ -122,6 +122,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `FINAL_EXAM_REQUIRES_REGULAR_STUDENT` | no | `FinalExamRequiresRegularStudentException` | evaluation |
 | `FINAL_GRADE_REQUIRES_EXAM_BOARD` | no | `FinalGradeRequiresExamBoardException` | evaluation |
 | `GATEWAY_CURRENCY_NOT_SUPPORTED` | no | `GatewayCurrencyNotSupportedException` | billing |
+| `GRADE_ITEM_OUTSIDE_CONFIGURED_SLOTS` | no | `GradeItemOutsideConfiguredSlotsException` | evaluation |
 | `GRADE_ITEM_TYPE_NOT_PUBLISHABLE` | no | `GradeItemTypeNotPublishableException` | evaluation |
 | `GUARDIAN_REQUIRED_FOR_MINOR` | no | `GuardianRequiredForMinorException` | identity |
 | `IDEMPOTENCY_KEY_INVALID` | no | `IdempotencyKeyInvalidException` | billing |
@@ -549,6 +550,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `IMPORT_BATCH_STATE_INVALID` | no | `ImportBatchStateInvalidException` | dataimport |
 | `IMPORT_NOT_VALIDATED` | no | `ImportNotValidatedException` | dataimport |
 | `IMPORT_ROLLBACK_BLOCKED` | no | `ImportRollbackBlockedException` | dataimport |
+| `INCOMPLETE_SECTION_EVALUATION_CONFIG` | no | `IncompleteSectionEvaluationConfigException` | evaluation |
 | `INCOMPLETE_SECTION_SETUP` | no | `IncompleteSectionSetupException` | enrollment |
 | `INSTITUTE_SETTING_ALREADY_IN_REQUESTED_STATE` | no | `InstituteSettingAlreadyInRequestedStateException` | platform |
 | `INSTRUCTOR_ALREADY_ASSIGNED` | no | `InstructorAlreadyAssignedException` | academicstructure |
@@ -649,6 +651,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SECTION_FULL` | no | `SectionFullException` | enrollment |
 | `SECTION_HAS_ACTIVE_ENROLLMENTS` | no | `SectionHasActiveEnrollmentsException` | academicstructure |
 | `SECTION_HAS_RECORDS` | no | `SectionHasRecordsException` | enrollment |
+| `SECTION_LAST_INSTRUCTOR_REMOVAL` | no | `SectionLastInstructorRemovalException` | academicstructure |
 | `SECTION_MODIFICATION_ALREADY_PENDING` | no | `SectionModificationAlreadyPendingException` | academicstructure |
 | `SECTION_MODIFICATION_CYCLE_CLOSED` | no | `SectionModificationCycleClosedException` | academicstructure |
 | `SECTION_MODIFICATION_NOT_PENDING` | no | `SectionModificationNotPendingException` | academicstructure |
@@ -684,6 +687,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `TEMPLATE_NOTHING_TO_PUBLISH` | no | `TemplateNothingToPublishException` | graduation |
 | `TERM_ENROLLMENT_OVERRIDE_CLOSED` | no | `TermEnrollmentOverrideClosedException` | enrollment |
 | `TERM_HAS_ACTIVE_ENROLLMENTS` | no | `TermHasActiveEnrollmentsException` | academicstructure |
+| `TERM_NOT_OPEN_FOR_OFFERING` | no | `TermNotOpenForOfferingException` | academicstructure |
 | `UNKNOWN_GUARDED_MODULE` | no | `UnknownGuardedModuleException` | platform |
 | `UPFRONT_WINDOW_CLOSED` | no | `UpfrontWindowClosedException` | billing |
 | `USERNAME_ALREADY_EXISTS` | no | `UsernameAlreadyExistsException` | identity |
@@ -895,7 +899,6 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/course-sections/{sectionId}/audience-preview` | `AnnouncementController#previewForCourseSection` |
 | POST | `/course-subjects/{id}/activate` | `CourseSubjectController#reactivate` |
 | POST | `/course-subjects/{id}/deactivate` | `CourseSubjectController#deactivate` |
-| POST | `/course-subjects/{id}/sections` | `CourseSectionController#create` |
 | POST | `/courses` | `CourseController#create` |
 | POST | `/courses/{id}/activate` | `CourseController#reactivate` |
 | POST | `/courses/{id}/deactivate` | `CourseController#deactivate` |
@@ -1074,7 +1077,6 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/subjects/{id}/approve` | `SubjectController#approve` |
 | POST | `/subjects/{id}/deactivate` | `SubjectController#deactivate` |
 | POST | `/subjects/{id}/reject` | `SubjectController#reject` |
-| POST | `/subjects/{id}/sections` | `SubjectSectionController#create` |
 | POST | `/subjects/{id}/submit-for-approval` | `SubjectController#submitForApproval` |
 | POST | `/terms` | `TermController#create` |
 | POST | `/terms/{id}/activate` | `TermController#reactivate` |

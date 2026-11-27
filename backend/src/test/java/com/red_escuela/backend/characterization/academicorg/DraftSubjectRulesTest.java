@@ -2,7 +2,6 @@ package com.red_escuela.backend.characterization.academicorg;
 
 import com.red_escuela.backend.academicstructure.dto.CreateProgramRequest;
 import com.red_escuela.backend.academicstructure.dto.CreateProgramSubjectRequest;
-import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubjectCategory;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -50,35 +49,6 @@ class DraftSubjectRulesTest extends AcademicOrgCharacterizationSupport {
         postEmpty(admin, "/subjects/" + subjectId + "/submit-for-approval").andExpect(status().isOk());
         postEmpty(director, "/subjects/" + subjectId + "/approve").andExpect(status().isOk());
         postJson(admin, "/programs/" + programId + "/subjects", entry(subjectId)).andExpect(status().isCreated());
-    }
-
-    @Test
-    void sectionCannotBeOpenedOnADraftSubjectByAnyStaffRole() throws Exception {
-        Person admin = persistPerson("draft.admin3", "74000005", "ADMINISTRATIVO");
-        Person preceptor = persistPerson("draft.preceptor3", "74000006", "PRECEPTOR");
-        Term term = persistTerm();
-        long subjectId = createDraft(admin, "Materia Draft 3");
-        CreateSectionRequest request = new CreateSectionRequest("Comision A", term.getId(), null, 10, null);
-
-        postJson(admin, "/subjects/" + subjectId + "/sections", request)
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("SUBJECT_NOT_OPENABLE_FOR_SECTIONS"));
-        postJson(preceptor, "/subjects/" + subjectId + "/sections", request)
-                .andExpect(status().isConflict())
-                .andExpect(jsonPath("$.code").value("SUBJECT_NOT_OPENABLE_FOR_SECTIONS"));
-        assertThat(countRows("SubjectSection", "e.subject.id = " + subjectId)).isZero();
-    }
-
-    @Test
-    void sectionCanBeOpenedOnceTheSubjectIsApproved() throws Exception {
-        Person admin = persistPerson("draft.admin4", "74000007", "ADMINISTRATIVO");
-        Person director = persistPerson("draft.director4", "74000008", "DIRECTOR");
-        Term term = persistTerm();
-        long subjectId = createActive(admin, director, "Materia Draft 4");
-
-        postJson(admin, "/subjects/" + subjectId + "/sections",
-                new CreateSectionRequest("Comision A", term.getId(), null, 10, null))
-                .andExpect(status().isCreated());
     }
 
     @Test

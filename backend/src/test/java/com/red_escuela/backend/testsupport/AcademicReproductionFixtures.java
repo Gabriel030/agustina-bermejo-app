@@ -117,6 +117,7 @@ public final class AcademicReproductionFixtures {
         section.setEvaluationScheme(scheme);
         section.setStatus(StatusType.ACTIVE);
         entityManager.persist(section);
+        ApprovedSectionConfigFixture.persistWhenSchemeExpectsCoursework(entityManager, section);
         return section;
     }
 

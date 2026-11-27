@@ -29,6 +29,15 @@ public class DemoApiClient {
                 .body(JsonNode.class);
     }
 
+    public JsonNode put(String username, String path, Object body) {
+        return restClient.put().uri(path)
+                .header("Authorization", "Bearer " + tokenFor(username))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(body)
+                .retrieve()
+                .body(JsonNode.class);
+    }
+
     public JsonNode postFile(String username, String path, String reason, String filename, byte[] content) {
         MultiValueMap<String, Object> parts = new LinkedMultiValueMap<>();
         parts.add("reason", reason);

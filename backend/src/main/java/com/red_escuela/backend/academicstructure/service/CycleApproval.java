@@ -24,6 +24,7 @@ public class CycleApproval {
     private final SectionConflictChecker conflictChecker;
     private final AcademicOfferingCycleReviewer cycleReviewer;
     private final ApplicationEventPublisher eventPublisher;
+    private final TermOfferingGuard termOfferingGuard;
 
     public CycleApproval(
             AcademicOfferingCycleRepository cycleRepository,
@@ -32,7 +33,8 @@ public class CycleApproval {
             SectionScheduleSlotRepository slotRepository,
             SectionConflictChecker conflictChecker,
             AcademicOfferingCycleReviewer cycleReviewer,
-            ApplicationEventPublisher eventPublisher
+            ApplicationEventPublisher eventPublisher,
+            TermOfferingGuard termOfferingGuard
     ) {
         this.cycleRepository = cycleRepository;
         this.subjectSectionRepository = subjectSectionRepository;
@@ -41,6 +43,7 @@ public class CycleApproval {
         this.conflictChecker = conflictChecker;
         this.cycleReviewer = cycleReviewer;
         this.eventPublisher = eventPublisher;
+        this.termOfferingGuard = termOfferingGuard;
     }
 
     @Transactional
@@ -57,6 +60,8 @@ public class CycleApproval {
         if (cycle.getStatus() != AcademicOfferingCycleStatus.PENDING_APPROVAL) {
             throw new CycleNotPendingApprovalException(cycleId);
         }
+
+        termOfferingGuard.requireTermOpenForOffering(cycle.getTerm());
 
         var subjectSections = subjectSectionRepository.findByAcademicOfferingCycleId(cycleId);
         for (var section : subjectSections) {

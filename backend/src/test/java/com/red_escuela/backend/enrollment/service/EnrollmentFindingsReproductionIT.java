@@ -34,6 +34,7 @@ import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.testsupport.AcademicReproductionFixtures;
 import com.red_escuela.backend.testsupport.TermFixtures;
 import jakarta.persistence.EntityManager;
+import com.red_escuela.backend.enrollment.exception.IncompleteSectionSetupException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -110,7 +111,6 @@ class EnrollmentFindingsReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("E34-A-S5")
     void h13PausedProgramEnrollmentCannotEnrollInASection() {
         ProgramSetup setup = programSetup("H13Pausa", null);
         Student student = fixtures.student("77000003");
@@ -123,7 +123,6 @@ class EnrollmentFindingsReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("E34-A-S5")
     void h13WaitlistPromotionSkipsAStudentWhoseProgramEnrollmentIsPaused() {
         ProgramSetup setup = programSetup("H13Espera", 1);
         SubjectSectionEnrollment seated = seatedEnrollment(setup, "77000005", EnrollmentStatus.ENROLLED, ProgramEnrollmentStatus.ENROLLED);
@@ -190,7 +189,6 @@ class EnrollmentFindingsReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("E34-A-S5")
     void h6CourseEnrollmentIgnoresModuleSectionsWhoseCycleIsStillDraft() {
         Term term = TermFixtures.newTerm();
         term.setYear(2026);
@@ -205,6 +203,7 @@ class EnrollmentFindingsReproductionIT extends AbstractIntegrationTest {
         CourseSubject module = new CourseSubject();
         module.setCourse(course);
         module.setName("Modulo H6");
+        module.setStatus(StatusType.ACTIVE);
         entityManager.persist(module);
         Student student = fixtures.student("77000015");
         AcademicOfferingCycle cycle = new AcademicOfferingCycle();
@@ -224,6 +223,6 @@ class EnrollmentFindingsReproductionIT extends AbstractIntegrationTest {
         entityManager.flush();
 
         assertThatThrownBy(() -> courseEnrollmentService.enroll(student.getId(), new CreateCourseEnrollmentRequest(course.getId(), null)))
-                .isInstanceOf(RuntimeException.class);
+                .isInstanceOf(IncompleteSectionSetupException.class);
     }
 }

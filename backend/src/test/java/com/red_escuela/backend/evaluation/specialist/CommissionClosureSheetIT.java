@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.specialist;
 
+import com.red_escuela.backend.testsupport.ApprovedSectionConfigFixture;
 import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
@@ -133,6 +134,7 @@ class CommissionClosureSheetIT extends AbstractIntegrationTest {
         section.setStatus(StatusType.ACTIVE);
         section.setEvaluationScheme(scheme);
         entityManager.persist(section);
+        ApprovedSectionConfigFixture.persistWhenSchemeExpectsCoursework(entityManager, section);
         Person teacherPerson = persistPerson();
         teacherPersonId = teacherPerson.getId();
         Instructor teacher = persistInstructor(teacherPerson);
