@@ -13,15 +13,15 @@ export function RegistrationDoneStep({ fullName, email, missingDocuments, onOpen
         {fullName} ya está registrado. Le enviamos un email a <strong>{email}</strong> para que elija su contraseña; ingresa con su documento como usuario.
       </p>
       <p className="text-size-13 text-ink">{missingDocumentsSummary(missingDocuments)}</p>
-      <div className="flex flex-wrap items-center gap-3">
+      <div className={onEnrollNow ? 'flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-center' : 'flex flex-wrap items-center gap-3'}>
         {onEnrollNow && (
-          <Button type="button" variant="primary" onClick={onEnrollNow}>
+          <Button type="button" variant="primary" onClick={onEnrollNow} className="w-full sm:w-auto">
             Inscribir ahora
             <ArrowRight size={16} aria-hidden="true" />
           </Button>
         )}
-        <Button type="button" variant={onEnrollNow ? 'outline' : 'primary'} onClick={onOpenRecord}>Ir al legajo</Button>
-        <Button type="button" variant="outline" onClick={onRegisterAnother}>Dar de alta a otro</Button>
+        <Button type="button" variant={onEnrollNow ? 'outline' : 'primary'} onClick={onOpenRecord} className={onEnrollNow ? 'w-full sm:w-auto' : undefined}>Ir al legajo</Button>
+        <Button type="button" variant="outline" onClick={onRegisterAnother} className={onEnrollNow ? 'w-full sm:w-auto' : undefined}>Dar de alta a otro</Button>
       </div>
     </div>
   );
