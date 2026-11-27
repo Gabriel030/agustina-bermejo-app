@@ -60,6 +60,10 @@ public class AcademicOfferingCycle {
         return status == AcademicOfferingCycleStatus.APPROVED || status == AcademicOfferingCycleStatus.CLOSED;
     }
 
+    public boolean isOpenForEnrollment() {
+        return status == AcademicOfferingCycleStatus.APPROVED;
+    }
+
     public void ensureEditable() {
         if (!isEditable()) {
             throw new CycleNotEditableException(id, status);

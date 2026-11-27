@@ -123,6 +123,10 @@ class AttendanceTransactionBoundaryIT extends AbstractIntegrationTest {
 
             Person staff = fixtures.person();
             entityManager.flush();
+            entityManager.createNativeQuery("insert into preceptor_assignment (person_id, subject_section_id, created_by) values (?1, ?2, ?1)")
+                    .setParameter(1, staff.getId())
+                    .setParameter(2, section.getId())
+                    .executeUpdate();
             SecurityContextHolder.getContext().setAuthentication(
                     new TestingAuthenticationToken(staff.getId().toString(), null));
         });

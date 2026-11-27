@@ -138,7 +138,7 @@ exports[`route table > keeps every path, role and page unchanged 1`] = `
   "role|preceptor,administrativo,director,subdirector|periodos/:termId/editar|PreceptorPeriodoForm",
   "role|preceptor,administrativo,director,subdirector|periodos/nuevo|PreceptorPeriodoForm",
   "role|preceptor,administrativo,director,subdirector|periodos|PreceptorPeriodos",
-  "role|preceptor,administrativo,subdirector|solicitudes-de-asistencia|SolicitudesAsistencia",
+  "role|preceptor,administrativo,director,subdirector|solicitudes-de-asistencia|SolicitudesAsistencia",
   "role|preceptor,administrativo,subdirector|solicitudes-de-ingreso/:id|SolicitudDeIngresoDetalle",
   "role|preceptor,administrativo,subdirector|solicitudes-de-ingreso|SolicitudesDeIngreso",
   "role|preceptor,director|oferta-academica/calendario|PreceptorCalendario",

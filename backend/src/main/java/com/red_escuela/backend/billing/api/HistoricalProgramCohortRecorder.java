@@ -82,6 +82,8 @@ public class HistoricalProgramCohortRecorder {
         LocalDate closedAdmissionDay = LocalDate.of(historical.year(), 1, 1);
         ProgramCohort cohort = new ProgramCohort();
         cohort.setTemplateId(template.getId());
+        cohort.setProgramId(template.programId());
+        cohort.setTermId(template.termId());
         cohort.setIntake(intake);
         cohort.setAdmissionStart(closedAdmissionDay);
         cohort.setAdmissionEnd(closedAdmissionDay);

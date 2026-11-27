@@ -29,6 +29,15 @@ public class DemoHttpClient {
                 .body(JsonNode.class));
     }
 
+    public JsonNode put(String username, String path, Object body) {
+        return describingFailure("PUT", path, () -> restClient.put().uri(path)
+                .header("Authorization", "Bearer " + tokenFor(username))
+                .contentType(MediaType.APPLICATION_JSON)
+                .body(body)
+                .retrieve()
+                .body(JsonNode.class));
+    }
+
     public JsonNode get(String username, String path) {
         return describingFailure("GET", path, () -> restClient.get().uri(path)
                 .header("Authorization", "Bearer " + tokenFor(username))

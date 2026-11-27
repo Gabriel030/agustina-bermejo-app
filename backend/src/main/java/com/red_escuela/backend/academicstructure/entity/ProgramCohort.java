@@ -22,7 +22,13 @@ public class ProgramCohort {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "template_id", nullable = false)
+    @Column(name = "program_id", nullable = false)
+    private Long programId;
+
+    @Column(name = "term_id", nullable = false)
+    private Long termId;
+
+    @Column(name = "template_id")
     private Long templateId;
 
     @Enumerated(EnumType.STRING)

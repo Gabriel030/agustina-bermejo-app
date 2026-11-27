@@ -5,7 +5,6 @@ import com.red_escuela.backend.academicstructure.domain.TermType;
 import tools.jackson.databind.ObjectMapper;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.academicstructure.dto.AssignInstructorRequest;
-import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
@@ -58,6 +57,9 @@ class CourseSectionControllerTest extends AbstractIntegrationTest {
 
     @Autowired
     private JwtService jwtService;
+
+    @Autowired
+    private com.red_escuela.backend.testsupport.ActiveProgramSectionTestFactory sectionFactory;
 
     @Autowired
     private CourseSubjectSectionRepository courseSubjectSectionRepository;
@@ -135,39 +137,19 @@ class CourseSectionControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void creatingModuleSectionWithPreceptorRoleReturns201() throws Exception {
-        CourseSubject courseSubject = persistCourseSubject("Módulo A");
-        Term term = persistSectionTerm();
+    void creatingSectionThroughTheRemovedModuleEndpointIsNotAllowed() throws Exception {
+        CourseSubject courseSubject = persistCourseSubject("Módulo sin alta directa");
         entityManager.flush();
 
-        String token = tokenWithRole("preceptor-course-section1", "PRECEPTOR");
-        CreateSectionRequest request = new CreateSectionRequest("Comisión Única", term.getId(), "Martes 19hs", 25, null);
+        String token = tokenWithRole("preceptor-alta-modulo-removida", "PRECEPTOR");
 
         mockMvc.perform(post("/course-subjects/{id}/sections", courseSubject.getId())
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.courseSubjectId").value(courseSubject.getId()))
-                .andExpect(jsonPath("$.status").value("ACTIVE"));
+                        .content("{\"name\":\"Comisión A\",\"termId\":1,\"capacity\":10}"))
+                .andExpect(status().isMethodNotAllowed());
 
-        List<CourseSubjectSection> sections = courseSubjectSectionRepository.findByCourseSubjectId(courseSubject.getId());
-        assertThat(sections).hasSize(1);
-    }
-
-    @Test
-    void creatingSectionWithoutPreceptorOrAdministrativeRoleReturns403() throws Exception {
-        CourseSubject courseSubject = persistCourseSubject("Módulo sin permiso");
-        entityManager.flush();
-
-        String token = tokenWithRole("alumno-course-section1", "ALUMNO");
-        CreateSectionRequest request = new CreateSectionRequest("Comisión A", 1L, null, 10, null);
-
-        mockMvc.perform(post("/course-subjects/{id}/sections", courseSubject.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + token)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isForbidden());
+        assertThat(courseSubjectSectionRepository.findByCourseSubjectId(courseSubject.getId())).isEmpty();
     }
 
     @Test
@@ -315,13 +297,7 @@ class CourseSectionControllerTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         String token = tokenWithRole("preceptor-course-baja-comision", "PRECEPTOR");
-        CreateSectionRequest request = new CreateSectionRequest("Comisión Baja", term.getId(), null, 10, null);
-        String body = mockMvc.perform(post("/course-subjects/{id}/sections", courseSubject.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + token)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andReturn().getResponse().getContentAsString();
-        Long sectionId = objectMapper.readTree(body).get("id").asLong();
+        Long sectionId = sectionFactory.createCourseSection(courseSubject, term, "Comisión Baja", 10).getId();
 
         mockMvc.perform(post("/course-sections/{id}/deactivate", sectionId).header("Authorization", "Bearer " + token))
                 .andExpect(status().isNoContent());
@@ -347,13 +323,7 @@ class CourseSectionControllerTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         String token = tokenWithRole("preceptor-course-editar", "PRECEPTOR");
-        String body = mockMvc.perform(post("/course-subjects/{id}/sections", courseSubject.getId())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + token)
-                        .content(objectMapper.writeValueAsString(
-                                new CreateSectionRequest("Comisión Original", term.getId(), null, 10, null))))
-                .andReturn().getResponse().getContentAsString();
-        Long sectionId = objectMapper.readTree(body).get("id").asLong();
+        Long sectionId = sectionFactory.createCourseSection(courseSubject, term, "Comisión Original", 10).getId();
 
         mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders
                         .put("/course-sections/{id}", sectionId)

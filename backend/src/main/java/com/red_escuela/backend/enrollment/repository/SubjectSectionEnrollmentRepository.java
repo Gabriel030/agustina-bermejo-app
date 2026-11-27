@@ -94,11 +94,13 @@ public interface SubjectSectionEnrollmentRepository extends JpaRepository<Subjec
         EnrollmentStatus getStatus();
 
         com.red_escuela.backend.shared.domain.Grade getFinalScore();
+
+        Long getTermId();
     }
 
     @Query("""
             select e.programEnrollment.id as programEnrollmentId, e.subjectSection.subject.id as subjectId, e.status as status,
-            e.finalScore as finalScore
+            e.finalScore as finalScore, e.subjectSection.term.id as termId
             from SubjectSectionEnrollment e
             where e.programEnrollment.id in :programEnrollmentIds and e.subjectSection.subject.id in :subjectIds
             and e.status in :statuses

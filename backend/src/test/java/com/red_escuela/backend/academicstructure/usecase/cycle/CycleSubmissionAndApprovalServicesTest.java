@@ -85,6 +85,7 @@ class CycleSubmissionAndApprovalServicesTest {
     @BeforeEach
     void setUp() {
         term = TermFixtures.newTerm();
+        term.setStatus(com.red_escuela.backend.shared.domain.StatusType.ACTIVE);
         term.setId(2L);
         cycle = new AcademicOfferingCycle();
         cycle.setId(CYCLE_ID);
@@ -103,7 +104,7 @@ class CycleSubmissionAndApprovalServicesTest {
         return new ApproveCycleService(new CycleApproval(cycleRepository, subjectSectionRepository, courseSectionRepository,
                 slotRepository, conflictChecker,
                 new AcademicOfferingCycleReviewer(currentActorFinder, Clock.systemDefaultZone()),
-                eventPublisher));
+                eventPublisher, new com.red_escuela.backend.academicstructure.service.TermOfferingGuard(Clock.systemDefaultZone())));
     }
 
     private SubjectSection subjectSection(Long id, InstructorRole... roles) {

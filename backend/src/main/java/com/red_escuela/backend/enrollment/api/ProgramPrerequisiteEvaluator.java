@@ -42,17 +42,21 @@ public class ProgramPrerequisiteEvaluator {
     }
 
     public List<PrerequisiteAssessment> assess(Long programEnrollmentId, Long subjectId) {
+        return assess(programEnrollmentId, subjectId, null);
+    }
+
+    public List<PrerequisiteAssessment> assess(Long programEnrollmentId, Long subjectId, Long targetTermId) {
         ProgramEnrollment programEnrollment = findProgramEnrollment(programEnrollmentId);
         Long programId = programEnrollment.getProgram().getId();
         ProgramSubjectView programSubject = programCurriculumFinder.findProgramSubject(programId, subjectId)
                 .orElseThrow(() -> new SubjectNotInProgramPlanException(subjectId, programId));
-        return assessPrerequisites(programEnrollmentId, subjectId, programSubject);
+        return assessPrerequisites(programEnrollmentId, subjectId, programSubject, targetTermId);
     }
 
     public boolean areAllMetOrSubjectOutsidePlan(Long programEnrollmentId, Long subjectId) {
         Long programId = findProgramEnrollment(programEnrollmentId).getProgram().getId();
         return programCurriculumFinder.findProgramSubject(programId, subjectId)
-                .map(programSubject -> assessPrerequisites(programEnrollmentId, subjectId, programSubject).stream()
+                .map(programSubject -> assessPrerequisites(programEnrollmentId, subjectId, programSubject, null).stream()
                         .allMatch(PrerequisiteAssessment::met))
                 .orElse(true);
     }
@@ -75,7 +79,7 @@ public class ProgramPrerequisiteEvaluator {
             Long programEnrollmentId, Long subjectId, Predicate<PrerequisiteAssessment> filter) {
         Long programId = findProgramEnrollment(programEnrollmentId).getProgram().getId();
         return programCurriculumFinder.findProgramSubject(programId, subjectId)
-                .map(programSubject -> assessPrerequisites(programEnrollmentId, subjectId, programSubject).stream()
+                .map(programSubject -> assessPrerequisites(programEnrollmentId, subjectId, programSubject, null).stream()
                         .filter(filter)
                         .toList())
                 .orElse(List.of());
@@ -87,11 +91,11 @@ public class ProgramPrerequisiteEvaluator {
     }
 
     private List<PrerequisiteAssessment> assessPrerequisites(
-            Long programEnrollmentId, Long subjectId, ProgramSubjectView programSubject) {
+            Long programEnrollmentId, Long subjectId, ProgramSubjectView programSubject, Long targetTermId) {
         boolean waived = directorApprovalRequestRepository.hasApproved(
                 programEnrollmentId, subjectId, ExceptionType.PREREQUISITE_WAIVER);
         List<PrerequisiteView> prerequisites = programCurriculumFinder.findPrerequisites(programSubject.id());
-        Map<Long, SubjectStanding> standings = waived ? Map.of() : standingsOf(programEnrollmentId, prerequisites);
+        Map<Long, SubjectStanding> standings = waived ? Map.of() : standingsOf(programEnrollmentId, prerequisites, targetTermId);
         return prerequisites.stream()
                 .map(prerequisite -> {
                     if (waived) {
@@ -106,12 +110,16 @@ public class ProgramPrerequisiteEvaluator {
                 .toList();
     }
 
-    private Map<Long, SubjectStanding> standingsOf(Long programEnrollmentId, List<PrerequisiteView> prerequisites) {
+    private Map<Long, SubjectStanding> standingsOf(Long programEnrollmentId, List<PrerequisiteView> prerequisites,
+            Long targetTermId) {
         Set<Long> prerequisiteSubjectIds = prerequisites.stream().map(PrerequisiteView::prerequisiteSubjectId)
                 .collect(Collectors.toSet());
-        return subjectApprovalLookup.findStandings(List.of(programEnrollmentId), prerequisiteSubjectIds,
+        Map<Long, Map<Long, SubjectStanding>> standings = targetTermId == null
+                ? subjectApprovalLookup.findStandings(List.of(programEnrollmentId), prerequisiteSubjectIds,
                         requirementPolicy.relevantStatuses())
-                .getOrDefault(programEnrollmentId, Map.of());
+                : subjectApprovalLookup.findStandings(List.of(programEnrollmentId), prerequisiteSubjectIds,
+                        requirementPolicy.relevantStatuses(), targetTermId);
+        return standings.getOrDefault(programEnrollmentId, Map.of());
     }
 
     private PrerequisiteAssessment assessment(PrerequisiteView prerequisite, PrerequisiteStanding standing,

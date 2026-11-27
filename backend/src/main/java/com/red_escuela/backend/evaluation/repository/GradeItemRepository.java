@@ -13,6 +13,14 @@ import java.util.Optional;
 @Repository
 public interface GradeItemRepository extends JpaRepository<GradeItem, Long> {
 
+    @Query("select count(g) > 0 from GradeItem g where g.programSubjectSectionEnrollment.subjectSection.id = :sectionId "
+            + "and g.score is not null")
+    boolean existsGradedByProgramSection(@Param("sectionId") Long sectionId);
+
+    @Query("select count(g) > 0 from GradeItem g where g.courseSubjectSectionEnrollment.courseSubjectSection.id = :sectionId "
+            + "and g.score is not null")
+    boolean existsGradedByCourseSection(@Param("sectionId") Long sectionId);
+
     List<GradeItem> findByProgramSubjectSectionEnrollmentId(Long enrollmentId);
 
     boolean existsByProgramSubjectSectionEnrollmentId(Long enrollmentId);

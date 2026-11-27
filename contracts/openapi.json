@@ -5490,6 +5490,28 @@
         "required" : [ "category", "credits", "subjectId" ],
         "type" : "object"
       },
+      "CreateProgramTermCohortRequest" : {
+        "properties" : {
+          "admissionEnd" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "admissionStart" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "cursadaStart" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "intake" : {
+            "enum" : [ "FIRST", "SECOND" ],
+            "type" : "string"
+          }
+        },
+        "required" : [ "admissionEnd", "admissionStart", "cursadaStart", "intake" ],
+        "type" : "object"
+      },
       "CreateProgramYearBillingTemplateRequest" : {
         "properties" : {
           "configuration" : {
@@ -5584,45 +5606,6 @@
           }
         },
         "required" : [ "sectionId" ],
-        "type" : "object"
-      },
-      "CreateSectionRequest" : {
-        "properties" : {
-          "capacity" : {
-            "exclusiveMinimum" : 0,
-            "format" : "int32",
-            "type" : "integer"
-          },
-          "description" : {
-            "type" : "string"
-          },
-          "evaluationSchemeId" : {
-            "format" : "int64",
-            "type" : "integer"
-          },
-          "maxAbsencePercent" : {
-            "description" : "Porcentaje en puntos, de 0 a 100 (por ejemplo 12.5 es 12,5 %)",
-            "maximum" : 100,
-            "minimum" : 0,
-            "type" : "number"
-          },
-          "name" : {
-            "minLength" : 1,
-            "type" : "string"
-          },
-          "schedule" : {
-            "type" : "string"
-          },
-          "shift" : {
-            "enum" : [ "MORNING", "AFTERNOON", "EVENING" ],
-            "type" : "string"
-          },
-          "termId" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        },
-        "required" : [ "capacity", "evaluationSchemeId", "name", "schedule", "termId" ],
         "type" : "object"
       },
       "CreateStaffRequest" : {
@@ -13967,6 +13950,43 @@
         },
         "type" : "object"
       },
+      "ProgramTermCohortResponse" : {
+        "properties" : {
+          "admissionEnd" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "admissionStart" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "createdAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "cursadaStart" : {
+            "format" : "date",
+            "type" : "string"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "intake" : {
+            "type" : "string"
+          },
+          "programId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "termId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "admissionEnd", "admissionStart", "createdAt", "cursadaStart", "id", "intake", "programId", "termId" ],
+        "type" : "object"
+      },
       "ProgramYearBillingTemplateResponse" : {
         "properties" : {
           "advanceEnrollmentFeeOpensOn" : {
@@ -18610,7 +18630,7 @@
             "type" : "boolean"
           },
           "reason" : {
-            "enum" : [ "ALREADY_PASSED", "PREREQUISITES_NOT_MET", "SCHEDULE_OVERLAP", "ADMISSION_RECEIPT_PENDING", null ],
+            "enum" : [ "ALREADY_PASSED", "PREREQUISITES_NOT_MET", "SCHEDULE_OVERLAP", "ADMISSION_RECEIPT_PENDING", "PROGRAM_ENROLLMENT_NOT_ACTIVE", null ],
             "type" : [ "string", "null" ]
           }
         },
@@ -43313,141 +43333,6 @@
               }
             },
             "description" : "OK"
-          },
-          "400" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Bad Request"
-          },
-          "401" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Forbidden"
-          },
-          "404" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Not Found"
-          },
-          "409" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Conflict"
-          },
-          "422" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Unprocessable Content"
-          },
-          "429" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Too Many Requests"
-          },
-          "500" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Internal Server Error"
-          },
-          "502" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Bad Gateway"
-          },
-          "503" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Service Unavailable"
-          }
-        },
-        "tags" : [ "course-section-controller" ]
-      },
-      "post" : {
-        "operationId" : "CourseSection_create",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/CreateSectionRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "201" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/CourseSubjectSectionResponse"
-                }
-              }
-            },
-            "description" : "Created"
           },
           "400" : {
             "content" : {
@@ -91501,6 +91386,151 @@
         "tags" : [ "program-year-billing-template-controller" ]
       }
     },
+    "/programs/{programId}/terms/{termId}/cohorts" : {
+      "post" : {
+        "operationId" : "ProgramCohort_createProgramTermCohort",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "programId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "path",
+          "name" : "termId",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreateProgramTermCohortRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProgramTermCohortResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "program-cohort-controller" ]
+      }
+    },
     "/promotions" : {
       "get" : {
         "deprecated" : true,
@@ -104286,141 +104316,6 @@
               }
             },
             "description" : "OK"
-          },
-          "400" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Bad Request"
-          },
-          "401" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Unauthorized"
-          },
-          "403" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Forbidden"
-          },
-          "404" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Not Found"
-          },
-          "409" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Conflict"
-          },
-          "422" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Unprocessable Content"
-          },
-          "429" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Too Many Requests"
-          },
-          "500" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Internal Server Error"
-          },
-          "502" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Bad Gateway"
-          },
-          "503" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/ErrorCodeResponse"
-                }
-              }
-            },
-            "description" : "Service Unavailable"
-          }
-        },
-        "tags" : [ "subject-section-controller" ]
-      },
-      "post" : {
-        "operationId" : "SubjectSection_create",
-        "parameters" : [ {
-          "in" : "path",
-          "name" : "id",
-          "required" : true,
-          "schema" : {
-            "format" : "int64",
-            "type" : "integer"
-          }
-        } ],
-        "requestBody" : {
-          "content" : {
-            "application/json" : {
-              "schema" : {
-                "$ref" : "#/components/schemas/CreateSectionRequest"
-              }
-            }
-          },
-          "required" : true
-        },
-        "responses" : {
-          "201" : {
-            "content" : {
-              "application/json" : {
-                "schema" : {
-                  "$ref" : "#/components/schemas/SubjectSectionResponse"
-                }
-              }
-            },
-            "description" : "Created"
           },
           "400" : {
             "content" : {

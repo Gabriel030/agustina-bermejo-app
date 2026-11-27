@@ -19,10 +19,13 @@ public class ClosureColumnsFinder {
 
     private final SectionGradeItemPublicationRepository publicationRepository;
     private final SectionFinder sectionFinder;
+    private final ApprovedCourseworkCountFinder courseworkCountFinder;
 
-    public ClosureColumnsFinder(SectionGradeItemPublicationRepository publicationRepository, SectionFinder sectionFinder) {
+    public ClosureColumnsFinder(SectionGradeItemPublicationRepository publicationRepository, SectionFinder sectionFinder,
+                                ApprovedCourseworkCountFinder courseworkCountFinder) {
         this.publicationRepository = publicationRepository;
         this.sectionFinder = sectionFinder;
+        this.courseworkCountFinder = courseworkCountFinder;
     }
 
     @Transactional(readOnly = true)
@@ -38,7 +41,7 @@ public class ClosureColumnsFinder {
                 .collect(Collectors.toSet());
         List<ClosureSheetColumnResponse> columns = new ArrayList<>();
         appendColumns(columns, GradeItemType.EXAM, scheme.getExamCountExpected(), publishedSlots);
-        appendColumns(columns, GradeItemType.TP, scheme.getTpCountExpected(), publishedSlots);
+        appendColumns(columns, GradeItemType.TP, courseworkCountFinder.findExpectedCount(kind, sectionId), publishedSlots);
         return columns;
     }
 

@@ -203,7 +203,7 @@ class CourseEnrollmentRulesTest {
         givenStudentWithOpenWindow();
         when(courseEnrollmentRepository.findByStudentIdAndCourseIdAndStatusIn(any(), any(), any())).thenReturn(List.of());
         when(courseCatalogFinder.findActiveModules(COURSE_ID)).thenReturn(List.of(new CourseModuleView(21L, "Modulo 1")));
-        when(courseCatalogFinder.findActiveSectionsOfModule(21L)).thenReturn(List.of(
+        when(courseCatalogFinder.findSectionsOpenForEnrollmentOfModule(21L)).thenReturn(List.of(
                 new CourseSectionView(31L, 21L, COURSE_ID, 99L, 30, "Otro ciclo")));
 
         assertThatThrownBy(() -> service.enroll(7L, new CreateCourseEnrollmentRequest(COURSE_ID, null)))
@@ -216,7 +216,7 @@ class CourseEnrollmentRulesTest {
         givenStudentWithOpenWindow();
         when(courseEnrollmentRepository.findByStudentIdAndCourseIdAndStatusIn(any(), any(), any())).thenReturn(List.of());
         when(courseCatalogFinder.findActiveModules(COURSE_ID)).thenReturn(List.of(new CourseModuleView(21L, "Modulo 1")));
-        when(courseCatalogFinder.findActiveSectionsOfModule(21L)).thenReturn(List.of(sectionView(31L, 21L), sectionView(32L, 21L)));
+        when(courseCatalogFinder.findSectionsOpenForEnrollmentOfModule(21L)).thenReturn(List.of(sectionView(31L, 21L), sectionView(32L, 21L)));
 
         assertThatThrownBy(() -> service.enroll(7L, new CreateCourseEnrollmentRequest(COURSE_ID, null)))
                 .isInstanceOf(AmbiguousSectionException.class);
@@ -229,7 +229,7 @@ class CourseEnrollmentRulesTest {
         givenStudentWithOpenWindow();
         when(courseEnrollmentRepository.findByStudentIdAndCourseIdAndStatusIn(any(), any(), any())).thenReturn(List.of());
         when(courseCatalogFinder.findActiveModules(COURSE_ID)).thenReturn(List.of(new CourseModuleView(21L, "Modulo 1")));
-        when(courseCatalogFinder.findActiveSectionsOfModule(21L)).thenReturn(List.of(sectionView(31L, 21L), sectionView(32L, 21L)));
+        when(courseCatalogFinder.findSectionsOpenForEnrollmentOfModule(21L)).thenReturn(List.of(sectionView(31L, 21L), sectionView(32L, 21L)));
 
         assertThatThrownBy(() -> service.enroll(7L, new CreateCourseEnrollmentRequest(COURSE_ID, Map.of(21L, 999L))))
                 .isInstanceOf(AmbiguousSectionException.class);
@@ -412,7 +412,7 @@ class CourseEnrollmentRulesTest {
         givenStudentWithOpenWindow();
         when(courseEnrollmentRepository.findByStudentIdAndCourseIdAndStatusIn(any(), any(), any())).thenReturn(List.of());
         when(courseCatalogFinder.findActiveModules(COURSE_ID)).thenReturn(List.of(new CourseModuleView(21L, "Modulo 1")));
-        when(courseCatalogFinder.findActiveSectionsOfModule(21L)).thenReturn(List.of(sectionView(31L, 21L)));
+        when(courseCatalogFinder.findSectionsOpenForEnrollmentOfModule(21L)).thenReturn(List.of(sectionView(31L, 21L)));
         when(courseCatalogFinder.findCourseEntity(COURSE_ID)).thenReturn(course);
         when(courseCatalogFinder.hasCapacityFor(COURSE_ID, 0L)).thenReturn(true);
         when(courseEnrollmentRepository.saveAndFlush(any(CourseEnrollment.class))).thenAnswer(inv -> inv.getArgument(0));
