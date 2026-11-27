@@ -1,5 +1,6 @@
 package com.red_escuela.backend.characterization.coursework;
 
+import com.red_escuela.backend.testsupport.ApprovedSectionConfigFixture;
 import com.red_escuela.backend.testsupport.TermFixtures;
 import tools.jackson.databind.JsonNode;
 import com.red_escuela.backend.testsupport.AsyncNotifications;
@@ -222,6 +223,7 @@ abstract class CourseworkCharacterizationSupport extends AbstractIntegrationTest
         section.setCapacity(30);
         section.setStatus(StatusType.ACTIVE);
         entityManager.persist(section);
+        ApprovedSectionConfigFixture.persistWhenSchemeExpectsCoursework(entityManager, section);
 
         SubjectSectionInstructor assignment = new SubjectSectionInstructor();
         assignment.setSection(section);
@@ -246,6 +248,14 @@ abstract class CourseworkCharacterizationSupport extends AbstractIntegrationTest
         entityManager.persist(enrollment);
         entityManager.flush();
         return new Classroom(teacher, instructor, studentPerson, section, enrollment, programEnrollment, subject);
+    }
+
+    protected Person persistPreceptorAssignedToEverySection(String username, String dni) {
+        Person preceptor = persistPerson(username, dni, "PRECEPTOR");
+        entityManager.flush();
+        jdbcTemplate.update("insert into preceptor_assignment (person_id, subject_section_id, created_by) select ?, id, ? from subject_section", preceptor.getId(), preceptor.getId());
+        jdbcTemplate.update("insert into preceptor_assignment (person_id, course_section_id, created_by) select ?, id, ? from course_section", preceptor.getId(), preceptor.getId());
+        return preceptor;
     }
 
     protected String bearer(Person person) {

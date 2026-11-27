@@ -31,7 +31,8 @@ public final class CourseworkOutcomeCalculator {
     }
 
     public Optional<CourseworkOutcome> calculate(
-            EvaluationScheme scheme, List<GradeItem> items, EnrollmentStatus currentStatus, Integer maxFinalExamAttempts) {
+            EvaluationScheme scheme, int courseworkCountExpected, List<GradeItem> items, EnrollmentStatus currentStatus,
+            Integer maxFinalExamAttempts) {
         if (currentStatus != EnrollmentStatus.ENROLLED
                 && currentStatus != EnrollmentStatus.IN_PROGRESS
                 && currentStatus != EnrollmentStatus.REGULAR) {
@@ -46,7 +47,6 @@ public final class CourseworkOutcomeCalculator {
                 .orElse(null);
 
         int examCountExpected = scheme.getExamCountExpected() == null ? 0 : scheme.getExamCountExpected();
-        int courseworkCountExpected = scheme.getTpCountExpected() == null ? 0 : scheme.getTpCountExpected();
         int expectedCount = examCountExpected + courseworkCountExpected;
         boolean allCourseworkLoaded = expectedCount > 0 && (exams.size() + coursework.size()) >= expectedCount;
 
