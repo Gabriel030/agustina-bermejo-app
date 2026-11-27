@@ -1,7 +1,9 @@
 import { useState } from 'react';
+import { Undo2 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { apiFetchBlob } from '@/api/client';
+import { describeError } from '@/api/describeError';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { EmptyState } from '@/components/EmptyState';
@@ -9,6 +11,7 @@ import { Skeleton } from '@/components/Skeleton';
 import { LoadErrorState } from '@/components/LoadErrorState';
 import { StatusPill } from '@/components/StatusPill';
 import { TabCount } from '@/components/TabCount';
+import { ChoiceChip } from '@/components/ChoiceChip';
 import { ModalMotivo } from '@/components/ModalMotivo';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -19,14 +22,37 @@ import {
   useJustificacionesPendientes,
   useRechazarJustificacion,
 } from '@/features/attendance/hooks/useJustificacionesAsistencia';
+import {
+  RESOLVED_PAGE_SIZE,
+  useResolvedAttendanceRequests,
+  useRevertAttendanceDecision,
+} from '@/features/attendance/hooks/useResolvedAttendanceRequests';
+import { REVERT_WINDOW_DAYS, formatDayKey, isRevertible, revertDeadlineKey, revertDialogCopy } from '@/features/attendance/lib/attendanceDecisionRevert';
 
 const ESTADO_LABEL = { PRESENT: 'Presente', LATE: 'Tarde', ABSENT: 'Ausente', JUSTIFICATION_PENDING: 'Justificación pendiente', JUSTIFIED: 'Justificada' };
 const MIN_REJECTION_REASON_LENGTH = 10;
-const TABS = [
+const PENDING_FILTERS = [
   { value: 'all', label: 'Todas' },
   { value: 'correction', label: 'Correcciones' },
   { value: 'justification', label: 'Justificaciones' },
 ];
+
+const RESOLVED_FILTERS = [
+  { value: 'all', label: 'Todas', result: undefined },
+  { value: 'approved', label: 'Aprobadas', result: 'APPROVED' },
+  { value: 'rejected', label: 'Rechazadas', result: 'REJECTED' },
+];
+
+const RESOLVED_EMPTY = {
+  all: { title: 'Todavía no hay solicitudes resueltas', description: 'Las solicitudes que apruebes o rechacen aparecen acá.' },
+  approved: { title: 'Ninguna solicitud aprobada', description: 'Probá con otro resultado.' },
+  rejected: { title: 'Ninguna solicitud rechazada', description: 'Probá con otro resultado.' },
+};
+
+const RESULT_PILL = {
+  APPROVED: { tone: 'success', label: 'Aprobada', verb: 'Aprobada' },
+  REJECTED: { tone: 'danger', label: 'Rechazada', verb: 'Rechazada' },
+};
 
 const TAB_PARAM_TO_VALUE = { todas: 'all', correcciones: 'correction', justificaciones: 'justification' };
 
@@ -86,7 +112,66 @@ function toJustificationItem(j) {
   };
 }
 
-function RequestCard({ item, busy, onApprove, onReject }) {
+function toResolvedItem(r) {
+  const base = toRequestItem(r);
+  const justification = r.requestedStatus === 'JUSTIFIED';
+  return {
+    ...base,
+    key: `resolved-${r.id}`,
+    kind: justification ? 'justification' : 'correction',
+    resolution: {
+      result: r.status,
+      decidedByName: r.decidedByName,
+      decidedAt: r.decidedAt,
+      rejectionReason: r.rejectionReason,
+      requestId: r.id,
+      studentName: r.studentName,
+      previousStatusLabel: ESTADO_LABEL[r.previousStatus] ?? r.previousStatus,
+    },
+  };
+}
+
+function ResolutionFooter({ item, onRevert }) {
+  const { resolution } = item;
+  const pill = RESULT_PILL[resolution.result];
+  const deadline = formatDayKey(revertDeadlineKey(resolution.decidedAt));
+  const canRevert = isRevertible(resolution.decidedAt);
+  return (
+    <div className="flex flex-col gap-2 border-t border-border pt-3" data-testid="resolution-footer">
+      <div className="flex flex-wrap items-center gap-2 text-size-12-5 text-ink-soft">
+        {pill && <StatusPill tone={pill.tone}>{pill.label}</StatusPill>}
+        <span>
+          {pill?.verb} por {resolution.decidedByName ?? 'sistema'} · {formatDayKey(resolution.decidedAt)}
+        </span>
+      </div>
+      {resolution.result === 'REJECTED' && resolution.rejectionReason && (
+        <div className="text-size-12-5">
+          <span className="text-ink-faint">Motivo del rechazo: </span>
+          <span className="text-ink">{resolution.rejectionReason}</span>
+        </div>
+      )}
+      {canRevert ? (
+        <div className="flex flex-wrap items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            className="min-h-11 sm:min-h-0"
+            aria-label={`Revertir, hasta el fin del día ${deadline}`}
+            onClick={() => onRevert(item)}
+          >
+            <Undo2 className="size-3.5" aria-hidden="true" />
+            Revertir
+          </Button>
+          <span className="text-size-12-5 text-ink-faint">Revertible hasta el fin del día {deadline}</span>
+        </div>
+      ) : (
+        <div className="text-size-12-5 text-ink-faint">Pasaron más de {REVERT_WINDOW_DAYS} días: ya no se puede revertir.</div>
+      )}
+    </div>
+  );
+}
+
+function RequestCard({ item, busy, onApprove, onReject, onRevert }) {
   return (
     <GlassCard className="flex flex-col gap-3 p-4" data-testid={`attendance-request-${item.key}`}>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -127,10 +212,14 @@ function RequestCard({ item, busy, onApprove, onReject }) {
           ))}
       </div>
 
-      <div className="flex justify-end gap-2">
-        <Button variant="outline" size="sm" className="min-h-11 flex-1 sm:min-h-0 sm:flex-none" onClick={() => onReject(item)} disabled={busy}>Rechazar</Button>
-        <Button variant="secondary" size="sm" className="min-h-11 flex-1 sm:min-h-0 sm:flex-none" onClick={() => onApprove(item)} disabled={busy}>Aprobar</Button>
-      </div>
+      {item.resolution ? (
+        <ResolutionFooter item={item} onRevert={onRevert} />
+      ) : (
+        <div className="flex justify-end gap-2">
+          <Button variant="outline" size="sm" className="min-h-11 flex-1 sm:min-h-0 sm:flex-none" onClick={() => onReject(item)} disabled={busy}>Rechazar</Button>
+          <Button variant="secondary" size="sm" className="min-h-11 flex-1 sm:min-h-0 sm:flex-none" onClick={() => onApprove(item)} disabled={busy}>Aprobar</Button>
+        </div>
+      )}
     </GlassCard>
   );
 }
@@ -143,26 +232,34 @@ export function SolicitudesAsistencia() {
   const rejectCorrection = useRechazarSolicitud();
   const approveJustification = useAprobarJustificacion();
   const rejectJustification = useRechazarJustificacion();
+  const revertDecision = useRevertAttendanceDecision();
   const [searchParams] = useSearchParams();
-  const [tab, setTab] = useState(TAB_PARAM_TO_VALUE[searchParams.get('tab')] ?? 'all');
+  const tabParam = searchParams.get('tab');
+  const [section, setSection] = useState(tabParam === 'resueltas' ? 'resolved' : 'pending');
+  const [tab, setTab] = useState(TAB_PARAM_TO_VALUE[tabParam] ?? 'all');
+  const [resolvedFilter, setResolvedFilter] = useState('all');
+  const [resolvedSize, setResolvedSize] = useState(RESOLVED_PAGE_SIZE);
   const [rejecting, setRejecting] = useState(null);
+  const [reverting, setReverting] = useState(null);
+  const resolvedResult = RESOLVED_FILTERS.find((filter) => filter.value === resolvedFilter).result;
+  const resolved = useResolvedAttendanceRequests({ result: resolvedResult, size: resolvedSize });
 
   const correctionItems = (corrections.data ?? []).map(toRequestItem);
   const justificationItems = (justifications.data?.items ?? []).map(toJustificationItem);
   const justificationTotal = justifications.data?.totalElements ?? justificationItems.length;
   const hiddenJustifications = Math.max(0, justificationTotal - justificationItems.length);
-  const counts = {
-    all: correctionItems.length + justificationTotal,
-    correction: correctionItems.length,
-    justification: justificationTotal,
-  };
+  const pendingTotal = correctionItems.length + justificationTotal;
   const visible = {
     all: [...correctionItems, ...justificationItems],
     correction: correctionItems,
     justification: justificationItems,
   }[tab];
-  const isLoading = corrections.isLoading || justifications.isLoading;
-  const failed = [corrections, justifications].find((query) => query.isError && query.data === undefined);
+  const resolvedItems = (resolved.data?.items ?? []).map(toResolvedItem);
+  const resolvedTotal = resolved.data?.totalElements ?? resolvedItems.length;
+  const hiddenResolved = Math.max(0, resolvedTotal - resolvedItems.length);
+  const showingResolved = section === 'resolved';
+  const isLoading = showingResolved ? resolved.isLoading : corrections.isLoading || justifications.isLoading;
+  const failed = (showingResolved ? [resolved] : [corrections, justifications]).find((query) => query.isError && query.data === undefined);
   const busy =
     approveCorrection.isPending || rejectCorrection.isPending || approveJustification.isPending || rejectJustification.isPending;
 
@@ -189,7 +286,27 @@ export function SolicitudesAsistencia() {
     }
   }
 
+  async function confirmRevert(reason) {
+    try {
+      await revertDecision.mutateAsync({ id: reverting.resolution.requestId, reason });
+      toast.success('Decisión revertida. La solicitud volvió a Pendientes.');
+    } catch (error) {
+      toast.error(describeError(error).message);
+    }
+    setReverting(null);
+    return true;
+  }
+
   const rejectingJustification = rejecting?.kind === 'justification';
+  const revertCopy = reverting
+    ? revertDialogCopy({
+        kind: reverting.kind,
+        result: reverting.resolution.result,
+        studentName: reverting.resolution.studentName,
+        previousStatusLabel: reverting.resolution.previousStatusLabel,
+      })
+    : null;
+  const resolvedEmpty = RESOLVED_EMPTY[resolvedFilter];
 
   return (
     <PageContainer>
@@ -198,16 +315,27 @@ export function SolicitudesAsistencia() {
         <p className="mt-0.5 text-sm text-ink-soft">Correcciones pedidas por docentes y justificaciones de inasistencia</p>
       </div>
 
-      <Tabs value={tab} onValueChange={setTab}>
+      <Tabs value={section} onValueChange={setSection}>
         <TabsList variant="segmented" className="w-full px-1 sm:w-fit">
-          {TABS.map((t) => (
-            <TabsTrigger key={t.value} value={t.value} className="flex-1">
-              {t.label}
-              <TabCount count={counts[t.value]} />
-            </TabsTrigger>
-          ))}
+          <TabsTrigger value="pending" className="flex-1">
+            Pendientes
+            <TabCount count={pendingTotal} />
+          </TabsTrigger>
+          <TabsTrigger value="resolved" className="flex-1">Resueltas</TabsTrigger>
         </TabsList>
       </Tabs>
+
+      <div className="flex flex-wrap gap-2" role="group" aria-label={showingResolved ? 'Filtrar por resultado' : 'Filtrar por tipo'}>
+        {(showingResolved ? RESOLVED_FILTERS : PENDING_FILTERS).map((filter) => (
+          <ChoiceChip
+            key={filter.value}
+            selected={(showingResolved ? resolvedFilter : tab) === filter.value}
+            onClick={() => (showingResolved ? setResolvedFilter(filter.value) : setTab(filter.value))}
+          >
+            {filter.label}
+          </ChoiceChip>
+        ))}
+      </div>
 
       {isLoading ? (
         <div className="flex flex-col gap-2">
@@ -216,6 +344,18 @@ export function SolicitudesAsistencia() {
         </div>
       ) : failed ? (
         <LoadErrorState error={failed.error} resource="las solicitudes" onRetry={() => failed.refetch()} />
+      ) : showingResolved ? (
+        resolvedItems.length === 0 ? (
+          <GlassCard className="p-4">
+            <EmptyState title={resolvedEmpty.title} description={resolvedEmpty.description} />
+          </GlassCard>
+        ) : (
+          <div className="flex flex-col gap-3">
+            {resolvedItems.map((item) => (
+              <RequestCard key={item.key} item={item} busy={false} onRevert={setReverting} />
+            ))}
+          </div>
+        )
       ) : visible.length === 0 ? (
         <GlassCard className="p-4">
           <EmptyState title="Sin solicitudes pendientes" description="Cuando haya una corrección o una justificación, aparece acá." />
@@ -228,7 +368,7 @@ export function SolicitudesAsistencia() {
         </div>
       )}
 
-      {!isLoading && tab !== 'correction' && justificationTotal > 0 && (
+      {!isLoading && !showingResolved && tab !== 'correction' && justificationTotal > 0 && (
         <div className="flex flex-col items-center gap-2 text-size-12-5 text-ink-soft" data-testid="justifications-pagination">
           <span>Mostrando {justificationItems.length} de {justificationTotal} justificaciones</span>
           {hiddenJustifications > 0 && (
@@ -237,6 +377,22 @@ export function SolicitudesAsistencia() {
               size="sm"
               disabled={justifications.isFetching}
               onClick={() => setJustificationSize((size) => size + JUSTIFICATIONS_PAGE_SIZE)}
+            >
+              Ver más
+            </Button>
+          )}
+        </div>
+      )}
+
+      {!isLoading && showingResolved && resolvedTotal > 0 && (
+        <div className="flex flex-col items-center gap-2 text-size-12-5 text-ink-soft" data-testid="resolved-pagination">
+          <span>Mostrando {resolvedItems.length} de {resolvedTotal} solicitudes</span>
+          {hiddenResolved > 0 && (
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={resolved.isFetching}
+              onClick={() => setResolvedSize((size) => size + RESOLVED_PAGE_SIZE)}
             >
               Ver más
             </Button>
@@ -260,6 +416,22 @@ export function SolicitudesAsistencia() {
         placeholder="Explicá por qué se rechaza"
         confirmarVariant="destructive"
         onConfirmar={confirmReject}
+      />
+
+      <ModalMotivo
+        open={reverting !== null}
+        onClose={() => setReverting(null)}
+        confirmando={revertDecision.isPending}
+        requerido
+        minLength={MIN_REJECTION_REASON_LENGTH}
+        showCounter
+        titulo={revertCopy?.title ?? 'Revertir decisión'}
+        descripcion={revertCopy?.description}
+        placeholder={revertCopy?.placeholder}
+        confirmarLabel="Revertir"
+        confirmarVariant="primary"
+        mensajeRequerido="El motivo de la reversión es obligatorio."
+        onConfirmar={confirmRevert}
       />
     </PageContainer>
   );

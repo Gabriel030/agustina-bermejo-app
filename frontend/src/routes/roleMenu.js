@@ -111,6 +111,7 @@ export const ROLE_MENU = {
     { slug: 'esquemas-evaluacion', label: 'Esquemas de evaluación', icon: ClipboardCheck },
     { slug: 'mesas-de-examen', label: 'Mesas de examen', icon: FileCheck2 },
     closures,
+    solicitudes,
     { slug: 'ajustes-del-instituto', label: 'Ajustes del instituto', icon: SlidersHorizontal },
     { slug: 'importacion-inicial', label: 'Importación inicial', icon: Upload },
     audit,
@@ -201,7 +202,7 @@ const MENU_GROUPS = {
       label: 'Académico',
       sections: [
         { id: 'offering', label: 'Oferta y períodos', slugs: ['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'periodos'] },
-        { id: 'coursework', label: 'Cursada', slugs: ['mesas-de-examen', 'cierres-de-comision'] },
+        { id: 'coursework', label: 'Cursada', slugs: ['mesas-de-examen', 'cierres-de-comision', 'solicitudes-de-asistencia'] },
         {
           id: 'graduation',
           label: 'Egresos y certificados',

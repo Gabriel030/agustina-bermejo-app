@@ -63,7 +63,7 @@ describe('role menu manifest', () => {
 
   it('drops groups left without visible items', () => {
     const withoutAcademic = menuItemsFor('director').filter(
-      (item) => !['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'mesas-de-examen', 'cierres-de-comision', 'periodos', 'constancias', 'constancias-por-excepcion', 'egresos', 'plantilla-de-certificados', 'firmantes'].some((slug) => item.to.endsWith(slug)),
+      (item) => !['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'mesas-de-examen', 'cierres-de-comision', 'solicitudes-de-asistencia', 'periodos', 'constancias', 'constancias-por-excepcion', 'egresos', 'plantilla-de-certificados', 'firmantes'].some((slug) => item.to.endsWith(slug)),
     );
     expect(groupMenuItems('director', withoutAcademic).map((group) => group.id)).not.toContain('academic');
   });
@@ -124,10 +124,10 @@ describe('role menu manifest', () => {
     const academic = groupMenuItems('director', menuItemsFor('director')).find((group) => group.id === 'academic');
     expect(academic.sections.map((section) => [section.label, section.items.map((item) => item.label)])).toEqual([
       ['Oferta y períodos', ['Oferta académica', 'Gestión académica', 'Esquemas de evaluación', 'Períodos']],
-      ['Cursada', ['Mesas de examen', 'Cierres de comisión']],
+      ['Cursada', ['Mesas de examen', 'Cierres de comisión', 'Solicitudes de asistencia']],
       ['Egresos y certificados', ['Egresos', 'Plantilla de certificados', 'Firmantes', 'Constancias', 'Emitir por excepción']],
     ]);
-    expect(academic.items).toHaveLength(11);
+    expect(academic.items).toHaveLength(12);
   });
 
   it('keeps the director billing and institution menus as plain ordered lists', () => {
@@ -178,6 +178,11 @@ describe('role menu manifest', () => {
   it('lists the commission closures of the director under the academic group', () => {
     const academic = groupMenuItems('director', menuItemsFor('director')).find((group) => group.id === 'academic');
     expect(academic.items.map((item) => item.to)).toContain('/director/cierres-de-comision');
+  });
+
+  it('lists the attendance requests of the director under the academic group', () => {
+    const academic = groupMenuItems('director', menuItemsFor('director')).find((group) => group.id === 'academic');
+    expect(academic.items.map((item) => item.to)).toContain('/director/solicitudes-de-asistencia');
   });
 
   it('menu entry is a standalone link for the director', () => {
