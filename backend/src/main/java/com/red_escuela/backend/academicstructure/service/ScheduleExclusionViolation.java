@@ -5,6 +5,7 @@ import java.sql.SQLException;
 final class ScheduleExclusionViolation {
 
     static final String EXCLUSION_VIOLATION_STATE = "23P01";
+    static final String DEADLOCK_STATE = "40P01";
     static final String CLASSROOM_OVERLAP_CONSTRAINT = "ex_schedule_slot_classroom_overlap";
     static final String INSTRUCTOR_OVERLAP_CONSTRAINT = "ex_schedule_slot_instructor_overlap";
 
@@ -17,6 +18,15 @@ final class ScheduleExclusionViolation {
 
     static boolean isInstructorOverlap(Throwable failure) {
         return isExclusionOn(failure, INSTRUCTOR_OVERLAP_CONSTRAINT);
+    }
+
+    static boolean isDeadlock(Throwable failure) {
+        for (Throwable cause = failure; cause != null; cause = cause.getCause() == cause ? null : cause.getCause()) {
+            if (cause instanceof SQLException sql && DEADLOCK_STATE.equals(sql.getSQLState())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean isExclusionOn(Throwable failure, String constraint) {
