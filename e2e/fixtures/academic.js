@@ -3,6 +3,7 @@ import { BackendApi } from './api.js';
 const DEMO_TERM_DESCRIPTION = 'Ciclo lectivo 2026 (Demo)';
 const DEMO_SCHEME_NAME = 'Esquema demo: 2 parciales y final';
 const DEMO_TEACHER_NAME = 'Docente Demo';
+const OTHER_DEMO_TEACHER_NAME = 'Docente Demo 2';
 
 export function uniqueSuffix() {
   return `${Date.now().toString(36)}${Math.floor(Math.random() * 1296).toString(36)}`.toUpperCase();
@@ -47,12 +48,12 @@ export async function createProgramWithSubject(request, suffix) {
   return { programId: program.id, subjectId: subject.id, subjectName: subject.name };
 }
 
-export async function createSection(request, { programId, subjectId, name, capacity }) {
+export async function createSection(request, { programId, subjectId, name, capacity, withDemoTeacher }) {
   const administrative = await BackendApi.as(request, 'administrativo');
   const director = await BackendApi.as(request, 'director');
   const term = await findByName(administrative, '/terms', DEMO_TERM_DESCRIPTION);
   const scheme = await findByName(director, '/evaluation-schemes', DEMO_SCHEME_NAME);
-  const teacher = await findByName(administrative, '/instructors', DEMO_TEACHER_NAME);
+  const teacher = await findByName(administrative, '/instructors', withDemoTeacher ? DEMO_TEACHER_NAME : OTHER_DEMO_TEACHER_NAME);
   const cycle = await administrative.post('/academic-offering-cycles', { programId, termId: term.id });
   const sectionId = await administrative.post(`/academic-offering-cycles/${cycle.id}/sections`, {
     name,

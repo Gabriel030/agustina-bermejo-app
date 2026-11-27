@@ -8,7 +8,7 @@ import {
 } from './academic.js';
 import { ROLES } from './accounts.js';
 
-export async function prepareCareerWithSection(request, studentRole, { capacity = 30 } = {}) {
+export async function prepareCareerWithSection(request, studentRole, { capacity = 30, withDemoTeacher = true } = {}) {
   const suffix = uniqueSuffix();
   const career = await createProgramWithSubject(request, suffix);
   const section = await createSection(request, {
@@ -16,6 +16,7 @@ export async function prepareCareerWithSection(request, studentRole, { capacity 
     subjectId: career.subjectId,
     name: `Comisión ${suffix}`,
     capacity,
+    withDemoTeacher,
   });
   await withdrawFromActiveSections(request, studentRole);
   const enrollment = await enrollStudentInProgram(request, studentRole, ROLES[studentRole].username, career.programId);
