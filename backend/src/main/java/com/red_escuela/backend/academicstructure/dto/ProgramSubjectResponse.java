@@ -12,6 +12,7 @@ import lombok.Getter;
 public class ProgramSubjectResponse {
     private final Long id;
     private final Long programId;
+    @Schema(nullable = true) private final Long planId;
     private final Long subjectId;
     private final String subjectCode;
     private final String subjectName;
@@ -30,6 +31,7 @@ public class ProgramSubjectResponse {
         return ProgramSubjectResponse.builder()
                 .id(ps.getId())
                 .programId(ps.getProgram().getId())
+                .planId(ps.getPlan() == null ? null : ps.getPlan().getId())
                 .subjectId(ps.getSubject().getId())
                 .subjectCode(ps.getSubject().getCode())
                 .subjectName(ps.getSubject().getName())

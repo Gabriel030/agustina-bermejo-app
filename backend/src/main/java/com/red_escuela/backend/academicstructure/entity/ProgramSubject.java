@@ -23,6 +23,11 @@ public class ProgramSubject {
     @OnDelete(action = OnDeleteAction.CASCADE)
     private Program program;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "plan_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private CurriculumPlan plan;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "subject_id", nullable = false)
     private Subject subject;
