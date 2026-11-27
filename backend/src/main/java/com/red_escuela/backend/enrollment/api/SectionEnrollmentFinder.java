@@ -73,6 +73,18 @@ public class SectionEnrollmentFinder {
         courseEnrollmentRepository.findByIdForUpdate(id).orElseThrow(() -> new SectionEnrollmentNotFoundException(id));
     }
 
+    public List<ActiveEnrollmentLimitView> findActiveProgramLimitsByStudents(java.util.Collection<Long> studentIds) {
+        return programEnrollmentRepository.findActiveLimitRowsByStudentIdIn(studentIds, ACTIVE_STATUSES).stream()
+                .map(row -> new ActiveEnrollmentLimitView(row.enrollmentId(), row.studentId(), row.maxAbsenceRate()))
+                .toList();
+    }
+
+    public List<ActiveEnrollmentLimitView> findActiveCourseLimitsByStudents(java.util.Collection<Long> studentIds) {
+        return courseEnrollmentRepository.findActiveLimitRowsByStudentIdIn(studentIds, ACTIVE_STATUSES).stream()
+                .map(row -> new ActiveEnrollmentLimitView(row.enrollmentId(), row.studentId(), row.maxAbsenceRate()))
+                .toList();
+    }
+
     public SubjectSectionEnrollment findProgramEnrollment(Long id) {
         return programEnrollmentRepository.findById(id)
                 .orElseThrow(() -> new SectionEnrollmentNotFoundException(id));

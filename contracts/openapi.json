@@ -17240,6 +17240,10 @@
           "apellido" : {
             "type" : "string"
           },
+          "attendanceRisk" : {
+            "enum" : [ "NONE", "NEAR_LIMIT", "FREE" ],
+            "type" : "string"
+          },
           "dni" : {
             "type" : "string"
           },
@@ -17255,6 +17259,12 @@
           "id" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "missingRequiredDocuments" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
           },
           "nombre" : {
             "type" : "string"
@@ -17285,7 +17295,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "apellido", "dni", "email", "emailVerified", "id", "nombre", "onboardingStatus", "personId", "status", "username" ],
+        "required" : [ "apellido", "attendanceRisk", "dni", "email", "emailVerified", "id", "missingRequiredDocuments", "nombre", "onboardingStatus", "personId", "status", "username" ],
         "type" : "object"
       },
       "SubjectAttendanceSummaryResponse" : {
