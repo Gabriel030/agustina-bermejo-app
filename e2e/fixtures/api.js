@@ -51,6 +51,13 @@ export class BackendApi {
     return response.json();
   }
 
+  async postWithoutBody(path, data) {
+    const response = await this.request.post(`${BACKEND_URL}${path}`, { headers: this.headers, data });
+    if (!response.ok()) {
+      throw new Error(`POST ${path} failed: ${response.status()}`);
+    }
+  }
+
   async put(path, data) {
     const response = await this.request.put(`${BACKEND_URL}${path}`, { headers: this.headers, data });
     if (!response.ok()) {

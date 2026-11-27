@@ -30,6 +30,10 @@ export const VERDICT_REASON = {
     label: 'Salteado: horarios',
     tip: 'Conserva su lugar. Sus horarios se superponen con otra cursada. Sigue en la cola pero no se lo promueve.',
   },
+  PROGRAM_ENROLLMENT_NOT_ACTIVE: {
+    label: 'Salteado: carrera inactiva',
+    tip: 'Conserva su lugar. Su inscripción a la carrera está pausada o inactiva. Sigue en la cola pero no se lo promueve.',
+  },
   ADMISSION_RECEIPT_PENDING: {
     label: 'Salteado: comprobante',
     tip: 'Conserva su lugar. Su comprobante de admisión está pendiente de revisión. Se lo promueve cuando se apruebe.',

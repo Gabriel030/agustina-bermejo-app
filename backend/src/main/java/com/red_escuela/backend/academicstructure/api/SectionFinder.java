@@ -78,7 +78,7 @@ public class SectionFinder {
     }
 
     private boolean isOpenForEnrollment(SubjectSection section) {
-        return section.getStatus() == StatusType.ACTIVE && section.isOfferingApproved();
+        return section.isOpenForEnrollment();
     }
 
     public CourseSectionView findCourseSection(Long id) {

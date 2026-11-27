@@ -127,7 +127,7 @@ Endpoints que hoy deniegan al Director y pasarían a permitirlo en Activo:
 - POST /academic-offering-cycles, POST /academic-offering-cycles/{id}/sections y POST /academic-offering-cycles/{id}/submit (academicstructure.manage_offering_cycle)
 - POST /classrooms y POST /classrooms/{id}/deactivate (academicstructure.manage_classrooms)
 - POST /subject-sections/{id}/modification-request y /modification-request/preview (academicstructure.request_section_modification)
-- POST /subjects/{id}/sections, PUT /program-sections/{id}, POST /course-subjects/{id}/sections y PUT /course-sections/{id} (academicstructure.manage_sections)
+- PUT /program-sections/{id} y PUT /course-sections/{id} (academicstructure.manage_sections)
 - POST activate/deactivate de comisiones de materias y de cursos (academicstructure.change_section_status)
 - POST /program-sections/{id}/instructors y /course-sections/{id}/instructors (academicstructure.assign_section_instructor)
 - DELETE /program-sections/{id}/instructors/{assignmentId} y /course-sections/{id}/instructors/{assignmentId} (academicstructure.remove_section_instructor)

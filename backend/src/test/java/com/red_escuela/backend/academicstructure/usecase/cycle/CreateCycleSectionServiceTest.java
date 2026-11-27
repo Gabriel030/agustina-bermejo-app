@@ -103,8 +103,10 @@ class CreateCycleSectionServiceTest {
     void setUp() {
         service = new CreateCycleSectionService(new CreateCycleSectionTransaction(cycleRepository, subjectRepository, courseSubjectRepository,
                 subjectSectionRepository, courseSectionRepository, classroomRepository, slotRepository, conflictChecker,
-                new CycleSectionAbsenceLimitAssigner(), identityAssigner, shiftSlotGuard, evaluationSetupPort));
+                new CycleSectionAbsenceLimitAssigner(), identityAssigner, shiftSlotGuard,
+                new com.red_escuela.backend.academicstructure.service.TermOfferingGuard(java.time.Clock.systemDefaultZone()), evaluationSetupPort));
         term = TermFixtures.newTerm();
+        term.setStatus(com.red_escuela.backend.shared.domain.StatusType.ACTIVE);
         term.setId(2L);
         programCycle = new AcademicOfferingCycle();
         programCycle.setTerm(term);
