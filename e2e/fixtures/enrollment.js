@@ -8,13 +8,14 @@ import {
 } from './academic.js';
 import { ROLES } from './accounts.js';
 
-export async function prepareCareerWithSection(request, studentRole, { capacity = 30, withDemoTeacher = true } = {}) {
+export async function prepareCareerWithSection(request, studentRole, { capacity = 30 } = {}) {
   const suffix = uniqueSuffix();
   const career = await createProgramWithSubject(request, suffix);
-  const section = await createSection(request, career.subjectId, {
+  const section = await createSection(request, {
+    programId: career.programId,
+    subjectId: career.subjectId,
     name: `Comisión ${suffix}`,
     capacity,
-    withDemoTeacher,
   });
   await withdrawFromActiveSections(request, studentRole);
   const enrollment = await enrollStudentInProgram(request, studentRole, ROLES[studentRole].username, career.programId);

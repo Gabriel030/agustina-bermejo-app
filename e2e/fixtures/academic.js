@@ -47,24 +47,24 @@ export async function createProgramWithSubject(request, suffix) {
   return { programId: program.id, subjectId: subject.id, subjectName: subject.name };
 }
 
-export async function createSection(request, subjectId, { name, capacity, withDemoTeacher }) {
+export async function createSection(request, { programId, subjectId, name, capacity }) {
   const administrative = await BackendApi.as(request, 'administrativo');
   const director = await BackendApi.as(request, 'director');
   const term = await findByName(administrative, '/terms', DEMO_TERM_DESCRIPTION);
   const scheme = await findByName(director, '/evaluation-schemes', DEMO_SCHEME_NAME);
-  const section = await administrative.post(`/subjects/${subjectId}/sections`, {
+  const teacher = await findByName(administrative, '/instructors', DEMO_TEACHER_NAME);
+  const cycle = await administrative.post('/academic-offering-cycles', { programId, termId: term.id });
+  const sectionId = await administrative.post(`/academic-offering-cycles/${cycle.id}/sections`, {
     name,
-    termId: term.id,
-    schedule: 'Sábados 09:00 a 11:00',
+    subjectId,
     capacity,
     shift: 'MORNING',
-    evaluationSchemeId: scheme.id,
   });
-  if (withDemoTeacher) {
-    const teacher = await findByName(administrative, '/instructors', DEMO_TEACHER_NAME);
-    await administrative.post(`/program-sections/${section.id}/instructors`, { instructorId: teacher.id, role: 'LEAD' });
-  }
-  return { sectionId: section.id, sectionName: section.name };
+  await administrative.put(`/program-sections/${sectionId}`, { evaluationSchemeId: scheme.id });
+  await administrative.postWithoutBody(`/program-sections/${sectionId}/instructors`, { instructorId: teacher.id, role: 'LEAD' });
+  await administrative.postWithoutBody(`/academic-offering-cycles/${cycle.id}/submit`);
+  await director.postWithoutBody(`/academic-offering-cycles/${cycle.id}/approve`);
+  return { sectionId, sectionName: name };
 }
 
 export async function enrollStudentInProgram(request, studentRole, username, programId) {
