@@ -8915,6 +8915,13 @@
       },
       "HolidayResponse" : {
         "properties" : {
+          "attendanceAffectedDates" : {
+            "items" : {
+              "format" : "date",
+              "type" : "string"
+            },
+            "type" : "array"
+          },
           "date" : {
             "format" : "date",
             "type" : "string"
@@ -8934,7 +8941,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "date", "description", "id", "name", "type" ],
+        "required" : [ "attendanceAffectedDates", "date", "description", "id", "name", "type" ],
         "type" : "object"
       },
       "Impact" : {
