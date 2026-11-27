@@ -441,13 +441,15 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     private void seedHoliday(int year) {
-        java.time.LocalDate date = java.time.LocalDate.of(year, 1, 1);
-        if (!holidayRepository.existsByDate(date)) {
-            var holiday = new com.red_escuela.backend.academicstructure.entity.Holiday();
-            holiday.setDate(date);
-            holiday.setName("Año Nuevo");
-            holiday.setType(com.red_escuela.backend.academicstructure.domain.HolidayType.NATIONAL);
-            holidayRepository.save(holiday);
+        for (int day = 1; day <= 5; day++) {
+            java.time.LocalDate date = java.time.LocalDate.of(year, 1, day);
+            if (!holidayRepository.existsByDate(date)) {
+                var holiday = new com.red_escuela.backend.academicstructure.entity.Holiday();
+                holiday.setDate(date);
+                holiday.setName("Año Nuevo");
+                holiday.setType(com.red_escuela.backend.academicstructure.domain.HolidayType.NATIONAL);
+                holidayRepository.save(holiday);
+            }
         }
     }
 
@@ -473,11 +475,9 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         String admin = tokenWithRole("admin-holiday-abm", "ADMINISTRATIVO");
         String preceptor = tokenWithRole("preceptor-holiday-abm", "PRECEPTOR");
 
-        mockMvc.perform(post("/holidays")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + admin)
-                        .content("{\"date\":\"2078-01-01\",\"name\":\"Año Nuevo\",\"type\":\"NATIONAL\"}"))
-                .andExpect(status().isCreated());
+        for (int day = 1; day <= 5; day++) {
+            createHolidayAs(admin, "2078-01-0" + day, "Año Nuevo", "NATIONAL");
+        }
 
         mockMvc.perform(post("/terms")
                         .contentType(MediaType.APPLICATION_JSON)

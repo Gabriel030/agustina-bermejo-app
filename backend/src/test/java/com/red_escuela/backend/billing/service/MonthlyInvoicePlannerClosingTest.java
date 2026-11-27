@@ -162,7 +162,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
         job.run();
 
         assertThat(sequence(enrollment)).isEqualTo(expected("M2027-02", "C2027-03", "C2027-04"));
-        assertThat(invoices(enrollment, FeeType.MONTHLY_INSTALLMENT).get(0).getDueDate()).isEqualTo(date(2027, 3, 13));
+        assertThat(invoices(enrollment, FeeType.MONTHLY_INSTALLMENT).get(0).getDueDate()).isEqualTo(date(2027, 3, 15));
         assertThat(invoices(enrollment, FeeType.MONTHLY_INSTALLMENT).get(1).getDueDate()).isEqualTo(date(2027, 4, 12));
         Invoice reenrollmentFee = onlyFee(enrollment);
         assertThat(reenrollmentFee.getTemplateId()).isEqualTo(y27.templateId());
@@ -180,7 +180,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
 
         job.run();
 
-        assertThat(invoices(enrollment, FeeType.MONTHLY_INSTALLMENT)).extracting(Invoice::getDueDate).containsExactly(date(2027, 3, 13));
+        assertThat(invoices(enrollment, FeeType.MONTHLY_INSTALLMENT)).extracting(Invoice::getDueDate).containsExactly(date(2027, 3, 15));
         assertInvariants(enrollment, y27);
     }
 
@@ -195,7 +195,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
 
         job.run();
 
-        assertThat(invoices(enrollment, FeeType.MONTHLY_INSTALLMENT)).extracting(Invoice::getDueDate).containsExactly(date(2027, 3, 7));
+        assertThat(invoices(enrollment, FeeType.MONTHLY_INSTALLMENT)).extracting(Invoice::getDueDate).containsExactly(date(2027, 3, 8));
     }
 
     @Test
@@ -211,7 +211,7 @@ class MonthlyInvoicePlannerClosingTest extends AbstractInvoiceSequenceTest {
 
         List<Invoice> installments = invoices(enrollment, FeeType.MONTHLY_INSTALLMENT);
         assertThat(installments).extracting(Invoice::getPeriod).containsExactly(YearMonth.of(2027, 4));
-        assertThat(installments.get(0).getDueDate()).isEqualTo(date(2027, 6, 13));
+        assertThat(installments.get(0).getDueDate()).isEqualTo(date(2027, 6, 14));
         assertThat(installments.get(0).getDueDate()).isAfterOrEqualTo(date(2027, 6, 3));
         assertThat(amountDue(installments.get(0))).isEqualTo(ars(12000));
         assertInvariants(enrollment, y27);

@@ -34,7 +34,7 @@ class CourseMonthlyInvoicePlannerTest {
         PlannedInvoice charge = plan.charges().get(0);
         assertThat(charge.period()).isEqualTo(MARCH);
         assertThat(charge.priceDate()).isEqualTo(LocalDate.of(2027, 3, 4));
-        assertThat(charge.dueDate()).isEqualTo(LocalDate.of(2027, 3, 14));
+        assertThat(charge.dueDate()).isEqualTo(LocalDate.of(2027, 3, 15));
         assertThat(charge.upfront()).isFalse();
     }
 

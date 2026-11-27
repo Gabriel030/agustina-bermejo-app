@@ -57,6 +57,12 @@ class TermUpdateIT extends AbstractIntegrationTest {
         term.setDescription("original");
         term.setType(TermType.FIRST_SEMESTER);
         term.setStatus(StatusType.ACTIVE);
+        for (int holidayYear = 2026; holidayYear <= 2030; holidayYear++) {
+            for (int day = 1; day <= 5; day++) {
+                jdbcTemplate.update("insert into holiday (date, description, name, type) values (?, 'Fixture', 'Fixture', 'NATIONAL') on conflict do nothing",
+                        java.time.LocalDate.of(holidayYear, 1, day));
+            }
+        }
         return termRepository.save(term).getId();
     }
 }

@@ -408,7 +408,7 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
 
         List<Invoice> afterChange = invoices(enrollment, FeeType.MONTHLY_INSTALLMENT);
         assertThat(afterChange.stream().filter(i -> i.getPeriod().equals(YearMonth.of(2027, 4))).findFirst().orElseThrow().getDueDate()).isEqualTo(aprilDue);
-        assertThat(afterChange.stream().filter(i -> i.getPeriod().equals(YearMonth.of(2027, 5))).findFirst().orElseThrow().getDueDate()).isEqualTo(date(2027, 5, 16));
+        assertThat(afterChange.stream().filter(i -> i.getPeriod().equals(YearMonth.of(2027, 5))).findFirst().orElseThrow().getDueDate()).isEqualTo(date(2027, 5, 17));
     }
 
     @Test
