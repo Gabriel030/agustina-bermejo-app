@@ -26,6 +26,7 @@ import com.red_escuela.backend.academicstructure.exception.InvalidCorequisiteExc
 import com.red_escuela.backend.academicstructure.exception.InvalidPrerequisiteException;
 import com.red_escuela.backend.academicstructure.exception.InvalidProgramSubjectCategoryException;
 import com.red_escuela.backend.academicstructure.exception.PrerequisiteAlreadyExistsException;
+import com.red_escuela.backend.academicstructure.exception.SubjectIsPrerequisiteOfActiveSubjectException;
 import com.red_escuela.backend.academicstructure.domain.ProgramNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.ProgramSubjectAlreadyExistsException;
 import com.red_escuela.backend.academicstructure.exception.PrerequisiteNotFoundException;
@@ -161,6 +162,7 @@ public class ProgramSubjectService {
         if (request.sortOrder() != null) {
             programSubject.setSortOrder(request.sortOrder());
         }
+        requireChronologyKeptWithPrerequisites(programSubject);
         if (request.electiveGroupId() != null) {
             Long programId = programSubject.getProgram().getId();
             ElectiveGroup electiveGroup = electiveGroupRepository.findById(request.electiveGroupId())
@@ -192,6 +194,7 @@ public class ProgramSubjectService {
     public void deactivate(Long id) {
         ProgramSubject programSubject = findOrThrow(id);
         editPolicy.lockEditableStructureOf(programSubject.getPlan().getId());
+        requireNoActiveDependents(programSubject);
         programSubject.setStatus(StatusType.INACTIVE);
         programSubjectRepository.save(programSubject);
     }
@@ -237,6 +240,24 @@ public class ProgramSubjectService {
             return prerequisiteRepository.saveAndFlush(prerequisite);
         } catch (DataIntegrityViolationException e) {
             throw new PrerequisiteAlreadyExistsException(objetivo.getId(), prerequisitePropuesto.getId());
+        }
+    }
+
+    private void requireChronologyKeptWithPrerequisites(ProgramSubject subject) {
+        for (ProgramSubjectPrerequisite own : prerequisiteRepository.findByProgramSubjectId(subject.getId())) {
+            validateChronologicalOrder(subject, own.getPrerequisiteProgramSubject());
+        }
+        for (ProgramSubjectPrerequisite dependent : prerequisiteRepository.findByPrerequisiteProgramSubjectId(subject.getId())) {
+            validateChronologicalOrder(dependent.getProgramSubject(), subject);
+        }
+    }
+
+    private void requireNoActiveDependents(ProgramSubject subject) {
+        for (ProgramSubjectPrerequisite dependent : prerequisiteRepository.findByPrerequisiteProgramSubjectId(subject.getId())) {
+            if (dependent.getProgramSubject().getStatus() == StatusType.ACTIVE) {
+                throw new SubjectIsPrerequisiteOfActiveSubjectException(subject.getId(),
+                        dependent.getProgramSubject().getSubject().getName());
+            }
         }
     }
 
