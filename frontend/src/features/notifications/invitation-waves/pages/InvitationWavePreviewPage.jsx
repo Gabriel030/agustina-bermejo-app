@@ -147,7 +147,7 @@ export function InvitationWavePreviewPage() {
 
         <GlassCard className="flex flex-col gap-3 p-3 sm:p-4">
           <Tabs value={tab} onValueChange={setTab}>
-            <TabsList variant="segmented" className="group-data-horizontal/tabs:h-11 md:group-data-horizontal/tabs:h-8">
+            <TabsList variant="line" className="group-data-horizontal/tabs:h-11 md:group-data-horizontal/tabs:h-8">
               <TabsTrigger value="eligible" className="min-h-11 md:min-h-0">Elegibles · {formatDecimal(eligible)}</TabsTrigger>
               <TabsTrigger value="excluded" className="min-h-11 md:min-h-0">Excluidos · {formatDecimal(excluded)}</TabsTrigger>
             </TabsList>

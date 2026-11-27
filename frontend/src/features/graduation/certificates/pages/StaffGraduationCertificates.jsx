@@ -162,7 +162,7 @@ export function StaffGraduationCertificates() {
   return (
     <PageContainer title="Egresos" description="Certificados de egreso">
       <Tabs value={view} onValueChange={setView} className="gap-4">
-        <TabsList variant="segmented">
+        <TabsList variant="line">
           <TabsTrigger value="eligible">Por emitir</TabsTrigger>
           <TabsTrigger value="issued">Emitidos</TabsTrigger>
           {isDirector && (
@@ -179,7 +179,7 @@ export function StaffGraduationCertificates() {
         </TabsList>
         <TabsContent value="eligible" className="mt-0 flex flex-col gap-4">
           <Tabs value={kind} onValueChange={changeKind} className="gap-4">
-            <TabsList variant="segmented">
+            <TabsList variant="line">
               {KIND_TABS.map((tab) => (
                 <TabsTrigger key={tab.value} value={tab.value}>
                   {tab.label}

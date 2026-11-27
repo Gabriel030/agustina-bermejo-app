@@ -202,7 +202,7 @@ export function DesignCatalog() {
 
       <Section id="tabs" title="Pestañas">
         <Tabs defaultValue="summary">
-          <TabsList variant="segmented">
+          <TabsList variant="line">
             <TabsTrigger value="summary">Resumen</TabsTrigger>
             <TabsTrigger value="students">Alumnos</TabsTrigger>
             <TabsTrigger value="grades">Notas</TabsTrigger>

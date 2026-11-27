@@ -304,7 +304,7 @@ export function FinancialDashboardPage() {
       )}
 
       <Tabs defaultValue={DASHBOARD_TABS[0].value}>
-        <TabsList variant="segmented">
+        <TabsList variant="line">
           {DASHBOARD_TABS.map((tab) => (
             <TabsTrigger key={tab.value} value={tab.value} className="px-3">
               {tab.label}

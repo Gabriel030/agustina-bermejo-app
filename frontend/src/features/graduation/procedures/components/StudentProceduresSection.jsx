@@ -76,7 +76,7 @@ export function StudentProceduresSection({ carreraId, onSeeStudyPlan }) {
 
   return (
     <Tabs value={section} onValueChange={setSection} className="flex flex-col gap-3">
-      <TabsList variant="segmented">
+      <TabsList variant="line">
         <TabsTrigger value="procedures">Trámites</TabsTrigger>
         <TabsTrigger value="approved">Trámites aprobados{validCount > 0 ? ` (${validCount})` : ''}</TabsTrigger>
       </TabsList>
