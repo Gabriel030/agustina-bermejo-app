@@ -117,6 +117,7 @@ class ApprovedSubjectsEndToEndIT extends AbstractIntegrationTest {
             Subject approvedSubject = fixtures.subject();
             ProgramSubject entry = new ProgramSubject();
             entry.setProgram(program);
+            entry.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
             entry.setSubject(approvedSubject);
             entry.setCredits(4);
             entry.setStatus(StatusType.ACTIVE);

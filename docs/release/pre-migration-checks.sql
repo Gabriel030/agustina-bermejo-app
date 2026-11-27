@@ -234,6 +234,7 @@ begin
       ('current_account_entry', 'amount_currency', array['ARS', 'USD']),
       ('current_account_entry', 'currency', array['ARS', 'USD']),
       ('current_account_entry', 'running_balance_amount_currency', array['ARS', 'USD']),
+      ('curriculum_plan', 'status', array['ACTIVE', 'DRAFT', 'EXPIRED']),
       ('director_approval_request', 'status', array['APPROVED', 'REJECTED', 'REQUESTED']),
       ('director_approval_request', 'type', array['LATE_EXAM', 'PREREQUISITE_WAIVER']),
       ('discount_definition_status_change', 'event', array['DEFINITION_CLOSED', 'DEFINITION_CREATED']),
@@ -545,7 +546,7 @@ group by course_id, term_id
 having count(*) > 1;
 \endif
 
-\echo [V491] Datos que hacen fallar el VALIDATE de V491 (capacidad <= 0, attempt_number < 1, inscripciones cuyo estudiante no coincide con la inscripcion padre); debe devolver 0 filas:
+\echo [V493] Datos que hacen fallar el VALIDATE de V493 (capacidad <= 0, attempt_number < 1, inscripciones cuyo estudiante no coincide con la inscripcion padre); debe devolver 0 filas:
 select 'subject_section' as tabla, id from subject_section where capacity <= 0
 union all select 'course_section', id from course_section where capacity <= 0
 union all select 'course', id from course where capacity <= 0

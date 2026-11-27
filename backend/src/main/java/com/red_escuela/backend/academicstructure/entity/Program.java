@@ -126,4 +126,10 @@ public class Program {
     @Version
     @Column(name = "version")
     private Long version;
+
+    public void adoptCurriculumTotals(CurriculumPlan plan) {
+        this.totalYears = plan.getTotalYears();
+        this.totalCreditsRequired = plan.getTotalCreditsRequired();
+        this.totalHoursRequired = plan.getTotalHoursRequired();
+    }
 }

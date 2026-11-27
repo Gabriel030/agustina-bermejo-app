@@ -73,6 +73,7 @@ class SubjectRetakeRulesTest extends AbstractIntegrationTest {
         entityManager.persist(subject);
         ProgramSubject link = new ProgramSubject();
         link.setProgram(program);
+        link.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
         link.setSubject(subject);
         link.setCredits(10);
         link.setCurricularYear(1);

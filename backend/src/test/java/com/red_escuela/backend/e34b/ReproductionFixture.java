@@ -90,6 +90,7 @@ public abstract class ReproductionFixture extends AbstractIntegrationTest {
     protected ProgramSubject programSubject(Program program, Subject subject, int credits, StatusType status) {
         ProgramSubject programSubject = new ProgramSubject();
         programSubject.setProgram(program);
+        programSubject.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
         programSubject.setSubject(subject);
         programSubject.setCredits(credits);
         programSubject.setCurricularYear(1);
