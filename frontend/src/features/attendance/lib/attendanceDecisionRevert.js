@@ -1,30 +1,3 @@
-export const REVERT_WINDOW_DAYS = 7;
-
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-function utcDayKey(date) {
-  const month = String(date.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(date.getUTCDate()).padStart(2, '0');
-  return `${date.getUTCFullYear()}-${month}-${day}`;
-}
-
-function localDayKey(now) {
-  const month = String(now.getMonth() + 1).padStart(2, '0');
-  const day = String(now.getDate()).padStart(2, '0');
-  return `${now.getFullYear()}-${month}-${day}`;
-}
-
-export function revertDeadlineKey(decidedAt) {
-  if (!decidedAt) return null;
-  const [year, month, day] = decidedAt.slice(0, 10).split('-').map(Number);
-  return utcDayKey(new Date(Date.UTC(year, month - 1, day) + REVERT_WINDOW_DAYS * DAY_MS));
-}
-
-export function isRevertible(decidedAt, now = new Date()) {
-  const deadline = revertDeadlineKey(decidedAt);
-  return deadline !== null && localDayKey(now) <= deadline;
-}
-
 export function formatDayKey(dayKey) {
   if (!dayKey) return '';
   const [year, month, day] = dayKey.slice(0, 10).split('-');

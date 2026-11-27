@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
@@ -28,6 +28,8 @@ const APPROVED_CORRECTION = {
   decidedAt: '2026-11-24T10:00:00',
   decidedByName: 'Paula Ríos',
   rejectionReason: null,
+  revertible: true,
+  revertibleUntil: '2026-12-01',
 };
 
 const REJECTED_CORRECTION = {
@@ -80,13 +82,8 @@ function mockResolved(items, totalElements) {
 
 describe('SolicitudesAsistencia resolved tab', () => {
   beforeEach(() => {
-    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2026-11-27T12:00:00') });
     toastMock.success.mockClear();
     toastMock.error.mockClear();
-  });
-
-  afterEach(() => {
-    vi.useRealTimers();
   });
 
   it('opens the resolved tab from the query string and shows the resolution line', async () => {
@@ -142,18 +139,18 @@ describe('SolicitudesAsistencia resolved tab', () => {
     await waitFor(() => expect(calls.sizes).toContain(40));
   });
 
-  it('offers to revert a decision made 7 days ago and hides it after 8', async () => {
+  it('offers to revert only when the backend says so and shows its deadline', async () => {
     mockResolved([
-      { ...APPROVED_CORRECTION, id: 51, studentName: 'En plazo', decidedAt: '2026-11-20T08:00:00' },
-      { ...APPROVED_CORRECTION, id: 52, studentName: 'Vencida', decidedAt: '2026-11-19T08:00:00' },
+      { ...APPROVED_CORRECTION, id: 51, studentName: 'En plazo', revertible: true, revertibleUntil: '2026-12-03' },
+      { ...APPROVED_CORRECTION, id: 52, studentName: 'Vencida', revertible: false, revertibleUntil: '2026-11-26' },
     ]);
     renderWithProviders(<SolicitudesAsistencia />, { route: '/?tab=resueltas' });
 
     const inTime = (await screen.findByText('En plazo')).closest('[data-testid]');
     const expired = screen.getByText('Vencida').closest('[data-testid]');
 
-    expect(within(inTime).getByRole('button', { name: 'Revertir, hasta el fin del día 27/11/2026' })).toBeInTheDocument();
-    expect(within(inTime).getByText('Revertible hasta el fin del día 27/11/2026')).toBeInTheDocument();
+    expect(within(inTime).getByRole('button', { name: 'Revertir, hasta el fin del día 03/12/2026' })).toBeInTheDocument();
+    expect(within(inTime).getByText('Revertible hasta el fin del día 03/12/2026')).toBeInTheDocument();
     expect(within(expired).queryByRole('button', { name: /Revertir/ })).not.toBeInTheDocument();
     expect(within(expired).getByText('Pasaron más de 7 días: ya no se puede revertir.')).toBeInTheDocument();
   });

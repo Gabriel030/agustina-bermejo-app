@@ -27,7 +27,7 @@ import {
   useResolvedAttendanceRequests,
   useRevertAttendanceDecision,
 } from '@/features/attendance/hooks/useResolvedAttendanceRequests';
-import { REVERT_WINDOW_DAYS, formatDayKey, isRevertible, revertDeadlineKey, revertDialogCopy } from '@/features/attendance/lib/attendanceDecisionRevert';
+import { formatDayKey, revertDialogCopy } from '@/features/attendance/lib/attendanceDecisionRevert';
 
 const ESTADO_LABEL = { PRESENT: 'Presente', LATE: 'Tarde', ABSENT: 'Ausente', JUSTIFICATION_PENDING: 'Justificación pendiente', JUSTIFIED: 'Justificada' };
 const MIN_REJECTION_REASON_LENGTH = 10;
@@ -125,6 +125,8 @@ function toResolvedItem(r) {
       decidedAt: r.decidedAt,
       rejectionReason: r.rejectionReason,
       requestId: r.id,
+      revertible: r.revertible === true,
+      revertibleUntil: r.revertibleUntil,
       studentName: r.studentName,
       previousStatusLabel: ESTADO_LABEL[r.previousStatus] ?? r.previousStatus,
     },
@@ -134,8 +136,8 @@ function toResolvedItem(r) {
 function ResolutionFooter({ item, onRevert }) {
   const { resolution } = item;
   const pill = RESULT_PILL[resolution.result];
-  const deadline = formatDayKey(revertDeadlineKey(resolution.decidedAt));
-  const canRevert = isRevertible(resolution.decidedAt);
+  const deadline = formatDayKey(resolution.revertibleUntil);
+  const canRevert = resolution.revertible;
   return (
     <div className="flex flex-col gap-2 border-t border-border pt-3" data-testid="resolution-footer">
       <div className="flex flex-wrap items-center gap-2 text-size-12-5 text-ink-soft">
@@ -165,7 +167,7 @@ function ResolutionFooter({ item, onRevert }) {
           <span className="text-size-12-5 text-ink-faint">Revertible hasta el fin del día {deadline}</span>
         </div>
       ) : (
-        <div className="text-size-12-5 text-ink-faint">Pasaron más de {REVERT_WINDOW_DAYS} días: ya no se puede revertir.</div>
+        <div className="text-size-12-5 text-ink-faint">Pasaron más de 7 días: ya no se puede revertir.</div>
       )}
     </div>
   );
