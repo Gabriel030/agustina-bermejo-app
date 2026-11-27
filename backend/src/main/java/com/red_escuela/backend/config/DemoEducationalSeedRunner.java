@@ -230,7 +230,7 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
         for (int index = 0; index < sectionEnrollmentIds.size(); index++) {
             recordAttendance(api, sectionIds.get(index), sectionEnrollmentIds.get(index));
         }
-        api.post(TEACHER, "/section-enrollments/" + sectionEnrollmentIds.get(0) + "/grade-items", Map.of("type", "EXAM", "date", "2026-04-15T00:00:00", "score", 7));
+        api.post(TEACHER, "/section-enrollments/" + sectionEnrollmentIds.get(0) + "/grade-items", Map.of("type", "EXAM", "sequenceNumber", 1, "date", "2026-04-15T00:00:00", "score", 7));
         justifyFirstAbsence(api, sectionEnrollmentIds.get(0));
     }
 
