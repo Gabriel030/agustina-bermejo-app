@@ -6,11 +6,13 @@ import com.red_escuela.backend.academicstructure.dto.CurriculumPlanResponse;
 import com.red_escuela.backend.academicstructure.dto.ExpireCurriculumPlanRequest;
 import com.red_escuela.backend.academicstructure.dto.ProgramSubjectResponse;
 import com.red_escuela.backend.academicstructure.dto.UpdateCurriculumPlanRequest;
-import com.red_escuela.backend.academicstructure.service.ProgramSubjectService;
 import com.red_escuela.backend.academicstructure.usecase.curriculumplan.ActivateCurriculumPlanUseCase;
+import com.red_escuela.backend.academicstructure.usecase.curriculumplan.AddCurriculumPlanSubjectUseCase;
 import com.red_escuela.backend.academicstructure.usecase.curriculumplan.CreateCurriculumPlanUseCase;
 import com.red_escuela.backend.academicstructure.usecase.curriculumplan.ExpireCurriculumPlanUseCase;
 import com.red_escuela.backend.academicstructure.usecase.curriculumplan.GetCurriculumPlanUseCase;
+import com.red_escuela.backend.academicstructure.usecase.curriculumplan.ListCurriculumPlanSubjectsUseCase;
+import com.red_escuela.backend.academicstructure.usecase.curriculumplan.ListCurriculumPlansUseCase;
 import com.red_escuela.backend.academicstructure.usecase.curriculumplan.UpdateCurriculumPlanUseCase;
 import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
@@ -33,31 +35,37 @@ public class CurriculumPlanController {
     private final ActivateCurriculumPlanUseCase activateCurriculumPlanUseCase;
     private final ExpireCurriculumPlanUseCase expireCurriculumPlanUseCase;
     private final GetCurriculumPlanUseCase getCurriculumPlanUseCase;
-    private final ProgramSubjectService programSubjectService;
+    private final ListCurriculumPlansUseCase listCurriculumPlansUseCase;
+    private final AddCurriculumPlanSubjectUseCase addCurriculumPlanSubjectUseCase;
+    private final ListCurriculumPlanSubjectsUseCase listCurriculumPlanSubjectsUseCase;
 
     public CurriculumPlanController(CreateCurriculumPlanUseCase createCurriculumPlanUseCase,
                                     UpdateCurriculumPlanUseCase updateCurriculumPlanUseCase,
                                     ActivateCurriculumPlanUseCase activateCurriculumPlanUseCase,
                                     ExpireCurriculumPlanUseCase expireCurriculumPlanUseCase,
                                     GetCurriculumPlanUseCase getCurriculumPlanUseCase,
-                                    ProgramSubjectService programSubjectService) {
+                                    ListCurriculumPlansUseCase listCurriculumPlansUseCase,
+                                    AddCurriculumPlanSubjectUseCase addCurriculumPlanSubjectUseCase,
+                                    ListCurriculumPlanSubjectsUseCase listCurriculumPlanSubjectsUseCase) {
         this.createCurriculumPlanUseCase = createCurriculumPlanUseCase;
         this.updateCurriculumPlanUseCase = updateCurriculumPlanUseCase;
         this.activateCurriculumPlanUseCase = activateCurriculumPlanUseCase;
         this.expireCurriculumPlanUseCase = expireCurriculumPlanUseCase;
         this.getCurriculumPlanUseCase = getCurriculumPlanUseCase;
-        this.programSubjectService = programSubjectService;
+        this.listCurriculumPlansUseCase = listCurriculumPlansUseCase;
+        this.addCurriculumPlanSubjectUseCase = addCurriculumPlanSubjectUseCase;
+        this.listCurriculumPlanSubjectsUseCase = listCurriculumPlanSubjectsUseCase;
     }
 
-    @GetMapping("/programs/{programId}/curriculum-plans")
-    public List<CurriculumPlanResponse> listByProgram(@PathVariable Long programId) {
-        return getCurriculumPlanUseCase.listByProgram(programId);
+    @GetMapping("/programs/{id}/curriculum-plans")
+    public List<CurriculumPlanResponse> listByProgram(@PathVariable("id") Long programId) {
+        return listCurriculumPlansUseCase.listByProgram(programId);
     }
 
-    @PostMapping("/programs/{programId}/curriculum-plans")
+    @PostMapping("/programs/{id}/curriculum-plans")
     @ResponseStatus(HttpStatus.CREATED)
     @RequiresPermission(code = "academicstructure.manage_programs", legacyRoles = "ROLE_ADMINISTRATIVO")
-    public CurriculumPlanResponse create(@PathVariable Long programId, @Valid @RequestBody CreateCurriculumPlanRequest request) {
+    public CurriculumPlanResponse create(@PathVariable("id") Long programId, @Valid @RequestBody CreateCurriculumPlanRequest request) {
         return createCurriculumPlanUseCase.createDraftVersion(programId, request);
     }
 
@@ -86,13 +94,13 @@ public class CurriculumPlanController {
 
     @GetMapping("/curriculum-plans/{id}/subjects")
     public List<ProgramSubjectResponse> listSubjects(@PathVariable Long id) {
-        return programSubjectService.listByPlan(id).stream().map(ProgramSubjectResponse::from).toList();
+        return listCurriculumPlanSubjectsUseCase.listSubjects(id);
     }
 
     @PostMapping("/curriculum-plans/{id}/subjects")
     @ResponseStatus(HttpStatus.CREATED)
     @RequiresPermission(code = "academicstructure.manage_programs", legacyRoles = "ROLE_ADMINISTRATIVO")
     public ProgramSubjectResponse addSubject(@PathVariable Long id, @Valid @RequestBody CreateProgramSubjectRequest request) {
-        return ProgramSubjectResponse.from(programSubjectService.addSubjectToPlan(id, request));
+        return addCurriculumPlanSubjectUseCase.addSubject(id, request);
     }
 }

@@ -132,6 +132,12 @@ POST,/courses/{id}/payment-plan-options,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY
 GET,/courses/{id}/pricing,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/courses/{id}/promotions,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
 GET,/courses/{id}/subjects,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
+GET,/curriculum-plans/{id},DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
+PUT,/curriculum-plans/{id},DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,"{""name"":""Plan""}"
+POST,/curriculum-plans/{id}/activate,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
+POST,/curriculum-plans/{id}/expire,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,"{""expiresOn"":""2027-12-31""}"
+GET,/curriculum-plans/{id}/subjects,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
+POST,/curriculum-plans/{id}/subjects,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 POST,/courses/{id}/subjects,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 GET,/director-approval-requests,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
 POST,/director-approval-requests,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,DENY,,
@@ -394,6 +400,8 @@ PUT,/programs/{id},DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 POST,/programs/{id}/activate,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 PUT,/programs/{id}/catalog-visibility,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 GET,/programs/{id}/cohorts,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
+GET,/programs/{id}/curriculum-plans,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
+POST,/programs/{id}/curriculum-plans,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,"{""name"":""Plan 2028"",""validFrom"":""2028-03-01""}"
 POST,/programs/{id}/deactivate,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,
 GET,/programs/{id}/elective-groups,DENY,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/programs/{id}/elective-groups,DENY,DENY,DENY,DENY,ALLOW,ALLOW,DENY,DENY,,

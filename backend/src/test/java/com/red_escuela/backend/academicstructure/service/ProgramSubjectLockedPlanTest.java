@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.service;
 
+import com.red_escuela.backend.academicstructure.api.CurrentCurriculumPlanProvider;
 import com.red_escuela.backend.academicstructure.api.CurriculumPlanEnrollmentActivityPort;
 import com.red_escuela.backend.academicstructure.dto.AddCorequisiteRequest;
 import com.red_escuela.backend.academicstructure.dto.AddPrerequisiteRequest;
@@ -13,7 +14,7 @@ import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubjectCategory;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubjectCorequisite;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubjectPrerequisite;
-import com.red_escuela.backend.academicstructure.exception.CurriculumPlanLockedException;
+import com.red_escuela.backend.academicstructure.domain.CurriculumPlanLockedException;
 import com.red_escuela.backend.academicstructure.repository.CurriculumPlanRepository;
 import com.red_escuela.backend.academicstructure.repository.ElectiveGroupRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramElectiveGroupRepository;

@@ -1,7 +1,7 @@
 package com.red_escuela.backend.academicstructure.api;
 
 import com.red_escuela.backend.academicstructure.entity.CurriculumPlan;
-import com.red_escuela.backend.academicstructure.exception.CurriculumPlanNotFoundException;
+import com.red_escuela.backend.academicstructure.domain.CurriculumPlanNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.CurriculumPlanRepository;
 import org.springframework.stereotype.Service;
 

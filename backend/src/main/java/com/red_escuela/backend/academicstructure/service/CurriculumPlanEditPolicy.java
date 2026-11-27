@@ -2,7 +2,7 @@ package com.red_escuela.backend.academicstructure.service;
 
 import com.red_escuela.backend.academicstructure.api.CurriculumPlanEnrollmentActivityPort;
 import com.red_escuela.backend.academicstructure.entity.CurriculumPlan;
-import com.red_escuela.backend.academicstructure.exception.CurriculumPlanLockedException;
+import com.red_escuela.backend.academicstructure.domain.CurriculumPlanLockedException;
 import org.springframework.stereotype.Component;
 
 @Component

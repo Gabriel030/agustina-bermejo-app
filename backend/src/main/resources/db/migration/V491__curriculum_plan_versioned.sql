@@ -31,6 +31,7 @@ alter table program_subject alter column plan_id set not null;
 alter table program_subject add constraint fk_program_subject_plan
     foreign key (plan_id) references curriculum_plan (id) on delete cascade;
 create index idx_program_subject_plan on program_subject (plan_id);
+create index idx_program_subject_program on program_subject (program_id);
 
 alter table program_subject drop constraint uk_program_subject_program_subject;
 alter table program_subject add constraint uk_program_subject_plan_subject unique (plan_id, subject_id);

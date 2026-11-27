@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.service;
 
+import com.red_escuela.backend.academicstructure.api.CurrentCurriculumPlanProvider;
 import com.red_escuela.backend.shared.domain.Grade;
 import com.red_escuela.backend.academicstructure.dto.AddCorequisiteRequest;
 import com.red_escuela.backend.academicstructure.dto.AddPrerequisiteRequest;
@@ -18,7 +19,7 @@ import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.exception.CircularPrerequisiteException;
 import com.red_escuela.backend.academicstructure.exception.CorequisiteAlreadyExistsException;
 import com.red_escuela.backend.academicstructure.exception.CorequisiteNotFoundException;
-import com.red_escuela.backend.academicstructure.exception.CurriculumPlanNotFoundException;
+import com.red_escuela.backend.academicstructure.domain.CurriculumPlanNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.ElectiveGroupNotAssignedException;
 import com.red_escuela.backend.academicstructure.exception.ElectiveGroupNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.InvalidCorequisiteException;
@@ -142,7 +143,7 @@ public class ProgramSubjectService {
     @Transactional
     public ProgramSubject update(Long id, UpdateProgramSubjectRequest request) {
         ProgramSubject programSubject = findOrThrow(id);
-        editPolicy.requireStructureEditable(programSubject.getPlan());
+        editPolicy.requireStructureEditable(planOf(programSubject));
 
         if (request.curricularYear() != null) {
             programSubject.getProgram().requireCurricularYearWithinDuration(request.curricularYear());
@@ -190,7 +191,7 @@ public class ProgramSubjectService {
     @Transactional
     public void deactivate(Long id) {
         ProgramSubject programSubject = findOrThrow(id);
-        editPolicy.requireStructureEditable(programSubject.getPlan());
+        editPolicy.requireStructureEditable(planOf(programSubject));
         programSubject.setStatus(StatusType.INACTIVE);
         programSubjectRepository.save(programSubject);
     }
@@ -198,7 +199,7 @@ public class ProgramSubjectService {
     @Transactional
     public void reactivate(Long id) {
         ProgramSubject programSubject = findOrThrow(id);
-        editPolicy.requireStructureEditable(programSubject.getPlan());
+        editPolicy.requireStructureEditable(planOf(programSubject));
         programSubject.setStatus(StatusType.ACTIVE);
         programSubjectRepository.save(programSubject);
     }
@@ -207,12 +208,12 @@ public class ProgramSubjectService {
     public ProgramSubjectPrerequisite addPrerequisite(Long programSubjectId, AddPrerequisiteRequest request) {
         ProgramSubject objetivo = findOrThrow(programSubjectId);
         ProgramSubject prerequisitePropuesto = findOrThrow(request.prerequisiteProgramSubjectId());
-        editPolicy.requireStructureEditable(objetivo.getPlan());
+        editPolicy.requireStructureEditable(planOf(objetivo));
 
         if (objetivo.getId().equals(prerequisitePropuesto.getId())) {
             throw new InvalidPrerequisiteException("Una materia no puede ser prerrequisito de sí misma");
         }
-        if (!objetivo.getPlan().getId().equals(prerequisitePropuesto.getPlan().getId())) {
+        if (!planOf(objetivo).getId().equals(planOf(prerequisitePropuesto).getId())) {
             throw new InvalidPrerequisiteException(
                     "Las correlatividades solo pueden darse entre materias del mismo plan de estudios");
         }
@@ -289,7 +290,7 @@ public class ProgramSubjectService {
     public void removePrerequisite(Long prerequisiteId) {
         ProgramSubjectPrerequisite prerequisite = prerequisiteRepository.findById(prerequisiteId)
                 .orElseThrow(() -> new PrerequisiteNotFoundException(prerequisiteId));
-        editPolicy.requireStructureEditable(prerequisite.getProgramSubject().getPlan());
+        editPolicy.requireStructureEditable(planOf(prerequisite.getProgramSubject()));
         prerequisiteRepository.delete(prerequisite);
     }
 
@@ -321,12 +322,12 @@ public class ProgramSubjectService {
     public ProgramSubjectCorequisite addCorequisite(Long programSubjectId, AddCorequisiteRequest request) {
         ProgramSubject subject = findOrThrow(programSubjectId);
         ProgramSubject corequisite = findOrThrow(request.corequisiteProgramSubjectId());
-        editPolicy.requireStructureEditable(subject.getPlan());
+        editPolicy.requireStructureEditable(planOf(subject));
 
         if (subject.getId().equals(corequisite.getId())) {
             throw new InvalidCorequisiteException("Una materia no puede ser co-requisito de sí misma");
         }
-        if (!subject.getPlan().getId().equals(corequisite.getPlan().getId())) {
+        if (!planOf(subject).getId().equals(planOf(corequisite).getId())) {
             throw new InvalidCorequisiteException(
                     "Los co-requisitos solo pueden darse entre materias del mismo plan de estudios");
         }
@@ -354,8 +355,12 @@ public class ProgramSubjectService {
     public void removeCorequisite(Long corequisiteId) {
         ProgramSubjectCorequisite link = corequisiteRepository.findById(corequisiteId)
                 .orElseThrow(() -> new CorequisiteNotFoundException(corequisiteId));
-        editPolicy.requireStructureEditable(link.getProgramSubject().getPlan());
+        editPolicy.requireStructureEditable(planOf(link.getProgramSubject()));
         corequisiteRepository.delete(link);
+    }
+
+    private CurriculumPlan planOf(ProgramSubject entry) {
+        return entry.getPlan() != null ? entry.getPlan() : currentPlanProvider.currentPlanOf(entry.getProgram());
     }
 
     private CurriculumPlan findPlanOrThrow(Long planId) {

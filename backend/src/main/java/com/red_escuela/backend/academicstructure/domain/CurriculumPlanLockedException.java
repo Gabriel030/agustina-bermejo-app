@@ -1,4 +1,4 @@
-package com.red_escuela.backend.academicstructure.exception;
+package com.red_escuela.backend.academicstructure.domain;
 
 import com.red_escuela.backend.shared.exception.ConflictException;
 

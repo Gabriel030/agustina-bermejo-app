@@ -104,12 +104,6 @@ public class Program {
         }
     }
 
-    public void adoptCurriculumTotals(CurriculumPlan plan) {
-        this.totalYears = plan.getTotalYears();
-        this.totalCreditsRequired = plan.getTotalCreditsRequired();
-        this.totalHoursRequired = plan.getTotalHoursRequired();
-    }
-
     public Money priceAsMoney() {
         return listPrice;
     }
@@ -127,5 +121,11 @@ public class Program {
         if (money.currency() != currency) {
             throw new CurrencyMismatchException(currency, money.currency());
         }
+    }
+
+    public void adoptCurriculumTotals(CurriculumPlan plan) {
+        this.totalYears = plan.getTotalYears();
+        this.totalCreditsRequired = plan.getTotalCreditsRequired();
+        this.totalHoursRequired = plan.getTotalHoursRequired();
     }
 }

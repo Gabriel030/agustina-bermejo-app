@@ -1,4 +1,5 @@
 package com.red_escuela.backend.academicstructure.service;
+import com.red_escuela.backend.academicstructure.api.CurrentCurriculumPlanProvider;
 import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 
 import com.red_escuela.backend.academicstructure.dto.CreateProgramRequest;

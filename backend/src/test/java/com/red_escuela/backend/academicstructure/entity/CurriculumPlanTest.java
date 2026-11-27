@@ -1,8 +1,8 @@
 package com.red_escuela.backend.academicstructure.entity;
 
-import com.red_escuela.backend.academicstructure.exception.CurriculumPlanNotOpenForNewStudentsException;
-import com.red_escuela.backend.academicstructure.exception.InvalidCurriculumPlanDatesException;
-import com.red_escuela.backend.academicstructure.exception.InvalidCurriculumPlanTransitionException;
+import com.red_escuela.backend.academicstructure.domain.CurriculumPlanNotOpenForNewStudentsException;
+import com.red_escuela.backend.academicstructure.domain.InvalidCurriculumPlanDatesException;
+import com.red_escuela.backend.academicstructure.domain.InvalidCurriculumPlanTransitionException;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;

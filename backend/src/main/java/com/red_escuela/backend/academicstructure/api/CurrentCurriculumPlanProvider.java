@@ -1,4 +1,4 @@
-package com.red_escuela.backend.academicstructure.service;
+package com.red_escuela.backend.academicstructure.api;
 
 import com.red_escuela.backend.academicstructure.entity.CurriculumPlan;
 import com.red_escuela.backend.academicstructure.entity.Program;

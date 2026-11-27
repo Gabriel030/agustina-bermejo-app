@@ -24,7 +24,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import com.red_escuela.backend.academicstructure.service.CurrentCurriculumPlanProvider;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 

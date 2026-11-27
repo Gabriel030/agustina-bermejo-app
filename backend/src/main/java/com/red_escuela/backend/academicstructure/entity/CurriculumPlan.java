@@ -1,8 +1,8 @@
 package com.red_escuela.backend.academicstructure.entity;
 
-import com.red_escuela.backend.academicstructure.exception.CurriculumPlanNotOpenForNewStudentsException;
-import com.red_escuela.backend.academicstructure.exception.InvalidCurriculumPlanDatesException;
-import com.red_escuela.backend.academicstructure.exception.InvalidCurriculumPlanTransitionException;
+import com.red_escuela.backend.academicstructure.domain.CurriculumPlanNotOpenForNewStudentsException;
+import com.red_escuela.backend.academicstructure.domain.InvalidCurriculumPlanDatesException;
+import com.red_escuela.backend.academicstructure.domain.InvalidCurriculumPlanTransitionException;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -106,14 +106,14 @@ public class CurriculumPlan {
 
     public void activate() {
         if (status != CurriculumPlanStatus.DRAFT) {
-            throw new InvalidCurriculumPlanTransitionException(id, status, CurriculumPlanStatus.ACTIVE);
+            throw new InvalidCurriculumPlanTransitionException(id, status.name(), CurriculumPlanStatus.ACTIVE.name());
         }
         status = CurriculumPlanStatus.ACTIVE;
     }
 
     public void expire(LocalDate expiresOn, LocalDate graduationDeadline) {
         if (status != CurriculumPlanStatus.ACTIVE) {
-            throw new InvalidCurriculumPlanTransitionException(id, status, CurriculumPlanStatus.EXPIRED);
+            throw new InvalidCurriculumPlanTransitionException(id, status.name(), CurriculumPlanStatus.EXPIRED.name());
         }
         requireValidityRange(validFrom, expiresOn, graduationDeadline);
         status = CurriculumPlanStatus.EXPIRED;

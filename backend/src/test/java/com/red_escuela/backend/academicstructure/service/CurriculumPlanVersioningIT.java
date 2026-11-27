@@ -15,7 +15,7 @@ import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubjectCategory;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectStatus;
-import com.red_escuela.backend.academicstructure.exception.InvalidCurriculumPlanTransitionException;
+import com.red_escuela.backend.academicstructure.domain.InvalidCurriculumPlanTransitionException;
 import com.red_escuela.backend.academicstructure.repository.CurriculumPlanRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramSubjectRepository;
 import com.red_escuela.backend.academicstructure.usecase.curriculumplan.ActivateCurriculumPlanUseCase;
