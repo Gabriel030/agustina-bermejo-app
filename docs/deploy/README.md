@@ -75,7 +75,7 @@ docker compose --env-file deploy/.env -f docker-compose.prod.yml ps
 ```
 
 La primera vez construye las imágenes (varios minutos) y Flyway crea todas las tablas en la base
-vacía. Cuando `ps` muestre los tres servicios `healthy`, verificar:
+vacía (330 migraciones hasta la V484 en `develop`). Cuando `ps` muestre los tres servicios `healthy`, verificar:
 
 ```bash
 curl -fsS https://<dominio>/api/actuator/health       # {"status":"UP",...}
@@ -288,7 +288,12 @@ Elegir una de las dos:
 
 Con el perfil `demo` el reloj de la app es el `DemoClock`, que sin ninguna orden de viaje en el tiempo
 (`travelTo`: no hay llamadas en el código principal) devuelve la hora real. Esto se verificó leyendo el
-código, no corriendo el seed en un servidor; al terminar mirar `sc logs backend` antes de ensayar.
+código. El seed `full` sí se corrió (27-nov-2026, Postgres 16 y jar de `develop` fuera de Docker): Flyway
+aplica 330 migraciones hasta la V484 en unos 4 s y el seed tarda unos 9 minutos, y el backend queda
+`healthy` **antes** de que termine; esperar `Seed demo listo` en `sc logs backend` antes de ensayar.
+Con `TRANSACTIONAL_MAIL_PROVIDER=mock` los mails de autenticación igual intentan salir por SMTP: dejar
+`BREVO_SMTP_*` vacías en un staging de prueba. Paso a paso, con la salida medida y lo que no se ejecutó:
+[local-con-dominio-y-seed.md](local-con-dominio-y-seed.md).
 
 ### Correr la prueba posterior al despliegue
 
