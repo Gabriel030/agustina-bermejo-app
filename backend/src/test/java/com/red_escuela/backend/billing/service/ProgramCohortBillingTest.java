@@ -182,6 +182,8 @@ class ProgramCohortBillingTest extends AbstractIntegrationTest {
                                          LocalDate admissionStart, LocalDate admissionEnd, LocalDate cursadaStart, Person createdBy) {
         ProgramCohort cohort = new ProgramCohort();
         cohort.setTemplateId(template.getId());
+        cohort.setProgramId(template.programId());
+        cohort.setTermId(template.termId());
         cohort.setIntake(intake);
         cohort.setAdmissionStart(admissionStart);
         cohort.setAdmissionEnd(admissionEnd);
