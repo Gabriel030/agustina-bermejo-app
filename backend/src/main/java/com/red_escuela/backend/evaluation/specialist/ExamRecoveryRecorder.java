@@ -3,7 +3,7 @@ package com.red_escuela.backend.evaluation.specialist;
 import com.red_escuela.backend.academicstructure.api.SectionTeachingFinder;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.enrollment.api.SectionEnrollmentFinder;
-import com.red_escuela.backend.evaluation.api.CommissionClosureGuard;
+import com.red_escuela.backend.academicstructure.api.SectionClosureGuard;
 import com.red_escuela.backend.evaluation.api.GraduationRequestTriggerPort;
 import com.red_escuela.backend.evaluation.dto.GradeItemAuditResponse;
 import com.red_escuela.backend.evaluation.dto.RecordExamRecoveryRequest;
@@ -46,7 +46,7 @@ public class ExamRecoveryRecorder {
     private final GradeItemRecorder gradeItemRecorder;
     private final GraduationRequestTriggerPort graduationRequestTrigger;
     private final ApplicationEventPublisher eventPublisher;
-    private final CommissionClosureGuard commissionClosureGuard;
+    private final SectionClosureGuard sectionClosureGuard;
     private final Clock clock;
 
     public ExamRecoveryRecorder(GradeItemRepository gradeItemRepository,
@@ -58,7 +58,7 @@ public class ExamRecoveryRecorder {
                                 GradeItemRecorder gradeItemRecorder,
                                 GraduationRequestTriggerPort graduationRequestTrigger,
                                 ApplicationEventPublisher eventPublisher,
-                                CommissionClosureGuard commissionClosureGuard,
+                                SectionClosureGuard sectionClosureGuard,
                                 Clock clock) {
         this.gradeItemRepository = gradeItemRepository;
         this.publicationRepository = publicationRepository;
@@ -69,7 +69,7 @@ public class ExamRecoveryRecorder {
         this.gradeItemRecorder = gradeItemRecorder;
         this.graduationRequestTrigger = graduationRequestTrigger;
         this.eventPublisher = eventPublisher;
-        this.commissionClosureGuard = commissionClosureGuard;
+        this.sectionClosureGuard = sectionClosureGuard;
         this.clock = clock;
     }
 
@@ -80,7 +80,7 @@ public class ExamRecoveryRecorder {
                 .orElseThrow(() -> new GradeItemNotFoundException(gradeItemId));
         Target target = Target.of(gradeItem);
         lockEnrollment(target);
-        commissionClosureGuard.requireNotClosed(target.kind(), target.sectionId());
+        sectionClosureGuard.requireNotClosed(target.kind(), target.sectionId());
         requireTeaches(target, instructorId);
         requireRecoverable(gradeItem, target);
         List<GradeItem> enrollmentItems = enrollmentItems(target);

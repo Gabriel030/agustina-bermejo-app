@@ -1,6 +1,6 @@
 package com.red_escuela.backend.attendance.usecase.record;
 
-import com.red_escuela.backend.evaluation.api.CommissionClosureGuard;
+import com.red_escuela.backend.academicstructure.api.SectionClosureGuard;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.exception.NotOwnSectionException;
@@ -82,7 +82,7 @@ class CourseSectionAttendanceServicesTest {
             new LoadCourseSectionAttendanceTransaction(
                     new SectionAttendanceLoader(attendanceRecorder, sectionAccess, classSessionUpserter,
                             enrollmentFinder, classSessionRepository, classDateValidator,
-                            mock(CommissionClosureGuard.class)), eventPublisher));
+                            mock(SectionClosureGuard.class)), eventPublisher));
     private final CancelCourseSectionClassSessionService cancelService = new CancelCourseSectionClassSessionService(
             new CancelCourseSectionClassSessionTransaction(
                     new ClassSessionCanceller(classSessionRepository, sectionAccess, classSessionUpserter)));

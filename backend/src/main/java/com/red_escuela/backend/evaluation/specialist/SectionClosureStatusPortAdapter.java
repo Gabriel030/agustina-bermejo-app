@@ -1,28 +1,28 @@
-package com.red_escuela.backend.evaluation.api;
+package com.red_escuela.backend.evaluation.specialist;
 
+import com.red_escuela.backend.academicstructure.api.SectionClosureStatusPort;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.evaluation.entity.ClosureStatus;
-import com.red_escuela.backend.evaluation.exception.SectionClosureClosedException;
 import com.red_escuela.backend.evaluation.repository.CommissionClosureRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @Transactional(readOnly = true)
-public class CommissionClosureGuard {
+public class SectionClosureStatusPortAdapter implements SectionClosureStatusPort {
 
     private final CommissionClosureRepository closureRepository;
 
-    public CommissionClosureGuard(CommissionClosureRepository closureRepository) {
+    public SectionClosureStatusPortAdapter(CommissionClosureRepository closureRepository) {
         this.closureRepository = closureRepository;
     }
 
-    public void requireNotClosed(SectionKind kind, Long sectionId) {
-        if (hasStatus(kind, sectionId, ClosureStatus.CLOSED)) {
-            throw new SectionClosureClosedException(sectionId);
-        }
+    @Override
+    public boolean isClosed(SectionKind kind, Long sectionId) {
+        return hasStatus(kind, sectionId, ClosureStatus.CLOSED);
     }
 
+    @Override
     public boolean isReopened(SectionKind kind, Long sectionId) {
         return hasStatus(kind, sectionId, ClosureStatus.REOPENED);
     }

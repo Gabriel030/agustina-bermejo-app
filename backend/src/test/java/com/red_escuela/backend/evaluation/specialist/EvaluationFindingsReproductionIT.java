@@ -1,6 +1,6 @@
 package com.red_escuela.backend.evaluation.specialist;
 
-import com.red_escuela.backend.evaluation.exception.SectionClosureClosedException;
+import com.red_escuela.backend.academicstructure.exception.SectionClosureClosedException;
 import com.red_escuela.backend.evaluation.exception.GradeCorrectionPeriodEndedException;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.academicstructure.entity.Instructor;

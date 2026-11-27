@@ -1,6 +1,6 @@
 package com.red_escuela.backend.evaluation.specialist;
 
-import com.red_escuela.backend.evaluation.api.CommissionClosureGuard;
+import com.red_escuela.backend.academicstructure.api.SectionClosureGuard;
 import com.red_escuela.backend.evaluation.domain.CourseworkOutcome;
 import com.red_escuela.backend.evaluation.entity.SectionGradeItemPublication;
 import com.red_escuela.backend.evaluation.events.GradeCorrectedEvent;
@@ -75,7 +75,7 @@ public class GradeItemRecorder {
     private final ExamBoardTakenChecker examBoardTakenChecker;
     private final CourseworkApprovalChecker courseworkApprovalChecker;
     private final ProgramPrerequisiteEvaluator programPrerequisiteEvaluator;
-    private final CommissionClosureGuard commissionClosureGuard;
+    private final SectionClosureGuard sectionClosureGuard;
 
     public GradeItemRecorder(
             GradeItemRepository gradeItemRepository,
@@ -97,7 +97,7 @@ public class GradeItemRecorder {
             ExamBoardTakenChecker examBoardTakenChecker,
             CourseworkApprovalChecker courseworkApprovalChecker,
             ProgramPrerequisiteEvaluator programPrerequisiteEvaluator,
-            CommissionClosureGuard commissionClosureGuard) {
+            SectionClosureGuard sectionClosureGuard) {
         this.gradeItemRepository = gradeItemRepository;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
         this.sectionEnrollmentOutcomeRecorder = sectionEnrollmentOutcomeRecorder;
@@ -117,12 +117,12 @@ public class GradeItemRecorder {
         this.examBoardTakenChecker = examBoardTakenChecker;
         this.courseworkApprovalChecker = courseworkApprovalChecker;
         this.programPrerequisiteEvaluator = programPrerequisiteEvaluator;
-        this.commissionClosureGuard = commissionClosureGuard;
+        this.sectionClosureGuard = sectionClosureGuard;
     }
 
     private void requireSectionNotClosedUnlessFinal(CreateGradeItemRequest request, SectionKind kind, Long sectionId) {
         if (request.type() != GradeItemType.FINAL) {
-            commissionClosureGuard.requireNotClosed(kind, sectionId);
+            sectionClosureGuard.requireNotClosed(kind, sectionId);
         }
     }
 

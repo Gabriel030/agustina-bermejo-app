@@ -2,7 +2,7 @@ package com.red_escuela.backend.enrollment.service;
 
 import java.time.Clock;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
-import com.red_escuela.backend.evaluation.api.CommissionClosureGuard;
+import com.red_escuela.backend.academicstructure.api.SectionClosureGuard;
 import com.red_escuela.backend.enrollment.api.FinalExamEligibilityResolver;
 import com.red_escuela.backend.enrollment.dto.ChangeSectionRequest;
 import com.red_escuela.backend.enrollment.dto.CreateSectionEnrollmentRequest;
@@ -75,7 +75,7 @@ public class SubjectSectionEnrollmentService {
     private final StudentScheduleOverlapGuard scheduleOverlapGuard;
     private final EnrollmentChangeEventPublisher changeEventPublisher;
     private final OwnSectionChangeRecordsGuard ownSectionChangeRecordsGuard;
-    private final CommissionClosureGuard commissionClosureGuard;
+    private final SectionClosureGuard sectionClosureGuard;
     private final Clock clock;
 
     public SubjectSectionEnrollmentService(SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
@@ -94,7 +94,7 @@ public class SubjectSectionEnrollmentService {
             StudentScheduleOverlapGuard scheduleOverlapGuard,
             EnrollmentChangeEventPublisher changeEventPublisher,
             OwnSectionChangeRecordsGuard ownSectionChangeRecordsGuard,
-            CommissionClosureGuard commissionClosureGuard,
+            SectionClosureGuard sectionClosureGuard,
             Clock clock) {
         this.ownSectionChangeRecordsGuard = ownSectionChangeRecordsGuard;
         this.scheduleOverlapGuard = scheduleOverlapGuard;
@@ -112,7 +112,7 @@ public class SubjectSectionEnrollmentService {
         this.programCurriculumFinder = programCurriculumFinder;
         this.invoiceRepository = invoiceRepository;
         this.prerequisiteEvaluator = prerequisiteEvaluator;
-        this.commissionClosureGuard = commissionClosureGuard;
+        this.sectionClosureGuard = sectionClosureGuard;
         this.clock = clock;
     }
 
@@ -124,7 +124,7 @@ public class SubjectSectionEnrollmentService {
         studentEnrollmentEligibility.requireConfirmedAndActive(student);
 
         ProgramSectionView section = sectionFinder.findOpenProgramSection(request.sectionId());
-        commissionClosureGuard.requireNotClosed(SectionKind.PROGRAM, request.sectionId());
+        sectionClosureGuard.requireNotClosed(SectionKind.PROGRAM, request.sectionId());
         validateEnrollmentWindow(section.termId());
         enrollmentFeeRequirementPort.requireForTerm(programEnrollment.getId(), section.termId(), EnrollmentFeeRequirementPurpose.SUBJECT_ENROLLMENT);
 
