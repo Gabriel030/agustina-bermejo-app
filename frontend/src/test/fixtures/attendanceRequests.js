@@ -13,6 +13,10 @@ export function attendanceChangeRequest(overrides = {}) {
     status: 'PENDING',
     studentName: 'Valentina Suárez',
     subjectName: 'Programación II',
+    decidedAt: null,
+    decidedByName: null,
+    revertibleUntil: null,
+    revertible: false,
     ...overrides,
   };
 }
@@ -57,3 +61,19 @@ export const REQUESTS_FIXTURE = [
     studentName: 'Camila Ferreyra',
   }),
 ];
+
+export function resolvedAttendanceChangeRequest(overrides = {}) {
+  return attendanceChangeRequest({
+    id: 39,
+    status: 'APPROVED',
+    decidedAt: '2026-11-24T10:15:00',
+    decidedByName: 'Laura Gómez',
+    revertibleUntil: '2026-12-01',
+    revertible: true,
+    ...overrides,
+  });
+}
+
+export function resolvedAttendanceChangeRequestsPage(items = [resolvedAttendanceChangeRequest()], overrides = {}) {
+  return { items, page: 0, size: 20, totalElements: items.length, ...overrides };
+}

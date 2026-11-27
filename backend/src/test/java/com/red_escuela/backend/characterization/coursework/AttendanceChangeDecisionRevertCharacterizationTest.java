@@ -12,7 +12,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -37,8 +36,12 @@ class AttendanceChangeDecisionRevertCharacterizationTest extends CourseworkChara
     }
 
     private long loadAbsentDay(Classroom classroom) throws Exception {
+        return loadAbsentDayOn(classroom, LocalDate.of(2026, 3, 2));
+    }
+
+    private long loadAbsentDayOn(Classroom classroom, LocalDate date) throws Exception {
         var request = new com.red_escuela.backend.attendance.dto.CargarAsistenciaRequest(
-                LocalDate.of(2026, 3, 2),
+                date,
                 List.of(new com.red_escuela.backend.attendance.dto.AttendanceEntry(classroom.enrollment().getId(), AttendanceStatus.ABSENT)),
                 null, null);
         return bodyOf(postJson(classroom.teacher(), "/program-sections/" + classroom.section().getId() + "/attendance", request)
@@ -138,11 +141,23 @@ class AttendanceChangeDecisionRevertCharacterizationTest extends CourseworkChara
     }
 
     @Test
-    void revertingOneSecondAfterSevenDaysIsRejectedAsWindowExpired() throws Exception {
+    void revertingAtTheLastSecondOfTheSeventhDayIsAllowed() throws Exception {
+        Classroom classroom = classroom("rev8", "7700008");
+        Person preceptor = persistPerson("rev8.preceptor", "77000087", "PRECEPTOR");
+        long requestId = approvedRequest(classroom, preceptor);
+        MutableClock.INSTANCE.setDateTime(DECISION_TIME.toLocalDate().plusDays(7).atTime(23, 59, 59));
+
+        postJson(preceptor, "/attendance/change-requests/" + requestId + "/revert",
+                new RevertAttendanceChangeRequestDecisionRequest(VALID_REASON))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    void revertingOnTheEighthDayIsRejectedAsWindowExpired() throws Exception {
         Classroom classroom = classroom("rev5", "7700005");
         Person preceptor = persistPerson("rev5.preceptor", "77000057", "PRECEPTOR");
         long requestId = approvedRequest(classroom, preceptor);
-        MutableClock.INSTANCE.setDateTime(DECISION_TIME.plusDays(7).plus(Duration.ofSeconds(1)));
+        MutableClock.INSTANCE.setDateTime(DECISION_TIME.toLocalDate().plusDays(8).atStartOfDay());
 
         postJson(preceptor, "/attendance/change-requests/" + requestId + "/revert",
                 new RevertAttendanceChangeRequestDecisionRequest(VALID_REASON))
@@ -173,5 +188,50 @@ class AttendanceChangeDecisionRevertCharacterizationTest extends CourseworkChara
         postJson(classroom.teacher(), "/attendance/change-requests/" + requestId + "/revert",
                 new RevertAttendanceChangeRequestDecisionRequest(VALID_REASON))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void resolvedHistoryListsDecidedRequestsFilteredByResultWithRevertWindowFields() throws Exception {
+        Classroom approvedClassroom = classroom("hist1", "7700011");
+        Classroom rejectedClassroom = classroom("hist2", "7700012");
+        Person preceptor = persistPerson("hist.preceptor", "77000117", "PRECEPTOR");
+        long approvedId = approvedRequest(approvedClassroom, preceptor);
+        long rejectedId = requestChange(rejectedClassroom, loadAbsentDay(rejectedClassroom));
+        postJson(preceptor, "/attendance/change-requests/" + rejectedId + "/reject",
+                new RejectAttendanceChangeRequestRequest("La asistencia estaba bien cargada"))
+                .andExpect(status().isOk());
+        long pendingId = requestChange(approvedClassroom, loadAbsentDayOn(approvedClassroom, LocalDate.of(2026, 3, 3)));
+
+        getAs(preceptor, "/attendance/change-requests/resolved?result=APPROVED")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[?(@.id==" + approvedId + ")].status").value("APPROVED"))
+                .andExpect(jsonPath("$.items[?(@.id==" + approvedId + ")].revertibleUntil").value("2026-11-27"))
+                .andExpect(jsonPath("$.items[?(@.id==" + approvedId + ")].revertible").value(true))
+                .andExpect(jsonPath("$.items[?(@.id==" + rejectedId + ")]").isEmpty())
+                .andExpect(jsonPath("$.items[?(@.id==" + pendingId + ")]").isEmpty());
+        getAs(preceptor, "/attendance/change-requests/resolved?result=REJECTED")
+                .andExpect(jsonPath("$.items[?(@.id==" + rejectedId + ")].rejectionReason").value("La asistencia estaba bien cargada"))
+                .andExpect(jsonPath("$.items[?(@.id==" + approvedId + ")]").isEmpty());
+        getAs(preceptor, "/attendance/change-requests/resolved?size=1&page=0")
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.size").value(1))
+                .andExpect(jsonPath("$.totalElements").value(org.hamcrest.Matchers.greaterThanOrEqualTo(2)));
+    }
+
+    @Test
+    void resolvedHistoryMarksADecisionAsNotRevertibleAfterTheSeventhDay() throws Exception {
+        Classroom classroom = classroom("hist3", "7700013");
+        Person preceptor = persistPerson("hist3.preceptor", "77000137", "PRECEPTOR");
+        long requestId = approvedRequest(classroom, preceptor);
+        MutableClock.INSTANCE.setDateTime(DECISION_TIME.toLocalDate().plusDays(8).atStartOfDay());
+
+        getAs(preceptor, "/attendance/change-requests/resolved?result=APPROVED")
+                .andExpect(jsonPath("$.items[?(@.id==" + requestId + ")].revertible").value(false));
+    }
+
+    @Test
+    void aTeacherCannotReadTheResolvedHistory() throws Exception {
+        Classroom classroom = classroom("hist4", "7700014");
+        getAs(classroom.teacher(), "/attendance/change-requests/resolved").andExpect(status().isForbidden());
     }
 }
