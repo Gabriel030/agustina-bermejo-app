@@ -65,7 +65,7 @@ class AttendanceWritesWithoutCallerTransactionIT extends AbstractIntegrationTest
         MutableClock.INSTANCE.setDate(LocalDate.of(2025, 9, 16));
         transactionTemplate.executeWithoutResult(status -> {
             CycleTestFixtures fixtures = new CycleTestFixtures(entityManager);
-            Term term = fixtures.term(2100 + (int) (System.nanoTime() % 800));
+            Term term = fixtures.term(2025);
             var cycle = fixtures.programCycle(fixtures.program(), term, AcademicOfferingCycleStatus.APPROVED);
             SubjectSection section = fixtures.section(fixtures.subject(), term, StatusType.ACTIVE, cycle);
             Instructor owner = fixtures.instructor();

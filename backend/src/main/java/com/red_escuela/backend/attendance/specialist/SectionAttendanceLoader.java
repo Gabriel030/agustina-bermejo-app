@@ -28,17 +28,20 @@ public class SectionAttendanceLoader {
     private final ClassSessionUpserter classSessionUpserter;
     private final SectionEnrollmentFinder sectionEnrollmentFinder;
     private final ClassSessionRepository classSessionRepository;
+    private final ClassDateValidator classDateValidator;
 
     public SectionAttendanceLoader(SectionAttendanceRecorder attendanceRecorder,
                                    AttendanceSectionAccessChecker sectionAccess,
                                    ClassSessionUpserter classSessionUpserter,
                                    SectionEnrollmentFinder sectionEnrollmentFinder,
-                                   ClassSessionRepository classSessionRepository) {
+                                   ClassSessionRepository classSessionRepository,
+                                   ClassDateValidator classDateValidator) {
         this.attendanceRecorder = attendanceRecorder;
         this.sectionAccess = sectionAccess;
         this.classSessionUpserter = classSessionUpserter;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
         this.classSessionRepository = classSessionRepository;
+        this.classDateValidator = classDateValidator;
     }
 
     @Transactional
@@ -46,6 +49,7 @@ public class SectionAttendanceLoader {
         CourseSubjectSection section = sectionAccess.findCourseSection(sectionId);
         sectionAccess.requireOwnCourseSection(sectionId, instructorId);
         Instructor instructor = sectionAccess.resolveInstructor(instructorId);
+        classDateValidator.requireValidCourseClassDate(sectionId, request.classDate());
         requireNotHoliday(request);
         requireCourseSessionNotCanceled(sectionId, request.classDate());
         Map<Long, AttendanceStatus> statuses = statusByEnrollment(request);
@@ -64,6 +68,7 @@ public class SectionAttendanceLoader {
         SubjectSection section = sectionAccess.findProgramSection(sectionId);
         sectionAccess.requireOwnProgramSection(sectionId, instructorId);
         Instructor instructor = sectionAccess.resolveInstructor(instructorId);
+        classDateValidator.requireValidProgramClassDate(sectionId, request.classDate());
         requireNotHoliday(request);
         requireProgramSessionNotCanceled(sectionId, request.classDate());
         Map<Long, AttendanceStatus> statuses = statusByEnrollment(request);
