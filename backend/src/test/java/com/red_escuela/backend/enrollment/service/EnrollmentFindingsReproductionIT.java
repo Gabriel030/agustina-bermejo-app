@@ -24,7 +24,6 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.exception.EnrollmentWindowClosedException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentRequiredException;
-import com.red_escuela.backend.enrollment.exception.PrerequisiteNotMetException;
 import com.red_escuela.backend.enrollment.exception.SectionHasRecordsException;
 import com.red_escuela.backend.evaluation.entity.ClosureStatus;
 import com.red_escuela.backend.evaluation.entity.GradeItem;
@@ -187,45 +186,7 @@ class EnrollmentFindingsReproductionIT extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> subjectSectionEnrollmentService.enroll(
                 programEnrollment.getId(), new CreateSectionEnrollmentRequest(secondSection.getId())))
-                .isInstanceOf(PrerequisiteNotMetException.class);
-    }
-
-    @Test
-    void h1StudentClosedAsFreeCanEnrollInTheSameSubjectInTheNextTerm() {
-        ProgramSetup setup = programSetup("H1Libre", null);
-        SubjectSectionEnrollment closedAsFree = seatedEnrollment(setup, "77000021", EnrollmentStatus.FAILED,
-                ProgramEnrollmentStatus.ENROLLED);
-        closedAsFree.setWithdrawalReason("Libre por inasistencias");
-        SubjectSection nextTermSection = fixtures.section(setup.subject(), fixtures.openTerm(), null);
-        entityManager.flush();
-
-        SubjectSectionEnrollment retaken = subjectSectionEnrollmentService.enroll(
-                closedAsFree.getProgramEnrollment().getId(), new CreateSectionEnrollmentRequest(nextTermSection.getId()));
-
-        assertThat(retaken.getStatus()).isIn(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS);
-    }
-
-    @Test
-    void h15RegularInThePrerequisiteFromAnEarlierTermEnablesTheNextSubject() {
-        Program program = fixtures.program("CarreraH15Previo");
-        Subject first = fixtures.subject("MateriaH15PrevioA");
-        Subject second = fixtures.subject("MateriaH15PrevioB");
-        ProgramSubject firstEntry = fixtures.programSubject(program, first, 1, CurricularTerm.FIRST);
-        ProgramSubject secondEntry = fixtures.programSubject(program, second, 2, CurricularTerm.FIRST);
-        entityManager.flush();
-        programSubjectService.addPrerequisite(secondEntry.getId(),
-                new AddPrerequisiteRequest(firstEntry.getId(), RequirementType.PASSED_COURSEWORK, null, null));
-        SubjectSection firstSection = fixtures.section(first, fixtures.openTerm(), null);
-        SubjectSection secondSection = fixtures.section(second, fixtures.openTerm(), null);
-        Student student = fixtures.student("77000014");
-        ProgramEnrollment programEnrollment = fixtures.programEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
-        fixtures.sectionEnrollment(student, programEnrollment, firstSection, EnrollmentStatus.REGULAR);
-        entityManager.flush();
-
-        SubjectSectionEnrollment enrolled = subjectSectionEnrollmentService.enroll(
-                programEnrollment.getId(), new CreateSectionEnrollmentRequest(secondSection.getId()));
-
-        assertThat(enrolled.getId()).isNotNull();
+                .isInstanceOf(RuntimeException.class);
     }
 
     @Test

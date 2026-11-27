@@ -85,10 +85,11 @@ public class ClosureOutcomeApplier {
     }
 
     private void recordFree(SectionKind kind, Long enrollmentId) {
+        record(kind, enrollmentId, EnrollmentStatus.FAILED, null, null);
         if (kind == SectionKind.PROGRAM) {
-            outcomeRecorder.recordProgramFreeOutcome(enrollmentId);
+            outcomeRecorder.markProgramFreeReason(enrollmentId);
         } else {
-            outcomeRecorder.recordCourseFreeOutcome(enrollmentId);
+            outcomeRecorder.markCourseFreeReason(enrollmentId);
         }
     }
 

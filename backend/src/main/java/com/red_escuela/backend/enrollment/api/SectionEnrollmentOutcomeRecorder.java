@@ -58,8 +58,7 @@ public class SectionEnrollmentOutcomeRecorder {
     }
 
     @Transactional
-    public void recordProgramFreeOutcome(Long enrollmentId) {
-        recordProgramOutcome(enrollmentId, EnrollmentStatus.FAILED, null, null, true);
+    public void markProgramFreeReason(Long enrollmentId) {
         programEnrollmentRepository.findById(enrollmentId).ifPresent(enrollment -> {
             enrollment.setWithdrawalReason(FREE_OUTCOME_REASON);
             programEnrollmentRepository.save(enrollment);
@@ -67,8 +66,7 @@ public class SectionEnrollmentOutcomeRecorder {
     }
 
     @Transactional
-    public void recordCourseFreeOutcome(Long enrollmentId) {
-        recordCourseOutcome(enrollmentId, EnrollmentStatus.FAILED, null, null, true);
+    public void markCourseFreeReason(Long enrollmentId) {
         courseEnrollmentRepository.findById(enrollmentId).ifPresent(enrollment -> {
             enrollment.setWithdrawalReason(FREE_OUTCOME_REASON);
             courseEnrollmentRepository.save(enrollment);
