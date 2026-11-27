@@ -19,6 +19,7 @@ function program(overrides) {
 function cohort(overrides) {
   return {
     id: 1,
+    planId: 21,
     intake: 'FIRST',
     admissionStart: '2026-09-01',
     admissionEnd: '2026-08-31',
