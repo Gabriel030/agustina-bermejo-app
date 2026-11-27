@@ -8,6 +8,7 @@ import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSectionInstructor;
 import com.red_escuela.backend.academicstructure.api.SectionEnrollmentActivityPort;
 import com.red_escuela.backend.academicstructure.api.SectionEvaluationSetupPort;
+import com.red_escuela.backend.academicstructure.exception.SectionEvaluationSchemeLockedException;
 import com.red_escuela.backend.academicstructure.exception.SectionHasActiveEnrollmentsException;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
@@ -88,6 +89,7 @@ public class CourseSectionService {
             identityAssigner.changeCourseSectionShift(section, request.shift());
         }
         if (request.evaluationSchemeId() != null) {
+            requireEvaluationSchemeReassignable(section, request.evaluationSchemeId());
             section.setEvaluationScheme(resolveEvaluationScheme(request.evaluationSchemeId()));
         }
         CourseSubjectSection saved = sectionRepository.save(section);
@@ -183,5 +185,15 @@ public class CourseSectionService {
     private EvaluationScheme resolveEvaluationScheme(Long id) {
         evaluationSetupPort.requireEvaluationSchemeExists(id);
         return entityManager.find(EvaluationScheme.class, id);
+    }
+
+    private void requireEvaluationSchemeReassignable(CourseSubjectSection section, Long newSchemeId) {
+        Long currentSchemeId = section.getEvaluationScheme() == null ? null : section.getEvaluationScheme().getId();
+        if (newSchemeId.equals(currentSchemeId)) {
+            return;
+        }
+        if (evaluationSetupPort.hasGradesLoadedInCourseSection(section.getId())) {
+            throw new SectionEvaluationSchemeLockedException(section.getId());
+        }
     }
 }

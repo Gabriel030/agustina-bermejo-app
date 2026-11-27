@@ -2,6 +2,7 @@ package com.red_escuela.backend.academicstructure.service;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import com.red_escuela.backend.academicstructure.exception.SectionScheduleConflictException;
+import com.red_escuela.backend.academicstructure.api.SectionEvaluationSetupPort;
 import com.red_escuela.backend.academicstructure.domain.SectionShift;
 import com.red_escuela.backend.academicstructure.dto.ScheduleSlotRequest;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycle;
@@ -45,6 +46,7 @@ public class CreateCycleSectionTransaction {
     private final SectionIdentityAssigner identityAssigner;
     private final SectionShiftSlotGuard shiftSlotGuard;
     private final TermOfferingGuard termOfferingGuard;
+    private final SectionEvaluationSetupPort evaluationSetupPort;
 
     public CreateCycleSectionTransaction(
             AcademicOfferingCycleRepository cycleRepository,
@@ -58,7 +60,8 @@ public class CreateCycleSectionTransaction {
             CycleSectionAbsenceLimitAssigner absenceLimitAssigner,
             SectionIdentityAssigner identityAssigner,
             SectionShiftSlotGuard shiftSlotGuard,
-            TermOfferingGuard termOfferingGuard
+            TermOfferingGuard termOfferingGuard,
+            SectionEvaluationSetupPort evaluationSetupPort
     ) {
         this.cycleRepository = cycleRepository;
         this.subjectRepository = subjectRepository;
@@ -72,6 +75,7 @@ public class CreateCycleSectionTransaction {
         this.identityAssigner = identityAssigner;
         this.shiftSlotGuard = shiftSlotGuard;
         this.termOfferingGuard = termOfferingGuard;
+        this.evaluationSetupPort = evaluationSetupPort;
     }
 
     @Transactional
@@ -115,6 +119,7 @@ public class CreateCycleSectionTransaction {
         section.setAcademicOfferingCycle(cycle);
         identityAssigner.identifyNewSubjectSection(section, shift, description);
         var saved = subjectSectionRepository.save(section);
+        evaluationSetupPort.createInitialEvaluationDraft(saved);
         saveSubjectSlots(saved, slots, shift, capacity);
         return saved.getId();
     }
