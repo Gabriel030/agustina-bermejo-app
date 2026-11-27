@@ -78,6 +78,8 @@ describe('DirectorRevisarConfiguracion', () => {
           termEndDate: '2026-12-11T00:00:00',
           termEnrollmentStart: '2026-02-01T00:00:00',
           evaluationConfigDeadline: null,
+          courseSectionId: null,
+          sectionKind: 'PROGRAM',
           termStartDate: '2026-03-02T00:00:00',
           tp1DueDate: '2026-04-24',
           exam1Date: '2026-05-15',

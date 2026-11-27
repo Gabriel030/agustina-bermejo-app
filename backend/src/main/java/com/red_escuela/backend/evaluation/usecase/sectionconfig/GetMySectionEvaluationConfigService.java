@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.usecase.sectionconfig;
 
+import com.red_escuela.backend.evaluation.domain.SectionRef;
 import com.red_escuela.backend.evaluation.dto.SectionEvaluationConfigResponse;
 import com.red_escuela.backend.evaluation.specialist.SectionEvaluationConfigDueDaysReader;
 import com.red_escuela.backend.evaluation.specialist.SectionEvaluationConfigFinder;
@@ -27,8 +28,8 @@ public class GetMySectionEvaluationConfigService implements GetMySectionEvaluati
 
     @Override
     public SectionEvaluationConfigResponse get(GetMySectionEvaluationConfigCommand command) {
-        instructorAccess.requireAssignedToSection(command.sectionId(), command.instructorId());
-        return responseAssembler.assembleForInstructor(configFinder.findOrThrow(command.sectionId()), command.instructorId())
+        instructorAccess.requireAssignedToSection(command.section(), command.instructorId());
+        return responseAssembler.assembleForInstructor(configFinder.findOrThrow(command.section()), command.instructorId())
                 .withEvaluationConfigDueDays(dueDaysReader.read());
     }
 }

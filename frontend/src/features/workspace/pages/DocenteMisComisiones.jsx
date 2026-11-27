@@ -8,7 +8,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { useComisionesDictadas } from '@/features/academic-structure';
-import { useMisComisiones } from '@/features/evaluation';
+import { useMisComisiones, sectionConfigKey, sectionConfigKind, sectionConfigSectionId } from '@/features/evaluation';
 import {
   agruparComisionesPorFase,
   formatearDiaMes,
@@ -94,10 +94,10 @@ function SeccionComisiones({ titulo, comisiones, vacio }) {
 function unificarComisiones(configs, dictadas) {
   const porSeccion = new Map();
   for (const config of configs) {
-    porSeccion.set(`PROGRAM-${config.subjectSectionId}`, {
+    porSeccion.set(sectionConfigKey(config), {
       ...config,
-      type: 'PROGRAM',
-      sectionId: config.subjectSectionId,
+      type: sectionConfigKind(config),
+      sectionId: sectionConfigSectionId(config),
     });
   }
   for (const dictada of dictadas) {

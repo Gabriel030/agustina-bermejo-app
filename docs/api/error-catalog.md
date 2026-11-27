@@ -883,6 +883,8 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/course-enrollments/{id}/withdraw` | `StaffEnrollmentChangeController#withdrawCourse` |
 | POST | `/course-section-enrollments/{id}/grade-items` | `GradeItemController#loadCourseEnrollmentGrade` |
 | POST | `/course-section-enrollments/{id}/withdraw` | `StaffEnrollmentChangeController#withdrawCourseModule` |
+| POST | `/course-section-evaluation-configs/{courseSectionId}/approve` | `CourseSectionEvaluationConfigController#approve` |
+| POST | `/course-section-evaluation-configs/{courseSectionId}/reject` | `CourseSectionEvaluationConfigController#reject` |
 | POST | `/course-sections/{id}/activate` | `CourseSectionController#reactivate` |
 | POST | `/course-sections/{id}/attendance` | `AttendanceController#loadCourseSectionAttendance` |
 | POST | `/course-sections/{id}/class-sessions/{date}/cancel` | `AttendanceController#cancelCourseSectionClassSession` |
@@ -962,6 +964,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/me/attendance/{id}/justify` | `MeAcademicRecordController#justifyMyAbsence` |
 | POST | `/me/avatar` | `PersonController#uploadAvatar` |
 | POST | `/me/calendar/feed/token` | `MeCalendarFeedController#rotateMyCalendarFeedToken` |
+| POST | `/me/course-section-evaluation-configs/{courseSectionId}/submit` | `MeSectionEvaluationConfigController#submitCourseSectionForApproval` |
 | POST | `/me/documents/{type}` | `MeOwnDocumentController#generate` |
 | POST | `/me/exam-board-registrations` | `MeExamBoardRegistrationController#register` |
 | POST | `/me/exam-board-registrations/{id}/withdraw` | `MeExamBoardRegistrationController#withdraw` |

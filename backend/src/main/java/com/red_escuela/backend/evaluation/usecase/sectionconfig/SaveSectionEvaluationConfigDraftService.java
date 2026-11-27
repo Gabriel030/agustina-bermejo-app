@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.usecase.sectionconfig;
 
+import com.red_escuela.backend.evaluation.domain.SectionRef;
 import com.red_escuela.backend.evaluation.dto.SectionEvaluationConfigResponse;
 import com.red_escuela.backend.evaluation.specialist.SectionEvaluationConfigDraftSaver;
 import com.red_escuela.backend.evaluation.specialist.SectionEvaluationConfigInstructorAccessChecker;
@@ -23,8 +24,8 @@ public class SaveSectionEvaluationConfigDraftService implements SaveSectionEvalu
 
     @Override
     public SectionEvaluationConfigResponse save(SaveSectionEvaluationConfigDraftCommand command) {
-        instructorAccess.requireLeadInstructor(command.sectionId(), command.instructorId());
+        instructorAccess.requireLeadInstructor(command.section(), command.instructorId());
         return responseAssembler.assembleForInstructor(
-                draftSaving.saveDraft(command.sectionId(), command.request()), command.instructorId());
+                draftSaving.saveDraft(command.section(), command.request()), command.instructorId());
     }
 }

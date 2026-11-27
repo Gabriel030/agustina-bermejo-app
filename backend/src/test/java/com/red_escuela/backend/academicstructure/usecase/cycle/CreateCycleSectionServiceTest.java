@@ -334,6 +334,19 @@ class CreateCycleSectionServiceTest {
     }
 
     @Test
+    void courseCycleSectionCreatesItsEvaluationConfigDraft() {
+        when(cycleRepository.findById(CYCLE_ID)).thenReturn(Optional.of(courseCycle));
+        when(courseSubjectRepository.findById(3L)).thenReturn(Optional.of(new CourseSubject()));
+        persistCourseSections();
+
+        service.createSection(CYCLE_ID, request("Commission B", null, 3L, 18, null));
+
+        var captor = ArgumentCaptor.forClass(CourseSubjectSection.class);
+        verify(evaluationSetupPort).createInitialEvaluationDraftForCourseSection(captor.capture());
+        assertThat(captor.getValue().getId()).isEqualTo(200L);
+    }
+
+    @Test
     void courseCycleSectionPersistsTheRequestedMaxAbsencePercent() {
         when(cycleRepository.findById(CYCLE_ID)).thenReturn(Optional.of(courseCycle));
         when(courseSubjectRepository.findById(3L)).thenReturn(Optional.of(new CourseSubject()));
