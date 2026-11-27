@@ -99,7 +99,6 @@ class AttendanceFindingsReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("E34-A-S4")
     void h5AttendanceCannotBeLoadedOnASaturday() {
         Setup setup = setup("76000003");
         MutableClock.INSTANCE.setDate(LocalDate.of(2026, 4, 20));
@@ -108,7 +107,6 @@ class AttendanceFindingsReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("E34-A-S4")
     void h5AttendanceCannotBeLoadedOnASunday() {
         Setup setup = setup("76000005");
         MutableClock.INSTANCE.setDate(LocalDate.of(2026, 4, 20));
@@ -117,7 +115,6 @@ class AttendanceFindingsReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("E34-A-S4")
     void h5AttendanceCannotBeLoadedBeforeTheTermStarts() {
         Setup setup = setup("76000007");
         MutableClock.INSTANCE.setDate(LocalDate.of(2026, 9, 1));
@@ -126,7 +123,6 @@ class AttendanceFindingsReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("E34-A-S4")
     void h5AttendanceCannotBeLoadedAfterTheTermEnds() {
         Setup setup = setup("76000009");
         MutableClock.INSTANCE.setDate(LocalDate.of(2026, 9, 1));
@@ -135,7 +131,6 @@ class AttendanceFindingsReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("E34-A-S4")
     void h5AttendanceCannotBeLoadedForAFutureDate() {
         Setup setup = setup("76000011");
         MutableClock.INSTANCE.setDate(LocalDate.of(2026, 5, 4));
@@ -144,7 +139,6 @@ class AttendanceFindingsReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("E34-A-S4")
     void h5AttendanceCannotBeLoadedOnADayWithoutAScheduleSlot() {
         Setup setup = setup("76000013");
         addSlot(setup.section(), DayOfWeek.MONDAY);

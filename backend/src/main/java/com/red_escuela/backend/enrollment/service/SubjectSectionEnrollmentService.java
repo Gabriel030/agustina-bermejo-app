@@ -135,7 +135,7 @@ public class SubjectSectionEnrollmentService {
         }
 
         subjectRetakeGuard.requireNotAlreadyPassed(programEnrollmentId, subjectId, null);
-        validatePrerequisites(programEnrollment, subjectId);
+        validatePrerequisites(programEnrollment, subjectId, section.termId());
 
         Optional<SubjectSectionEnrollment> existente = subjectSectionEnrollmentRepository
                 .findByStudentIdAndSubjectSectionId(student.getId(), section.id());
@@ -254,7 +254,7 @@ public class SubjectSectionEnrollmentService {
                     "changeSection es solo para el mismo período (Term); para otro Term, dar de baja e enroll de nuevo");
         }
         subjectRetakeGuard.requireNotAlreadyPassed(origen.getProgramEnrollment().getId(), origen.subjectId(), origen.getId());
-        validatePrerequisites(origen.getProgramEnrollment(), origen.subjectId());
+        validatePrerequisites(origen.getProgramEnrollment(), origen.subjectId(), origen.termId());
         validateEnrollmentWindow(destino.termId());
         if (countOccupiedSeats(destino.id()) >= capacityOf(destino)) {
             throw new SectionFullException(destino.id());
@@ -396,8 +396,8 @@ public class SubjectSectionEnrollmentService {
                 .orElseThrow(() -> new SectionEnrollmentNotFoundException(sectionEnrollmentId));
     }
 
-    private void validatePrerequisites(ProgramEnrollment programEnrollment, Long subjectId) {
-        prerequisiteEvaluator.assess(programEnrollment.getId(), subjectId).stream()
+    private void validatePrerequisites(ProgramEnrollment programEnrollment, Long subjectId, Long termId) {
+        prerequisiteEvaluator.assess(programEnrollment.getId(), subjectId, termId).stream()
                 .filter(assessment -> !assessment.met())
                 .findFirst()
                 .ifPresent(assessment -> {

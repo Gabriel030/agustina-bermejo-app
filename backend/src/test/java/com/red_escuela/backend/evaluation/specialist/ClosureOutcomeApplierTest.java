@@ -86,7 +86,7 @@ class ClosureOutcomeApplierTest {
     }
 
     @Test
-    void freeStudentsAreLeftUntouchedAndCourseSectionsNeverRequestGraduation() {
+    void freeStudentsFailWithFreeReasonAndCourseSectionsNeverRequestGraduation() {
         CourseSubjectSectionEnrollment courseEnrollment = new CourseSubjectSectionEnrollment();
         courseEnrollment.setStatus(EnrollmentStatus.IN_PROGRESS);
         when(finder.refreshCourseEnrollment(org.mockito.ArgumentMatchers.anyLong())).thenReturn(courseEnrollment);
@@ -96,8 +96,8 @@ class ClosureOutcomeApplierTest {
         verify(recorder, never()).recordProgramOutcome(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyBoolean());
         verify(recorder).recordCourseOutcome(2L, EnrollmentStatus.APPROVED, Grade.of(new BigDecimal("9.00")), FinalGradeType.PROMOTION, true);
-        verify(recorder, never()).recordCourseOutcome(org.mockito.ArgumentMatchers.eq(1L), org.mockito.ArgumentMatchers.any(),
-                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyBoolean());
+        verify(recorder).recordCourseOutcome(1L, EnrollmentStatus.FAILED, null, null, true);
+        verify(recorder).markCourseFreeReason(1L);
         verifyNoInteractions(graduation);
     }
 }

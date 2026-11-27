@@ -25,6 +25,7 @@ import com.red_escuela.backend.attendance.specialist.AttendanceSectionAccessChec
 import com.red_escuela.backend.attendance.specialist.CancelCourseSectionClassSessionTransaction;
 import com.red_escuela.backend.attendance.specialist.ClassSessionCanceller;
 import com.red_escuela.backend.attendance.specialist.LoadCourseSectionAttendanceTransaction;
+import com.red_escuela.backend.attendance.specialist.ClassDateValidator;
 import com.red_escuela.backend.attendance.specialist.SectionAttendanceLoader;
 import com.red_escuela.backend.attendance.specialist.ClassSessionUpserter;
 import com.red_escuela.backend.attendance.specialist.SectionAttendanceRecorder;
@@ -62,6 +63,7 @@ class CourseSectionAttendanceServicesTest {
     private static final Long OTHER_INSTRUCTOR_ID = 99L;
 
     private final AttendanceSectionAccessChecker sectionAccess = mock(AttendanceSectionAccessChecker.class);
+    private final ClassDateValidator classDateValidator = mock(ClassDateValidator.class);
     private final SectionAttendanceRecorder attendanceRecorder = mock(SectionAttendanceRecorder.class);
     private final ClassSessionUpserter classSessionUpserter = mock(ClassSessionUpserter.class);
     private final ClassSessionRepository classSessionRepository = mock(ClassSessionRepository.class);
@@ -78,7 +80,7 @@ class CourseSectionAttendanceServicesTest {
     private final LoadCourseSectionAttendanceService loadService = new LoadCourseSectionAttendanceService(
             new LoadCourseSectionAttendanceTransaction(
                     new SectionAttendanceLoader(attendanceRecorder, sectionAccess, classSessionUpserter,
-                            enrollmentFinder, classSessionRepository), eventPublisher));
+                            enrollmentFinder, classSessionRepository, classDateValidator), eventPublisher));
     private final CancelCourseSectionClassSessionService cancelService = new CancelCourseSectionClassSessionService(
             new CancelCourseSectionClassSessionTransaction(
                     new ClassSessionCanceller(classSessionRepository, sectionAccess, classSessionUpserter)));

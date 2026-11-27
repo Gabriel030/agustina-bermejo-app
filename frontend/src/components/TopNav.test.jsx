@@ -183,15 +183,15 @@ describe('TopNav', () => {
     expect(order).toEqual(['Inicio', 'Personas', 'Listas de espera', 'Académico', 'Facturación', 'Institución', 'Aprobaciones']);
   });
 
-  it('opensTheDirectorAcademicGridWithThreeSectionsAndElevenItems', async () => {
+  it('opensTheDirectorAcademicGridWithThreeSectionsAndTwelveItems', async () => {
     const user = userEvent.setup();
     renderTopNav();
 
     await user.click(trigger('Académico'));
     const panel = document.getElementById(trigger('Académico').getAttribute('aria-controls'));
     const rows = within(panel).getAllByRole('button', { pressed: false });
-    expect(rows.map((row) => row.textContent)).toEqual(['Oferta y períodos(4)', 'Cursada(2)', 'Egresos y certificados(5)']);
-    expect(rows.reduce((total, row) => total + Number(/\((\d+)\)/.exec(row.textContent)[1]), 0)).toBe(11);
+    expect(rows.map((row) => row.textContent)).toEqual(['Oferta y períodos(4)', 'Cursada(3)', 'Egresos y certificados(5)']);
+    expect(rows.reduce((total, row) => total + Number(/\((\d+)\)/.exec(row.textContent)[1]), 0)).toBe(12);
     await user.click(within(panel).getByRole('button', { name: /Egresos y certificados/ }));
     expect(within(panel).getAllByRole('link').map((link) => link.textContent)).toEqual([
       'Egresos', 'Plantilla de certificados', 'Firmantes', 'Constancias', 'Emitir por excepción',
