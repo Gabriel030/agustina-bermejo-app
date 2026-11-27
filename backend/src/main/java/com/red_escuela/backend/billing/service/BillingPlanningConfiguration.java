@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.billing.planning.domain.InstallmentBusinessDays;
 import com.red_escuela.backend.billing.planning.policy.CourseInstallmentPlanningContext;
 import com.red_escuela.backend.billing.planning.policy.EligibilityPlanningContext;
 import com.red_escuela.backend.billing.planning.policy.EnrollmentFeeRequirementContext;
@@ -21,13 +22,13 @@ public class BillingPlanningConfiguration {
     }
 
     @Bean
-    public ProgramMonthlyInvoicePlanner monthlyChargePlanner(PlanningPolicySetsConfiguration policySets) {
-        return new ProgramMonthlyInvoicePlanner(policySets);
+    public ProgramMonthlyInvoicePlanner monthlyChargePlanner(PlanningPolicySetsConfiguration policySets, InstallmentBusinessDays billingCalendar) {
+        return new ProgramMonthlyInvoicePlanner(policySets, billingCalendar);
     }
 
     @Bean
-    public CourseMonthlyInvoicePlanner courseMonthlyInvoicePlanner(PlanningPolicySetsConfiguration policySets) {
-        return new CourseMonthlyInvoicePlanner(policySets);
+    public CourseMonthlyInvoicePlanner courseMonthlyInvoicePlanner(PlanningPolicySetsConfiguration policySets, InstallmentBusinessDays billingCalendar) {
+        return new CourseMonthlyInvoicePlanner(policySets, billingCalendar);
     }
 
     @Bean

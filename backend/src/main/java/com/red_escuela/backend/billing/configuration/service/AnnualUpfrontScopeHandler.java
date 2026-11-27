@@ -1,5 +1,7 @@
 package com.red_escuela.backend.billing.configuration.service;
 
+import com.red_escuela.backend.billing.planning.domain.InstallmentBusinessDays;
+import org.springframework.beans.factory.annotation.Autowired;
 import com.red_escuela.backend.billing.configuration.domain.AnnualUpfrontSettings;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationScope;
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic;
@@ -21,10 +23,22 @@ public class AnnualUpfrontScopeHandler implements ConfigurationScopeHandler {
     private final ConfigurationPolicyEvaluator policyEvaluator;
     private final BillingConfigurationReader configurationReader;
     private final Clock clock;
-    private final MonthlyInstallmentDueDateCalculator dueDateCalculator = new MonthlyInstallmentDueDateCalculator();
+    private final MonthlyInstallmentDueDateCalculator dueDateCalculator;
 
     public AnnualUpfrontScopeHandler(ProgramYearBillingTemplateRepository templateRepository, ConfigurationPolicyEvaluator policyEvaluator,
                                      BillingConfigurationReader configurationReader, Clock clock) {
+        this(templateRepository, policyEvaluator, configurationReader, clock, new MonthlyInstallmentDueDateCalculator());
+    }
+
+    @Autowired
+    public AnnualUpfrontScopeHandler(ProgramYearBillingTemplateRepository templateRepository, ConfigurationPolicyEvaluator policyEvaluator,
+                                     BillingConfigurationReader configurationReader, Clock clock, InstallmentBusinessDays billingCalendar) {
+        this(templateRepository, policyEvaluator, configurationReader, clock, new MonthlyInstallmentDueDateCalculator(billingCalendar));
+    }
+
+    private AnnualUpfrontScopeHandler(ProgramYearBillingTemplateRepository templateRepository, ConfigurationPolicyEvaluator policyEvaluator,
+                                      BillingConfigurationReader configurationReader, Clock clock, MonthlyInstallmentDueDateCalculator dueDateCalculator) {
+        this.dueDateCalculator = dueDateCalculator;
         this.templateRepository = templateRepository;
         this.policyEvaluator = policyEvaluator;
         this.configurationReader = configurationReader;
