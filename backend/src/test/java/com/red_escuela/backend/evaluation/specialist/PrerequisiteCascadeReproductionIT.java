@@ -29,7 +29,6 @@ import com.red_escuela.backend.shared.domain.Grade;
 import com.red_escuela.backend.testsupport.AcademicReproductionFixtures;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -135,7 +134,6 @@ class PrerequisiteCascadeReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("E34-A-S1")
     void h10ApprovingThePrerequisiteLateRecoversThePromotionOfTheDependentSubject() {
         Chain chain = chain("78000001");
         loadAndPublishPromotingExams(chain);
@@ -152,7 +150,6 @@ class PrerequisiteCascadeReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("E34-A-S1")
     void h10RevertingThePrerequisiteApprovalReviewsTheAlreadyApprovedDependentSubject() {
         Chain chain = chain("78000003");
         ExamBoard board = boardWithRegistration(chain);
