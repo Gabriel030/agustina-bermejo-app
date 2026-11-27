@@ -20,6 +20,7 @@ import com.red_escuela.backend.academicstructure.repository.SectionScheduleSlotR
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
 import jakarta.persistence.EntityManager;
+import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -157,6 +158,13 @@ public class SubjectSectionService {
                 throw e;
             }
             throw new InstructorAlreadyAssignedException(request.instructorId(), sectionId);
+        } catch (CannotAcquireLockException e) {
+            if (ScheduleExclusionViolation.isDeadlock(e) && !sectionSlots.isEmpty()) {
+                SectionScheduleSlot slot = sectionSlots.get(0);
+                throw new InstructorScheduleConflictException(
+                        request.instructorId(), slot.getDayOfWeek(), slot.getStartTime(), slot.getEndTime());
+            }
+            throw e;
         }
     }
 
