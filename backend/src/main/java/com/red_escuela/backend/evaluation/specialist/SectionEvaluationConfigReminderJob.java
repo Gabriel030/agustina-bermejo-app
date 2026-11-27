@@ -1,6 +1,7 @@
 package com.red_escuela.backend.evaluation.specialist;
 
 import com.red_escuela.backend.academicstructure.api.SectionInstructorFinder;
+import com.red_escuela.backend.evaluation.domain.SectionRef;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfigStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -53,7 +54,7 @@ public class SectionEvaluationConfigReminderJob {
                 SectionEvaluationConfigStatus.REJECTED));
 
         for (SectionEvaluationConfig config : pending) {
-            Term term = config.getSubjectSection().getTerm();
+            Term term = config.term();
             if (term.getEnrollmentStart() == null) {
                 continue;
             }
@@ -72,6 +73,9 @@ public class SectionEvaluationConfigReminderJob {
     }
 
     private Optional<Long> leadInstructorPersonId(SectionEvaluationConfig config) {
-        return sectionInstructorFinder.findProgramSectionLeadPersonId(config.getSubjectSection().getId());
+        SectionRef section = SectionEvaluationConfigOwner.sectionRefOf(config);
+        return section.isCourse()
+                ? sectionInstructorFinder.findCourseSectionLeadPersonId(section.id())
+                : sectionInstructorFinder.findProgramSectionLeadPersonId(section.id());
     }
 }

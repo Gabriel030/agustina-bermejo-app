@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.usecase.sectionconfig;
 
+import com.red_escuela.backend.evaluation.domain.SectionRef;
 import com.red_escuela.backend.evaluation.dto.SectionEvaluationConfigResponse;
 import com.red_escuela.backend.evaluation.specialist.SectionEvaluationConfigResponseAssembler;
 import com.red_escuela.backend.evaluation.specialist.SectionEvaluationConfigSubmissionTransaction;
@@ -20,6 +21,6 @@ public class SubmitSectionEvaluationConfigForApprovalService implements SubmitSe
     @Override
     public SectionEvaluationConfigResponse submit(SubmitSectionEvaluationConfigForApprovalCommand command) {
         return responseAssembler.assembleForInstructor(
-                transaction.submit(command.sectionId(), command.instructorId()), command.instructorId());
+                transaction.submit(command.section(), command.instructorId()), command.instructorId());
     }
 }

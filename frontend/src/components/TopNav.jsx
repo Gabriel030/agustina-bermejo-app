@@ -91,17 +91,17 @@ function UserMenu({ titulo, usuario, menus, breakpoint }) {
       }
     >
       <div className="px-3 py-2">
-        <div className="truncate font-heading text-size-15 font-semibold text-ink">
+        <div className="truncate font-heading text-size-14 font-semibold text-ink">
           {usuario.nombre} {usuario.apellido}
         </div>
-        {!canSwitch && <div className="text-size-13 text-ink-faint">{titulo}</div>}
+        {!canSwitch && <div className="text-size-12 text-ink-faint">{titulo}</div>}
       </div>
       {canSwitch && <RoleSwitcher variant="inline" onNavigate={menus.close} />}
-      <div className="my-1.5 border-t border-border" />
+      <div className="mx-1 my-1.5 border-t border-border" />
       <Link to="/perfil" onClick={menus.close} className={MENU_ROW}>
         Mi perfil
       </Link>
-      <Button type="button" variant="ghost" size="inline" onClick={logout} className={cn(MENU_ROW, 'text-ink-faint hover:text-danger')}>
+      <Button type="button" variant="ghost" size="inline" onClick={logout} className={MENU_ROW}>
         Cerrar sesión
       </Button>
     </TopNavMenu>
@@ -115,13 +115,13 @@ export function TopNav({ titulo, items, groups, breakpoint = TOP_NAV_BREAKPOINTS
   const entries = buildTopNavEntries(items, groups);
 
   return (
-    <div className={cn('relative z-30 hidden shrink-0 items-center gap-2 border-b border-border bg-surface px-4', breakpoint.barVisible, breakpoint.padding)}>
+    <div className={cn('relative z-30 mx-auto mt-4 hidden min-h-14 w-[calc(100%-2rem)] max-w-[1248px] shrink-0 items-center gap-0.5 rounded-card border border-border bg-surface px-3', breakpoint.barVisible)}>
       <Link
         to={items[0]?.to ?? '/'}
         aria-label="Ir al inicio"
-        className="mr-2 shrink-0 rounded-control py-2 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
+        className="mr-3 shrink-0 rounded-control py-2 focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring"
       >
-        <InstitutionBrand layout="horizontal" className={breakpoint.brandCollapsed} />
+        <InstitutionBrand layout="horizontal" size="md" className={breakpoint.brandCollapsed} />
       </Link>
       <nav aria-label="Principal" className="flex min-w-0 flex-1 items-center gap-0.5">
         {entries.map((entry) => {

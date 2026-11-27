@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.specialist;
 
+import com.red_escuela.backend.evaluation.domain.SectionRef;
 import com.red_escuela.backend.evaluation.dto.UpdateSectionEvaluationConfigRequest;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
 import com.red_escuela.backend.evaluation.exception.InvalidSectionEvaluationConfigTransitionException;
@@ -23,8 +24,8 @@ public class SectionEvaluationConfigDraftSaver {
     }
 
     @Transactional
-    public SectionEvaluationConfig saveDraft(Long sectionId, UpdateSectionEvaluationConfigRequest request) {
-        SectionEvaluationConfig config = configFinder.findOrThrow(sectionId);
+    public SectionEvaluationConfig saveDraft(SectionRef section, UpdateSectionEvaluationConfigRequest request) {
+        SectionEvaluationConfig config = configFinder.findOrThrow(section);
         if (!config.isEditable()) {
             throw new InvalidSectionEvaluationConfigTransitionException(config.getStatus(), "editar");
         }

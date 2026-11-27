@@ -12,6 +12,6 @@ public record SectionEvaluationConfigReminderEvent(String correlationId, Instant
 
     public static SectionEvaluationConfigReminderEvent reminderFor(SectionEvaluationConfig config, Long instructorPersonId, int daysToEnrollmentStart) {
         return new SectionEvaluationConfigReminderEvent(CorrelationIds.current(), ApplicationTime.instant(), config.getId(),
-                config.getSubjectSection().getSubject().getName(), config.getSubjectSection().getName(), instructorPersonId, daysToEnrollmentStart);
+                config.subjectName(), config.sectionName(), instructorPersonId, daysToEnrollmentStart);
     }
 }

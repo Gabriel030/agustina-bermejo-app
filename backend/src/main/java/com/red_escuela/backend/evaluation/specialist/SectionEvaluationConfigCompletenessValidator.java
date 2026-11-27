@@ -14,7 +14,7 @@ import java.util.List;
 public class SectionEvaluationConfigCompletenessValidator {
 
     public void requireComplete(SectionEvaluationConfig config) {
-        EvaluationScheme scheme = config.getSubjectSection().getEvaluationScheme();
+        EvaluationScheme scheme = config.sectionEvaluationScheme();
         List<String> missing = new ArrayList<>();
         if (config.getTpCount() == null) {
             missing.add("tpCount");

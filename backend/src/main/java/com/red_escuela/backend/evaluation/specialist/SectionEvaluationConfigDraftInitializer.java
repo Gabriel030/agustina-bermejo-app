@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.specialist;
 
+import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfigStatus;
@@ -20,6 +21,14 @@ public class SectionEvaluationConfigDraftInitializer {
     public SectionEvaluationConfig createInitialDraft(SubjectSection section) {
         SectionEvaluationConfig config = new SectionEvaluationConfig();
         config.setSubjectSection(section);
+        config.setStatus(SectionEvaluationConfigStatus.DRAFT);
+        return configRepository.save(config);
+    }
+
+    @Transactional
+    public SectionEvaluationConfig createInitialDraft(CourseSubjectSection section) {
+        SectionEvaluationConfig config = new SectionEvaluationConfig();
+        config.setCourseSection(section);
         config.setStatus(SectionEvaluationConfigStatus.DRAFT);
         return configRepository.save(config);
     }
