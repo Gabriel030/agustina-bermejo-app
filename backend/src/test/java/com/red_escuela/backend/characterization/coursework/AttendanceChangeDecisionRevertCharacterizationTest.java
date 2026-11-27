@@ -73,7 +73,7 @@ class AttendanceChangeDecisionRevertCharacterizationTest extends CourseworkChara
     @Test
     void revertingAnApprovedDecisionRestoresTheAttendanceReopensTheRequestAndLeavesAnAuditRecord() throws Exception {
         Classroom classroom = classroom("rev1", "7700001");
-        Person preceptor = persistPerson("rev1.preceptor", "77000017", "PRECEPTOR");
+        Person preceptor = persistPreceptorAssignedToEverySection("rev1.preceptor", "77000017");
         long requestId = approvedRequest(classroom, preceptor);
         String attendancePath = "/section-enrollments/" + classroom.enrollment().getId() + "/attendance";
         getAs(preceptor, attendancePath).andExpect(jsonPath("$[0].status").value("PRESENT"));
@@ -92,7 +92,7 @@ class AttendanceChangeDecisionRevertCharacterizationTest extends CourseworkChara
     @Test
     void revertingARejectedDecisionReopensTheRequestWithoutTouchingTheAttendance() throws Exception {
         Classroom classroom = classroom("rev2", "7700002");
-        Person preceptor = persistPerson("rev2.preceptor", "77000027", "PRECEPTOR");
+        Person preceptor = persistPreceptorAssignedToEverySection("rev2.preceptor", "77000027");
         long requestId = requestChange(classroom, loadAbsentDay(classroom));
         MutableClock.INSTANCE.setDateTime(DECISION_TIME);
         postJson(preceptor, "/attendance/change-requests/" + requestId + "/reject",
@@ -113,7 +113,7 @@ class AttendanceChangeDecisionRevertCharacterizationTest extends CourseworkChara
     @Test
     void revertingWithoutAReasonIsRejectedAsValidationFailed() throws Exception {
         Classroom classroom = classroom("rev3", "7700003");
-        Person preceptor = persistPerson("rev3.preceptor", "77000037", "PRECEPTOR");
+        Person preceptor = persistPreceptorAssignedToEverySection("rev3.preceptor", "77000037");
         long requestId = approvedRequest(classroom, preceptor);
 
         postEmpty(preceptor, "/attendance/change-requests/" + requestId + "/revert")
@@ -130,7 +130,7 @@ class AttendanceChangeDecisionRevertCharacterizationTest extends CourseworkChara
     @Test
     void revertingExactlySevenDaysAfterTheDecisionIsAllowed() throws Exception {
         Classroom classroom = classroom("rev4", "7700004");
-        Person preceptor = persistPerson("rev4.preceptor", "77000047", "PRECEPTOR");
+        Person preceptor = persistPreceptorAssignedToEverySection("rev4.preceptor", "77000047");
         long requestId = approvedRequest(classroom, preceptor);
         MutableClock.INSTANCE.setDateTime(DECISION_TIME.plusDays(7));
 
@@ -143,7 +143,7 @@ class AttendanceChangeDecisionRevertCharacterizationTest extends CourseworkChara
     @Test
     void revertingAtTheLastSecondOfTheSeventhDayIsAllowed() throws Exception {
         Classroom classroom = classroom("rev8", "7700008");
-        Person preceptor = persistPerson("rev8.preceptor", "77000087", "PRECEPTOR");
+        Person preceptor = persistPreceptorAssignedToEverySection("rev8.preceptor", "77000087");
         long requestId = approvedRequest(classroom, preceptor);
         MutableClock.INSTANCE.setDateTime(DECISION_TIME.toLocalDate().plusDays(7).atTime(23, 59, 59));
 
@@ -155,7 +155,7 @@ class AttendanceChangeDecisionRevertCharacterizationTest extends CourseworkChara
     @Test
     void revertingOnTheEighthDayIsRejectedAsWindowExpired() throws Exception {
         Classroom classroom = classroom("rev5", "7700005");
-        Person preceptor = persistPerson("rev5.preceptor", "77000057", "PRECEPTOR");
+        Person preceptor = persistPreceptorAssignedToEverySection("rev5.preceptor", "77000057");
         long requestId = approvedRequest(classroom, preceptor);
         MutableClock.INSTANCE.setDateTime(DECISION_TIME.toLocalDate().plusDays(8).atStartOfDay());
 
@@ -170,7 +170,7 @@ class AttendanceChangeDecisionRevertCharacterizationTest extends CourseworkChara
     @Test
     void revertingARequestThatIsStillPendingIsRejectedAsNotDecided() throws Exception {
         Classroom classroom = classroom("rev6", "7700006");
-        Person preceptor = persistPerson("rev6.preceptor", "77000067", "PRECEPTOR");
+        Person preceptor = persistPreceptorAssignedToEverySection("rev6.preceptor", "77000067");
         long requestId = requestChange(classroom, loadAbsentDay(classroom));
 
         postJson(preceptor, "/attendance/change-requests/" + requestId + "/revert",
@@ -182,7 +182,7 @@ class AttendanceChangeDecisionRevertCharacterizationTest extends CourseworkChara
     @Test
     void aTeacherCannotRevertADecision() throws Exception {
         Classroom classroom = classroom("rev7", "7700007");
-        Person preceptor = persistPerson("rev7.preceptor", "77000077", "PRECEPTOR");
+        Person preceptor = persistPreceptorAssignedToEverySection("rev7.preceptor", "77000077");
         long requestId = approvedRequest(classroom, preceptor);
 
         postJson(classroom.teacher(), "/attendance/change-requests/" + requestId + "/revert",
@@ -194,7 +194,7 @@ class AttendanceChangeDecisionRevertCharacterizationTest extends CourseworkChara
     void resolvedHistoryListsDecidedRequestsFilteredByResultWithRevertWindowFields() throws Exception {
         Classroom approvedClassroom = classroom("hist1", "7700011");
         Classroom rejectedClassroom = classroom("hist2", "7700012");
-        Person preceptor = persistPerson("hist.preceptor", "77000117", "PRECEPTOR");
+        Person preceptor = persistPreceptorAssignedToEverySection("hist.preceptor", "77000117");
         long approvedId = approvedRequest(approvedClassroom, preceptor);
         long rejectedId = requestChange(rejectedClassroom, loadAbsentDay(rejectedClassroom));
         postJson(preceptor, "/attendance/change-requests/" + rejectedId + "/reject",
@@ -221,7 +221,7 @@ class AttendanceChangeDecisionRevertCharacterizationTest extends CourseworkChara
     @Test
     void resolvedHistoryMarksADecisionAsNotRevertibleAfterTheSeventhDay() throws Exception {
         Classroom classroom = classroom("hist3", "7700013");
-        Person preceptor = persistPerson("hist3.preceptor", "77000137", "PRECEPTOR");
+        Person preceptor = persistPreceptorAssignedToEverySection("hist3.preceptor", "77000137");
         long requestId = approvedRequest(classroom, preceptor);
         MutableClock.INSTANCE.setDateTime(DECISION_TIME.toLocalDate().plusDays(8).atStartOfDay());
 

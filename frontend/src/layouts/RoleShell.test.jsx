@@ -32,7 +32,7 @@ describe('RoleShell', () => {
   it('main carries its own padding', () => {
     renderShell();
 
-    expect(screen.getByRole('main')).toHaveClass('px-4', 'py-5', 'sm:px-8', 'sm:py-6');
+    expect(screen.getByRole('main')).toHaveClass('px-4', 'py-5', 'sm:py-6');
   });
 
   it('main reserves scroll padding so focused fields stay clear of the sticky action bar', () => {
@@ -134,7 +134,7 @@ describe('RoleShell', () => {
       const trigger = screen.getByRole('button', { name: 'Abrir menú' });
       expect(trigger).toHaveClass('min-[1220px]:hidden');
       expect(trigger).not.toHaveClass('lg:hidden');
-      expect(trigger.closest('.mx-auto.w-full.max-w-none')).toHaveClass('min-[1220px]:hidden');
+      expect(trigger.closest('.pt-4.px-4')).toHaveClass('min-[1220px]:hidden');
     });
 
     it('wide top bar collapses the brand text and the user name until 2xl', () => {

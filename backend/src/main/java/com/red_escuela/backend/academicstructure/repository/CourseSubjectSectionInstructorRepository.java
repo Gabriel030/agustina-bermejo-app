@@ -2,6 +2,7 @@ package com.red_escuela.backend.academicstructure.repository;
 
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.Query;
+import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSectionInstructor;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
@@ -15,6 +16,8 @@ public interface CourseSubjectSectionInstructorRepository extends JpaRepository<
     List<CourseSubjectSectionInstructor> findByInstructorId(Long instructorId);
 
     boolean existsBySectionIdAndInstructorId(Long sectionId, Long instructorId);
+
+    boolean existsBySectionIdAndInstructorIdAndRole(Long sectionId, Long instructorId, InstructorRole role);
 
     @Query("""
             select l from CourseSubjectSectionInstructor l

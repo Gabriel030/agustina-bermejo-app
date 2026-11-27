@@ -43,6 +43,7 @@ Con `SPRING_PROFILES_ACTIVE=local,demo` el arranque deja datos educativos reales
 | `alumno.cursos.demo` | Mis cursos con módulos | Inscripto a "Taller de Fotografía Digital (Demo)" con 3 módulos: 2 aprobados y 1 pendiente |
 | `alumno.inscripcion.demo`, `alumno.cupo.demo`, `alumno.notas.demo` | Cuentas de los E2E de inscripción y notas (`e2e/specs/demo`): sin inscripciones propias, cada test les crea una carrera y comisión nueva por API | Sin datos; no usarlas a mano |
 | `docente.demo` | Tomar asistencia, configurar evaluación, cargar notas | Titular (LEAD) de las 3 comisiones del ciclo; ya tiene perfil de docente |
+| `docente2.demo` | Segundo instructor del demo para los E2E (`e2e/specs/demo/grades.spec.js`): sirve de titular de una comisión donde `docente.demo` queda fuera | Solo perfil de docente; sin comisiones propias; no usarla a mano |
 | `preceptor.demo` | Aprobar o rechazar la justificación pendiente, oferta académica | Ve en `/attendance/justifications` la justificación de `alumno.demo` |
 | `administrativo.demo` | Aprobar o rechazar la justificación pendiente, verificar deuda de egreso, crear la estructura académica | Bandeja `/administrativo/solicitudes-de-asistencia` con 1 justificación |
 | `director.demo` | Aprobaciones de dirección | Ciclo "Ciclo lectivo 2026 (Demo)" con inscripción abierta |

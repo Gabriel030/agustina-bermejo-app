@@ -13,8 +13,15 @@ import java.time.LocalDate;
 public class CourseSectionTermEndResolver {
 
     public LocalDate termEndDate(CourseSubjectSection section) {
+        return termOf(section).getEndDate().toLocalDate();
+    }
+
+    public LocalDate termStartDate(CourseSubjectSection section) {
+        return termOf(section).getStartDate().toLocalDate();
+    }
+
+    private Term termOf(CourseSubjectSection section) {
         AcademicOfferingCycle cycle = section.getAcademicOfferingCycle();
-        Term term = cycle != null ? cycle.getTerm() : section.getTerm();
-        return term.getEndDate().toLocalDate();
+        return cycle != null ? cycle.getTerm() : section.getTerm();
     }
 }

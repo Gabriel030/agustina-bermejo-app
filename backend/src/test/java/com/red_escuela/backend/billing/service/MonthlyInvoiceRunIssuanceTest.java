@@ -181,6 +181,8 @@ class MonthlyInvoiceRunIssuanceTest extends AbstractIntegrationTest {
 
             ProgramCohort cohort = new ProgramCohort();
             cohort.setTemplateId(template.getId());
+        cohort.setProgramId(template.programId());
+        cohort.setTermId(template.termId());
             cohort.setIntake(intake);
             cohort.setAdmissionStart(LocalDate.of(2026, 1, 1));
             cohort.setAdmissionEnd(LocalDate.of(2026, 2, 28));

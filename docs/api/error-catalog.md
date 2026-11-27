@@ -79,7 +79,12 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CHARGEBACK_DATE_INVALID` | no | `ChargebackDateInvalidException` | billing |
 | `CHARGEBACK_REFERENCE_INVALID` | no | `ChargebackReferenceInvalidException` | billing |
 | `CIRCULAR_PREREQUISITE` | no | `CircularPrerequisiteException` | academicstructure |
+| `CLASS_DATE_AFTER_TERM_END` | no | `ClassDateAfterTermEndException` | attendance |
+| `CLASS_DATE_BEFORE_TERM_START` | no | `ClassDateBeforeTermStartException` | attendance |
+| `CLASS_DATE_IN_FUTURE` | no | `ClassDateInFutureException` | attendance |
+| `CLASS_DAY_WITHOUT_SCHEDULE_SLOT` | no | `ClassDayWithoutScheduleSlotException` | attendance |
 | `CLASS_ON_HOLIDAY` | no | `ClassOnHolidayException` | attendance |
+| `CLASS_ON_WEEKEND` | no | `ClassOnWeekendException` | attendance |
 | `CONSENT_CATEGORY_NOT_OPTIONAL` | no | `ConsentCategoryNotOptionalException` | notification |
 | `CONSENT_CATEGORY_REPEATED` | no | `ConsentCategoryRepeatedException` | notification |
 | `CONSENT_SOURCE_NOT_ACCEPTED` | no | `ConsentSourceNotAcceptedException` | notification |
@@ -117,6 +122,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `FINAL_EXAM_REQUIRES_REGULAR_STUDENT` | no | `FinalExamRequiresRegularStudentException` | evaluation |
 | `FINAL_GRADE_REQUIRES_EXAM_BOARD` | no | `FinalGradeRequiresExamBoardException` | evaluation |
 | `GATEWAY_CURRENCY_NOT_SUPPORTED` | no | `GatewayCurrencyNotSupportedException` | billing |
+| `GRADE_ITEM_OUTSIDE_CONFIGURED_SLOTS` | no | `GradeItemOutsideConfiguredSlotsException` | evaluation |
 | `GRADE_ITEM_TYPE_NOT_PUBLISHABLE` | no | `GradeItemTypeNotPublishableException` | evaluation |
 | `GUARDIAN_REQUIRED_FOR_MINOR` | no | `GuardianRequiredForMinorException` | identity |
 | `IDEMPOTENCY_KEY_INVALID` | no | `IdempotencyKeyInvalidException` | billing |
@@ -539,6 +545,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `IMPORT_BATCH_STATE_INVALID` | no | `ImportBatchStateInvalidException` | dataimport |
 | `IMPORT_NOT_VALIDATED` | no | `ImportNotValidatedException` | dataimport |
 | `IMPORT_ROLLBACK_BLOCKED` | no | `ImportRollbackBlockedException` | dataimport |
+| `INCOMPLETE_SECTION_EVALUATION_CONFIG` | no | `IncompleteSectionEvaluationConfigException` | evaluation |
 | `INCOMPLETE_SECTION_SETUP` | no | `IncompleteSectionSetupException` | enrollment |
 | `INSTITUTE_SETTING_ALREADY_IN_REQUESTED_STATE` | no | `InstituteSettingAlreadyInRequestedStateException` | platform |
 | `INSTRUCTOR_ALREADY_ASSIGNED` | no | `InstructorAlreadyAssignedException` | academicstructure |
@@ -608,6 +615,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `POSSIBLE_DUPLICATE_BANK_TRANSFER` | no | `PossibleDuplicateBankTransferException` | billing |
 | `PREREQUISITE_ALREADY_EXISTS` | no | `PrerequisiteAlreadyExistsException` | academicstructure |
 | `PRICE_CHANGED_CONCURRENTLY` | no | `PriceChangedConcurrentlyException` | billing |
+| `PROGRAM_COHORT_ALREADY_EXISTS` | no | `ProgramCohortAlreadyExistsException` | academicstructure |
+| `PROGRAM_COHORT_BILLING_TEMPLATE_REQUIRED` | no | `ProgramCohortBillingTemplateRequiredException` | academicstructure |
 | `PROGRAM_ENROLLMENT_MISSING_COHORT` | no | `ProgramEnrollmentMissingCohortException` | billing |
 | `PROGRAM_NOT_AVAILABLE` | no | `ProgramNotAvailableException` | enrollment |
 | `PROGRAM_SUBJECT_ALREADY_EXISTS` | no | `ProgramSubjectAlreadyExistsException` | academicstructure |
@@ -633,10 +642,13 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `RUN_ITEM_NOT_RETRYABLE` | no | `RunItemNotRetryableException` | billing |
 | `SCHOLARSHIP_NOT_AVAILABLE_WITH_ANNUAL_UPFRONT` | no | `ScholarshipNotAvailableWithAnnualUpfrontException` | billing |
 | `SCHOLARSHIP_START_BEFORE_NEXT_INSTALLMENT` | no | `ScholarshipStartBeforeNextInstallmentException` | billing |
+| `SECTION_CLOSURE_CLOSED` | no | `SectionClosureClosedException` | academicstructure |
 | `SECTION_CODE_ALREADY_EXISTS` | no | `SectionCodeAlreadyExistsException` | academicstructure |
+| `SECTION_EVALUATION_SCHEME_LOCKED` | no | `SectionEvaluationSchemeLockedException` | academicstructure |
 | `SECTION_FULL` | no | `SectionFullException` | enrollment |
 | `SECTION_HAS_ACTIVE_ENROLLMENTS` | no | `SectionHasActiveEnrollmentsException` | academicstructure |
 | `SECTION_HAS_RECORDS` | no | `SectionHasRecordsException` | enrollment |
+| `SECTION_LAST_INSTRUCTOR_REMOVAL` | no | `SectionLastInstructorRemovalException` | academicstructure |
 | `SECTION_MODIFICATION_ALREADY_PENDING` | no | `SectionModificationAlreadyPendingException` | academicstructure |
 | `SECTION_MODIFICATION_CYCLE_CLOSED` | no | `SectionModificationCycleClosedException` | academicstructure |
 | `SECTION_MODIFICATION_NOT_PENDING` | no | `SectionModificationNotPendingException` | academicstructure |
@@ -663,6 +675,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SUBJECT_ALREADY_EXISTS` | no | `SubjectAlreadyExistsException` | academicstructure |
 | `SUBJECT_ALREADY_REGULAR` | no | `SubjectAlreadyRegularException` | enrollment |
 | `SUBJECT_APPROVED_BY_EQUIVALENCE` | no | `SubjectApprovedByEquivalenceException` | enrollment |
+| `SUBJECT_CRITICAL_FIELDS_LOCKED` | no | `SubjectCriticalFieldsLockedException` | academicstructure |
 | `SUBJECT_INVALID_TRANSITION` | no | `SubjectInvalidTransitionException` | academicstructure |
 | `SUBJECT_IN_PROGRESS` | no | `SubjectInProgressException` | enrollment |
 | `SUBJECT_NOT_ASSIGNABLE_TO_PLAN` | no | `SubjectNotAssignableToPlanException` | academicstructure |
@@ -671,6 +684,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `TEMPLATE_NOTHING_TO_PUBLISH` | no | `TemplateNothingToPublishException` | graduation |
 | `TERM_ENROLLMENT_OVERRIDE_CLOSED` | no | `TermEnrollmentOverrideClosedException` | enrollment |
 | `TERM_HAS_ACTIVE_ENROLLMENTS` | no | `TermHasActiveEnrollmentsException` | academicstructure |
+| `TERM_NOT_OPEN_FOR_OFFERING` | no | `TermNotOpenForOfferingException` | academicstructure |
 | `UNKNOWN_GUARDED_MODULE` | no | `UnknownGuardedModuleException` | platform |
 | `UPFRONT_WINDOW_CLOSED` | no | `UpfrontWindowClosedException` | billing |
 | `USERNAME_ALREADY_EXISTS` | no | `UsernameAlreadyExistsException` | identity |
@@ -869,6 +883,8 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/course-enrollments/{id}/withdraw` | `StaffEnrollmentChangeController#withdrawCourse` |
 | POST | `/course-section-enrollments/{id}/grade-items` | `GradeItemController#loadCourseEnrollmentGrade` |
 | POST | `/course-section-enrollments/{id}/withdraw` | `StaffEnrollmentChangeController#withdrawCourseModule` |
+| POST | `/course-section-evaluation-configs/{courseSectionId}/approve` | `CourseSectionEvaluationConfigController#approve` |
+| POST | `/course-section-evaluation-configs/{courseSectionId}/reject` | `CourseSectionEvaluationConfigController#reject` |
 | POST | `/course-sections/{id}/activate` | `CourseSectionController#reactivate` |
 | POST | `/course-sections/{id}/attendance` | `AttendanceController#loadCourseSectionAttendance` |
 | POST | `/course-sections/{id}/class-sessions/{date}/cancel` | `AttendanceController#cancelCourseSectionClassSession` |
@@ -882,7 +898,6 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/course-sections/{sectionId}/audience-preview` | `AnnouncementController#previewForCourseSection` |
 | POST | `/course-subjects/{id}/activate` | `CourseSubjectController#reactivate` |
 | POST | `/course-subjects/{id}/deactivate` | `CourseSubjectController#deactivate` |
-| POST | `/course-subjects/{id}/sections` | `CourseSectionController#create` |
 | POST | `/courses` | `CourseController#create` |
 | POST | `/courses/{id}/activate` | `CourseController#reactivate` |
 | POST | `/courses/{id}/deactivate` | `CourseController#deactivate` |
@@ -949,6 +964,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/me/attendance/{id}/justify` | `MeAcademicRecordController#justifyMyAbsence` |
 | POST | `/me/avatar` | `PersonController#uploadAvatar` |
 | POST | `/me/calendar/feed/token` | `MeCalendarFeedController#rotateMyCalendarFeedToken` |
+| POST | `/me/course-section-evaluation-configs/{courseSectionId}/submit` | `MeSectionEvaluationConfigController#submitCourseSectionForApproval` |
 | POST | `/me/documents/{type}` | `MeOwnDocumentController#generate` |
 | POST | `/me/exam-board-registrations` | `MeExamBoardRegistrationController#register` |
 | POST | `/me/exam-board-registrations/{id}/withdraw` | `MeExamBoardRegistrationController#withdraw` |
@@ -1015,6 +1031,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/programs/{id}/promotions` | `PromotionController#createForProgram` |
 | POST | `/programs/{id}/subjects` | `ProgramSubjectController#addSubject` |
 | POST | `/programs/{id}/year-billing-templates` | `ProgramYearBillingTemplateController#create` |
+| POST | `/programs/{programId}/terms/{termId}/cohorts` | `ProgramCohortController#createProgramTermCohort` |
 | POST | `/promotions/{id}/close` | `PromotionController#close` |
 | POST | `/prospects` | `ProspectController#createProspect` |
 | POST | `/prospects/by-staff` | `ProspectStaffController#createProspectByStaff` |
@@ -1057,7 +1074,6 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/subjects/{id}/approve` | `SubjectController#approve` |
 | POST | `/subjects/{id}/deactivate` | `SubjectController#deactivate` |
 | POST | `/subjects/{id}/reject` | `SubjectController#reject` |
-| POST | `/subjects/{id}/sections` | `SubjectSectionController#create` |
 | POST | `/subjects/{id}/submit-for-approval` | `SubjectController#submitForApproval` |
 | POST | `/terms` | `TermController#create` |
 | POST | `/terms/{id}/activate` | `TermController#reactivate` |

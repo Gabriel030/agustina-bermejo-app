@@ -528,7 +528,24 @@ from course_enrollment
 where status = 'WITHDRAWN' and withdrawal_registered_on is not null and withdrawal_effective_date is null;
 \endif
 
-\echo [V487] Datos que hacen fallar el VALIDATE de V488 (capacidad <= 0, attempt_number < 1, inscripciones cuyo estudiante no coincide con la inscripcion padre); debe devolver 0 filas:
+select :current_version < 487 as run_block \gset
+\if :run_block
+\echo
+\echo [V487] Ciclos de oferta no rechazados repetidos para el mismo programa o curso y termino (V487 ABORTA al crear los unicos parciales uk_cycle_program_term_active / uk_cycle_course_term_active si hay filas; corregir antes rechazando o eliminando el ciclo sobrante; no se borran datos):
+select 'program' as owner_kind, program_id as owner_id, term_id, count(*) as live_cycles, min(id) as first_id
+from academic_offering_cycle
+where status <> 'REJECTED' and program_id is not null
+group by program_id, term_id
+having count(*) > 1
+union all
+select 'course', course_id, term_id, count(*), min(id)
+from academic_offering_cycle
+where status <> 'REJECTED' and course_id is not null
+group by course_id, term_id
+having count(*) > 1;
+\endif
+
+\echo [V491] Datos que hacen fallar el VALIDATE de V491 (capacidad <= 0, attempt_number < 1, inscripciones cuyo estudiante no coincide con la inscripcion padre); debe devolver 0 filas:
 select 'subject_section' as tabla, id from subject_section where capacity <= 0
 union all select 'course_section', id from course_section where capacity <= 0
 union all select 'course', id from course where capacity <= 0

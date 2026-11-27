@@ -3,43 +3,36 @@ package com.red_escuela.backend.academicstructure.service;
 import com.red_escuela.backend.academicstructure.exception.InstructorScheduleConflictException;
 import com.red_escuela.backend.academicstructure.entity.SectionScheduleSlot;
 import com.red_escuela.backend.academicstructure.dto.AssignInstructorRequest;
-import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateSectionRequest;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.shared.domain.StatusType;
-import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor;
-import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.exception.InstructorAlreadyAssignedException;
 import com.red_escuela.backend.academicstructure.exception.InstructorNotFoundException;
+import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.academicstructure.exception.SectionInstructorNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.SectionLastInstructorRemovalException;
 import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
-import com.red_escuela.backend.academicstructure.api.SubjectNotFoundException;
-import com.red_escuela.backend.academicstructure.api.TermNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.InstructorRepository;
 import com.red_escuela.backend.academicstructure.repository.SectionScheduleSlotRepository;
-import com.red_escuela.backend.academicstructure.repository.SubjectRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
-import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import jakarta.persistence.EntityManager;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 import com.red_escuela.backend.academicstructure.api.SectionEnrollmentActivityPort;
 import com.red_escuela.backend.academicstructure.api.SectionEvaluationSetupPort;
+import com.red_escuela.backend.academicstructure.exception.SectionEvaluationSchemeLockedException;
 import com.red_escuela.backend.academicstructure.exception.SectionHasActiveEnrollmentsException;
 
 @Service
 public class SubjectSectionService {
     private final SubjectSectionRepository sectionRepository;
-    private final SubjectRepository subjectRepository;
-    private final TermRepository termRepository;
     private final SubjectSectionInstructorRepository sectionInstructorRepository;
     private final InstructorRepository instructorRepository;
     private final EntityManager entityManager;
@@ -53,8 +46,6 @@ public class SubjectSectionService {
 
     public SubjectSectionService(
             SubjectSectionRepository sectionRepository,
-            SubjectRepository subjectRepository,
-            TermRepository termRepository,
             SubjectSectionInstructorRepository sectionInstructorRepository,
             InstructorRepository instructorRepository,
             EntityManager entityManager,
@@ -68,8 +59,6 @@ public class SubjectSectionService {
         this.capacityChangeEvents = capacityChangeEvents;
         this.enrollmentActivityPort = enrollmentActivityPort;
         this.sectionRepository = sectionRepository;
-        this.subjectRepository = subjectRepository;
-        this.termRepository = termRepository;
         this.sectionInstructorRepository = sectionInstructorRepository;
         this.instructorRepository = instructorRepository;
         this.entityManager = entityManager;
@@ -78,33 +67,6 @@ public class SubjectSectionService {
         this.conflictChecker = conflictChecker;
         this.reactivationChecker = reactivationChecker;
         this.slotRepository = slotRepository;
-    }
-
-    @Transactional
-    public SubjectSection create(Long subjectId, CreateSectionRequest request) {
-        identityAssigner.requireShift(request.shift());
-        Subject subject = subjectRepository.findById(subjectId)
-                .orElseThrow(() -> new SubjectNotFoundException(subjectId));
-        Term term = termRepository.findById(request.termId())
-                .orElseThrow(() -> new TermNotFoundException(request.termId()));
-        subject.requireOpenableForSections();
-
-        SubjectSection section = new SubjectSection();
-        section.setSubject(subject);
-        section.setTerm(term);
-        section.setName(request.name());
-        section.setSchedule(request.schedule());
-        section.setCapacity(request.capacity());
-        section.setMaxAbsenceRate(request.maxAbsencePercent());
-        section.setStatus(StatusType.ACTIVE);
-        section.setCreatedAt(LocalDateTime.now());
-        identityAssigner.identifyNewSubjectSection(section, request.shift(), request.description());
-        if (request.evaluationSchemeId() != null) {
-            section.setEvaluationScheme(resolveEvaluationScheme(request.evaluationSchemeId()));
-        }
-        SubjectSection guardada = sectionRepository.save(section);
-        evaluationSetupPort.createInitialEvaluationDraft(guardada);
-        return guardada;
     }
 
     @Transactional
@@ -127,6 +89,7 @@ public class SubjectSectionService {
             identityAssigner.changeSubjectSectionShift(section, request.shift());
         }
         if (request.evaluationSchemeId() != null) {
+            requireEvaluationSchemeReassignable(section, request.evaluationSchemeId());
             section.setEvaluationScheme(resolveEvaluationScheme(request.evaluationSchemeId()));
         }
         if (request.maxAbsencePercent() != null) {
@@ -203,10 +166,19 @@ public class SubjectSectionService {
 
     @Transactional
     public void removeInstructor(Long sectionId, Long instructorAssignmentId) {
+        SubjectSection section = findOrThrow(sectionId);
         SubjectSectionInstructor assignment = sectionInstructorRepository.findById(instructorAssignmentId)
                 .filter(a -> a.getSection().getId().equals(sectionId))
                 .orElseThrow(() -> new SectionInstructorNotFoundException(instructorAssignmentId));
+        if (section.getStatus() == StatusType.ACTIVE && isOnlyLead(assignment, sectionInstructorRepository.findBySectionId(sectionId))) {
+            throw new SectionLastInstructorRemovalException(sectionId);
+        }
         sectionInstructorRepository.delete(assignment);
+    }
+
+    private boolean isOnlyLead(SubjectSectionInstructor assignment, List<SubjectSectionInstructor> assignments) {
+        return assignment.getRole() == InstructorRole.LEAD
+                && assignments.stream().noneMatch(other -> !other.getId().equals(assignment.getId()) && other.getRole() == InstructorRole.LEAD);
     }
 
     private SubjectSection findOrThrow(Long id) {
@@ -216,5 +188,15 @@ public class SubjectSectionService {
     private EvaluationScheme resolveEvaluationScheme(Long id) {
         evaluationSetupPort.requireEvaluationSchemeExists(id);
         return entityManager.find(EvaluationScheme.class, id);
+    }
+
+    private void requireEvaluationSchemeReassignable(SubjectSection section, Long newSchemeId) {
+        Long currentSchemeId = section.getEvaluationScheme() == null ? null : section.getEvaluationScheme().getId();
+        if (newSchemeId.equals(currentSchemeId)) {
+            return;
+        }
+        if (evaluationSetupPort.hasGradesLoadedInProgramSection(section.getId())) {
+            throw new SectionEvaluationSchemeLockedException(section.getId());
+        }
     }
 }

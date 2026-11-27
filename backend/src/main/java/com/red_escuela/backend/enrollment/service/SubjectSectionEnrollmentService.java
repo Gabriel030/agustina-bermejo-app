@@ -1,6 +1,8 @@
 package com.red_escuela.backend.enrollment.service;
 
 import java.time.Clock;
+import com.red_escuela.backend.academicstructure.domain.SectionKind;
+import com.red_escuela.backend.academicstructure.api.SectionClosureGuard;
 import com.red_escuela.backend.enrollment.api.FinalExamEligibilityResolver;
 import com.red_escuela.backend.enrollment.dto.ChangeSectionRequest;
 import com.red_escuela.backend.enrollment.dto.CreateSectionEnrollmentRequest;
@@ -73,6 +75,7 @@ public class SubjectSectionEnrollmentService {
     private final StudentScheduleOverlapGuard scheduleOverlapGuard;
     private final EnrollmentChangeEventPublisher changeEventPublisher;
     private final OwnSectionChangeRecordsGuard ownSectionChangeRecordsGuard;
+    private final SectionClosureGuard sectionClosureGuard;
     private final Clock clock;
 
     public SubjectSectionEnrollmentService(SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
@@ -91,6 +94,7 @@ public class SubjectSectionEnrollmentService {
             StudentScheduleOverlapGuard scheduleOverlapGuard,
             EnrollmentChangeEventPublisher changeEventPublisher,
             OwnSectionChangeRecordsGuard ownSectionChangeRecordsGuard,
+            SectionClosureGuard sectionClosureGuard,
             Clock clock) {
         this.ownSectionChangeRecordsGuard = ownSectionChangeRecordsGuard;
         this.scheduleOverlapGuard = scheduleOverlapGuard;
@@ -108,6 +112,7 @@ public class SubjectSectionEnrollmentService {
         this.programCurriculumFinder = programCurriculumFinder;
         this.invoiceRepository = invoiceRepository;
         this.prerequisiteEvaluator = prerequisiteEvaluator;
+        this.sectionClosureGuard = sectionClosureGuard;
         this.clock = clock;
     }
 
@@ -119,6 +124,7 @@ public class SubjectSectionEnrollmentService {
         studentEnrollmentEligibility.requireConfirmedAndActive(student);
 
         ProgramSectionView section = sectionFinder.findOpenProgramSection(request.sectionId());
+        sectionClosureGuard.requireNotClosed(SectionKind.PROGRAM, request.sectionId());
         validateEnrollmentWindow(section.termId());
         enrollmentFeeRequirementPort.requireForTerm(programEnrollment.getId(), section.termId(), EnrollmentFeeRequirementPurpose.SUBJECT_ENROLLMENT);
 
@@ -135,7 +141,7 @@ public class SubjectSectionEnrollmentService {
         }
 
         subjectRetakeGuard.requireNotAlreadyPassed(programEnrollmentId, subjectId, null);
-        validatePrerequisites(programEnrollment, subjectId);
+        validatePrerequisites(programEnrollment, subjectId, section.termId());
 
         Optional<SubjectSectionEnrollment> existente = subjectSectionEnrollmentRepository
                 .findByStudentIdAndSubjectSectionId(student.getId(), section.id());
@@ -254,7 +260,7 @@ public class SubjectSectionEnrollmentService {
                     "changeSection es solo para el mismo período (Term); para otro Term, dar de baja e enroll de nuevo");
         }
         subjectRetakeGuard.requireNotAlreadyPassed(origen.getProgramEnrollment().getId(), origen.subjectId(), origen.getId());
-        validatePrerequisites(origen.getProgramEnrollment(), origen.subjectId());
+        validatePrerequisites(origen.getProgramEnrollment(), origen.subjectId(), origen.termId());
         validateEnrollmentWindow(destino.termId());
         if (countOccupiedSeats(destino.id()) >= capacityOf(destino)) {
             throw new SectionFullException(destino.id());
@@ -396,8 +402,8 @@ public class SubjectSectionEnrollmentService {
                 .orElseThrow(() -> new SectionEnrollmentNotFoundException(sectionEnrollmentId));
     }
 
-    private void validatePrerequisites(ProgramEnrollment programEnrollment, Long subjectId) {
-        prerequisiteEvaluator.assess(programEnrollment.getId(), subjectId).stream()
+    private void validatePrerequisites(ProgramEnrollment programEnrollment, Long subjectId, Long termId) {
+        prerequisiteEvaluator.assess(programEnrollment.getId(), subjectId, termId).stream()
                 .filter(assessment -> !assessment.met())
                 .findFirst()
                 .ifPresent(assessment -> {
@@ -419,8 +425,7 @@ public class SubjectSectionEnrollmentService {
     }
 
     private void validateActiveProgramEnrollment(ProgramEnrollment programEnrollment) {
-        if (programEnrollment.getStatus() != ProgramEnrollmentStatus.ENROLLED
-                && programEnrollment.getStatus() != ProgramEnrollmentStatus.PAUSED) {
+        if (programEnrollment.getStatus() != ProgramEnrollmentStatus.ENROLLED) {
             throw new ProgramEnrollmentRequiredException(programEnrollment.getId());
         }
     }

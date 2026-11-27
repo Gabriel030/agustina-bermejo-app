@@ -6,7 +6,7 @@ import { StatCard } from '@/components/StatCard';
 import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
 import { formatearFecha } from '@/lib/comisiones';
-import { useConfigsPendientes } from '@/features/evaluation';
+import { useConfigsPendientes, sectionConfigSectionId } from '@/features/evaluation';
 import { DirectorExceptionsCard, useEgresosPendientes } from '@/features/graduation';
 import { useExcepcionesPendientes } from '@/features/enrollment';
 import { useAuthorizationRequests } from '@/features/billing';
@@ -155,7 +155,7 @@ export function DirectorAprobaciones() {
         renderItem={(c) => (
           <PreviewRow
             key={c.id}
-            to={`/director/revisar-configuracion/${c.subjectSectionId}`}
+            to={`/director/revisar-configuracion/${sectionConfigSectionId(c)}`}
             title={`${c.subjectName} · ${c.sectionName}`}
             dateLabel="enviada"
             date={c.submittedAt}

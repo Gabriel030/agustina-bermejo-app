@@ -22,7 +22,7 @@ public class ListSectionEvaluationConfigsService implements ListSectionEvaluatio
 
     @Override
     public List<SectionEvaluationConfigResponse> list(SectionEvaluationConfigStatus status) {
-        return configRepository.findByStatus(status != null ? status : SectionEvaluationConfigStatus.PENDING_APPROVAL).stream()
+        return configRepository.findByStatusAndSubjectSectionIsNotNull(status != null ? status : SectionEvaluationConfigStatus.PENDING_APPROVAL).stream()
                 .map(responseAssembler::assembleForStaff)
                 .toList();
     }

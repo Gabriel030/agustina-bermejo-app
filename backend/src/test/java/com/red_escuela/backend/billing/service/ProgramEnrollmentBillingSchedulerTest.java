@@ -127,6 +127,8 @@ class ProgramEnrollmentBillingSchedulerTest extends AbstractIntegrationTest {
 
         ProgramCohort cohort = new ProgramCohort();
         cohort.setTemplateId(template.getId());
+        cohort.setProgramId(template.programId());
+        cohort.setTermId(template.termId());
         cohort.setIntake(CohortIntake.SECOND);
         cohort.setAdmissionStart(LocalDate.now().minusMonths(1));
         cohort.setAdmissionEnd(LocalDate.now().plusMonths(1));

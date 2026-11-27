@@ -181,6 +181,8 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
 
         ProgramCohort cohort = new ProgramCohort();
         cohort.setTemplateId(template.getId());
+        cohort.setProgramId(template.programId());
+        cohort.setTermId(template.termId());
         cohort.setIntake(com.red_escuela.backend.academicstructure.domain.CohortIntake.FIRST);
         cohort.setAdmissionStart(admissionStart);
         cohort.setAdmissionEnd(admissionEnd);

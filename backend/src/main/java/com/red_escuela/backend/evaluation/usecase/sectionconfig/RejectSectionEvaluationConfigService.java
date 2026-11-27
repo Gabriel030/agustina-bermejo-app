@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.usecase.sectionconfig;
 
+import com.red_escuela.backend.evaluation.domain.SectionRef;
 import com.red_escuela.backend.evaluation.dto.SectionEvaluationConfigResponse;
 import com.red_escuela.backend.evaluation.specialist.SectionEvaluationConfigRejectionTransaction;
 import com.red_escuela.backend.evaluation.specialist.SectionEvaluationConfigResponseAssembler;
@@ -19,6 +20,6 @@ public class RejectSectionEvaluationConfigService implements RejectSectionEvalua
 
     @Override
     public SectionEvaluationConfigResponse reject(RejectSectionEvaluationConfigCommand command) {
-        return responseAssembler.assembleForStaff(transaction.reject(command.sectionId(), command.request().reason()));
+        return responseAssembler.assembleForStaff(transaction.reject(command.section(), command.request().reason()));
     }
 }

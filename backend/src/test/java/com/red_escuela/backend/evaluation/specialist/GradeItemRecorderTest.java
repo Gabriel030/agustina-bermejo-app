@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.specialist;
 
+import com.red_escuela.backend.testsupport.ApprovedSectionConfigFixture;
 import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistrationStatus;
@@ -255,6 +256,7 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
         section.setEvaluationScheme(scheme);
         section.setStatus(StatusType.ACTIVE);
         entityManager.persist(section);
+        ApprovedSectionConfigFixture.persistWhenSchemeExpectsCoursework(entityManager, section);
         return section;
     }
 
@@ -1034,7 +1036,7 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         assertThatThrownBy(() -> gradeItemService.loadProgramEnrollmentGrade(enrollment.getId(), instructor.getId(),
-                new CreateGradeItemRequest(GradeItemType.TP, 3, null, LocalDateTime.now(), BigDecimal.valueOf(15.0), null, null, null)))
+                new CreateGradeItemRequest(GradeItemType.TP, 1, null, LocalDateTime.now(), BigDecimal.valueOf(15.0), null, null, null)))
                 .isInstanceOf(InvalidGradeException.class);
         assertThat(gradeItemService.listByProgramEnrollment(enrollment.getId())).isEmpty();
     }
@@ -1161,7 +1163,7 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void changingTheEvaluationSchemeOfASectionWithPublishedGradesKeepsTheHistoricalFinalScore() {
+    void changingTheEvaluationSchemeOfASectionWithPublishedGradesIsRejectedAndKeepsTheHistoricalFinalScore() {
         Institution institution = persistInstitution();
         Student student = persistStudent("71000091", institution);
         Instructor instructor = persistInstructor("71000092");
@@ -1186,15 +1188,16 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
         EvaluationScheme stricterScheme = persistScheme(2, 0, true, 9.5);
         entityManager.flush();
 
-        subjectSectionService.update(section.getId(),
-                new com.red_escuela.backend.academicstructure.dto.UpdateSectionRequest(null, null, null, stricterScheme.getId()));
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> subjectSectionService.update(section.getId(),
+                new com.red_escuela.backend.academicstructure.dto.UpdateSectionRequest(null, null, null, stricterScheme.getId())))
+                .isInstanceOf(com.red_escuela.backend.academicstructure.exception.SectionEvaluationSchemeLockedException.class);
         entityManager.flush();
         entityManager.clear();
 
         SubjectSectionEnrollment reloaded = entityManager.find(SubjectSectionEnrollment.class, enrollment.getId());
         assertThat(historicalFinalScore).isEqualTo(Grade.of(BigDecimal.valueOf(7.5)));
         assertThat(historicalStatus).isEqualTo(EnrollmentStatus.APPROVED);
-        assertThat(reloaded.getSubjectSection().getEvaluationScheme().getId()).isEqualTo(stricterScheme.getId());
+        assertThat(reloaded.getSubjectSection().getEvaluationScheme().getId()).isEqualTo(promotionScheme.getId());
         assertThat(reloaded.getFinalScore()).isEqualTo(historicalFinalScore);
         assertThat(reloaded.getStatus()).isEqualTo(historicalStatus);
         assertThat(reloaded.getFinalGradeType()).isEqualTo(historicalFinalGradeType);
