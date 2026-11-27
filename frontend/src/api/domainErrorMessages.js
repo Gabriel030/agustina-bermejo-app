@@ -86,6 +86,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   IMPORT_TOO_MANY_ROWS: 'El archivo tiene más filas de las permitidas.',
   INVALID_CLOSURE_EXPORT_FORMAT: 'El formato de exportación no es válido: elegí xlsx o pdf.',
   CLOSURE_NOT_CLOSED: 'El acta se puede descargar recién cuando el cierre esté cerrado.',
+  SECTION_CLOSURE_CLOSED: 'La comisión está cerrada: para corregir, reabrí el cierre con un motivo.',
   CLOSURE_NOT_REOPENABLE: 'Solo se puede reabrir un acta que ya está cerrada.',
   CLOSURE_NOT_CONFIRMED: 'El docente todavía no confirmó el cierre.',
   CLOSURE_STUDENT_NOT_FOUND: 'El alumno no figura en el cierre de esta comisión.',

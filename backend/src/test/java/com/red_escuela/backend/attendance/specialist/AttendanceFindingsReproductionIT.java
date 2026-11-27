@@ -88,7 +88,6 @@ class AttendanceFindingsReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
-    @Disabled("E34-A-S3")
     void h3AttendanceCannotBeLoadedWhileTheClosureIsClosed() {
         Setup setup = setup("76000001");
         fixtures.closure(SectionKind.PROGRAM, setup.section().getId(), ClosureStatus.CLOSED,

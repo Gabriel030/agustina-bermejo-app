@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.specialist;
 
+import com.red_escuela.backend.academicstructure.api.SectionClosureGuard;
 import com.red_escuela.backend.evaluation.domain.CourseworkOutcome;
 import com.red_escuela.backend.evaluation.entity.SectionGradeItemPublication;
 import com.red_escuela.backend.evaluation.events.GradeCorrectedEvent;
@@ -74,6 +75,7 @@ public class GradeItemRecorder {
     private final ExamBoardTakenChecker examBoardTakenChecker;
     private final CourseworkApprovalChecker courseworkApprovalChecker;
     private final ProgramPrerequisiteEvaluator programPrerequisiteEvaluator;
+    private final SectionClosureGuard sectionClosureGuard;
     private final ApprovedCourseworkCountFinder courseworkCountFinder;
     private final GradeItemSlotValidator slotValidator;
 
@@ -97,6 +99,7 @@ public class GradeItemRecorder {
             ExamBoardTakenChecker examBoardTakenChecker,
             CourseworkApprovalChecker courseworkApprovalChecker,
             ProgramPrerequisiteEvaluator programPrerequisiteEvaluator,
+            SectionClosureGuard sectionClosureGuard,
             ApprovedCourseworkCountFinder courseworkCountFinder,
             GradeItemSlotValidator slotValidator) {
         this.gradeItemRepository = gradeItemRepository;
@@ -118,8 +121,15 @@ public class GradeItemRecorder {
         this.examBoardTakenChecker = examBoardTakenChecker;
         this.courseworkApprovalChecker = courseworkApprovalChecker;
         this.programPrerequisiteEvaluator = programPrerequisiteEvaluator;
+        this.sectionClosureGuard = sectionClosureGuard;
         this.courseworkCountFinder = courseworkCountFinder;
         this.slotValidator = slotValidator;
+    }
+
+    private void requireSectionNotClosedUnlessFinal(CreateGradeItemRequest request, SectionKind kind, Long sectionId) {
+        if (request.type() != GradeItemType.FINAL) {
+            sectionClosureGuard.requireNotClosed(kind, sectionId);
+        }
     }
 
     @Transactional
@@ -128,6 +138,7 @@ public class GradeItemRecorder {
         requireFinalFromExamBoard(request);
         sectionEnrollmentFinder.lockProgramEnrollment(enrollmentId);
         SubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findProgramEnrollment(enrollmentId);
+        requireSectionNotClosedUnlessFinal(request, SectionKind.PROGRAM, enrollment.getSubjectSection().getId());
         EvaluationScheme scheme = enrollment.getSubjectSection().getEvaluationScheme();
         ExamBoard examBoard = validateGradeSource(
                 request.examBoardId(), instructorId,
@@ -325,6 +336,7 @@ public class GradeItemRecorder {
         requireFinalFromExamBoard(request);
         sectionEnrollmentFinder.lockCourseEnrollment(enrollmentId);
         CourseSubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findCourseEnrollment(enrollmentId);
+        requireSectionNotClosedUnlessFinal(request, SectionKind.COURSE, enrollment.getCourseSubjectSection().getId());
         EvaluationScheme scheme = enrollment.getCourseSubjectSection().getEvaluationScheme();
         ExamBoard examBoard = validateGradeSource(
                 request.examBoardId(), instructorId,
