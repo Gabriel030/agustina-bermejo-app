@@ -19,7 +19,7 @@ class NoStoreResponseFilterTest {
 
     @Test
     void authMeAndMeSubpathsAreMarkedNoStore() throws Exception {
-        for (String uri : new String[] {"/auth/login", "/me", "/me/documents", "/public/certificates/ABC"}) {
+        for (String uri : new String[] {"/auth/login", "/me", "/me/documents", "/public/documents/ABC"}) {
             assertThat(call(uri).getHeader("Cache-Control")).as(uri).isEqualTo("no-store");
         }
     }

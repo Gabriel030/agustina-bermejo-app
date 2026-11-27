@@ -5,6 +5,6 @@
  *
  * <p><b>No hacer</b>: llamar a especialistas, repositorios o casos de uso de otro módulo; poner lógica de negocio.
  *
- * <p><b>Ejemplo</b>: {@code PublicCertificateController}.
+ * <p><b>Ejemplo</b>: {@code PublicDocumentController}.
  */
 package com.red_escuela.backend.graduation.certificate.verification.controller;

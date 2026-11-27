@@ -5,6 +5,6 @@
  *
  * <p><b>No hacer</b>: incluir entidades; usar {@code BigDecimal} o {@code Double} sueltos para montos o porcentajes (van {@code Money} y {@code Percentage}).
  *
- * <p><b>Ejemplo</b>: {@code PublicCertificateStatus}.
+ * <p><b>Ejemplo</b>: {@code PublicDocumentVerificationResponse}.
  */
 package com.red_escuela.backend.graduation.certificate.verification.dto;
