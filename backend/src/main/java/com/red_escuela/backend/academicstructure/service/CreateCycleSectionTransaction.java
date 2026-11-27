@@ -140,6 +140,7 @@ public class CreateCycleSectionTransaction {
         section.setAcademicOfferingCycle(cycle);
         identityAssigner.identifyNewCourseSection(section, shift, description);
         var saved = courseSectionRepository.save(section);
+        evaluationSetupPort.createInitialEvaluationDraftForCourseSection(saved);
         saveCourseSlots(saved, slots, shift, capacity);
         return saved.getId();
     }

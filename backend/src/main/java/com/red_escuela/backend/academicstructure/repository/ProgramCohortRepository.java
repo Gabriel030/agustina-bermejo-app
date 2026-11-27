@@ -18,6 +18,8 @@ public interface ProgramCohortRepository extends JpaRepository<ProgramCohort, Lo
 
     Optional<ProgramCohort> findByTemplateIdAndIntake(Long templateId, CohortIntake intake);
 
+    Optional<ProgramCohort> findByProgramIdAndTermIdAndIntake(Long programId, Long termId, CohortIntake intake);
+
     @Query(value = "select created_by_id from program_cohort where id = :id", nativeQuery = true)
     Long findCreatedByIdById(@Param("id") Long id);
 }

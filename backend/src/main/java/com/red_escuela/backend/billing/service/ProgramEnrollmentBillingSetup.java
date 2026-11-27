@@ -25,7 +25,8 @@ public class ProgramEnrollmentBillingSetup implements ProgramAdmissionFeePort {
 
     @Transactional
     public void assignTemplateIfMissing(ProgramEnrollment enrollment) {
-        if (enrollment.getCurrentBillingTemplate() == null && enrollment.getProgramCohort() != null) {
+        if (enrollment.getCurrentBillingTemplate() == null && enrollment.getProgramCohort() != null
+                && enrollment.getProgramCohort().getTemplateId() != null) {
             enrollment.setCurrentBillingTemplate(entityManager.getReference(ProgramYearBillingTemplate.class, enrollment.getProgramCohort().getTemplateId()));
             programEnrollmentRepository.save(enrollment);
         }

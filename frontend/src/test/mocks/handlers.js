@@ -198,6 +198,21 @@ export const handlers = [
     HttpResponse.json(graduationCertificateDetail({ id: Number(params.id) })),
   ),
   http.get(`${API}/graduation-certificates/:id/pdf`, () => pdfResponse()),
+  http.post(`${API}/programs/:programId/terms/:termId/cohorts`, ({ params }) =>
+    HttpResponse.json(
+      {
+        id: 1,
+        programId: Number(params.programId),
+        termId: Number(params.termId),
+        intake: 'FIRST',
+        admissionStart: '2027-01-01',
+        admissionEnd: '2027-02-01',
+        cursadaStart: '2027-03-01',
+        createdAt: '2027-01-05T10:00:00',
+      },
+      { status: 201 },
+    ),
+  ),
   http.post(`${API}/graduation-certificates/preview`, () => pdfResponse()),
   http.post(`${API}/graduation-certificates/batch`, () => HttpResponse.json(graduationCertificateBatch())),
   http.post(`${API}/graduation-certificates/:id/revoke`, ({ params }) =>
@@ -666,6 +681,8 @@ export const handlers = [
   http.get(`${API}/programs/:id/year-billing-templates`, () => HttpResponse.json([])),
   http.get(`${API}/me/section-evaluation-configs`, () => HttpResponse.json([])),
   http.get(`${API}/section-evaluation-configs`, () => HttpResponse.json([])),
+  http.get(`${API}/me/course-section-evaluation-configs`, () => HttpResponse.json([])),
+  http.get(`${API}/course-section-evaluation-configs`, () => HttpResponse.json([])),
   http.get(`${API}/me/section-enrollments`, () => HttpResponse.json([])),
   http.post(`${API}/me/section-enrollments/:id/change-section`, async ({ params, request }) => {
     const { newSectionId } = await request.json().catch(() => ({}));

@@ -122,8 +122,10 @@ public class InvoicePlanningContextLoader {
         Integer entrySlot = null;
         java.time.LocalDate cursadaStart = null;
         if (cohort != null) {
-            entryTemplateId = cohort.getTemplateId();
-            entrySlot = cycleFactory.cycleOf(templateRepository.getReferenceById(cohort.getTemplateId()), YearMonth.from(cohort.getCursadaStart()).getYear(), today).slotOf(YearMonth.from(cohort.getCursadaStart()));
+            if (cohort.getTemplateId() != null) {
+                entryTemplateId = cohort.getTemplateId();
+                entrySlot = cycleFactory.cycleOf(templateRepository.getReferenceById(cohort.getTemplateId()), YearMonth.from(cohort.getCursadaStart()).getYear(), today).slotOf(YearMonth.from(cohort.getCursadaStart()));
+            }
             cursadaStart = cohort.getCursadaStart();
         }
         ProgramInvoicePlanningFacts facts = new ProgramInvoicePlanningFacts(enrollmentId, month, today, active, suspended, completed, paused, onlyFinals, entryMonth,

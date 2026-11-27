@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.specialist;
 
+import com.red_escuela.backend.evaluation.domain.SectionRef;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
 import com.red_escuela.backend.evaluation.events.SectionEvaluationConfigProposedEvent;
 import com.red_escuela.backend.evaluation.repository.SectionEvaluationConfigRepository;
@@ -27,9 +28,9 @@ public class SectionEvaluationConfigSubmissionTransaction {
     }
 
     @Transactional
-    public SectionEvaluationConfig submit(Long sectionId, Long instructorId) {
-        instructorAccess.requireLeadInstructor(sectionId, instructorId);
-        SectionEvaluationConfig config = configFinder.findOrThrow(sectionId);
+    public SectionEvaluationConfig submit(SectionRef section, Long instructorId) {
+        instructorAccess.requireLeadInstructor(section, instructorId);
+        SectionEvaluationConfig config = configFinder.findOrThrow(section);
         config.submitForApproval(ApplicationTime.now());
         SectionEvaluationConfig saved = configRepository.save(config);
         eventPublisher.publishEvent(SectionEvaluationConfigProposedEvent.proposedFor(saved));

@@ -122,6 +122,8 @@ public final class Fixtures {
             TestTemplateTerms.publish(entityManager, template);
             ProgramCohort cohort = new ProgramCohort();
             cohort.setTemplateId(template.getId());
+        cohort.setProgramId(template.programId());
+        cohort.setTermId(template.termId());
             cohort.setIntake(CohortIntake.FIRST);
             cohort.setAdmissionStart(FIRST_TERM_START.minusMonths(2));
             cohort.setAdmissionEnd(FIRST_TERM_START.minusDays(1));

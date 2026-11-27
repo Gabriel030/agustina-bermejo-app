@@ -205,6 +205,9 @@ abstract class AbstractInvoiceSequenceTest extends AbstractIntegrationTest {
             Person director = newPerson();
             ProgramCohort cohort = new ProgramCohort();
             cohort.setTemplateId(year.templateId());
+            ProgramYearBillingTemplate cohortTemplate = entityManager.find(ProgramYearBillingTemplate.class, year.templateId());
+            cohort.setProgramId(cohortTemplate.programId());
+            cohort.setTermId(cohortTemplate.termId());
             cohort.setIntake(intake);
             cohort.setAdmissionStart(cursadaStart.minusMonths(2));
             cohort.setAdmissionEnd(cursadaStart.minusDays(1));

@@ -621,6 +621,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `POSSIBLE_DUPLICATE_BANK_TRANSFER` | no | `PossibleDuplicateBankTransferException` | billing |
 | `PREREQUISITE_ALREADY_EXISTS` | no | `PrerequisiteAlreadyExistsException` | academicstructure |
 | `PRICE_CHANGED_CONCURRENTLY` | no | `PriceChangedConcurrentlyException` | billing |
+| `PROGRAM_COHORT_ALREADY_EXISTS` | no | `ProgramCohortAlreadyExistsException` | academicstructure |
+| `PROGRAM_COHORT_BILLING_TEMPLATE_REQUIRED` | no | `ProgramCohortBillingTemplateRequiredException` | academicstructure |
 | `PROGRAM_ENROLLMENT_MISSING_COHORT` | no | `ProgramEnrollmentMissingCohortException` | billing |
 | `PROGRAM_NOT_AVAILABLE` | no | `ProgramNotAvailableException` | enrollment |
 | `PROGRAM_SUBJECT_ALREADY_EXISTS` | no | `ProgramSubjectAlreadyExistsException` | academicstructure |
@@ -646,6 +648,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `RUN_ITEM_NOT_RETRYABLE` | no | `RunItemNotRetryableException` | billing |
 | `SCHOLARSHIP_NOT_AVAILABLE_WITH_ANNUAL_UPFRONT` | no | `ScholarshipNotAvailableWithAnnualUpfrontException` | billing |
 | `SCHOLARSHIP_START_BEFORE_NEXT_INSTALLMENT` | no | `ScholarshipStartBeforeNextInstallmentException` | billing |
+| `SECTION_CLOSURE_CLOSED` | no | `SectionClosureClosedException` | academicstructure |
 | `SECTION_CODE_ALREADY_EXISTS` | no | `SectionCodeAlreadyExistsException` | academicstructure |
 | `SECTION_EVALUATION_SCHEME_LOCKED` | no | `SectionEvaluationSchemeLockedException` | academicstructure |
 | `SECTION_FULL` | no | `SectionFullException` | enrollment |
@@ -886,6 +889,8 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/course-enrollments/{id}/withdraw` | `StaffEnrollmentChangeController#withdrawCourse` |
 | POST | `/course-section-enrollments/{id}/grade-items` | `GradeItemController#loadCourseEnrollmentGrade` |
 | POST | `/course-section-enrollments/{id}/withdraw` | `StaffEnrollmentChangeController#withdrawCourseModule` |
+| POST | `/course-section-evaluation-configs/{courseSectionId}/approve` | `CourseSectionEvaluationConfigController#approve` |
+| POST | `/course-section-evaluation-configs/{courseSectionId}/reject` | `CourseSectionEvaluationConfigController#reject` |
 | POST | `/course-sections/{id}/activate` | `CourseSectionController#reactivate` |
 | POST | `/course-sections/{id}/attendance` | `AttendanceController#loadCourseSectionAttendance` |
 | POST | `/course-sections/{id}/class-sessions/{date}/cancel` | `AttendanceController#cancelCourseSectionClassSession` |
@@ -968,6 +973,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/me/attendance/{id}/justify` | `MeAcademicRecordController#justifyMyAbsence` |
 | POST | `/me/avatar` | `PersonController#uploadAvatar` |
 | POST | `/me/calendar/feed/token` | `MeCalendarFeedController#rotateMyCalendarFeedToken` |
+| POST | `/me/course-section-evaluation-configs/{courseSectionId}/submit` | `MeSectionEvaluationConfigController#submitCourseSectionForApproval` |
 | POST | `/me/documents/{type}` | `MeOwnDocumentController#generate` |
 | POST | `/me/exam-board-registrations` | `MeExamBoardRegistrationController#register` |
 | POST | `/me/exam-board-registrations/{id}/withdraw` | `MeExamBoardRegistrationController#withdraw` |
@@ -1035,6 +1041,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/programs/{id}/promotions` | `PromotionController#createForProgram` |
 | POST | `/programs/{id}/subjects` | `ProgramSubjectController#addSubject` |
 | POST | `/programs/{id}/year-billing-templates` | `ProgramYearBillingTemplateController#create` |
+| POST | `/programs/{programId}/terms/{termId}/cohorts` | `ProgramCohortController#createProgramTermCohort` |
 | POST | `/promotions/{id}/close` | `PromotionController#close` |
 | POST | `/prospects` | `ProspectController#createProspect` |
 | POST | `/prospects/by-staff` | `ProspectStaffController#createProspectByStaff` |

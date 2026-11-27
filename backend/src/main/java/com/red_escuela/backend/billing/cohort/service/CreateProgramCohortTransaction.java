@@ -57,6 +57,10 @@ public class CreateProgramCohortTransaction {
 
         ProgramCohort cohort = new ProgramCohort();
         cohort.setTemplateId(template.getId());
+        cohort.setProgramId(template.programId());
+        cohort.setTermId(template.termId());
+        cohort.setProgramId(template.programId());
+        cohort.setTermId(template.termId());
         cohort.setIntake(request.intake());
         cohort.setAdmissionStart(request.admissionStart());
         cohort.setAdmissionEnd(request.admissionEnd());

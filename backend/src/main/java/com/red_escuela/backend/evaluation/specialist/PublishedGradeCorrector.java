@@ -3,6 +3,7 @@ package com.red_escuela.backend.evaluation.specialist;
 import com.red_escuela.backend.academicstructure.api.SectionTermEndFinder;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.enrollment.api.SectionEnrollmentFinder;
+import com.red_escuela.backend.academicstructure.api.SectionClosureGuard;
 import com.red_escuela.backend.evaluation.api.GraduationRequestTriggerPort;
 import com.red_escuela.backend.evaluation.dto.CorrectGradeItemRequest;
 import com.red_escuela.backend.evaluation.dto.GradeItemAuditResponse;
@@ -42,6 +43,7 @@ public class PublishedGradeCorrector {
     private final GradeItemRecorder gradeItemService;
     private final ApplicationEventPublisher eventPublisher;
     private final GraduationRequestTriggerPort graduationRequestTrigger;
+    private final SectionClosureGuard sectionClosureGuard;
     private final Clock clock;
 
     public PublishedGradeCorrector(GradeItemRepository gradeItemRepository,
@@ -52,6 +54,7 @@ public class PublishedGradeCorrector {
                                    GradeItemRecorder gradeItemService,
                                    ApplicationEventPublisher eventPublisher,
                                    GraduationRequestTriggerPort graduationRequestTrigger,
+                                   SectionClosureGuard sectionClosureGuard,
                                    Clock clock) {
         this.gradeItemRepository = gradeItemRepository;
         this.publicationRepository = publicationRepository;
@@ -61,6 +64,7 @@ public class PublishedGradeCorrector {
         this.gradeItemService = gradeItemService;
         this.eventPublisher = eventPublisher;
         this.graduationRequestTrigger = graduationRequestTrigger;
+        this.sectionClosureGuard = sectionClosureGuard;
         this.clock = clock;
     }
 
@@ -73,6 +77,7 @@ public class PublishedGradeCorrector {
         Target target = Target.of(gradeItem);
         lockEnrollment(target);
         requirePublished(gradeItem, target);
+        sectionClosureGuard.requireNotClosed(target.kind(), target.sectionId());
         requireWithinTerm(gradeItemId, target);
         if (request.newScore().equals(gradeItem.getScore())) {
             throw new GradeCorrectionNoChangeException(gradeItemId);
@@ -145,6 +150,9 @@ public class PublishedGradeCorrector {
     }
 
     private void requireWithinTerm(Long gradeItemId, Target target) {
+        if (sectionClosureGuard.isReopened(target.kind(), target.sectionId())) {
+            return;
+        }
         LocalDate termEndDate = sectionTermEndFinder.termEndDate(target.kind(), target.sectionId());
         if (LocalDate.now(clock).isAfter(termEndDate)) {
             throw new GradeCorrectionPeriodEndedException(gradeItemId, termEndDate);

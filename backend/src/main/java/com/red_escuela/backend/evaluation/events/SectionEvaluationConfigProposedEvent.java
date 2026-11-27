@@ -12,6 +12,6 @@ public record SectionEvaluationConfigProposedEvent(String correlationId, Instant
 
     public static SectionEvaluationConfigProposedEvent proposedFor(SectionEvaluationConfig config) {
         return new SectionEvaluationConfigProposedEvent(CorrelationIds.current(), ApplicationTime.instant(), config.getId(),
-                config.getSubjectSection().getSubject().getName(), config.getSubjectSection().getName());
+                config.subjectName(), config.sectionName());
     }
 }

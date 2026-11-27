@@ -57,6 +57,8 @@ abstract class CohortP3CharacterizationSupport extends WithdrawalP2Characterizat
     protected ProgramCohort persistCohort(ProgramYearBillingTemplate template, LocalDate admissionStart, LocalDate admissionEnd) {
         ProgramCohort cohort = new ProgramCohort();
         cohort.setTemplateId(template.getId());
+        cohort.setProgramId(template.programId());
+        cohort.setTermId(template.termId());
         cohort.setIntake(CohortIntake.FIRST);
         cohort.setAdmissionStart(admissionStart);
         cohort.setAdmissionEnd(admissionEnd);
