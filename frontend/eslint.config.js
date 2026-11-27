@@ -50,7 +50,7 @@ const featureBoundaryRules = FEATURES.map((feature) => ({
 }))
 
 export default defineConfig([
-  globalIgnores(['dist', 'scripts/__fixtures__']),
+  globalIgnores(['dist', 'dist-mock', '.lighthouseci', 'scripts/__fixtures__']),
   {
     files: ['scripts/**/*.js', 'eslint-rules/**/*.js'],
     languageOptions: { globals: globals.node },
