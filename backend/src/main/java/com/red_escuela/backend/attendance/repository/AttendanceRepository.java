@@ -11,6 +11,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,6 +21,9 @@ public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
     List<Attendance> findByProgramSubjectSectionEnrollmentId(Long enrollmentId);
 
     boolean existsByProgramSubjectSectionEnrollmentId(Long enrollmentId);
+
+    @Query("select distinct a.classDate from Attendance a where a.classDate in :dates order by a.classDate")
+    List<LocalDate> findDistinctClassDatesIn(@Param("dates") Collection<LocalDate> dates);
 
     @Query("select a.justificationAttachmentUrl from Attendance a where a.id = :attendanceId and a.justificationAttachmentUrl is not null")
     Optional<String> findJustificationAttachmentKeyById(@Param("attendanceId") Long attendanceId);
