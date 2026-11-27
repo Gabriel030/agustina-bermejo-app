@@ -77,14 +77,14 @@ public class AttendanceChangeRequestController {
     }
 
     @GetMapping("/attendance/change-requests")
-    @RequiresPermission(code = "attendance.read_change_requests", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
+    @RequiresPermission(code = "attendance.read_change_requests", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public List<AttendanceChangeRequestResponse> listByStatus(
             @RequestParam(defaultValue = "PENDING") AttendanceChangeRequestStatus status) {
         return listAttendanceChangeRequestsByStatusUseCase.list(status).stream().map(this::toResponse).toList();
     }
 
     @GetMapping("/attendance/change-requests/resolved")
-    @RequiresPermission(code = "attendance.read_change_requests", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
+    @RequiresPermission(code = "attendance.read_change_requests", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public PageResponse<AttendanceChangeRequestResponse> listResolved(
             @RequestParam(required = false) AttendanceChangeRequestResult result,
             @RequestParam(defaultValue = "0") int page,
@@ -100,19 +100,19 @@ public class AttendanceChangeRequestController {
     }
 
     @PostMapping("/attendance/change-requests/{id}/approve")
-    @RequiresPermission(code = "attendance.review_change_request", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
+    @RequiresPermission(code = "attendance.review_change_request", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public AttendanceChangeRequestResponse approve(@PathVariable Long id) {
         return toResponse(approveAttendanceChangeRequestUseCase.approve(id));
     }
 
     @PostMapping("/attendance/change-requests/{id}/reject")
-    @RequiresPermission(code = "attendance.review_change_request", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
+    @RequiresPermission(code = "attendance.review_change_request", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public AttendanceChangeRequestResponse reject(@PathVariable Long id, @Valid @RequestBody RejectAttendanceChangeRequestRequest request) {
         return toResponse(rejectAttendanceChangeRequestUseCase.reject(new RejectAttendanceChangeRequestCommand(id, request.reason())));
     }
 
     @PostMapping("/attendance/change-requests/{id}/revert")
-    @RequiresPermission(code = "attendance.review_change_request", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
+    @RequiresPermission(code = "attendance.review_change_request", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public AttendanceChangeRequestResponse revert(@PathVariable Long id, @Valid @RequestBody RevertAttendanceChangeRequestDecisionRequest request) {
         return revertAttendanceChangeRequestDecisionUseCase.revert(new RevertAttendanceChangeRequestDecisionCommand(id, request.reason()));
     }

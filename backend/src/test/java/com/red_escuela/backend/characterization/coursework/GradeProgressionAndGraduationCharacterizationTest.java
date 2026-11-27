@@ -184,6 +184,8 @@ class GradeProgressionAndGraduationCharacterizationTest extends CourseworkCharac
         Classroom classroom = persistClassroom("grade9", "7700011", persistScheme(2, true, null),
                 Percentage.ofPoints(new BigDecimal("25")), 10, 10, InstructorRole.LEAD);
         Person preceptor = persistPerson("grade9.preceptor", "77000117", "PRECEPTOR");
+        jdbcTemplate.update("insert into preceptor_assignment (person_id, subject_section_id, created_by) values (?, ?, ?)",
+                preceptor.getId(), classroom.section().getId(), preceptor.getId());
         AttendanceStatus[] statuses = {AttendanceStatus.PRESENT, AttendanceStatus.PRESENT, AttendanceStatus.PRESENT, AttendanceStatus.ABSENT, AttendanceStatus.ABSENT};
         long lastAbsentId = 0;
         for (int index = 0; index < statuses.length; index++) {

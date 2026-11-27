@@ -46,7 +46,7 @@ class CourseworkOutcomeCalculatorTest {
     }
 
     private Optional<CourseworkOutcome> calculate(EvaluationScheme scheme, EnrollmentStatus status, GradeItem... items) {
-        return calculator.calculate(scheme, List.of(items), status, 1);
+        return calculator.calculate(scheme, scheme.getTpCountExpected(), List.of(items), status, 1);
     }
 
     @Test
@@ -87,6 +87,17 @@ class CourseworkOutcomeCalculatorTest {
     }
 
     @Test
+    void courseworkCountComesFromTheArgumentAndNotFromTheScheme() {
+        EvaluationScheme schemeWithoutCoursework = scheme(1, 0, true);
+        List<GradeItem> items = List.of(item(GradeItemType.EXAM, 1, "9"), item(GradeItemType.TP, 1, "3"));
+
+        assertThat(calculator.calculate(schemeWithoutCoursework, 1, items, EnrollmentStatus.IN_PROGRESS, 1))
+                .contains(new CourseworkOutcome(EnrollmentStatus.FAILED, null, null));
+        assertThat(calculator.calculate(schemeWithoutCoursework, 0, items, EnrollmentStatus.IN_PROGRESS, 1))
+                .isNotEqualTo(Optional.of(new CourseworkOutcome(EnrollmentStatus.FAILED, null, null)));
+    }
+
+    @Test
     void failedCourseworkDoesNotFailTheStudentWhileExamsAreMissing() {
         assertThat(calculate(scheme(2, 1, true), EnrollmentStatus.IN_PROGRESS, item(GradeItemType.TP, 1, "3"))).isEmpty();
     }
@@ -109,7 +120,7 @@ class CourseworkOutcomeCalculatorTest {
 
     @Test
     void aFailedFinalWithAttemptsLeftKeepsTheStudentRegular() {
-        Optional<CourseworkOutcome> outcome = calculator.calculate(scheme(1, 0, true),
+        Optional<CourseworkOutcome> outcome = calculator.calculate(scheme(1, 0, true), 0,
                 List.of(item(GradeItemType.EXAM, 1, "5"), item(GradeItemType.FINAL, 1, "3")), EnrollmentStatus.REGULAR, 2);
 
         assertThat(outcome).isEmpty();

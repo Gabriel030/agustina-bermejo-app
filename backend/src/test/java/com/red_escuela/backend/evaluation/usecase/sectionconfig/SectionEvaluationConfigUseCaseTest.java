@@ -29,6 +29,7 @@ import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.evaluation.exception.EvaluationDateOnHolidayException;
 import com.red_escuela.backend.evaluation.exception.EvaluationDateOutsideTermException;
 import com.red_escuela.backend.evaluation.exception.InvalidEvaluationDateException;
+import com.red_escuela.backend.evaluation.exception.IncompleteSectionEvaluationConfigException;
 import com.red_escuela.backend.evaluation.exception.InvalidSectionEvaluationConfigTransitionException;
 import com.red_escuela.backend.academicstructure.exception.NotOwnSectionException;
 import com.red_escuela.backend.evaluation.exception.NotSectionLeadInstructorException;
@@ -559,6 +560,27 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         assertThatThrownBy(() -> saveSectionEvaluationConfigDraftUseCase.save(new SaveSectionEvaluationConfigDraftCommand(
                 section.getId(), leadInstructor.getId(), requestWithinPastTerm(LocalDate.of(2020, 12, 9)))))
                 .isInstanceOf(EvaluationDateOnHolidayException.class);
+    }
+
+    @Test
+    void approvingAConfigWithoutCourseworkCountFailsAndLeavesItPending() {
+        Subject subject = persistSubject("MateriaSinCantidadDeTp");
+        Term term = persistTerm(LocalDateTime.now().plusDays(30), LocalDateTime.now().plusMonths(4));
+        entityManager.flush();
+        SubjectSection section = subjectSectionService.create(subject.getId(),
+                new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
+        Instructor leadInstructor = persistInstructor("90000031");
+        assignInstructor(section, leadInstructor, InstructorRole.LEAD);
+        Person actor = persistPersonWithRole("90000032", "DIRECTOR");
+        authenticateAs(actor);
+        entityManager.flush();
+        saveSectionEvaluationConfigDraftUseCase.save(new SaveSectionEvaluationConfigDraftCommand(section.getId(), leadInstructor.getId(),
+                new UpdateSectionEvaluationConfigRequest(null, null, null, null, nonHolidayDate(45), nonHolidayDate(60),
+                        null, null, nonHolidayDate(80), null)));
+        submitSectionEvaluationConfigForApprovalUseCase.submit(new SubmitSectionEvaluationConfigForApprovalCommand(section.getId(), leadInstructor.getId()));
+
+        assertThatThrownBy(() -> approveSectionEvaluationConfigUseCase.approve(new ApproveSectionEvaluationConfigCommand(section.getId())))
+                .isInstanceOf(IncompleteSectionEvaluationConfigException.class);
     }
 
     @Test
