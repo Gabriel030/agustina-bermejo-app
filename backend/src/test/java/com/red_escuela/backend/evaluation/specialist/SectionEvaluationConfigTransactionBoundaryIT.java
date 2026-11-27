@@ -1,14 +1,13 @@
 package com.red_escuela.backend.evaluation.specialist;
 
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
-import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor;
 import com.red_escuela.backend.academicstructure.entity.SubjectStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.academicstructure.service.SubjectSectionService;
+import com.red_escuela.backend.testsupport.ActiveProgramSectionTestFactory;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.config.TestSubjectCodes;
 import com.red_escuela.backend.evaluation.dto.RejectSectionEvaluationConfigRequest;
@@ -70,7 +69,7 @@ class SectionEvaluationConfigTransactionBoundaryIT extends AbstractIntegrationTe
     private RejectSectionEvaluationConfigUseCase rejectConfig;
 
     @Autowired
-    private SubjectSectionService subjectSectionService;
+    private ActiveProgramSectionTestFactory sectionFactory;
 
     @Autowired
     private RoleRepository roleRepository;
@@ -109,8 +108,7 @@ class SectionEvaluationConfigTransactionBoundaryIT extends AbstractIntegrationTe
             entityManager.persist(term);
             entityManager.flush();
 
-            SubjectSection section = subjectSectionService.create(subject.getId(),
-                    new CreateSectionRequest("Comision " + suffix, term.getId(), null, 30, null));
+            SubjectSection section = sectionFactory.create(subject, term, "Comision " + suffix, 30, null);
             sectionId = section.getId();
 
             Instructor instructor = new Instructor();

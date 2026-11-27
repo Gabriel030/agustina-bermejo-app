@@ -2,7 +2,6 @@ package com.red_escuela.backend.evaluation.specialist;
 
 import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.testsupport.AsyncNotifications;
-import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.academicstructure.entity.Subject;
@@ -10,7 +9,7 @@ import com.red_escuela.backend.academicstructure.entity.SubjectStatus;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectSectionInstructor;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.academicstructure.service.SubjectSectionService;
+import com.red_escuela.backend.testsupport.ActiveProgramSectionTestFactory;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.config.TestSubjectCodes;
 import com.red_escuela.backend.shared.domain.Address;
@@ -43,7 +42,7 @@ class SectionEvaluationConfigReminderJobTest extends AbstractIntegrationTest {
     private SectionEvaluationConfigReminderJob reminderJob;
 
     @Autowired
-    private SubjectSectionService subjectSectionService;
+    private ActiveProgramSectionTestFactory sectionFactory;
 
     @Autowired
     private NotificationRepository notificationRepository;
@@ -100,8 +99,7 @@ class SectionEvaluationConfigReminderJobTest extends AbstractIntegrationTest {
             term.setEndDate(LocalDateTime.now().plusMonths(5));
             entityManager.persist(term);
             entityManager.flush();
-            SubjectSection section = subjectSectionService.create(subject.getId(),
-                    new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
+            SubjectSection section = sectionFactory.create(subject, term, "Comisión A", 30, null);
             Address address = new Address();
             entityManager.persist(address);
             Person person = new Person();

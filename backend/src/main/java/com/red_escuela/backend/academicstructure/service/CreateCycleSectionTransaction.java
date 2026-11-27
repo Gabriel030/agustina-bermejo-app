@@ -44,6 +44,7 @@ public class CreateCycleSectionTransaction {
     private final CycleSectionAbsenceLimitAssigner absenceLimitAssigner;
     private final SectionIdentityAssigner identityAssigner;
     private final SectionShiftSlotGuard shiftSlotGuard;
+    private final TermOfferingGuard termOfferingGuard;
 
     public CreateCycleSectionTransaction(
             AcademicOfferingCycleRepository cycleRepository,
@@ -56,7 +57,8 @@ public class CreateCycleSectionTransaction {
             SectionConflictChecker conflictChecker,
             CycleSectionAbsenceLimitAssigner absenceLimitAssigner,
             SectionIdentityAssigner identityAssigner,
-            SectionShiftSlotGuard shiftSlotGuard
+            SectionShiftSlotGuard shiftSlotGuard,
+            TermOfferingGuard termOfferingGuard
     ) {
         this.cycleRepository = cycleRepository;
         this.subjectRepository = subjectRepository;
@@ -69,6 +71,7 @@ public class CreateCycleSectionTransaction {
         this.absenceLimitAssigner = absenceLimitAssigner;
         this.identityAssigner = identityAssigner;
         this.shiftSlotGuard = shiftSlotGuard;
+        this.termOfferingGuard = termOfferingGuard;
     }
 
     @Transactional
@@ -78,6 +81,7 @@ public class CreateCycleSectionTransaction {
         var cycle = cycleRepository.findById(cycleId)
                 .orElseThrow(() -> new CycleNotFoundException(cycleId));
         cycle.ensureEditable();
+        termOfferingGuard.requireTermOpenForOffering(cycle.getTerm());
         identityAssigner.requireShift(shift);
         lockRequestedClassrooms(slots);
         if (cycle.getProgram() != null) {

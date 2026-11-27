@@ -167,7 +167,7 @@ public class CourseEnrollmentService {
     }
 
     private CourseSectionView resolveSection(Long courseSubjectId, Long termId, CreateCourseEnrollmentRequest request) {
-        List<CourseSectionView> secciones = courseCatalogFinder.findActiveSectionsOfModule(courseSubjectId)
+        List<CourseSectionView> secciones = courseCatalogFinder.findSectionsOpenForEnrollmentOfModule(courseSubjectId)
                 .stream()
                 .filter(section -> section.termId().equals(termId))
                 .toList();

@@ -6,7 +6,6 @@ import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.shared.time.MutableClock;
-import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.evaluation.dto.RejectSectionEvaluationConfigRequest;
 import com.red_escuela.backend.evaluation.dto.SectionEvaluationConfigResponse;
 import com.red_escuela.backend.evaluation.dto.UpdateSectionEvaluationConfigRequest;
@@ -59,7 +58,7 @@ import com.red_escuela.backend.academicstructure.entity.SectionScheduleSlot;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import com.red_escuela.backend.academicstructure.service.SubjectSectionService;
+import com.red_escuela.backend.testsupport.ActiveProgramSectionTestFactory;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -82,7 +81,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
     private RejectSectionEvaluationConfigUseCase rejectSectionEvaluationConfigUseCase;
 
     @Autowired
-    private SubjectSectionService subjectSectionService;
+    private ActiveProgramSectionTestFactory sectionFactory;
 
     @Autowired
     private RoleRepository roleRepository;
@@ -191,8 +190,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         Term term = persistTerm(LocalDateTime.now().plusDays(30), LocalDateTime.now().plusMonths(4));
         entityManager.flush();
 
-        SubjectSection section = subjectSectionService.create(subject.getId(),
-                new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
+        SubjectSection section = sectionFactory.create(subject, term, "Comisión A", 30, null);
         entityManager.flush();
 
         SectionEvaluationConfigResponse config = getMySectionEvaluationConfigUseCase.get(new GetMySectionEvaluationConfigCommand(section.getId(),
@@ -212,8 +210,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaAjena");
         Term term = persistTerm(LocalDateTime.now().plusDays(30), LocalDateTime.now().plusMonths(4));
         entityManager.flush();
-        SubjectSection section = subjectSectionService.create(subject.getId(),
-                new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
+        SubjectSection section = sectionFactory.create(subject, term, "Comisión A", 30, null);
         Instructor outsider = persistInstructor("90000001");
         entityManager.flush();
 
@@ -227,8 +224,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaAdjunto");
         Term term = persistTerm(LocalDateTime.now().plusDays(30), LocalDateTime.now().plusMonths(4));
         entityManager.flush();
-        SubjectSection section = subjectSectionService.create(subject.getId(),
-                new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
+        SubjectSection section = sectionFactory.create(subject, term, "Comisión A", 30, null);
         Instructor assistant = persistInstructor("90000002");
         assignInstructor(section, assistant, InstructorRole.ASSISTANT);
         entityManager.flush();
@@ -245,8 +241,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaFueraDeRango");
         Term term = persistTerm(start, end);
         entityManager.flush();
-        SubjectSection section = subjectSectionService.create(subject.getId(),
-                new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
+        SubjectSection section = sectionFactory.create(subject, term, "Comisión A", 30, null);
         Instructor leadInstructor = persistInstructor("90000003");
         assignInstructor(section, leadInstructor, InstructorRole.LEAD);
         entityManager.flush();
@@ -262,8 +257,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaAnual");
         Term term = persistTerm(LocalDateTime.now().plusDays(30), LocalDateTime.now().plusMonths(9));
         entityManager.flush();
-        SubjectSection section = subjectSectionService.create(subject.getId(),
-                new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
+        SubjectSection section = sectionFactory.create(subject, term, "Comisión A", 30, null);
         Instructor leadInstructor = persistInstructor("90000013");
         assignInstructor(section, leadInstructor, InstructorRole.LEAD);
         entityManager.flush();
@@ -290,8 +284,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaFeriado");
         Term term = persistTerm(LocalDateTime.now().plusDays(30), LocalDateTime.now().plusMonths(4));
         entityManager.flush();
-        SubjectSection section = subjectSectionService.create(subject.getId(),
-                new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
+        SubjectSection section = sectionFactory.create(subject, term, "Comisión A", 30, null);
         Instructor leadInstructor = persistInstructor("90000004");
         assignInstructor(section, leadInstructor, InstructorRole.LEAD);
         entityManager.flush();
@@ -306,8 +299,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaVentanaVencida");
         Term term = persistTerm(LocalDateTime.now().minusDays(1), LocalDateTime.now().plusMonths(4));
         entityManager.flush();
-        SubjectSection section = subjectSectionService.create(subject.getId(),
-                new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
+        SubjectSection section = sectionFactory.create(subject, term, "Comisión A", 30, null);
         Instructor leadInstructor = persistInstructor("90000005");
         assignInstructor(section, leadInstructor, InstructorRole.LEAD);
         entityManager.flush();
@@ -322,8 +314,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         LocalDateTime termStart = LocalDateTime.now().plusDays(30);
         Term term = persistTerm(termStart, LocalDateTime.now().plusMonths(4));
         entityManager.flush();
-        SubjectSection section = subjectSectionService.create(subject.getId(),
-                new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
+        SubjectSection section = sectionFactory.create(subject, term, "Comisión A", 30, null);
         Instructor leadInstructor = persistInstructor("90000015");
         assignInstructor(section, leadInstructor, InstructorRole.LEAD);
         entityManager.flush();
@@ -342,8 +333,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         LocalDateTime termStart = LocalDateTime.now().plusDays(30);
         Term term = persistTerm(termStart, LocalDateTime.now().plusMonths(4));
         entityManager.flush();
-        SubjectSection section = subjectSectionService.create(subject.getId(),
-                new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
+        SubjectSection section = sectionFactory.create(subject, term, "Comisión A", 30, null);
         Instructor leadInstructor = persistInstructor("90000016");
         assignInstructor(section, leadInstructor, InstructorRole.LEAD);
         entityManager.flush();
@@ -362,8 +352,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaNotificaDirector");
         Term term = persistTerm(LocalDateTime.now().plusDays(30), LocalDateTime.now().plusMonths(4));
         entityManager.flush();
-        SubjectSection section = subjectSectionService.create(subject.getId(),
-                new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
+        SubjectSection section = sectionFactory.create(subject, term, "Comisión A", 30, null);
         Instructor leadInstructor = persistInstructor("90000006");
         assignInstructor(section, leadInstructor, InstructorRole.LEAD);
         Person director = persistPersonWithRole("90000007", "DIRECTOR");
@@ -387,8 +376,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaAprobada");
         Term term = persistTerm(LocalDateTime.now().plusDays(30), LocalDateTime.now().plusMonths(4));
         entityManager.flush();
-        SubjectSection section = subjectSectionService.create(subject.getId(),
-                new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
+        SubjectSection section = sectionFactory.create(subject, term, "Comisión A", 30, null);
         Instructor leadInstructor = persistInstructor("90000008");
         assignInstructor(section, leadInstructor, InstructorRole.LEAD);
         Person actor = persistPersonWithRole("90000009", "DIRECTOR");
@@ -422,8 +410,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaMesasCompletas");
         Term term = persistTerm(LocalDateTime.of(2099, 3, 2, 0, 0), LocalDateTime.of(2099, 12, 11, 0, 0));
         entityManager.flush();
-        SubjectSection section = subjectSectionService.create(subject.getId(),
-                new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
+        SubjectSection section = sectionFactory.create(subject, term, "Comisión A", 30, null);
         Instructor leadInstructor = persistInstructor("90000024");
         assignInstructor(section, leadInstructor, InstructorRole.LEAD);
         Person actor = persistPersonWithRole("90000025", "DIRECTOR");
@@ -465,8 +452,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaRechazada");
         Term term = persistTerm(LocalDateTime.now().plusDays(30), LocalDateTime.now().plusMonths(4));
         entityManager.flush();
-        SubjectSection section = subjectSectionService.create(subject.getId(),
-                new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
+        SubjectSection section = sectionFactory.create(subject, term, "Comisión A", 30, null);
         Instructor leadInstructor = persistInstructor("90000010");
         assignInstructor(section, leadInstructor, InstructorRole.LEAD);
         Person actor = persistPersonWithRole("90000011", "DIRECTOR");
@@ -498,8 +484,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         Subject subject = persistSubject(subjectName);
         Term term = persistTerm(LocalDateTime.of(2020, 3, 2, 0, 0), LocalDateTime.of(2020, 12, 11, 0, 0));
         entityManager.flush();
-        SubjectSection section = subjectSectionService.create(subject.getId(),
-                new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
+        SubjectSection section = sectionFactory.create(subject, term, "Comisión A", 30, null);
         assignInstructor(section, leadInstructor, InstructorRole.LEAD);
         entityManager.flush();
         return section;
@@ -581,8 +566,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaEstadoInvalido");
         Term term = persistTerm(LocalDateTime.now().plusDays(30), LocalDateTime.now().plusMonths(4));
         entityManager.flush();
-        SubjectSection section = subjectSectionService.create(subject.getId(),
-                new CreateSectionRequest("Comisión A", term.getId(), null, 30, null));
+        SubjectSection section = sectionFactory.create(subject, term, "Comisión A", 30, null);
         Person actor = persistPersonWithRole("90000012", "DIRECTOR");
         authenticateAs(actor);
         entityManager.flush();

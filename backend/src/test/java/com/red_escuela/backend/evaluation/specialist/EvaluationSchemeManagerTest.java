@@ -9,7 +9,6 @@ import com.red_escuela.backend.config.TestSubjectCodes;
 
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.evaluation.dto.CreateEvaluationSchemeRequest;
-import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.entity.Subject;
@@ -26,7 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import com.red_escuela.backend.academicstructure.service.SubjectSectionService;
+import com.red_escuela.backend.testsupport.ActiveProgramSectionTestFactory;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -37,7 +36,7 @@ class EvaluationSchemeManagerTest extends AbstractIntegrationTest {
     private EvaluationSchemeManager evaluationSchemeService;
 
     @Autowired
-    private SubjectSectionService subjectSectionService;
+    private ActiveProgramSectionTestFactory sectionFactory;
 
     @Autowired
     private EntityManager entityManager;
@@ -131,8 +130,7 @@ class EvaluationSchemeManagerTest extends AbstractIntegrationTest {
         Subject subject = persistSubject("MateriaConEsquemaEnUso");
         Term term = persistTerm();
         entityManager.flush();
-        subjectSectionService.create(subject.getId(),
-                new CreateSectionRequest("Comisión A", term.getId(), null, 30, scheme.getId()));
+        sectionFactory.create(subject, term, "Comisión A", 30, scheme.getId());
 
         assertThatThrownBy(() -> evaluationSchemeService.update(scheme.getId(), validRequest("Intento de cambio")))
                 .isInstanceOf(EvaluationSchemeInUseException.class);

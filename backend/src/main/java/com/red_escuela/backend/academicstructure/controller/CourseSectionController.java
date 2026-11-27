@@ -2,7 +2,6 @@ package com.red_escuela.backend.academicstructure.controller;
 
 import com.red_escuela.backend.academicstructure.dto.AssignInstructorRequest;
 import com.red_escuela.backend.academicstructure.dto.CourseSubjectSectionResponse;
-import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.academicstructure.dto.SectionInstructorResponse;
 import com.red_escuela.backend.academicstructure.dto.UpdateSectionRequest;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSectionInstructor;
@@ -30,13 +29,6 @@ public class CourseSectionController {
 
     public CourseSectionController(CourseSectionService sectionService) {
         this.sectionService = sectionService;
-    }
-
-    @PostMapping("/course-subjects/{id}/sections")
-    @ResponseStatus(HttpStatus.CREATED)
-    @RequiresPermission(code = "academicstructure.manage_sections", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO")
-    public CourseSubjectSectionResponse create(@PathVariable Long id, @Valid @RequestBody CreateSectionRequest request) {
-        return CourseSubjectSectionResponse.from(sectionService.create(id, request));
     }
 
     @PutMapping("/course-sections/{id}")
