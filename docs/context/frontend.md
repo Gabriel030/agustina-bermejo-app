@@ -22,8 +22,8 @@ lo ya construido en la Fase 1 (Fundación técnica y login) la sigue; lo que fal
 3. **Verificar variantes de componentes existentes** antes de extender — si el
    componente admite `variant=`, revisar cuáles existen antes de agregar estilos
    a mano. Ejemplo: `Button` tiene `primary/default/outline/secondary/ghost/destructive/
-   link` (+ prop `loading`); `TabsList` usa `variant="segmented"` (pill deslizante)
-   como estándar en este proyecto.
+   link` (+ prop `loading`); `TabsList` usa `variant="line"` (subrayado de acento,
+   mismo lenguaje que la barra superior) como estándar en este proyecto.
 4. **Patrón de filas clickeables**: `rounded-2xl px-4 py-3 transition-colors
    hover:bg-neutral-bg/60` + `ChevronRight` al final, dentro de un contenedor
    `flex flex-col gap-1`. No usar `divide-y divide-border` — fue descartado a favor
@@ -180,7 +180,7 @@ necesite de verdad.
   con `npx shadcn add` (y se revisa el resultado, ver "Reglas prácticas"). Los ya
   adaptados (`button`, `tabs`, `table`, `sonner`) se editan solo para aplicar tokens
   de la dirección B o sumar una variante/prop del sistema (`primary`, `loading`,
-  `segmented`); no se les mete lógica de una pantalla puntual. Para algo específico,
+  `line`); no se les mete lógica de una pantalla puntual. Para algo específico,
   se envuelve (`GlassCard` envuelve el patrón `.card`, no lo reimplementa).
 - **Composición sobre herencia / props gigantes**: para piezas con varios estados
   visuales relacionados (ej. un modal de confirmación con variantes), preferir el
@@ -285,11 +285,12 @@ pantalla de ese tipo.
 ## Tabs / navegación secundaria por pestañas
 
 **Siempre el componente `Tabs`/`TabsList`/`TabsTrigger` de shadcn
-(`components/ui/tabs.jsx`), con `<TabsList variant="segmented">`** — cinta con un
-fondo en gradiente que se desliza detrás de la pestaña activa (hook
-`useSlidingIndicator`). Nunca un grupo de `<button>` hecho a mano, aunque sea "solo
-para filtrar una lista". `variant="line"` (subrayado) fue reemplazado por
-`segmented` (PR #80 + #89); no usarlo en pantallas nuevas.
+(`components/ui/tabs.jsx`), con `<TabsList variant="line">`** — mismo lenguaje que la
+barra superior aprobada (26-nov y 27-nov, Gabriel): pestaña activa con subrayado de
+acento de 3 px y texto `--accent`, hover `--neutral-bg`, foco visible discreto, sin
+relleno de color, tira con borde inferior y scroll horizontal sin barra. Nunca un
+grupo de `<button>` hecho a mano, aunque sea "solo para filtrar una lista". La
+variante `segmented` (píldora con indicador deslizante) fue eliminada; no se reintroduce.
 
 Aplica tanto si las pestañas separan paneles distintos como si solo cambian el
 filtro de una misma lista — visualmente es la misma interacción.
@@ -322,7 +323,7 @@ Dirección B (plana), aprobada con mockup antes de codificar. La fuente de verda
 | KPI / métrica | `StatCard` (dentro de `Stagger` en grillas) |
 | Tablas | `components/ui/table.jsx` (`Table`, `TableHeader`, `TableRow`, `TableHead`, `TableCell`), dentro de un `GlassCard` — la tabla no trae borde propio. Header sticky, mayúsculas, hover `accent-soft`. Excepción: grillas con rowSpan/colSpan/sticky propias (ej. tomar asistencia) |
 | Encabezado ordenable | `features/evaluation/components/SortableColumnHeader.jsx` (ya con el estilo del header de tabla) |
-| Pestañas | `Tabs` con `variant="segmented"` |
+| Pestañas | `Tabs` con `variant="line"` |
 | Stepper / wizard | `components/Stepper.jsx` único (completados en verde con tilde, activo en color de marca con pulso; pasos visitados clickeables). No hay otro Stepper |
 | Notificaciones/feedback de acciones | `toast` de `sonner` (`toast.error/success`), con `<Toaster />` ya montado en `App.jsx`. No mostrar errores de mutaciones como párrafos inline |
 | Botón con acción en curso | `<Button loading={mutation.isPending}>` (no combinar `loading` con `asChild`) |

@@ -90,7 +90,7 @@ function ModalAsignarTribunal({ open, onClose, onAsignar, asignando }) {
           <DialogDescription>Elegí un docente para sumarlo al tribunal de esta mesa.</DialogDescription>
         </DialogHeader>
         <Select value={instructorId} onValueChange={setInstructorId}>
-          <SelectTrigger className="w-full"><SelectValue placeholder="Elegí un docente" /></SelectTrigger>
+          <SelectTrigger><SelectValue placeholder="Elegí un docente" /></SelectTrigger>
           <SelectContent>
             {(instructores ?? []).map((i) => <SelectItem key={i.id} value={String(i.id)}>{i.name}</SelectItem>)}
           </SelectContent>
@@ -362,7 +362,7 @@ export function PreceptorMesaExamen({ role = 'preceptor' }) {
         <h1 className="font-heading text-2xl font-bold text-ink">Mesa de examen</h1>
         <div className="flex flex-wrap items-center gap-3">
           <Tabs value={tab} onValueChange={cambiarTab}>
-            <TabsList variant="segmented">
+            <TabsList variant="line">
               <TabsTrigger value="SCHEDULED">Agendadas</TabsTrigger>
               <TabsTrigger value="CLOSED">Cerradas</TabsTrigger>
               <TabsTrigger value="CANCELED">Canceladas</TabsTrigger>

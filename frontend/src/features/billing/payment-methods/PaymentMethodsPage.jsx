@@ -34,7 +34,7 @@ function SettingsContent({ settings, isDirector, onRefresh }) {
   return (
     <Tabs value={tab} onValueChange={setTab} className="gap-4">
       {isDirector && (
-        <TabsList variant="segmented">
+        <TabsList variant="line">
           <TabsTrigger value="methods">Medios</TabsTrigger>
           <TabsTrigger value="audit">Auditoría</TabsTrigger>
         </TabsList>

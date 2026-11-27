@@ -118,7 +118,7 @@ export function BandejaTramites({
       <h1 className="font-heading text-2xl font-bold text-ink">{titulo}</h1>
 
       <Tabs className="gap-4" value={tab} onValueChange={(value) => updateParams(tabChanges(value))}>
-        <TabsList variant="segmented">
+        <TabsList variant="line">
           <TabsTrigger value="pendientes">{etiquetaPendientes}{pendientes ? ` (${pendientes.length})` : ''}</TabsTrigger>
           <TabsTrigger value="historial">Historial{contadorHistorial && historial ? ` (${historial.length})` : ''}</TabsTrigger>
         </TabsList>
