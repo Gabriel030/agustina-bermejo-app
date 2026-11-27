@@ -291,6 +291,8 @@ export const DOMAIN_ERROR_MESSAGES = {
   APPLICATION_DOCUMENTS_INCOMPLETE: 'La documentación de la solicitud está incompleta.',
   APPLICATION_DOCUMENTS_LOCKED: 'Los documentos de la solicitud ya no se pueden modificar.',
   ATTENDANCE_ALREADY_RECORDED: 'La asistencia de esta clase ya fue registrada.',
+  ATTENDANCE_CHANGE_REQUEST_NOT_DECIDED: 'La solicitud todavía no tiene una decisión para revertir.',
+  ATTENDANCE_DECISION_REVERT_WINDOW_EXPIRED: 'Pasaron más de 7 días desde la decisión: ya no se puede revertir.',
   CANNOT_CHANGE_AUDIENCE_OF_SENT_ANNOUNCEMENT: 'No se pueden cambiar los destinatarios de un aviso ya enviado.',
   CANNOT_WITHDRAW: 'No se puede dar de baja en el estado actual.',
   SECTION_NOT_OPEN_FOR_ENROLLMENT: 'La comisión no está abierta a inscripción. Elegí otra comisión activa.',
