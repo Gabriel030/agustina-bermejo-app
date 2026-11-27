@@ -92,6 +92,26 @@ class ExamBoardReschedulerTest extends ExamBoardChangeFixture {
     }
 
     @Test
+    void rescheduleRejectsAnInvertedRegistrationWindow() {
+        ExamBoard examBoard = examBoard(subject("MateriaReprogramarVentana", 3), term(), OLD_DATE);
+        entityManager.flush();
+
+        assertThatThrownBy(() -> rescheduler.reschedule(examBoard.getId(),
+                new RescheduleExamBoardRequest(NEW_DATE, NEW_DATE.minusDays(1), NEW_DATE.minusDays(4), "Aula 7")))
+                .isInstanceOf(com.red_escuela.backend.evaluation.exception.InvalidExamBoardRegistrationWindowException.class);
+    }
+
+    @Test
+    void rescheduleRejectsARegistrationEndAfterTheExam() {
+        ExamBoard examBoard = examBoard(subject("MateriaReprogramarCierre", 3), term(), OLD_DATE);
+        entityManager.flush();
+
+        assertThatThrownBy(() -> rescheduler.reschedule(examBoard.getId(),
+                new RescheduleExamBoardRequest(NEW_DATE, NEW_DATE.minusDays(4), NEW_DATE.plusDays(1), "Aula 7")))
+                .isInstanceOf(com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationEndAfterExamException.class);
+    }
+
+    @Test
     void rescheduleRejectsClosedBoard() {
         ExamBoard examBoard = examBoard(subject("MateriaReprogramarCerrada", 3), term(), OLD_DATE);
         examBoard.setStatus(ExamBoardStatus.CLOSED);
