@@ -23,7 +23,7 @@ public class BillingProgramAdmissionInvoiceAdapter implements ProgramAdmissionIn
 
     @Override
     public Optional<Invoice> issueAdmissionInvoice(Long studentId, Program program, ProgramCohort cohort) {
-        if (billingMode.currentMode() != BillingMode.FULL) {
+        if (billingMode.currentMode() == BillingMode.OFF) {
             return Optional.empty();
         }
         return Optional.of(issuer.issueAdmissionInvoice(studentId, program, cohort));

@@ -23,18 +23,18 @@ class BillingProgramAdmissionInvoiceAdapterTest {
     private final Program program = mock(Program.class);
     private final ProgramCohort cohort = mock(ProgramCohort.class);
 
-    @ParameterizedTest
-    @EnumSource(value = BillingMode.class, names = {"OFF", "MIRROR"})
-    void returnsNoInvoiceWhenBillingIsNotFull(BillingMode mode) {
-        when(billingMode.currentMode()).thenReturn(mode);
+    @Test
+    void returnsNoInvoiceWhenBillingIsOff() {
+        when(billingMode.currentMode()).thenReturn(BillingMode.OFF);
 
         assertThat(adapter.issueAdmissionInvoice(1L, program, cohort)).isEmpty();
         verifyNoInteractions(issuer);
     }
 
-    @Test
-    void delegatesToTheIssuerWhenBillingIsFull() {
-        when(billingMode.currentMode()).thenReturn(BillingMode.FULL);
+    @ParameterizedTest
+    @EnumSource(value = BillingMode.class, names = {"MIRROR", "FULL"})
+    void delegatesToTheIssuerWhenBillingIsMirrorOrFull(BillingMode mode) {
+        when(billingMode.currentMode()).thenReturn(mode);
         Invoice invoice = mock(Invoice.class);
         when(issuer.issueAdmissionInvoice(1L, program, cohort)).thenReturn(invoice);
 
