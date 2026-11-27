@@ -4,7 +4,7 @@ import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import com.red_escuela.backend.academicstructure.dto.CreateProgramRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateProgramRequest;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.academicstructure.entity.CatalogArea;
+import com.red_escuela.backend.academicstructure.domain.CatalogArea;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.ProgramLevel;
 import com.red_escuela.backend.shared.domain.StatusType;

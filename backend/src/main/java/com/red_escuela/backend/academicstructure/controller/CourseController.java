@@ -4,7 +4,7 @@ import com.red_escuela.backend.academicstructure.dto.CoursePricingResponse;
 import com.red_escuela.backend.academicstructure.dto.CourseResponse;
 import com.red_escuela.backend.academicstructure.dto.CreateCourseRequest;
 import com.red_escuela.backend.academicstructure.dto.SetCatalogVisibilityRequest;
-import com.red_escuela.backend.academicstructure.entity.CatalogArea;
+import com.red_escuela.backend.academicstructure.domain.CatalogArea;
 import com.red_escuela.backend.academicstructure.usecase.SetCatalogVisibilityCommand;
 import com.red_escuela.backend.academicstructure.dto.UpdateCourseRequest;
 import com.red_escuela.backend.shared.domain.StatusType;

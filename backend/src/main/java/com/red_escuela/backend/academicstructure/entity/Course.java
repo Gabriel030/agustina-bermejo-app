@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.entity;
 
+import com.red_escuela.backend.academicstructure.domain.CatalogArea;
 import org.springframework.modulith.NamedInterface;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
