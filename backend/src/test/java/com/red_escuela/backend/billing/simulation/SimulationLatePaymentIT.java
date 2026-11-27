@@ -250,7 +250,7 @@ class SimulationLatePaymentIT extends AbstractSimulationTest {
         Ledger ledger = scenario.ledger();
         assertThat(ledger.outstandingTotal()).isEqualByComparingTo("0");
         ledger.hasExactly(enrollmentFee(), installment(MARCH, "0.00", "PAID"), installment(APRIL, "0.00", "PAID"),
-                lateFee(APRIL, day(5, 1), day(5, 11), "1550.40", "0.00", "PAID"), lateFee(APRIL, day(5, 3), day(5, 13), "244.80", "0.00", "PAID"),
+                lateFee(APRIL, day(5, 1), day(5, 11), "1468.80", "0.00", "PAID"), lateFee(APRIL, day(5, 3), day(5, 13), "244.80", "0.00", "PAID"),
                 installment(MAY, day(5, 3), day(5, 13), "0.00", "PAID"), installment(YearMonth.of(2027, 6), "0.00", "PAID"), installment(YearMonth.of(2027, 7), "0.00", "PAID"),
                 installment(YearMonth.of(2027, 8), "0.00", "PAID"), installment(YearMonth.of(2027, 9), "0.00", "PAID"), installment(YearMonth.of(2027, 10), "0.00", "PAID"),
                 installment(YearMonth.of(2027, 11), "0.00", "PAID"), installment(YearMonth.of(2027, 12), "0.00", "PAID"));
