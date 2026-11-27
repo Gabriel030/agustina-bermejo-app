@@ -1,5 +1,6 @@
 package com.red_escuela.backend.attendance.specialist;
 
+import com.red_escuela.backend.attendance.service.AttendanceChangeRequestResponseAssembler;
 import com.red_escuela.backend.attendance.dto.AttendanceChangeRequestResponse;
 import com.red_escuela.backend.attendance.entity.Attendance;
 import com.red_escuela.backend.attendance.entity.AttendanceChangeRequest;

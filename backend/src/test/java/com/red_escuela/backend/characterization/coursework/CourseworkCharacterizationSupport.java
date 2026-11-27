@@ -248,6 +248,13 @@ abstract class CourseworkCharacterizationSupport extends AbstractIntegrationTest
         return new Classroom(teacher, instructor, studentPerson, section, enrollment, programEnrollment, subject);
     }
 
+    protected Person persistPreceptorAssignedToEveryProgram(String username, String dni) {
+        Person preceptor = persistPerson(username, dni, "PRECEPTOR");
+        entityManager.flush();
+        jdbcTemplate.update("insert into preceptor_assignment (person_id, program_id) select ?, id from program", preceptor.getId());
+        return preceptor;
+    }
+
     protected String bearer(Person person) {
         return "Bearer " + jwtService.generateAccessToken(person);
     }
