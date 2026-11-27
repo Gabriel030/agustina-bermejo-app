@@ -405,6 +405,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   INVALID_CURRICULUM_PLAN_DATES: 'Las fechas del plan de estudios no son válidas.',
   PROGRAM_ENROLLMENT_COHORT_REQUIRED: 'Elegí la cohorte para matricular al alumno.',
   SUBJECT_NOT_IN_ENROLLMENT_PLAN: 'La materia no está en el plan de estudios de la matrícula del alumno.',
+  PROGRAM_ENROLLMENT_COHORT_PROGRAM_MISMATCH: 'La cohorte elegida no pertenece a la carrera indicada.',
   PROGRAM_ENROLLMENT_PLAN_MISMATCH: 'El plan de estudios elegido no pertenece a la carrera de la matrícula.',
   PROGRAM_NOT_AVAILABLE: 'La carrera no está disponible.',
   PROGRAM_SUBJECT_ALREADY_EXISTS: 'La materia ya está en la carrera.',

@@ -590,4 +590,18 @@ join instructor_slots b on a.slot_id < b.slot_id and a.instructor_id = b.instruc
     and a.term_period && b.term_period
 order by a.instructor_id, a.slot_id;
 
+\echo
+\echo [V492] Matriculas cuya cohorte es de otra carrera (V492 les copiaria el plan de la cohorte ajena; corregir antes alineando la cohorte o la carrera de la matricula; no se borran datos):
+select pe.id as enrollment_id, pe.program_id as enrollment_program_id, pe.program_cohort_id, pc.program_id as cohort_program_id
+from program_enrollment pe
+join program_cohort pc on pc.id = pe.program_cohort_id
+where pc.program_id <> pe.program_id
+order by pe.id;
+
+\echo
+\echo [V492] Cohortes y matriculas cuya carrera no tiene un plan no-DRAFT resoluble (V492 ABORTA al validar program_cohort_plan_required y program_enrollment_plan_required; solo evaluable si curriculum_plan ya existe, V490 crea el plan v1 ACTIVE de cada carrera):
+select case when to_regclass('curriculum_plan') is not null then
+  'select ''COHORT'' as origin, pc.id as row_id, pc.program_id from program_cohort pc where not exists (select 1 from curriculum_plan cp where cp.program_id = pc.program_id and cp.status <> ''DRAFT'') union all select ''ENROLLMENT'', pe.id, pe.program_id from program_enrollment pe where not exists (select 1 from curriculum_plan cp where cp.program_id = pe.program_id and cp.status <> ''DRAFT'') order by 1, 2'
+  else 'select null::text as origin, null::bigint as row_id, null::bigint as program_id where false' end as q \gexec
+
 \echo ===== fin =====

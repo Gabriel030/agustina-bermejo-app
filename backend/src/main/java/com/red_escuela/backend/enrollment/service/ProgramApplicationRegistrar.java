@@ -7,6 +7,7 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplicationSta
 import com.red_escuela.backend.enrollment.exception.AdmissionFeeAwaitingPaymentException;
 import com.red_escuela.backend.enrollment.exception.AlreadyHasPendingApplicationException;
 import com.red_escuela.backend.enrollment.exception.DniRequiredException;
+import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentCohortProgramMismatchException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentCohortRequiredException;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentApplicationRepository;
 import com.red_escuela.backend.identity.entity.Student;
@@ -54,6 +55,9 @@ public class ProgramApplicationRegistrar {
         var program = programSubjectReferenceFinder.findProgram(programId);
         catalogAvailabilityGuard.requireProgramListed(program);
         ProgramCohort cohort = programCohortFinder.findOrThrow(cohortId);
+        if (!programId.equals(cohort.getProgramId())) {
+            throw new ProgramEnrollmentCohortProgramMismatchException(cohort.getId(), programId);
+        }
         programEnrollmentService.validateAdmissionWindow(cohort);
 
         applicationRepository

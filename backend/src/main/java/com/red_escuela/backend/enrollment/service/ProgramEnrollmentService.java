@@ -27,6 +27,7 @@ import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.enrollment.exception.CohortAdmissionWindowClosedException;
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInProgramException;
 import com.red_escuela.backend.enrollment.exception.CannotWithdrawException;
+import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentCohortProgramMismatchException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentCohortRequiredException;
 import com.red_escuela.backend.enrollment.api.InvalidWindowConfigurationException;
 import com.red_escuela.backend.academicstructure.api.ProgramCohortFinder;
@@ -134,6 +135,9 @@ public class ProgramEnrollmentService {
         Program program = academicReferenceFinder.findProgram(request.programId());
 
         ProgramCohort cohort = programCohortFinder.findOrThrow(request.cohortId());
+        if (!program.getId().equals(cohort.getProgramId())) {
+            throw new ProgramEnrollmentCohortProgramMismatchException(cohort.getId(), program.getId());
+        }
         if (validateAdmissionWindow) {
             validateAdmissionWindow(cohort);
         }

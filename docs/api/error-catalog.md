@@ -206,6 +206,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `PAYMENT_REVIEW_NOTE_TOO_LONG` | no | `PaymentReviewNoteTooLongException` | billing |
 | `PREREQUISITE_NOT_MET` | no | `PrerequisiteNotMetException` | enrollment |
 | `PRICE_FILTER_CONFLICT` | no | `PriceFilterConflictException` | billing |
+| `PROGRAM_ENROLLMENT_COHORT_REQUIRED` | no | `ProgramEnrollmentCohortRequiredException` | enrollment |
 | `PROGRAM_ENROLLMENT_REQUIRED` | no | `ProgramEnrollmentRequiredException` | enrollment |
 | `RECEIPT_INVOICE_CURRENCY_MISMATCH` | no | `ReceiptInvoiceCurrencyMismatchException` | billing |
 | `REFUND_AMOUNT_INVALID` | no | `RefundAmountInvalidException` | billing |
@@ -623,7 +624,9 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `PRICE_CHANGED_CONCURRENTLY` | no | `PriceChangedConcurrentlyException` | billing |
 | `PROGRAM_COHORT_ALREADY_EXISTS` | no | `ProgramCohortAlreadyExistsException` | academicstructure |
 | `PROGRAM_COHORT_BILLING_TEMPLATE_REQUIRED` | no | `ProgramCohortBillingTemplateRequiredException` | academicstructure |
+| `PROGRAM_ENROLLMENT_COHORT_PROGRAM_MISMATCH` | no | `ProgramEnrollmentCohortProgramMismatchException` | enrollment |
 | `PROGRAM_ENROLLMENT_MISSING_COHORT` | no | `ProgramEnrollmentMissingCohortException` | billing |
+| `PROGRAM_ENROLLMENT_PLAN_MISMATCH` | no | `ProgramEnrollmentPlanMismatchException` | enrollment |
 | `PROGRAM_NOT_AVAILABLE` | no | `ProgramNotAvailableException` | enrollment |
 | `PROGRAM_SUBJECT_ALREADY_EXISTS` | no | `ProgramSubjectAlreadyExistsException` | academicstructure |
 | `PROGRAM_YEAR_BILLING_TEMPLATE_MISMATCH` | no | `ProgramYearBillingTemplateMismatchException` | billing |
@@ -685,6 +688,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SUBJECT_INVALID_TRANSITION` | no | `SubjectInvalidTransitionException` | academicstructure |
 | `SUBJECT_IN_PROGRESS` | no | `SubjectInProgressException` | enrollment |
 | `SUBJECT_NOT_ASSIGNABLE_TO_PLAN` | no | `SubjectNotAssignableToPlanException` | academicstructure |
+| `SUBJECT_NOT_IN_ENROLLMENT_PLAN` | no | `SubjectNotInEnrollmentPlanException` | enrollment |
 | `SUBJECT_NOT_OPENABLE_FOR_SECTIONS` | no | `SubjectNotOpenableForSectionsException` | academicstructure |
 | `TEMPLATE_NOTHING_TO_DISCARD` | no | `TemplateNothingToDiscardException` | graduation |
 | `TEMPLATE_NOTHING_TO_PUBLISH` | no | `TemplateNothingToPublishException` | graduation |
@@ -1015,6 +1019,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/program-enrollments/{id}/equivalences` | `SubjectEquivalenceController#record` |
 | POST | `/program-enrollments/{id}/equivalences/{equivalenceId}/void` | `SubjectEquivalenceController#voidEquivalence` |
 | POST | `/program-enrollments/{id}/payment-plan` | `PaymentPlanSelectionController#selectForProgram` |
+| POST | `/program-enrollments/{id}/plan-change` | `SubjectEquivalenceController#changePlan` |
 | POST | `/program-enrollments/{id}/section-enrollments` | `SubjectSectionEnrollmentController#enroll` |
 | POST | `/program-enrollments/{id}/student-discounts` | `StudentDiscountController#grantForProgramEnrollment` |
 | POST | `/program-enrollments/{id}/student-discounts/preview` | `StudentDiscountController#previewForProgramEnrollment` |
