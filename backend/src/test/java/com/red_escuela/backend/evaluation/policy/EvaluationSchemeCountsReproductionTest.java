@@ -3,7 +3,6 @@ package com.red_escuela.backend.evaluation.policy;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.entity.GradeAggregationMethod;
 import com.red_escuela.backend.shared.domain.Grade;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.math.BigDecimal;
@@ -18,22 +17,11 @@ class EvaluationSchemeCountsReproductionTest {
     }
 
     @Test
-    @Disabled("E34-A-S2")
     void h2StudentWithoutAnyExamGradeDoesNotFailTheRegularAverage() {
         EvaluationScheme scheme = new EvaluationScheme();
         scheme.setAggregationMethod(GradeAggregationMethod.SIMPLE_AVERAGE);
         scheme.setMinRegularGrade(grade("4"));
 
         assertThat(new RegularityPolicy().failsRegularAverage(scheme, List.of())).isFalse();
-    }
-
-    @Test
-    @Disabled("E34-A-S2")
-    void h2SchemeDefinedThroughTheApiCarriesAnExplicitCourseworkCount() {
-        EvaluationScheme scheme = new EvaluationScheme();
-
-        scheme.define("Esquema", 2, true, 0.5, GradeAggregationMethod.SIMPLE_AVERAGE, grade("4"), grade("6"), null, null);
-
-        assertThat(scheme.getTpCountExpected()).isNotNull();
     }
 }

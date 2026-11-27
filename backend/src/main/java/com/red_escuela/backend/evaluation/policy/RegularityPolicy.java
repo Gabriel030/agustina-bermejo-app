@@ -25,7 +25,7 @@ public final class RegularityPolicy {
         }
         return CourseworkGrades.aggregate(scheme.getAggregationMethod(), items)
                 .map(average -> !average.meets(scheme.getMinRegularGrade()))
-                .orElse(true);
+                .orElse(false);
     }
 
     public Optional<CourseworkOutcome> evaluateWithFinal(

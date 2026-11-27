@@ -4,11 +4,8 @@ import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.entity.GradeItem;
 import com.red_escuela.backend.evaluation.entity.GradeItemType;
-import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
-import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfigStatus;
 import com.red_escuela.backend.evaluation.entity.SectionGradeItemPublication;
 import com.red_escuela.backend.evaluation.exception.PendingCourseworkException;
-import com.red_escuela.backend.evaluation.repository.SectionEvaluationConfigRepository;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -16,15 +13,15 @@ import java.util.List;
 @Component
 public class CourseworkApprovalChecker {
 
-    private final SectionEvaluationConfigRepository configRepository;
+    private final ApprovedCourseworkCountFinder courseworkCountFinder;
 
-    public CourseworkApprovalChecker(SectionEvaluationConfigRepository configRepository) {
-        this.configRepository = configRepository;
+    public CourseworkApprovalChecker(ApprovedCourseworkCountFinder courseworkCountFinder) {
+        this.courseworkCountFinder = courseworkCountFinder;
     }
 
     public void requireApprovedBeforeExam(
             SectionKind kind, Long sectionId, EvaluationScheme scheme, List<GradeItem> enrollmentItems) {
-        int expected = expectedCourseworkCount(kind, sectionId, scheme);
+        int expected = courseworkCountFinder.findExpectedCount(kind, sectionId);
         if (expected == 0) {
             return;
         }
@@ -37,17 +34,6 @@ public class CourseworkApprovalChecker {
         if (approved < expected) {
             throw new PendingCourseworkException(expected - (int) approved);
         }
-    }
-
-    private int expectedCourseworkCount(SectionKind kind, Long sectionId, EvaluationScheme scheme) {
-        int fromScheme = scheme.getTpCountExpected() == null ? 0 : scheme.getTpCountExpected();
-        if (fromScheme > 0 || kind != SectionKind.PROGRAM) {
-            return fromScheme;
-        }
-        return configRepository.findBySubjectSectionId(sectionId)
-                .filter(config -> config.getStatus() == SectionEvaluationConfigStatus.APPROVED)
-                .map(SectionEvaluationConfig::getTpCount)
-                .orElse(0);
     }
 
     private boolean isApproved(GradeItem item, EvaluationScheme scheme) {
