@@ -32,6 +32,15 @@ frontend le pega directo al backend por CORS ya configurado.
 Para levantar el preview en el navegador de Claude Code: `.claude/launch.json` ya
 tiene la config `frontend` (`npm --prefix frontend run dev`).
 
+## Frontend sin backend (modo MSW de navegador)
+
+`cd frontend && npm run dev:mock` levanta la app con sesión simulada y handlers de MSW, sin backend ni base.
+
+- **Elegir rol:** `?mockRole=director|subdirector|administrativo|preceptor|docente|alumno|platformadmin` en la URL (también vale `?role=`), o `VITE_MOCK_ROLE=docente npm run dev:mock`. Sin nada se reusa el último rol (`localStorage.mockRole`); por defecto `director`.
+- **Datos:** se reusan los handlers de `src/test/mocks/handlers.js`; un GET sin handler responde `[]` y avisa por consola (`[msw] ... sin handler`); cualquier otro método sin handler responde 404 con el cuerpo de error estándar (`MOCK_NOT_IMPLEMENTED`).
+- **Límites:** los datos son los de los tests (casi todo vacío), no hay escrituras reales y no se registra el service worker de la PWA. No entra al build normal (import dinámico solo con el flag).
+- Detalle y capturas con Playwright: `docs/context/testing.md`, sección "Modo MSW de navegador".
+
 ## Datos de prueba — perfil `local`
 
 `LocalSeedRunner` (`identity/specialist/LocalSeedRunner.java`, `@Profile("local")`) crea 5

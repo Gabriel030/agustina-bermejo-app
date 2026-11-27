@@ -34,7 +34,6 @@ const TRANSITIONS = {
   pause: { status: 'PAUSED' },
   resume: { status: 'RUNNING' },
   cancel: { status: 'CANCELLED', cancelledAt: '2026-11-23T15:00:00Z' },
-  'retry-failed': {},
 };
 
 export function lifecycleHandlers(initial, { recipients = [], overrides = {} } = {}) {
@@ -48,6 +47,11 @@ export function lifecycleHandlers(initial, { recipients = [], overrides = {} } =
     });
   const handlers = [
     ...Object.keys(TRANSITIONS).map(post),
+    http.post(`${API}/invitation-waves/${initial.id}/retry-failed`, () => {
+      state.calls.push('retry-failed');
+      if (overrides['retry-failed']) return overrides['retry-failed']();
+      return HttpResponse.json({ requeued: 3 });
+    }),
     http.get(`${API}/invitation-waves/${initial.id}`, () => HttpResponse.json(state.wave)),
     ...invitationWaveHandlers({ wave: initial, recipients }),
   ];
