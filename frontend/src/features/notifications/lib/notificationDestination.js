@@ -149,6 +149,7 @@ export const NOTIFICATION_DESTINATIONS = {
   CLOSURE_CONFIRMATION_REMINDER: [TEACHER_SECTIONS, CLOSURES],
   TERM_CLOSURE_OVERDUE: [CLOSURES],
   EXAM_BOARD_AUTO_CLOSED: [staff(STAFF_BILLING, 'mesas-de-examen')],
+  CERTIFICATE_INVALIDATED: [alumno('/alumno/mis-carreras?tab=tramites')],
 };
 
 export function notificationDestination(notification, activeRole) {
