@@ -155,7 +155,7 @@ class ExamBoardReopenAutoCloseIT extends AbstractIntegrationTest {
         reopener = new ExamBoardReopener(examBoardRepository, auditRepository, actorFinder, clock);
         TermEndClosureReview review = new TermEndClosureReview(mock(EndedSectionFinder.class), closureRepository, publicationRepository,
                 mock(ClosureNotificationTargetsFinder.class), examBoardRepository, registrationRepository, auditRepository, instructorRepository);
-        job = new TermEndEscalationJob(review, reminderRepository, examBoardManager, registrationRepository, examBoardRepository,
+        job = new TermEndEscalationJob(review, mock(CommissionClosureAutoCloser.class), reminderRepository, examBoardManager, registrationRepository, examBoardRepository,
                 instructorRepository, eventPublisher, TransactionOperations.withoutTransaction(), clock);
 
         reopener.reopen(board.getId(), "Error de carga en el acta");

@@ -72,7 +72,7 @@ class ExamBoardReopenAndAutoCloseCycleTest {
     private final TermEndClosureReview review = new TermEndClosureReview(mock(EndedSectionFinder.class), mock(CommissionClosureRepository.class),
             mock(SectionGradeItemPublicationRepository.class), mock(ClosureNotificationTargetsFinder.class), examBoardRepository,
             registrationRepository, auditRepository, instructorRepository);
-    private final TermEndEscalationJob job = new TermEndEscalationJob(review, mock(CommissionClosureReminderRepository.class),
+    private final TermEndEscalationJob job = new TermEndEscalationJob(review, mock(CommissionClosureAutoCloser.class), mock(CommissionClosureReminderRepository.class),
             examBoardManager, registrationRepository, examBoardRepository, instructorRepository, eventPublisher, TransactionOperations.withoutTransaction(), clock);
     private final ExamBoardReopener reopener = new ExamBoardReopener(examBoardRepository, auditRepository, actorFinder, clock);
 

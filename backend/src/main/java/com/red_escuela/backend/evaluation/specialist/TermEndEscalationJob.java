@@ -35,6 +35,7 @@ public class TermEndEscalationJob {
     private static final Logger log = LoggerFactory.getLogger(TermEndEscalationJob.class);
 
     private final TermEndClosureReview closureReview;
+    private final CommissionClosureAutoCloser autoCloser;
     private final CommissionClosureReminderRepository reminderRepository;
     private final ExamBoardManager examBoardManager;
     private final ExamBoardRegistrationRepository registrationRepository;
@@ -44,11 +45,13 @@ public class TermEndEscalationJob {
     private final TransactionOperations transactionOperations;
     private final Clock clock;
 
-    public TermEndEscalationJob(TermEndClosureReview closureReview, CommissionClosureReminderRepository reminderRepository,
+    public TermEndEscalationJob(TermEndClosureReview closureReview, CommissionClosureAutoCloser autoCloser,
+            CommissionClosureReminderRepository reminderRepository,
             ExamBoardManager examBoardManager, ExamBoardRegistrationRepository registrationRepository,
             ExamBoardRepository examBoardRepository, ExamBoardInstructorRepository examBoardInstructorRepository,
             ApplicationEventPublisher eventPublisher, TransactionOperations transactionOperations, Clock clock) {
         this.closureReview = closureReview;
+        this.autoCloser = autoCloser;
         this.reminderRepository = reminderRepository;
         this.examBoardManager = examBoardManager;
         this.registrationRepository = registrationRepository;
@@ -62,8 +65,21 @@ public class TermEndEscalationJob {
     @Scheduled(cron = "0 0 9 * * *", zone = "${app.timezone}")
     @SchedulerLock(name = "TermEndEscalationJob", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void run() {
+        closeGradedSections();
         escalateOverdueSections();
         closeExpiredExamBoards();
+    }
+
+    public int closeGradedSections() {
+        LocalDate today = LocalDate.now(clock);
+        int closed = 0;
+        for (PendingSectionClosureResponse pending : closureReview.pendingSections(today)) {
+            if (pending.graceOver() && pending.hasPublishedGrades() && closeGradedSafely(pending)) {
+                closed++;
+            }
+        }
+        log.info("Cierre automático de comisiones vencidas finalizado: fecha={}, cerradas={}", today, closed);
+        return closed;
     }
 
     public int escalateOverdueSections() {
@@ -88,6 +104,15 @@ public class TermEndEscalationJob {
         }
         log.info("Cierre de mesas vencidas finalizado: fecha={}, cerradas={}", today, closed);
         return closed;
+    }
+
+    private boolean closeGradedSafely(PendingSectionClosureResponse pending) {
+        try {
+            return autoCloser.closeIfGradesLoaded(SectionKind.valueOf(pending.sectionKind()), pending.sectionId());
+        } catch (RuntimeException exception) {
+            log.error("No se pudo cerrar automáticamente la comisión vencida: kind={}, sectionId={}", pending.sectionKind(), pending.sectionId(), exception);
+            return false;
+        }
     }
 
     private boolean escalateSafely(PendingSectionClosureResponse pending) {
