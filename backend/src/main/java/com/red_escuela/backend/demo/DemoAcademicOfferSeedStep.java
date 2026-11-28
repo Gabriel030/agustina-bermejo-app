@@ -19,12 +19,14 @@ public class DemoAcademicOfferSeedStep implements DemoSeedStep {
     private static final int SUBJECTS_PER_TERM_HALF = 3;
 
     private final DemoSeedSession session;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
     private final Map<String, Long> subjectIdsByName = new LinkedHashMap<>();
     private long leadTeacherId;
     private long schemeId;
 
-    public DemoAcademicOfferSeedStep(DemoSeedSession session) {
+    public DemoAcademicOfferSeedStep(DemoSeedSession session, org.springframework.jdbc.core.JdbcTemplate jdbcTemplate) {
         this.session = session;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Override
@@ -219,6 +221,8 @@ public class DemoAcademicOfferSeedStep implements DemoSeedStep {
         course.put("price", Map.of("amount", spec.price().toPlainString(), "currency", "ARS"));
         course.put("durationMonths", spec.durationMonths());
         course.put("teachingMode", spec.teachingMode());
+        long preceptorId = jdbcTemplate.queryForObject("select id from person where username = 'preceptor.demo'", Long.class);
+        course.put("responsiblePreceptorIds", List.of(preceptorId));
         long courseId = session.api().post(DemoPersona.ADMIN, "/courses", course).get("id").asLong();
         session.courseIdsByName().put(spec.name(), courseId);
         long cycleId = createCycle("courseId", courseId, termId);
@@ -235,6 +239,7 @@ public class DemoAcademicOfferSeedStep implements DemoSeedStep {
             session.api().put(DemoPersona.ADMIN, "/course-sections/" + sectionId, Map.of("evaluationSchemeId", schemeId));
             session.api().post(DemoPersona.ADMIN, "/course-sections/" + sectionId + "/instructors",
                     Map.of("instructorId", leadTeacherId, "role", "LEAD"));
+            jdbcTemplate.update("insert into preceptor_assignment (person_id, course_section_id, created_by) values (?, ?, ?)", preceptorId, sectionId, preceptorId);
         }
         approveCycle(cycleId);
     }

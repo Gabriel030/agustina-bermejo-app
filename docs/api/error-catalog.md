@@ -89,6 +89,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CONSENT_CATEGORY_NOT_OPTIONAL` | no | `ConsentCategoryNotOptionalException` | notification |
 | `CONSENT_CATEGORY_REPEATED` | no | `ConsentCategoryRepeatedException` | notification |
 | `CONSENT_SOURCE_NOT_ACCEPTED` | no | `ConsentSourceNotAcceptedException` | notification |
+| `COURSE_RESPONSIBLE_REQUIRED` | no | `CourseResponsibleRequiredException` | identity |
 | `CREDIT_NOTE_JUSTIFICATION_REQUIRED` | no | `CreditNoteJustificationRequiredException` | billing |
 | `CREDIT_NOTE_LINES_INVALID` | no | `CreditNoteLinesInvalidException` | billing |
 | `CURRENCY_MISMATCH` | no | `CurrencyMismatchException` | billing |
@@ -451,6 +452,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `COREQUISITE_ALREADY_EXISTS` | no | `CorequisiteAlreadyExistsException` | academicstructure |
 | `COURSE_ADMISSION_ALREADY_CHARGED` | no | `CourseAdmissionAlreadyChargedException` | enrollment |
 | `COURSE_ADMISSION_CHARGE_REJECTED` | no | `CourseAdmissionChargeRejectedException` | enrollment |
+| `COURSE_CYCLE_NOT_READY` | no | `CourseCycleNotReadyException` | academicstructure |
 | `COURSE_NOT_AVAILABLE` | no | `CourseNotAvailableException` | enrollment |
 | `COURSE_PAYMENT_PLAN_ALREADY_SET` | no | `CoursePaymentPlanAlreadySetException` | billing |
 | `CREDIT_NOTE_DIRECTOR_APPROVAL_REQUIRED` | no | `CreditNoteDirectorApprovalRequiredException` | billing |

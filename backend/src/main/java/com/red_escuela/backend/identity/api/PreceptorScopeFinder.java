@@ -48,6 +48,21 @@ public class PreceptorScopeFinder {
                 .collect(Collectors.toUnmodifiableSet());
     }
 
+    public Set<Long> responsiblePersonIdsOfCourse(Long courseId) {
+        return preceptorAssignmentRepository.findByCourseId(courseId).stream()
+                .map(PreceptorAssignment::getPersonId)
+                .collect(Collectors.toUnmodifiableSet());
+    }
+
+    public Set<Long> courseSectionIdsWithPreceptor(Collection<Long> courseSectionIds) {
+        if (courseSectionIds.isEmpty()) {
+            return Set.of();
+        }
+        return preceptorAssignmentRepository.findByCourseSectionIdIn(courseSectionIds).stream()
+                .map(PreceptorAssignment::getCourseSectionId)
+                .collect(Collectors.toUnmodifiableSet());
+    }
+
     private Set<Long> idsOf(Long personId, Function<PreceptorAssignment, Long> target) {
         return preceptorAssignmentRepository.findByPersonId(personId).stream()
                 .map(target)

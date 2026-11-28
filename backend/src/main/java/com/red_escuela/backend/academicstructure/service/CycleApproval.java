@@ -1,6 +1,7 @@
 package com.red_escuela.backend.academicstructure.service;
 
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus;
+import com.red_escuela.backend.academicstructure.exception.CourseCycleNotReadyException;
 import com.red_escuela.backend.academicstructure.exception.CycleNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.CycleNotPendingApprovalException;
 import com.red_escuela.backend.academicstructure.repository.AcademicOfferingCycleRepository;
@@ -10,6 +11,8 @@ import com.red_escuela.backend.academicstructure.repository.SubjectSectionReposi
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.events.AcademicOfferingCycleApprovedEvent;
 import com.red_escuela.backend.academicstructure.exception.CycleDecisionIdempotencyKeyConflictException;
+import java.util.List;
+import com.red_escuela.backend.academicstructure.domain.CourseReadinessItemCode;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,6 +28,7 @@ public class CycleApproval {
     private final AcademicOfferingCycleReviewer cycleReviewer;
     private final ApplicationEventPublisher eventPublisher;
     private final TermOfferingGuard termOfferingGuard;
+    private final CourseReadinessChecker courseReadinessChecker;
 
     public CycleApproval(
             AcademicOfferingCycleRepository cycleRepository,
@@ -34,7 +38,8 @@ public class CycleApproval {
             SectionConflictChecker conflictChecker,
             AcademicOfferingCycleReviewer cycleReviewer,
             ApplicationEventPublisher eventPublisher,
-            TermOfferingGuard termOfferingGuard
+            TermOfferingGuard termOfferingGuard,
+            CourseReadinessChecker courseReadinessChecker
     ) {
         this.cycleRepository = cycleRepository;
         this.subjectSectionRepository = subjectSectionRepository;
@@ -44,6 +49,7 @@ public class CycleApproval {
         this.cycleReviewer = cycleReviewer;
         this.eventPublisher = eventPublisher;
         this.termOfferingGuard = termOfferingGuard;
+        this.courseReadinessChecker = courseReadinessChecker;
     }
 
     @Transactional
@@ -73,6 +79,10 @@ public class CycleApproval {
         }
 
         var courseSections = courseSectionRepository.findByAcademicOfferingCycleId(cycleId);
+        var sectionsWithoutPreceptor = courseReadinessChecker.sectionsWithoutPreceptor(courseSections);
+        if (!sectionsWithoutPreceptor.isEmpty()) {
+            throw new CourseCycleNotReadyException(cycleId, List.of(CourseReadinessItemCode.SECTION_PRECEPTORS.name()), sectionsWithoutPreceptor);
+        }
         for (var section : courseSections) {
             for (var slot : slotRepository.findByCourseSectionId(section.getId())) {
                 conflictChecker.checkClassroomAvailability(cycle.getTerm(),
