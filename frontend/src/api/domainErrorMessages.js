@@ -293,6 +293,8 @@ export const DOMAIN_ERROR_MESSAGES = {
   PROGRAM_COHORT_NOT_READY: 'La cohorte todavía tiene pendientes y no se puede abrir. Revisá el checklist.',
   PROGRAM_COHORT_ALREADY_OPEN: 'La cohorte ya está abierta.',
   COHORT_RESPONSIBLE_REQUIRED: 'Indicá al menos un preceptor responsable de la cohorte.',
+  COURSE_RESPONSIBLE_REQUIRED: 'Indicá al menos un preceptor responsable del curso.',
+  COURSE_CYCLE_NOT_READY: 'Hay comisiones del curso sin preceptor asignado. Asignales un preceptor antes de aprobar el ciclo.',
   PRECEPTOR_ROLE_REQUIRED: 'La persona elegida no tiene el rol de preceptor.',
   PROGRAM_COHORT_ALREADY_EXISTS: 'Ya existe una cohorte de esa carrera, ese año lectivo y ese ingreso.',
   INFORMATIVE_SESSION_ALREADY_STARTED: 'La charla ya comenzó.',

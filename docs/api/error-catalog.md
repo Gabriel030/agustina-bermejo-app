@@ -89,6 +89,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CONSENT_CATEGORY_NOT_OPTIONAL` | no | `ConsentCategoryNotOptionalException` | notification |
 | `CONSENT_CATEGORY_REPEATED` | no | `ConsentCategoryRepeatedException` | notification |
 | `CONSENT_SOURCE_NOT_ACCEPTED` | no | `ConsentSourceNotAcceptedException` | notification |
+| `COURSE_CYCLE_NOT_READY` | no | `CourseCycleNotReadyException` | academicstructure |
+| `COURSE_RESPONSIBLE_REQUIRED` | no | `CourseResponsibleRequiredException` | identity |
 | `CREDIT_NOTE_JUSTIFICATION_REQUIRED` | no | `CreditNoteJustificationRequiredException` | billing |
 | `CREDIT_NOTE_LINES_INVALID` | no | `CreditNoteLinesInvalidException` | billing |
 | `CURRENCY_MISMATCH` | no | `CurrencyMismatchException` | billing |

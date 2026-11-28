@@ -1,5 +1,6 @@
 package com.red_escuela.backend.characterization.academicorg;
 
+import com.red_escuela.backend.testsupport.PreceptorTestFactory;
 import com.red_escuela.backend.academicstructure.dto.CreateCourseRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateCourseRequest;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -15,9 +16,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 class CourseWithPriceCharacterizationTest extends AcademicOrgCharacterizationSupport {
+    @org.springframework.beans.factory.annotation.Autowired
+    private PreceptorTestFactory preceptors;
+
 
     private CreateCourseRequest courseRequest(String name, Long termId, Money price) {
-        return new CreateCourseRequest(name, termId, "Martes 19hs", 25, price, 6, null, null, null);
+        return new CreateCourseRequest(name, termId, "Martes 19hs", 25, price, 6, null, null, null, null, null, java.util.List.of(preceptors.createPreceptorId()));
     }
 
     @Test

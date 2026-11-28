@@ -4562,6 +4562,50 @@
         "required" : [ "courseEnrollmentId", "elegibleParaCompletar", "moduleEnrollments", "modulosPendientes" ],
         "type" : "object"
       },
+      "CourseReadinessItemResponse" : {
+        "properties" : {
+          "blocking" : {
+            "type" : "boolean"
+          },
+          "code" : {
+            "enum" : [ "COURSE_RESPONSIBLE", "COURSE_SECTIONS", "SECTION_PRECEPTORS" ],
+            "type" : "string"
+          },
+          "fulfilled" : {
+            "type" : "boolean"
+          },
+          "reasons" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "blocking", "code", "fulfilled", "reasons" ],
+        "type" : "object"
+      },
+      "CourseReadinessResponse" : {
+        "properties" : {
+          "complete" : {
+            "type" : "boolean"
+          },
+          "courseId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CourseReadinessItemResponse"
+            },
+            "type" : "array"
+          },
+          "ready" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "complete", "courseId", "items", "ready" ],
+        "type" : "object"
+      },
       "CourseResponse" : {
         "properties" : {
           "area" : {
@@ -4958,6 +5002,14 @@
             "format" : "date-time",
             "type" : "string"
           },
+          "responsiblePreceptorIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "minItems" : 1,
+            "type" : "array"
+          },
           "schedule" : {
             "type" : "string"
           },
@@ -4970,7 +5022,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "capacity", "currency", "durationMonths", "name", "price", "registrationEnd", "registrationStart", "schedule", "teachingMode", "termId" ],
+        "required" : [ "capacity", "currency", "durationMonths", "name", "price", "registrationEnd", "registrationStart", "responsiblePreceptorIds", "schedule", "teachingMode", "termId" ],
         "type" : "object"
       },
       "CreateCourseSubjectRequest" : {
@@ -45777,6 +45829,133 @@
           }
         },
         "tags" : [ "promotion-controller" ]
+      }
+    },
+    "/courses/{id}/readiness" : {
+      "get" : {
+        "operationId" : "Course_getReadiness",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CourseReadinessResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "course-controller" ]
       }
     },
     "/courses/{id}/subjects" : {
