@@ -1,5 +1,6 @@
 import { useRef, useState } from 'react';
 import { ImageUp, Trash2 } from 'lucide-react';
+import defaultLogoUrl from '@/assets/default-institute-logo.png';
 import { Button } from '@/components/ui/button';
 import { describeError } from '@/api/describeError';
 import { validateLogoFile } from '@/features/graduation/certificates/lib/certificateTemplate';
@@ -35,15 +36,19 @@ export function TemplateLogoField({ templateKey, logoImageId, readOnly, onChange
       <span className="text-size-13 font-semibold text-ink-soft">Logo del instituto</span>
       <div className="flex flex-wrap items-center gap-3">
         <div className="flex h-16 w-28 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-dashed border-border bg-neutral-bg text-ink-faint">
-          {imageUrl ? (
+          {!hasLogo && (
+            <img src={defaultLogoUrl} alt="Logo del instituto por defecto" className="h-14 w-auto object-contain" />
+          )}
+          {hasLogo && imageUrl && (
             <img src={imageUrl} alt="Logo actual del certificado" className="h-14 w-auto object-contain" />
-          ) : (
+          )}
+          {hasLogo && !imageUrl && (
             <ImageUp className="size-5" aria-hidden="true" />
           )}
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           <span className="text-size-12-5 text-ink-faint">
-            {hasLogo ? 'Logo cargado.' : 'Sin logo. PNG de hasta 2 MB.'}
+            {hasLogo ? 'Logo cargado.' : 'Logo del instituto (por defecto). Subí un PNG de hasta 2 MB para reemplazarlo.'}
           </span>
           {!readOnly && (
             <div className="flex flex-wrap gap-2">
