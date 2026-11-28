@@ -264,6 +264,64 @@
       "next_step": ""
     },
     {
+      "id": "E34-A",
+      "name": "E34-A integridad académica #1638",
+      "total": 12,
+      "done_at_baseline": null,
+      "done_at_seed": 12,
+      "next_step": "Cerrar el Issue #1638; billing en FULL queda como rebanada posterior"
+    },
+    {
+      "id": "E34-B",
+      "name": "E34-B planes versionados #1643",
+      "total": 10,
+      "done_at_baseline": null,
+      "done_at_seed": 10,
+      "next_step": "Cerrar el Issue #1643 (P0 a P8 y aviso D7 en develop)"
+    },
+    {
+      "id": "E34-C",
+      "name": "E34-C preceptor y checklist #1650",
+      "total": 9,
+      "done_at_baseline": null,
+      "done_at_seed": 8,
+      "total_estimated": true,
+      "next_step": "F2: terminar pantallas (cohorte y curso mergeadas) y cerrar el Issue #1650"
+    },
+    {
+      "id": "E19-A",
+      "name": "E19-A cohortes sin facturación #1606",
+      "total": 5,
+      "done_at_baseline": null,
+      "done_at_seed": 4,
+      "next_step": "S5: eventos, job de espera de pago y regla ArchUnit"
+    },
+    {
+      "id": "E28-F",
+      "name": "E28-F cierre de la épica 28 #1607",
+      "total": 8,
+      "done_at_baseline": null,
+      "done_at_seed": 7,
+      "total_estimated": true,
+      "next_step": "Confirmar S0 (verificación, solo comentario) y cerrar el Issue #1607"
+    },
+    {
+      "id": "E18-S6",
+      "name": "E18-S6 módulos academicstructure→evaluation #1696",
+      "total": 2,
+      "done_at_baseline": null,
+      "done_at_seed": 2,
+      "next_step": "Cerrar el Issue #1696 (S6-1 y S6-2 en develop)"
+    },
+    {
+      "id": "E24-4b",
+      "name": "E24-4b cobertura /me/** #1697",
+      "total": 2,
+      "done_at_baseline": null,
+      "done_at_seed": 2,
+      "next_step": "Cerrar el Issue #1697 (S3 solo si hubiera hallazgo)"
+    },
+    {
       "id": "P1108",
       "name": "Roles y permisos #1108",
       "total": 42,
