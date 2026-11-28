@@ -5,6 +5,7 @@ import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycle;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus;
 import com.red_escuela.backend.academicstructure.entity.Classroom;
+import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.academicstructure.entity.Program;
@@ -95,6 +96,23 @@ public class CycleTestFixtures {
         subject.setStatus(SubjectStatus.ACTIVE);
         entityManager.persist(subject);
         return subject;
+    }
+
+    public Subject subjectInPlanOf(Program program) {
+        Subject subject = subject();
+        ProgramSubject entry = new ProgramSubject();
+        entry.setProgram(program);
+        entry.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
+        entry.setSubject(subject);
+        entry.setCredits(4);
+        entry.setCurricularYear(1);
+        entry.setStatus(StatusType.ACTIVE);
+        entityManager.persist(entry);
+        return subject;
+    }
+
+    public Subject subjectInPlanOf(AcademicOfferingCycle cycle) {
+        return subjectInPlanOf(cycle.getProgram());
     }
 
     public AcademicOfferingCycle programCycle(Program program, Term term, AcademicOfferingCycleStatus status) {
