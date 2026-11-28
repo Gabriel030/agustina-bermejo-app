@@ -19,7 +19,6 @@ import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRep
 import com.red_escuela.backend.enrollment.service.CurriculumProgressReader;
 import com.red_escuela.backend.shared.domain.Grade;
 import com.red_escuela.backend.shared.domain.StatusType;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -50,7 +49,6 @@ class ApprovedOutcomeCriteriaReproductionIT extends ReproductionFixture {
     }
 
     @Test
-    @Disabled("E34-B-P2")
     void recordingAnApprovedProgramOutcomeStoresTheFinalScoreDateUsedByTheCertificate() {
         Program program = program(4);
         Subject subject = subject("Algebra");
@@ -72,7 +70,6 @@ class ApprovedOutcomeCriteriaReproductionIT extends ReproductionFixture {
     }
 
     @Test
-    @Disabled("E34-B-P2")
     void everyReaderPicksTheSameScoreWhenASubjectHasTwoApprovedAttempts() {
         Program program = program(4);
         Subject subject = subject("Algebra");

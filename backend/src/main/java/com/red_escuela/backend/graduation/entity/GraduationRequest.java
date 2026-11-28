@@ -68,6 +68,13 @@ public class GraduationRequest {
     @Column(name = "certificate_reviewed_at")
     private LocalDateTime certificateReviewedAt;
 
+    @Column(name = "outdated_at")
+    private LocalDateTime outdatedAt;
+
+    public void markOutdated(LocalDateTime flaggedAt) {
+        outdatedAt = flaggedAt;
+    }
+
     public void requireAwaitingDirectorDecision() {
         if (status != GraduationRequestStatus.ADMIN_VERIFIED) {
             throw new InvalidGraduationRequestStateException(id);

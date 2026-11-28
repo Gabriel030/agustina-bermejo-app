@@ -169,7 +169,7 @@ public class ApprovedSubjectsCertificateIssuer implements ApprovedSubjectsCertif
         List<ApprovedSubjectLine> approved = gradesReader.listApprovedSubjectGrades(student.getId(), enrollment.getId()).stream()
                 .map(this::lineOf)
                 .toList();
-        int totalSubjects = programCurriculumFinder.findProgramSubjects(enrollment.getProgram().getId()).size();
+        int totalSubjects = programCurriculumFinder.findActiveProgramSubjectsOfPlan(enrollment.getPlan().getId()).size();
         return snapshotFactory.create(new ApprovedSubjectsSnapshotFactory.Input(holder.holderFullName(), holder.documentTypeLabel(),
                 holder.documentNumber(), programName, holder.institutionName(), approved, totalSubjects, null, now.toLocalDate(),
                 validityDays, holder.signatories()));

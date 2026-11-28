@@ -3,6 +3,7 @@ package com.red_escuela.backend.graduation.specialist;
 import com.red_escuela.backend.graduation.entity.GraduationRequestStatus;
 import com.red_escuela.backend.graduation.events.GraduationRequestOutdatedEvent;
 import com.red_escuela.backend.graduation.repository.GraduationRequestRepository;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,10 @@ public class GraduationRequestOutdatedFlagger {
     @Transactional
     public void flagOutdatedRequests(Long programEnrollmentId) {
         graduationRequestRepository.findByProgramEnrollmentIdAndStatusNot(programEnrollmentId, GraduationRequestStatus.REJECTED)
-                .forEach(request -> eventPublisher.publishEvent(GraduationRequestOutdatedEvent.outdatedFor(request)));
+                .forEach(request -> {
+                    request.markOutdated(ApplicationTime.now());
+                    graduationRequestRepository.save(request);
+                    eventPublisher.publishEvent(GraduationRequestOutdatedEvent.outdatedFor(request));
+                });
     }
 }

@@ -32,6 +32,7 @@ class VoidSubjectEquivalenceTransactionTest {
         ApplicationEventPublisher publisher = mock(ApplicationEventPublisher.class);
         ProgramEnrollment enrollment = new ProgramEnrollment();
         enrollment.setId(1L);
+        enrollment.setStatus(com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus.ENROLLED);
         SubjectEquivalence equivalence = SubjectEquivalence.builder().id(7L).programEnrollment(enrollment).subjectId(3L).build();
         when(enrollments.findById(1L)).thenReturn(Optional.of(enrollment));
         when(equivalences.findById(7L)).thenReturn(Optional.of(equivalence));

@@ -5,6 +5,7 @@ import com.red_escuela.backend.academicstructure.api.ProgramCurriculumEntryView;
 import com.red_escuela.backend.academicstructure.api.ProgramCurriculumFinder;
 import com.red_escuela.backend.academicstructure.api.ProgramSubjectView;
 import com.red_escuela.backend.academicstructure.domain.RequirementType;
+import com.red_escuela.backend.academicstructure.entity.CurriculumPlan;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubjectCategory;
 import com.red_escuela.backend.enrollment.api.CourseworkEntry;
@@ -43,6 +44,7 @@ class CurriculumProgressMinGradeTest {
 
     private static final Long ENROLLMENT_ID = 5L;
     private static final Long PROGRAM_ID = 9L;
+    private static final Long PLAN_ID = 17L;
     private static final Long PREREQUISITE_SUBJECT_ID = 1L;
     private static final Long TARGET_SUBJECT_ID = 2L;
 
@@ -71,6 +73,10 @@ class CurriculumProgressMinGradeTest {
         return new CourseworkEntry(EnrollmentStatus.APPROVED, score == null ? null : grade(score), 11L);
     }
 
+    private static CourseworkEntry approvedOn(String score, Long enrollmentId, int year) {
+        return new CourseworkEntry(EnrollmentStatus.APPROVED, grade(score), enrollmentId, LocalDate.of(year, 7, 1));
+    }
+
     private static RecognizedEquivalence equivalence(String originScore) {
         return new RecognizedEquivalence(7L, PREREQUISITE_SUBJECT_ID, "Otra institucion", "Materia previa",
                 originScore == null ? null : grade(originScore), LocalDate.of(2026, 3, 1), "RES-1");
@@ -91,8 +97,10 @@ class CurriculumProgressMinGradeTest {
                         List.of(approved(null)), null, false, false),
                 new Scenario("no minimum is available with low score", RequirementType.APPROVED, null,
                         List.of(approved("2")), null, false, false),
-                new Scenario("best of several approved attempts decides", RequirementType.APPROVED, six,
-                        List.of(approved("4"), approved("7")), null, false, false),
+                new Scenario("most recent of several approved attempts decides when it passes", RequirementType.APPROVED, six,
+                        List.of(approvedOn("4", 11L, 2025), approvedOn("7", 12L, 2026)), null, false, false),
+                new Scenario("most recent of several approved attempts decides when it fails", RequirementType.APPROVED, six,
+                        List.of(approvedOn("7", 11L, 2025), approvedOn("4", 12L, 2026)), null, false, true),
                 new Scenario("waiver covers a score below minimum", RequirementType.APPROVED, six,
                         List.of(approved("3")), null, true, false),
                 new Scenario("equivalence origin score below minimum blocks", RequirementType.APPROVED, six,
@@ -111,15 +119,18 @@ class CurriculumProgressMinGradeTest {
     void setUp() {
         ProgramEnrollment enrollment = mock(ProgramEnrollment.class);
         Program program = mock(Program.class);
+        CurriculumPlan plan = mock(CurriculumPlan.class);
         when(enrollmentRepository.findById(ENROLLMENT_ID)).thenReturn(Optional.of(enrollment));
         when(enrollment.getId()).thenReturn(ENROLLMENT_ID);
         when(enrollment.getProgram()).thenReturn(program);
+        when(enrollment.getPlan()).thenReturn(plan);
+        when(plan.getId()).thenReturn(PLAN_ID);
         when(program.getId()).thenReturn(PROGRAM_ID);
         when(program.getName()).thenReturn("Tecnicatura");
-        when(program.getTotalCreditsRequired()).thenReturn(8);
-        when(curriculumFinder.findProgramCorequisites(PROGRAM_ID)).thenReturn(Map.of());
+        when(plan.getTotalCreditsRequired()).thenReturn(8);
+        when(curriculumFinder.findCorequisitesOfPlan(PLAN_ID)).thenReturn(Map.of());
         when(curriculumFinder.findElectiveGroupRequirements(PROGRAM_ID)).thenReturn(List.of());
-        when(curriculumFinder.findActiveCurriculumEntries(PROGRAM_ID)).thenReturn(List.of(entry(1L), entry(2L)));
+        when(curriculumFinder.findActiveCurriculumEntriesOfPlan(PLAN_ID)).thenReturn(List.of(entry(1L), entry(2L)));
         when(curriculumFinder.findProgramSubject(PROGRAM_ID, TARGET_SUBJECT_ID)).thenReturn(Optional.of(
                 new ProgramSubjectView(TARGET_SUBJECT_ID, TARGET_SUBJECT_ID, "Materia 2", 4, 1, null, null)));
         when(approvalRepository.findSubjectIdsWithRequest(any(), any(), any())).thenReturn(List.of());
@@ -134,7 +145,7 @@ class CurriculumProgressMinGradeTest {
         PrerequisiteView prerequisite = new PrerequisiteView(PREREQUISITE_SUBJECT_ID, "Materia 1",
                 scenario.type(), "S1", scenario.minGrade());
         SubjectStanding standing = new SubjectStanding(scenario.coursework(), scenario.equivalence());
-        when(curriculumFinder.findProgramPrerequisites(PROGRAM_ID))
+        when(curriculumFinder.findPrerequisitesOfPlan(PLAN_ID))
                 .thenReturn(Map.of(TARGET_SUBJECT_ID, List.of(prerequisite)));
         when(curriculumFinder.findPrerequisites(TARGET_SUBJECT_ID)).thenReturn(List.of(prerequisite));
         when(lookup.findHistory(ENROLLMENT_ID)).thenReturn(Map.of(PREREQUISITE_SUBJECT_ID, standing));

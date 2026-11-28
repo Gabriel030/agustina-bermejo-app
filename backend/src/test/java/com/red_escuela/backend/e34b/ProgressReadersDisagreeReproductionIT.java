@@ -17,7 +17,6 @@ import com.red_escuela.backend.enrollment.service.ProgramPlanSubjectGuard;
 import com.red_escuela.backend.shared.domain.Grade;
 import com.red_escuela.backend.shared.domain.StatusType;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -64,7 +63,6 @@ class ProgressReadersDisagreeReproductionIT extends ReproductionFixture {
     }
 
     @Test
-    @Disabled("E34-B-P2")
     void inactivePlanSubjectDoesNotBlockProgramCompletionWhenCurriculumViewShowsFullProgress() {
         CurriculumProgressView.Summary summary = curriculumProgressReader.readProgress(enrollment.getId()).summary();
         ProgramProgressView progress = programProgressReader.calculateProgress(enrollment.getId());
@@ -75,7 +73,6 @@ class ProgressReadersDisagreeReproductionIT extends ReproductionFixture {
     }
 
     @Test
-    @Disabled("E34-B-P2")
     void overallAverageOnlyCountsApprovedSubjectsOfThePlanLikeTheCurriculumView() {
         CurriculumProgressView.Summary summary = curriculumProgressReader.readProgress(enrollment.getId()).summary();
         ProgramProgressView progress = programProgressReader.calculateProgress(enrollment.getId());
@@ -85,16 +82,14 @@ class ProgressReadersDisagreeReproductionIT extends ReproductionFixture {
     }
 
     @Test
-    @Disabled("E34-B-P1b")
     void planGuardRejectsSubjectDeactivatedInThePlan() {
-        assertThatThrownBy(() -> programPlanSubjectGuard.requireSubjectInPlan(program.getId(), inactiveSubject.getId()))
-                .isInstanceOf(com.red_escuela.backend.enrollment.exception.SubjectNotInProgramPlanException.class);
+        assertThatThrownBy(() -> programPlanSubjectGuard.requireSubjectInEnrollmentPlan(enrollment, inactiveSubject.getId()))
+                .isInstanceOf(com.red_escuela.backend.enrollment.exception.SubjectNotInEnrollmentPlanException.class);
     }
 
     @Test
-    @Disabled("E34-B-P1b")
     void subjectCountUsedByApprovedSubjectsCertificateExcludesInactivePlanSubjects() {
-        int totalSubjectsUsedByCertificate = programCurriculumFinder.findProgramSubjects(program.getId()).size();
+        int totalSubjectsUsedByCertificate = programCurriculumFinder.findActiveProgramSubjectsOfPlan(enrollment.getPlan().getId()).size();
 
         assertThat(totalSubjectsUsedByCertificate)
                 .isEqualTo(programCurriculumFinder.findActiveCurriculumEntries(program.getId()).size());

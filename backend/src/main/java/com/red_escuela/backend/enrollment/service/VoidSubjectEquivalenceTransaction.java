@@ -61,6 +61,7 @@ public class VoidSubjectEquivalenceTransaction {
         SubjectEquivalence equivalence = subjectEquivalenceRepository.findById(equivalenceId)
                 .filter(found -> found.getProgramEnrollment().getId().equals(programEnrollmentId))
                 .orElseThrow(() -> new SubjectEquivalenceNotFoundException(equivalenceId));
+        SubjectEquivalencePolicy.requireActiveEnrollment(programEnrollmentId, enrollment.getStatus());
         SubjectEquivalencePolicy.requireActive(equivalence);
         String reason = SubjectEquivalencePolicy.normalizeReason(rawReason);
         equivalence.setStatus(SubjectEquivalenceStatus.VOIDED);
