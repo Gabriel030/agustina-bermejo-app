@@ -2,10 +2,14 @@ package com.red_escuela.backend.evaluation.policy;
 
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.FinalGradeType;
+import com.red_escuela.backend.evaluation.domain.ApprovalRequirementContext;
 import com.red_escuela.backend.evaluation.domain.ClosureAlert;
 import com.red_escuela.backend.evaluation.domain.CourseworkOutcome;
-import com.red_escuela.backend.evaluation.domain.PrerequisiteGatedOutcome;
+import com.red_escuela.backend.evaluation.domain.RequirementGatedOutcome;
+import com.red_escuela.backend.evaluation.domain.UnmetApprovalRequirements;
 import com.red_escuela.backend.evaluation.entity.ClosureFinalCondition;
+import com.red_escuela.backend.evaluation.specialist.ApprovalRequirementsEvaluator;
+import com.red_escuela.backend.evaluation.specialist.PrerequisitesApprovalRequirementCheck;
 import com.red_escuela.backend.shared.domain.Grade;
 import org.junit.jupiter.api.Test;
 
@@ -26,7 +30,7 @@ class PromotionPolicyPrerequisiteGateTest {
 
     @Test
     void promotionWithUnmetPrerequisitesBecomesRegularGoingToFinalWithAlert() {
-        PrerequisiteGatedOutcome result = policy.restrictPromotionWhenPrerequisitesUnmet(Optional.of(promotion()), () -> false);
+        RequirementGatedOutcome result = policy.restrictPromotionWhenPrerequisitesUnmet(Optional.of(promotion()), () -> false);
 
         assertThat(result.outcome()).contains(new CourseworkOutcome(EnrollmentStatus.REGULAR, null, null));
         assertThat(result.forcedFinalCondition()).contains(ClosureFinalCondition.GOES_TO_FINAL);
@@ -35,7 +39,7 @@ class PromotionPolicyPrerequisiteGateTest {
 
     @Test
     void promotionWithMetPrerequisitesIsLeftUntouched() {
-        PrerequisiteGatedOutcome result = policy.restrictPromotionWhenPrerequisitesUnmet(Optional.of(promotion()), () -> true);
+        RequirementGatedOutcome result = policy.restrictPromotionWhenPrerequisitesUnmet(Optional.of(promotion()), () -> true);
 
         assertThat(result.outcome()).contains(promotion());
         assertThat(result.forcedFinalCondition()).isEmpty();
@@ -51,7 +55,7 @@ class PromotionPolicyPrerequisiteGateTest {
                 new CourseworkOutcome(EnrollmentStatus.APPROVED, Grade.of(new BigDecimal("7.0")), FinalGradeType.FINAL_EXAM));
 
         for (Optional<CourseworkOutcome> outcome : List.of(regular, failed, approvedByFinal, Optional.<CourseworkOutcome>empty())) {
-            PrerequisiteGatedOutcome result = policy.restrictPromotionWhenPrerequisitesUnmet(outcome, () -> {
+            RequirementGatedOutcome result = policy.restrictPromotionWhenPrerequisitesUnmet(outcome, () -> {
                 consultations.incrementAndGet();
                 return false;
             });
@@ -61,13 +65,18 @@ class PromotionPolicyPrerequisiteGateTest {
         assertThat(consultations).hasValue(0);
     }
 
+    private static UnmetApprovalRequirements unmet(boolean prerequisitesMet) {
+        return new ApprovalRequirementsEvaluator(List.of(new PrerequisitesApprovalRequirementCheck()))
+                .evaluate(new ApprovalRequirementContext(() -> prerequisitesMet));
+    }
+
     private static CourseworkOutcome approvedByFinal() {
         return new CourseworkOutcome(EnrollmentStatus.APPROVED, Grade.of(new BigDecimal("7.0")), FinalGradeType.FINAL_EXAM);
     }
 
     @Test
     void approvalByFinalWithUnmetPrerequisitesBecomesRegularWithAlert() {
-        PrerequisiteGatedOutcome result = policy.restrictApprovalWhenPrerequisitesUnmet(Optional.of(approvedByFinal()), () -> false);
+        RequirementGatedOutcome result = policy.holdApprovalUntilRequirementsMet(Optional.of(approvedByFinal()), () -> unmet(false));
 
         assertThat(result.outcome()).contains(new CourseworkOutcome(EnrollmentStatus.REGULAR, null, null));
         assertThat(result.alerts()).containsExactly(ClosureAlert.UNMET_PREREQUISITE);
@@ -75,7 +84,7 @@ class PromotionPolicyPrerequisiteGateTest {
 
     @Test
     void approvalByFinalWithMetPrerequisitesIsLeftUntouched() {
-        PrerequisiteGatedOutcome result = policy.restrictApprovalWhenPrerequisitesUnmet(Optional.of(approvedByFinal()), () -> true);
+        RequirementGatedOutcome result = policy.holdApprovalUntilRequirementsMet(Optional.of(approvedByFinal()), () -> unmet(true));
 
         assertThat(result.outcome()).contains(approvedByFinal());
         assertThat(result.alerts()).isEmpty();
@@ -88,9 +97,9 @@ class PromotionPolicyPrerequisiteGateTest {
                 Optional.of(new CourseworkOutcome(EnrollmentStatus.REGULAR, null, null)),
                 Optional.of(new CourseworkOutcome(EnrollmentStatus.FAILED, null, null)),
                 Optional.<CourseworkOutcome>empty())) {
-            PrerequisiteGatedOutcome result = policy.restrictApprovalWhenPrerequisitesUnmet(outcome, () -> {
+            RequirementGatedOutcome result = policy.holdApprovalUntilRequirementsMet(outcome, () -> {
                 consultations.incrementAndGet();
-                return false;
+                return unmet(false);
             });
             assertThat(result.outcome()).isEqualTo(outcome);
         }

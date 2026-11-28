@@ -20,7 +20,8 @@ import com.red_escuela.backend.evaluation.api.StudentPaymentsStandingPort;
 import com.red_escuela.backend.evaluation.domain.ClosureAlert;
 import com.red_escuela.backend.evaluation.domain.ClosureStudentAssessment;
 import com.red_escuela.backend.evaluation.domain.CourseworkOutcome;
-import com.red_escuela.backend.evaluation.domain.PrerequisiteGatedOutcome;
+import com.red_escuela.backend.evaluation.domain.ApprovalRequirementContext;
+import com.red_escuela.backend.evaluation.domain.RequirementGatedOutcome;
 import com.red_escuela.backend.evaluation.entity.ClosureFinalCondition;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.entity.GradeItem;
@@ -56,6 +57,7 @@ public class ClosureRequirementsCalculator {
     private final StudentRequiredDocumentsFinder studentRequiredDocumentsFinder;
     private final StudentPaymentsStandingPort studentPaymentsStandingPort;
     private final Clock clock;
+    private final ApprovalRequirementsEvaluator approvalRequirementsEvaluator;
     private final ApprovedCourseworkCountFinder courseworkCountFinder;
 
     public ClosureRequirementsCalculator(SectionFinder sectionFinder, SectionEnrollmentFinder sectionEnrollmentFinder,
@@ -64,7 +66,9 @@ public class ClosureRequirementsCalculator {
             ProgramPrerequisiteBatchEvaluator prerequisiteBatchEvaluator,
             StudentRequiredDocumentsFinder studentRequiredDocumentsFinder,
             StudentPaymentsStandingPort studentPaymentsStandingPort, Clock clock,
-            ApprovedCourseworkCountFinder courseworkCountFinder, SectionEvaluationSchemeLoader schemeLoader) {
+            ApprovedCourseworkCountFinder courseworkCountFinder, SectionEvaluationSchemeLoader schemeLoader,
+            ApprovalRequirementsEvaluator approvalRequirementsEvaluator) {
+        this.approvalRequirementsEvaluator = approvalRequirementsEvaluator;
         this.schemeLoader = schemeLoader;
         this.sectionFinder = sectionFinder;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
@@ -148,8 +152,9 @@ public class ClosureRequirementsCalculator {
                 ? EnrollmentStatus.ENROLLED : row.status();
         Optional<CourseworkOutcome> calculated = scheme == null ? Optional.empty()
                 : outcomeCalculator.calculate(scheme, courseworkCount, items, current, maxFinalExamAttempts);
-        PrerequisiteGatedOutcome gated = outcomeCalculator.promotionPolicy()
-                .restrictApprovalWhenPrerequisitesUnmet(calculated, () -> prerequisitesMet);
+        RequirementGatedOutcome gated = outcomeCalculator.promotionPolicy()
+                .holdApprovalUntilRequirementsMet(calculated, () -> approvalRequirementsEvaluator.evaluate(
+                        new ApprovalRequirementContext(() -> prerequisitesMet)));
         boolean promotionCandidate = calculated.filter(CourseworkOutcome::isPromotion).isPresent();
         var finalCondition = closureConditionPolicy.decideFinalCondition(
                 gated.outcome(), gated.forcedFinalCondition().isPresent(), current, free, payments, documentsComplete);
