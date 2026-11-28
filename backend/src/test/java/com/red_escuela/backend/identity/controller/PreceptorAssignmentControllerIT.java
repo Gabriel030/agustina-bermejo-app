@@ -35,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -239,6 +240,93 @@ class PreceptorAssignmentControllerIT extends AbstractIntegrationTest {
                     .andExpect(status().isForbidden());
         }
         assertThat(assignments.existsById(assignment.getId())).isTrue();
+    }
+
+    @Test
+    void replacingLeavesExactlyTheRequestedPreceptorsAndAuditsEachChange() throws Exception {
+        Person kept = person("PRECEPTOR");
+        Person removed = person("PRECEPTOR");
+        Person added = person("PRECEPTOR");
+        PreceptorAssignment keptAssignment = save(kept, programSection.getId(), null);
+        save(removed, programSection.getId(), null);
+
+        mockMvc.perform(replace("subject-sections", programSection.getId(), administrative, kept.getId(), added.getId(), added.getId()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].id").value(keptAssignment.getId()))
+                .andExpect(jsonPath("$[0].personId").value(kept.getId()))
+                .andExpect(jsonPath("$[1].personId").value(added.getId()))
+                .andExpect(jsonPath("$[1].subjectSectionId").value(programSection.getId()));
+
+        assertThat(assignments.findBySubjectSectionIdOrderByIdAsc(programSection.getId()))
+                .extracting(PreceptorAssignment::getPersonId).containsExactly(kept.getId(), added.getId());
+        assertThat(auditCount("PRECEPTOR_ASSIGNED")).isEqualTo(1);
+        assertThat(auditCount("PRECEPTOR_UNASSIGNED")).isEqualTo(1);
+    }
+
+    @Test
+    void replacingWithAnEmptyListRemovesEveryPreceptorOfTheCourseSection() throws Exception {
+        save(person("PRECEPTOR"), null, courseSection.getId());
+        save(person("PRECEPTOR"), null, courseSection.getId());
+
+        mockMvc.perform(replace("course-sections", courseSection.getId(), administrative))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+
+        assertThat(assignments.findByCourseSectionIdOrderByIdAsc(courseSection.getId())).isEmpty();
+        assertThat(auditCount("PRECEPTOR_UNASSIGNED")).isEqualTo(2);
+    }
+
+    @Test
+    void replacingWithAnInvalidPersonChangesNothing() throws Exception {
+        Person existing = person("PRECEPTOR");
+        save(existing, programSection.getId(), null);
+        Person teacher = person("DOCENTE");
+        Person newPreceptor = person("PRECEPTOR");
+
+        mockMvc.perform(replace("subject-sections", programSection.getId(), administrative, teacher.getId(), newPreceptor.getId()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("PRECEPTOR_ROLE_REQUIRED"));
+        entityManager.clear();
+
+        assertThat(assignments.findBySubjectSectionIdOrderByIdAsc(programSection.getId()))
+                .extracting(PreceptorAssignment::getPersonId).containsExactly(existing.getId());
+    }
+
+    @Test
+    void replacingOnAMissingSectionReturnsNotFoundAndMissingBodyFieldReturnsBadRequest() throws Exception {
+        mockMvc.perform(replace("subject-sections", 999_999_999L, administrative))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(put("/preceptor-assignments/subject-sections/" + programSection.getId())
+                        .contentType(MediaType.APPLICATION_JSON).content("{}")
+                        .header("Authorization", bearer(administrative)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void replacingIsForbiddenWithoutThePermissionOrTheRole() throws Exception {
+        Person existing = person("PRECEPTOR");
+        save(existing, programSection.getId(), null);
+        for (String role : new String[] {"DOCENTE", "ALUMNO", "PRECEPTOR"}) {
+            mockMvc.perform(replace("subject-sections", programSection.getId(), person(role)))
+                    .andExpect(status().isForbidden());
+        }
+        jdbc.update("insert into permission_module_mode (role, module, mode) values ('ADMINISTRATIVO', 'academicstructure', 'ENFORCE') on conflict (role, module) do update set mode = 'ENFORCE'");
+        jdbc.update("delete from role_permission where role = 'ADMINISTRATIVO' and permission_id = (select id from permission where code = 'academicstructure.manage_preceptor_assignments')");
+        permissionCache.invalidate();
+
+        mockMvc.perform(replace("subject-sections", programSection.getId(), administrative))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(replace("course-sections", courseSection.getId(), administrative))
+                .andExpect(status().isForbidden());
+
+        assertThat(assignments.findBySubjectSectionIdOrderByIdAsc(programSection.getId())).hasSize(1);
+    }
+
+    private MockHttpServletRequestBuilder replace(String kind, Long sectionId, Person actor, Long... personIds) {
+        String ids = java.util.Arrays.stream(personIds).map(String::valueOf).collect(java.util.stream.Collectors.joining(","));
+        return put("/preceptor-assignments/" + kind + "/" + sectionId).contentType(MediaType.APPLICATION_JSON)
+                .content("{\"personIds\":[" + ids + "]}").header("Authorization", bearer(actor));
     }
 
     private MockHttpServletRequestBuilder assign(Person actor, Long personId, Long subjectSectionId, Long courseSectionId) {

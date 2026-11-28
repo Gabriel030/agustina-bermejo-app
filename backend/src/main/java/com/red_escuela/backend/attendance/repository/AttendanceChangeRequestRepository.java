@@ -66,4 +66,28 @@ public interface AttendanceChangeRequestRepository extends JpaRepository<Attenda
                                                       @Param("programCohortIds") Collection<Long> programCohortIds);
 
     List<AttendanceChangeRequest> findByRequestedByIdOrderByCreatedAtDesc(Long instructorId);
+
+    @Query("""
+            select new com.red_escuela.backend.attendance.repository.SectionRequestCount(ss.id, count(r))
+            from AttendanceChangeRequest r
+            join r.attendance a
+            join a.programSubjectSectionEnrollment pe
+            join pe.subjectSection ss
+            where r.status = com.red_escuela.backend.attendance.entity.AttendanceChangeRequestStatus.PENDING
+              and ss.id in :subjectSectionIds
+            group by ss.id
+            """)
+    List<SectionRequestCount> countPendingBySubjectSectionIds(@Param("subjectSectionIds") Collection<Long> subjectSectionIds);
+
+    @Query("""
+            select new com.red_escuela.backend.attendance.repository.SectionRequestCount(cs.id, count(r))
+            from AttendanceChangeRequest r
+            join r.attendance a
+            join a.courseSubjectSectionEnrollment ce
+            join ce.courseSubjectSection cs
+            where r.status = com.red_escuela.backend.attendance.entity.AttendanceChangeRequestStatus.PENDING
+              and cs.id in :courseSectionIds
+            group by cs.id
+            """)
+    List<SectionRequestCount> countPendingByCourseSectionIds(@Param("courseSectionIds") Collection<Long> courseSectionIds);
 }

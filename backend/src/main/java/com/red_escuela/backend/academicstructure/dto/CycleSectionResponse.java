@@ -24,14 +24,21 @@ public record CycleSectionResponse(
         @Nullable String lastRejectionReason,
         @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) SectionShift shift,
         @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String code,
-        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String description
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String description,
+        @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<PreceptorInfo> preceptors
 ) {
+    public record PreceptorInfo(
+            @Schema(requiredMode = Schema.RequiredMode.REQUIRED) Long assignmentId,
+            @Schema(requiredMode = Schema.RequiredMode.REQUIRED) Long personId,
+            @Schema(requiredMode = Schema.RequiredMode.REQUIRED) String personName,
+            @Schema(requiredMode = Schema.RequiredMode.REQUIRED) long pendingRequestCount) {}
+
     public record InstructorInfo(String name, String role) {}
     public record SlotInfo(String dayOfWeek, String startTime, String endTime, Long classroomId, String classroomName) {}
 
     public record PendingModificationInfo(boolean replacesSchedule, String requestedAt, List<SlotInfo> slots) {}
 
-    public static CycleSectionResponse fromSubjectSection(SubjectSection s, List<SectionScheduleSlot> slots, SectionModificationProposal latestProposal) {
+    public static CycleSectionResponse fromSubjectSection(SubjectSection s, List<SectionScheduleSlot> slots, SectionModificationProposal latestProposal, List<PreceptorInfo> preceptors) {
         var instructors = s.getInstructors().stream()
                 .map(i -> new InstructorInfo(
                         i.getInstructor().getPerson().getName() + " " + i.getInstructor().getPerson().getLastname(),
@@ -58,10 +65,11 @@ public record CycleSectionResponse(
                 lastRejectionReasonOf(latestProposal),
                 s.getShift(),
                 s.getCode(),
-                s.getDescription());
+                s.getDescription(),
+                preceptors);
     }
 
-    public static CycleSectionResponse fromCourseSection(CourseSubjectSection s, List<SectionScheduleSlot> slots) {
+    public static CycleSectionResponse fromCourseSection(CourseSubjectSection s, List<SectionScheduleSlot> slots, List<PreceptorInfo> preceptors) {
         var instructors = s.getInstructors().stream()
                 .map(i -> new InstructorInfo(
                         i.getInstructor().getPerson().getName() + " " + i.getInstructor().getPerson().getLastname(),
@@ -88,7 +96,8 @@ public record CycleSectionResponse(
                 null,
                 s.getShift(),
                 s.getCode(),
-                s.getDescription());
+                s.getDescription(),
+                preceptors);
     }
 
     private static PendingModificationInfo pendingModificationOf(SectionModificationProposal proposal) {
