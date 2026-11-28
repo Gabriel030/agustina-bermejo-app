@@ -66,6 +66,7 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [cell/handoffs/1108-w13.md](cell/handoffs/1108-w13.md) | Handoff de W13/W20 (#1108, E18 M5-S6): academicstructure -> evaluation por id; qué se probó, el bloqueo de conteo de consultas y el camino propuesto | vigente |
 | [cell/handoffs/1108-w18.md](cell/handoffs/1108-w18.md) | Handoff de W18 (#1108, 24.4 lote 3c): qué se verificó del lote 3b, qué faltaba y qué buscar | histórico |
 | [cell/handoffs/1638-S9b.md](cell/handoffs/1638-S9b.md) | Handoff de E34-A S9b (#1638): motor de simulación de cinco años, causa del 409 de billing en la segunda corrida y expectativas débiles que quedan | vigente |
+| [cell/handoffs/1638-S9c.md](cell/handoffs/1638-S9c.md) | Handoff de E34-A S9c (#1638): invariantes SQL y reporte de la simulación de cinco años, sabotaje por invariante y el hallazgo de egreso aceptado sin materias aprobadas | vigente |
 | [cell/handoffs/1643-p1b-1.md](cell/handoffs/1643-p1b-1.md) | Handoff de E34-B P1b parte 1 (#1643): matrícula y cohorte apuntan al plan, fixtures que fallaban y qué faltaba correr | histórico |
 | [cell/handoffs/1643-p1b-2.md](cell/handoffs/1643-p1b-2.md) | Handoff de E34-B P1b parte 2 (#1643): fixtures corregidos con cohorte y plan, suites corridas y quién depende de `LegacyFixturePlanFiller` | vigente |
 | [security/pentest-interno.md](security/pentest-interno.md) | Plan de pentest interno (E29 G7 / 24.6a): reglas de juego, casos por flujo, criterio de aprobación, perfiles ZAP, plantilla de hallazgos y qué queda para el externo | vigente |
