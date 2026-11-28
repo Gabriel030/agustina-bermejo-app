@@ -17,11 +17,14 @@ public record AttendanceChangeRequestResponse(
         @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDateTime decidedAt,
         @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String decidedByName,
         @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDate revertibleUntil,
-        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) boolean revertible) {
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) boolean revertible,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String revertedByName,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDateTime revertedAt,
+        @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String revertReason) {
 
     public static AttendanceChangeRequestResponse from(
             AttendanceChangeRequest request, String requestedByName, String subjectName, String sectionName,
-            LocalDate classDate, String studentName, String decidedByName) {
+            LocalDate classDate, String studentName, String decidedByName, String revertedByName) {
         boolean decided = request.getStatus() != AttendanceChangeRequestStatus.PENDING;
         LocalDateTime decidedAt = decided ? request.getApprovedAt() : null;
         return new AttendanceChangeRequestResponse(
@@ -29,6 +32,7 @@ public record AttendanceChangeRequestResponse(
                 classDate, studentName, request.getPreviousStatus().name(), request.getRequestedStatus().name(),
                 request.getReason(), request.getStatus().name(), request.getCreatedAt(), request.getRejectionReason(),
                 decidedAt, decidedByName, AttendanceDecisionRevertWindow.lastRevertibleDay(decidedAt),
-                AttendanceDecisionRevertWindow.isOpen(decidedAt, ApplicationTime.today()));
+                AttendanceDecisionRevertWindow.isOpen(decidedAt, ApplicationTime.today()),
+                revertedByName, request.getRevertedAt(), request.getRevertReason());
     }
 }
