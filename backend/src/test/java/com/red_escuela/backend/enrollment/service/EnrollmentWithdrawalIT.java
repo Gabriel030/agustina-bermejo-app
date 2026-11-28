@@ -435,8 +435,8 @@ class EnrollmentWithdrawalIT extends AbstractCreditNoteIT {
         Long termId = jdbc.queryForObject("insert into term (year_number, status, start_date, end_date, enrollment_start, enrollment_end) "
                 + "values (2027, 'ACTIVE', timestamp '2027-03-01 00:00:00', timestamp '2027-12-15 00:00:00', timestamp '2000-01-01 00:00:00', timestamp '2999-12-31 00:00:00') returning id", Long.class);
         Long cohortId = jdbc.queryForObject("insert into program_cohort (program_id, term_id, plan_id, intake, admission_start, admission_end, cursada_start, "
-                + "created_by_id, created_at) "
-                + "values (?, ?, ?, 'FIRST', date '2027-01-01', date '2027-02-01', date '2027-03-01', (select min(id) from person), now()) returning id",
+                + "created_by_id, created_at, opened_at) "
+                + "values (?, ?, ?, 'FIRST', date '2027-01-01', date '2027-02-01', date '2027-03-01', (select min(id) from person), now(), now()) returning id",
                 Long.class, programId, termId, planId);
         Staff administrative = newStaff("ADMINISTRATIVO");
         CountDownLatch enrollmentInserted = new CountDownLatch(1);

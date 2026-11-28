@@ -73,6 +73,8 @@ class ProgramCohortReadinessIT extends AbstractIntegrationTest {
 
         assertThatThrownBy(() -> createCohort.createProgramTermCohort(ids[0], ids[1], request(List.of())))
                 .isInstanceOf(CohortResponsibleRequiredException.class);
+        assertThatThrownBy(() -> createCohort.createProgramTermCohort(ids[0], ids[1], request(null)))
+                .isInstanceOf(CohortResponsibleRequiredException.class);
         assertThat(jdbc.queryForObject("select count(*) from program_cohort where program_id = ?", Integer.class, ids[0])).isZero();
     }
 

@@ -5537,11 +5537,10 @@
               "format" : "int64",
               "type" : "integer"
             },
-            "minItems" : 1,
             "type" : "array"
           }
         },
-        "required" : [ "admissionEnd", "admissionStart", "cursadaStart", "intake", "responsiblePreceptorIds" ],
+        "required" : [ "admissionEnd", "admissionStart", "cursadaStart", "intake" ],
         "type" : "object"
       },
       "CreateProgramEnrollmentRequest" : {
@@ -5667,11 +5666,10 @@
               "format" : "int64",
               "type" : "integer"
             },
-            "minItems" : 1,
             "type" : "array"
           }
         },
-        "required" : [ "admissionEnd", "admissionStart", "cursadaStart", "intake", "responsiblePreceptorIds" ],
+        "required" : [ "admissionEnd", "admissionStart", "cursadaStart", "intake" ],
         "type" : "object"
       },
       "CreateProgramYearBillingTemplateRequest" : {
@@ -14238,7 +14236,7 @@
           },
           "openedAt" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "planId" : {
             "format" : "int64",
@@ -14253,7 +14251,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "admissionEnd", "admissionStart", "createdAt", "cursadaStart", "id", "intake", "openedAt", "planId", "programId", "termId" ],
+        "required" : [ "admissionEnd", "admissionStart", "createdAt", "cursadaStart", "id", "intake", "planId", "programId", "termId" ],
         "type" : "object"
       },
       "ProgramYearBillingTemplateResponse" : {
