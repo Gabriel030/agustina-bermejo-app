@@ -27,6 +27,7 @@ public final class CourseworkOutcomeCalculator {
 
     public static boolean isRebuildable(EnrollmentStatus status, FinalGradeType finalGradeType) {
         return status == EnrollmentStatus.FAILED
+                || (status == EnrollmentStatus.APPROVAL_PENDING && finalGradeType != FinalGradeType.FINAL_EXAM)
                 || (status == EnrollmentStatus.APPROVED && finalGradeType == FinalGradeType.PROMOTION);
     }
 

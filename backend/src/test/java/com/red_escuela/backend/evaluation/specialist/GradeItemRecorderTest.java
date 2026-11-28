@@ -842,9 +842,9 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
         publishLoadedItems(enrollment, instructor);
         entityManager.flush();
         entityManager.refresh(enrollment);
-        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.REGULAR);
-        assertThat(enrollment.getFinalScore()).isNull();
-        assertThat(enrollment.getFinalGradeType()).isNull();
+        assertThat(enrollment.getStatus()).isEqualTo(EnrollmentStatus.APPROVAL_PENDING);
+        assertThat(enrollment.getFinalScore().value()).isEqualByComparingTo("8.5");
+        assertThat(enrollment.getFinalGradeType()).isEqualTo(com.red_escuela.backend.enrollment.entity.FinalGradeType.PROMOTION);
     }
 
     @Test
@@ -1493,5 +1493,116 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
         entityManager.refresh(draft.enrollment());
 
         assertThat(draft.enrollment().getStatus()).isEqualTo(EnrollmentStatus.IN_PROGRESS);
+    }
+
+    @Autowired
+    private DependentSubjectApprovalReviewer dependentSubjectApprovalReviewer;
+
+    private record PendingPromotion(
+            SubjectSectionEnrollment enrollment, SubjectSectionEnrollment prerequisiteEnrollment, SubjectSection section,
+            Instructor instructor, Program program) {
+    }
+
+    private PendingPromotion promotedWithUnmetPrerequisite(String dni) {
+        Institution institution = persistInstitution();
+        Student student = persistStudent(dni, institution);
+        Instructor instructor = persistInstructor(dni + "9");
+        Subject subject = persistSubject("MateriaPendiente" + dni);
+        Subject prerequisiteSubject = persistSubject("CorrelativaPendiente" + dni);
+        Term term = persistTerm();
+        SubjectSection section = persistSection(subject, term, persistScheme(2, 0, true, 7.0));
+        SubjectSection prerequisiteSection = persistSection(prerequisiteSubject, term, persistScheme(2, 0, true, 7.0));
+        assignInstructor(section, instructor);
+        Program program = persistProgram("CarreraPendiente" + dni);
+        program.setTotalCreditsRequired(20);
+        persistProgramSubjectWithUnmetPrerequisite(program, subject, prerequisiteSubject);
+        ProgramEnrollment programEnrollment = persistProgramEnrollment(student, program);
+        SubjectSectionEnrollment enrollment = persistEnrollment(student, programEnrollment, section);
+        SubjectSectionEnrollment prerequisiteEnrollment = persistEnrollment(student, programEnrollment, prerequisiteSection);
+        prerequisiteEnrollment.setStatus(EnrollmentStatus.REGULAR);
+        entityManager.flush();
+        loadExam(enrollment, instructor, 1, 8.0);
+        loadExam(enrollment, instructor, 2, 9.0);
+        publishLoadedItems(enrollment, instructor);
+        entityManager.flush();
+        entityManager.refresh(enrollment);
+        return new PendingPromotion(enrollment, prerequisiteEnrollment, section, instructor, program);
+    }
+
+    private void changePrerequisiteStatus(PendingPromotion pending, EnrollmentStatus status, boolean approved) {
+        pending.prerequisiteEnrollment().setStatus(status);
+        entityManager.flush();
+        dependentSubjectApprovalReviewer.onSubjectApprovalStandingChanged(
+                com.red_escuela.backend.evaluation.events.SubjectApprovalStandingChangedEvent.changedFor(
+                        pending.enrollment().getProgramEnrollment().getId(),
+                        com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(pending.program()).getId(),
+                        pending.prerequisiteEnrollment().subjectId(), approved));
+        entityManager.flush();
+        entityManager.refresh(pending.enrollment());
+    }
+
+    private void persistClosure(PendingPromotion pending, com.red_escuela.backend.evaluation.entity.ClosureStatus status) {
+        entityManager.persist(com.red_escuela.backend.evaluation.entity.CommissionClosure.builder()
+                .sectionKind(com.red_escuela.backend.academicstructure.domain.SectionKind.PROGRAM)
+                .sectionId(pending.section().getId())
+                .status(status)
+                .reportNumber("1")
+                .closedAt(LocalDateTime.now())
+                .closedAutomatically(status == com.red_escuela.backend.evaluation.entity.ClosureStatus.CLOSED)
+                .build());
+        entityManager.flush();
+    }
+
+    private long graduationRequestsOf(PendingPromotion pending) {
+        entityManager.flush();
+        return entityManager.createQuery(
+                        "select count(e) from GraduationRequest e where e.programEnrollment.id = :id", Long.class)
+                .setParameter("id", pending.enrollment().getProgramEnrollment().getId())
+                .getSingleResult();
+    }
+
+    @Test
+    void promotionWithPendingPrerequisiteApprovesItselfWhenThePrerequisiteIsApprovedAndRevertsWhenItIsLost() {
+        PendingPromotion pending = promotedWithUnmetPrerequisite("71000201");
+        assertThat(pending.enrollment().getStatus()).isEqualTo(EnrollmentStatus.APPROVAL_PENDING);
+        assertThat(graduationRequestsOf(pending)).isZero();
+
+        changePrerequisiteStatus(pending, EnrollmentStatus.APPROVED, true);
+
+        assertThat(pending.enrollment().getStatus()).isEqualTo(EnrollmentStatus.APPROVED);
+        assertThat(pending.enrollment().getFinalGradeType()).isEqualTo(com.red_escuela.backend.enrollment.entity.FinalGradeType.PROMOTION);
+        assertThat(pending.enrollment().getFinalScore().value()).isEqualByComparingTo("8.5");
+        assertThat(graduationRequestsOf(pending)).isZero();
+
+        changePrerequisiteStatus(pending, EnrollmentStatus.REGULAR, false);
+
+        assertThat(pending.enrollment().getStatus()).isEqualTo(EnrollmentStatus.APPROVAL_PENDING);
+        assertThat(pending.enrollment().getFinalScore().value()).isEqualByComparingTo("8.5");
+    }
+
+    @Test
+    void approvalPendingEnrollmentOfAClosedActaRequestsGraduationWhenItApprovesItself() {
+        PendingPromotion pending = promotedWithUnmetPrerequisite("71000211");
+        persistClosure(pending, com.red_escuela.backend.evaluation.entity.ClosureStatus.CLOSED);
+
+        changePrerequisiteStatus(pending, EnrollmentStatus.APPROVED, true);
+
+        assertThat(pending.enrollment().getStatus()).isEqualTo(EnrollmentStatus.APPROVED);
+        assertThat(graduationRequestsOf(pending)).isEqualTo(1);
+    }
+
+    @Test
+    void correctingTheGradeOfAnApprovalPendingEnrollmentOfAReopenedActaRebuildsItsCondition() {
+        PendingPromotion pending = promotedWithUnmetPrerequisite("71000221");
+        persistClosure(pending, com.red_escuela.backend.evaluation.entity.ClosureStatus.REOPENED);
+        GradeItem secondExam = gradeItemRepository.findByProgramSubjectSectionEnrollmentId(pending.enrollment().getId()).stream()
+                .filter(item -> item.getSequenceNumber() == 2).findFirst().orElseThrow();
+
+        correct(secondExam, 3.0, "Error de carga");
+        entityManager.flush();
+        entityManager.refresh(pending.enrollment());
+
+        assertThat(pending.enrollment().getStatus()).isNotEqualTo(EnrollmentStatus.APPROVAL_PENDING);
+        assertThat(pending.enrollment().getFinalScore()).isNull();
     }
 }

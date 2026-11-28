@@ -272,18 +272,16 @@ public class GradeItemRecorder {
         Long programEnrollmentId = enrollment.getProgramEnrollment().getId();
         int courseworkCount = courseworkCountFinder.findExpectedCount(SectionKind.PROGRAM, enrollment.getSubjectSection().getId());
         boolean wasApproved = enrollment.getStatus() == EnrollmentStatus.APPROVED;
-        if (rebuildFromItems && isApprovedByFinalExam(enrollment)) {
-            RequirementGatedOutcome gated = outcomeCalculator.promotionPolicy().holdApprovalUntilRequirementsMet(
-                    outcomeCalculator.calculate(scheme, courseworkCount, items, EnrollmentStatus.REGULAR, maxFinalExamAttempts),
-                    unmetApprovalRequirements);
-            if (gated.forcedFinalCondition().isPresent()) {
-                revertApprovalLosingPrerequisites(enrollment);
-            }
+        if (rebuildFromItems && isFinalExamBased(enrollment)) {
+            reevaluateFinalExamApproval(enrollment, scheme, courseworkCount, items, maxFinalExamAttempts, unmetApprovalRequirements);
             return;
         }
-        Optional<CourseworkOutcome> calculated = outcomeCalculator.promotionPolicy().holdApprovalUntilRequirementsMet(
-                outcomeCalculator.calculate(scheme, courseworkCount, items, current, maxFinalExamAttempts), unmetApprovalRequirements)
-                .outcome();
+        Optional<CourseworkOutcome> calculatedOutcome =
+                outcomeCalculator.calculate(scheme, courseworkCount, items, current, maxFinalExamAttempts);
+        RequirementGatedOutcome gated =
+                outcomeCalculator.promotionPolicy().holdApprovalUntilRequirementsMet(calculatedOutcome, unmetApprovalRequirements);
+        Optional<CourseworkOutcome> calculated =
+                outcomeCalculator.promotionPolicy().keepPromotionAwaitingRequirements(calculatedOutcome, gated);
         CourseworkOutcome result = outcomeCalculator.regularityPolicy().holdWhileFree(
                 calculated,
                 current, () -> absenceFreeStatusChecker.isProgramEnrollmentFreeByAbsences(enrollmentId)).orElse(null);
@@ -299,7 +297,7 @@ public class GradeItemRecorder {
             sectionEnrollmentOutcomeRecorder.recordProgramOutcome(
                     enrollmentId, result.status(), result.finalScore(), result.finalGradeType(), finalCorrection || rebuild);
             if (result.status() == EnrollmentStatus.APPROVED) {
-                graduationRequestTrigger.requestGraduationIfEligible(programEnrollmentId);
+                requestGraduationUnlessProvisional(enrollment, result);
             } else if (losesApproval) {
                 graduationRequestTrigger.flagGraduationRequestOutdated(programEnrollmentId);
             }
@@ -309,13 +307,43 @@ public class GradeItemRecorder {
         }
     }
 
+    private void requestGraduationUnlessProvisional(SubjectSectionEnrollment enrollment, CourseworkOutcome approved) {
+        boolean provisionalPromotion = approved.isPromotion()
+                && !sectionClosureGuard.isClosed(SectionKind.PROGRAM, enrollment.getSubjectSection().getId());
+        if (!provisionalPromotion) {
+            graduationRequestTrigger.requestGraduationIfEligible(enrollment.getProgramEnrollment().getId());
+        }
+    }
+
+    private void reevaluateFinalExamApproval(
+            SubjectSectionEnrollment enrollment, EvaluationScheme scheme, int courseworkCount, List<GradeItem> items,
+            Integer maxFinalExamAttempts, Supplier<UnmetApprovalRequirements> unmetApprovalRequirements) {
+        RequirementGatedOutcome gated = outcomeCalculator.promotionPolicy().holdApprovalUntilRequirementsMet(
+                outcomeCalculator.calculate(scheme, courseworkCount, items, EnrollmentStatus.REGULAR, maxFinalExamAttempts),
+                unmetApprovalRequirements);
+        boolean pending = enrollment.getStatus() == EnrollmentStatus.APPROVAL_PENDING;
+        if (gated.forcedFinalCondition().isPresent()) {
+            if (!pending) {
+                holdFinalExamApprovalLosingRequirements(enrollment);
+            }
+            return;
+        }
+        boolean approvedAgain = gated.outcome().filter(outcome -> outcome.status() == EnrollmentStatus.APPROVED).isPresent();
+        if (pending && approvedAgain) {
+            sectionEnrollmentOutcomeRecorder.recordProgramOutcome(
+                    enrollment.getId(), EnrollmentStatus.APPROVED, enrollment.getFinalScore(), FinalGradeType.FINAL_EXAM, true);
+            graduationRequestTrigger.requestGraduationIfEligible(enrollment.getProgramEnrollment().getId());
+            publishApprovalStandingChanged(enrollment, true);
+        }
+    }
+
     private void publishApprovalStandingChanged(SubjectSectionEnrollment enrollment, boolean approved) {
         eventPublisher.publishEvent(SubjectApprovalStandingChangedEvent.changedFor(
                 enrollment.getProgramEnrollment().getId(), enrollment.getProgramEnrollment().getPlan().getId(),
                 enrollment.subjectId(), approved));
     }
 
-    private void revertApprovalLosingPrerequisites(SubjectSectionEnrollment enrollment) {
+    private void holdFinalExamApprovalLosingRequirements(SubjectSectionEnrollment enrollment) {
         Long programEnrollmentId = enrollment.getProgramEnrollment().getId();
         if (graduationRequestTrigger.isGraduationFinalized(programEnrollmentId)) {
             graduationRequestTrigger.flagGraduationRequestOutdated(programEnrollmentId);
@@ -333,7 +361,8 @@ public class GradeItemRecorder {
                 lastFinal.map(GradeItem::getId).orElse(null), lastFinal.map(GradeItem::getSequenceNumber).orElse(null),
                 enrollment.getFinalScore(), "Sistema: correlativa sin aprobar (" + unmet + ")", SectionKind.PROGRAM,
                 enrollment.getSubjectSection().getId(), enrollment.getId());
-        sectionEnrollmentOutcomeRecorder.recordProgramOutcome(enrollment.getId(), EnrollmentStatus.REGULAR, null, null, true);
+        sectionEnrollmentOutcomeRecorder.recordProgramOutcome(
+                enrollment.getId(), EnrollmentStatus.APPROVAL_PENDING, enrollment.getFinalScore(), FinalGradeType.FINAL_EXAM, true);
         graduationRequestTrigger.flagGraduationRequestOutdated(programEnrollmentId);
         publishApprovalStandingChanged(enrollment, false);
         Person student = enrollment.getStudent().getPerson();
@@ -502,8 +531,10 @@ public class GradeItemRecorder {
         finalGradeRevertAuditor.recordRevert(existing, newScore, request.reason(), kind, sectionId, enrollmentId, actorPersonId);
     }
 
-    private static boolean isApprovedByFinalExam(SubjectSectionEnrollment enrollment) {
-        return enrollment.getStatus() == EnrollmentStatus.APPROVED && enrollment.getFinalGradeType() == FinalGradeType.FINAL_EXAM;
+    private static boolean isFinalExamBased(SubjectSectionEnrollment enrollment) {
+        boolean approvedOrPending = enrollment.getStatus() == EnrollmentStatus.APPROVED
+                || enrollment.getStatus() == EnrollmentStatus.APPROVAL_PENDING;
+        return approvedOrPending && enrollment.getFinalGradeType() == FinalGradeType.FINAL_EXAM;
     }
 
     private boolean isFinalCorrection(GradeItem existing, CreateGradeItemRequest request) {

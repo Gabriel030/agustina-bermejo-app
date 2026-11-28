@@ -113,13 +113,11 @@ class ClosureOutcomeApplierTest {
     }
 
     @Test
-    void approvalPendingEnrollmentsAreNotClosedAgain() {
+    void approvalPendingEnrollmentsAreClosedAgainWhenTheActaIsReopenedAndTheGradeChanges() {
         programEnrollment(1L, EnrollmentStatus.APPROVAL_PENDING, 71L);
 
         applier.applyClosedResults(SectionKind.PROGRAM, List.of(row(1L, ClosureFinalCondition.GOES_TO_FINAL, null)));
 
-        verify(recorder, never()).recordProgramOutcome(
-                org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
-                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyBoolean());
+        verify(recorder).recordProgramOutcome(1L, EnrollmentStatus.REGULAR, null, null, true);
     }
 }

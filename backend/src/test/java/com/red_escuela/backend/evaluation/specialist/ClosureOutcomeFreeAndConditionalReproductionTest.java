@@ -9,7 +9,6 @@ import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.evaluation.api.GraduationRequestTriggerPort;
 import com.red_escuela.backend.evaluation.entity.ClosureFinalCondition;
 import com.red_escuela.backend.evaluation.entity.CommissionClosureStudent;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentMatchers;
 
@@ -57,7 +56,6 @@ class ClosureOutcomeFreeAndConditionalReproductionTest {
                 ArgumentMatchers.any(), ArgumentMatchers.any(), ArgumentMatchers.anyBoolean());
     }
 
-    @Disabled("E34-A-S1: PROMOTION_CONDITIONAL queda abierta con plazo y alerta (D1), fuera de alcance de S1")
     @Test
     void h1ConditionalPromotionStudentLeavesTheOpenStatusWhenTheClosureIsApplied() {
         applyClosureWith(ClosureFinalCondition.PROMOTION_CONDITIONAL);

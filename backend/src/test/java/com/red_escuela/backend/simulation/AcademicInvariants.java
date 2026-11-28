@@ -25,6 +25,8 @@ public final class AcademicInvariants {
     public static final String FOREIGN_KEY_ORPHAN = "FOREIGN_KEY_ORPHAN";
     public static final String APPROVAL_PENDING_WITH_REQUIREMENTS_MET = "APPROVAL_PENDING_WITH_REQUIREMENTS_MET";
 
+    public static final String GRADUATION_REQUEST_BEFORE_CLOSURE = "GRADUATION_REQUEST_BEFORE_CLOSURE";
+
     private static final String OCCUPYING = "('ENROLLED','IN_PROGRESS','REGULAR','APPROVAL_PENDING')";
     private static final String ACTIVE_ENROLLMENT = "('ENROLLED','IN_PROGRESS','REGULAR','APPROVED','FAILED')";
 
@@ -238,6 +240,17 @@ public final class AcademicInvariants {
                               and prior.id <> sse.id
                               and (prior.status = 'APPROVED'
                                    or (pr.requirement_type = 'PASSED_COURSEWORK' and prior.status in ('REGULAR', 'APPROVAL_PENDING')))))
+                    """),
+            new AcademicInvariant(GRADUATION_REQUEST_BEFORE_CLOSURE, """
+                    select cast(:today as date) as fact_day, pe.student_id as student_id,
+                           'graduation_request ' || gr.id || ' with enrollment ' || sse.id || ' promoted in section ' || sse.program_section_id || ' whose acta is not closed' as detail
+                    from graduation_request gr
+                    join program_enrollment pe on pe.id = gr.program_enrollment_id
+                    join subject_section_enrollment sse on sse.program_enrollment_id = pe.id
+                    where gr.status <> 'REJECTED' and gr.outdated_at is null
+                      and sse.status = 'APPROVED' and sse.final_grade_type = 'PROMOTION'
+                      and not exists (select 1 from commission_closure cc
+                                      where cc.section_kind = 'PROGRAM' and cc.section_id = sse.program_section_id and cc.status = 'CLOSED')
                     """),
             new AcademicInvariant(SECTION_WITHOUT_APPROVED_CYCLE, """
                     select ss.created_at::date as fact_day, cast(null as bigint) as student_id,

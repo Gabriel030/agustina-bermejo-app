@@ -59,6 +59,17 @@ public final class PromotionPolicy {
         return RequirementGatedOutcome.restrictedToFinal(new CourseworkOutcome(EnrollmentStatus.REGULAR, null, null), pendingRequirements);
     }
 
+    public Optional<CourseworkOutcome> keepPromotionAwaitingRequirements(
+            Optional<CourseworkOutcome> calculated, RequirementGatedOutcome gated) {
+        boolean awaitingRequirements = !gated.pendingRequirements().isEmpty();
+        Optional<CourseworkOutcome> promotion = calculated.filter(CourseworkOutcome::isPromotion);
+        if (!awaitingRequirements || promotion.isEmpty()) {
+            return gated.outcome();
+        }
+        return Optional.of(new CourseworkOutcome(
+                EnrollmentStatus.APPROVAL_PENDING, promotion.get().finalScore(), FinalGradeType.PROMOTION));
+    }
+
     private static boolean isPromotion(CourseworkOutcome outcome) {
         return outcome.status() == EnrollmentStatus.APPROVED && outcome.finalGradeType() == FinalGradeType.PROMOTION;
     }

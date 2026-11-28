@@ -19,6 +19,10 @@ public class SectionClosureGuard {
         }
     }
 
+    public boolean isClosed(SectionKind kind, Long sectionId) {
+        return closureStatusPort.isClosed(kind, sectionId);
+    }
+
     public boolean isReopened(SectionKind kind, Long sectionId) {
         return closureStatusPort.isReopened(kind, sectionId);
     }

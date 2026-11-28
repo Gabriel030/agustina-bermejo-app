@@ -324,7 +324,7 @@ class FinalExamApprovedPrerequisitesTest extends ExamBoardChangeFixture {
 
         gradeItemRecorder.recalculateProgramEnrollmentCondition(setup.enrollment().getId());
 
-        assertThat(statusOf(setup)).isEqualTo(EnrollmentStatus.REGULAR);
+        assertThat(statusOf(setup)).isEqualTo(EnrollmentStatus.APPROVAL_PENDING);
         assertThat(gradeItemRecorder.listByProgramEnrollment(setup.enrollment().getId())).hasSize(1);
     }
 
@@ -339,14 +339,14 @@ class FinalExamApprovedPrerequisitesTest extends ExamBoardChangeFixture {
     }
 
     @Test
-    void repeatedRecalculationKeepsTheEnrollmentRegularWhileAnApprovingFinalExistsAndPrerequisitesAreUnmet() {
+    void repeatedRecalculationKeepsTheEnrollmentApprovalPendingWhileAnApprovingFinalExistsAndPrerequisitesAreUnmet() {
         Setup setup = setup("75000101", EnrollmentStatus.APPROVED, LocalDateTime.now().minusDays(1));
         loadFinal(setup, registration(setup.board(), setup.enrollment()), "8");
         losePrerequisite(setup);
         gradeItemRecorder.recalculateProgramEnrollmentCondition(setup.enrollment().getId());
         gradeItemRecorder.recalculateProgramEnrollmentCondition(setup.enrollment().getId());
 
-        assertThat(statusOf(setup)).isEqualTo(EnrollmentStatus.REGULAR);
+        assertThat(statusOf(setup)).isEqualTo(EnrollmentStatus.APPROVAL_PENDING);
     }
 
     private GraduationRequest graduationRequest(Setup setup, GraduationRequestStatus status) {
@@ -377,7 +377,7 @@ class FinalExamApprovedPrerequisitesTest extends ExamBoardChangeFixture {
 
         gradeItemRecorder.recalculateProgramEnrollmentCondition(setup.enrollment().getId());
 
-        assertThat(statusOf(setup)).isEqualTo(EnrollmentStatus.REGULAR);
+        assertThat(statusOf(setup)).isEqualTo(EnrollmentStatus.APPROVAL_PENDING);
         assertThat(outdatedEvents()).isEqualTo(1);
         assertThat(auditRepository.findAll()).filteredOn(audit -> audit.getKind() == GradeItemAuditKind.SYSTEM_REVERT)
                 .singleElement().satisfies(audit -> {

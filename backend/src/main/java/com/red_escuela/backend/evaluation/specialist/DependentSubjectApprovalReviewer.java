@@ -19,7 +19,8 @@ import java.util.stream.Collectors;
 public class DependentSubjectApprovalReviewer {
 
     private static final List<EnrollmentStatus> REVIEWABLE_STATUSES = List.of(
-            EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVED);
+            EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR,
+            EnrollmentStatus.APPROVAL_PENDING, EnrollmentStatus.APPROVED);
 
     private final ProgramCurriculumFinder programCurriculumFinder;
     private final SectionEnrollmentFinder sectionEnrollmentFinder;

@@ -80,6 +80,8 @@ public class MultiYearSimulation {
         this.instructorId = instructorId;
     }
 
+    private final Set<Long> pendingEnrollmentIds = new java.util.HashSet<>();
+
     public void observeEachDay(java.util.function.Consumer<LocalDate> observer) {
         this.dayObserver = observer;
     }
@@ -118,6 +120,7 @@ public class MultiYearSimulation {
         long startedAt = System.currentTimeMillis();
         int days = driver.run(firstDay, lastDay, day -> {
             simulateDay(day);
+            countAutoApprovals();
             dayObserver.accept(day);
         });
         report.finish(days, System.currentTimeMillis() - startedAt);
@@ -154,6 +157,16 @@ public class MultiYearSimulation {
                 }
             }
         }
+    }
+
+    private void countAutoApprovals() {
+        List<Long> approvedNow = jdbc.queryForList(
+                "select id from subject_section_enrollment where status = 'APPROVED' and id = any (?)", Long.class,
+                (Object) pendingEnrollmentIds.toArray(new Long[0]));
+        approvedNow.forEach(id -> report.count("autoApprovals"));
+        pendingEnrollmentIds.removeAll(approvedNow);
+        pendingEnrollmentIds.addAll(jdbc.queryForList(
+                "select id from subject_section_enrollment where status = 'APPROVAL_PENDING'", Long.class));
     }
 
     private boolean isClassDay(LocalDate day) {
