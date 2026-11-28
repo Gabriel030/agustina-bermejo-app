@@ -16,6 +16,6 @@ public class ProgramCohortNotReadyException extends ConflictException implements
 
     @Override
     public Map<String, Object> details() {
-        return Map.of("missingItems", missingItems);
+        return missingItems == null ? Map.of() : Map.of("missingItems", missingItems);
     }
 }

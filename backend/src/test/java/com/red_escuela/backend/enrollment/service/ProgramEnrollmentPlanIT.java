@@ -134,6 +134,7 @@ class ProgramEnrollmentPlanIT extends AbstractIntegrationTest {
         term.setStatus(StatusType.ACTIVE);
         entityManager.persist(term);
         ProgramCohort cohort = new ProgramCohort();
+        cohort.markOpened(java.time.LocalDateTime.of(2000, 1, 1, 0, 0));
         cohort.setProgramId(program.getId());
         cohort.setTermId(term.getId());
         cohort.setIntake(CohortIntake.FIRST);
