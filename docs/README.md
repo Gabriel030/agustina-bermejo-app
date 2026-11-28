@@ -41,6 +41,8 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [reports/e18-violaciones.md](cell/reports/e18-violaciones.md) | E18 M0: violaciones de Modulith medidas, ciclos, dependencias hacia arriba y procesos a cortar | vigente |
 | [reports/e18-m5-billing.md](cell/reports/e18-m5-billing.md) | E18 M5: plan por etapas para bajar billing→enrollment y billing→academicstructure, con medición y primera rebanada | vigente |
 | [reports/e25-b2-invariantes.md](cell/reports/e25-b2-invariantes.md) | E25 B2 S1: invariantes que solo protege el código, candidatas a único parcial o CHECK, con queries de verificación | vigente |
+| [progress/1643-P3.md](cell/progress/1643-P3.md) | Estado de E34-B P3: fin de término con 14 días de gracia | vigente |
+| [handoffs/1643-P3.md](cell/handoffs/1643-P3.md) | Handoff de E34-B P3 parte 2: cierre automático de matrículas por notas | vigente |
 | `cell/progress/` | Estado de cada subtarea de la célula; se genera por rama y no se lista uno por uno | vigente |
 | [progress/921-1.md](cell/progress/921-1.md) | Estado de la subtarea 921#1 (listas de espera, consulta del personal) | vigente |
 | [progress/e2-2-4a.md](cell/progress/e2-2-4a.md) | Estado de E2 2.4a (mapa curricular del alumno: correlativas completas e inscripción vigente) | vigente |

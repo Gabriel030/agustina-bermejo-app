@@ -58,6 +58,8 @@ public interface ExamBoardRepository extends JpaRepository<ExamBoard, Long> {
 
     List<ExamBoard> findByCourseSubjectIdAndTermId(Long courseSubjectId, Long termId);
 
+    List<ExamBoard> findByStatusAndExamDateLessThanOrderByExamDate(ExamBoardStatus status, java.time.LocalDateTime before);
+
     List<ExamBoard> findBySubjectIdAndStatus(Long subjectId, ExamBoardStatus status);
 
     List<ExamBoard> findAllByOrderByExamDateDesc();

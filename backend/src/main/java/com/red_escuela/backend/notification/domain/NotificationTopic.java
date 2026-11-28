@@ -15,7 +15,8 @@ public enum NotificationTopic implements NotificationRecipient {
     PAYMENT_REVERSAL_SUPERVISION(new RoleRecipient("DIRECTOR"), new RoleRecipient("ADMINISTRATIVO")),
     BILLING_RUN_SUPERVISION(new RoleRecipient("DIRECTOR"), new RoleRecipient("ADMINISTRATIVO")),
     HOLIDAY_CALENDAR_ADMINISTRATION(new RoleRecipient("ADMINISTRATIVO")),
-    CLOSURE_SECRETARIAT(new RoleRecipient("ADMINISTRATIVO"));
+    CLOSURE_SECRETARIAT(new RoleRecipient("ADMINISTRATIVO")),
+    TERM_CLOSURE_SUPERVISION(new RoleRecipient("DIRECTOR"), new RoleRecipient("ADMINISTRATIVO"));
 
     private final List<NotificationRecipient> members;
 

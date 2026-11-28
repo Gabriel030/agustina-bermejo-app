@@ -16,6 +16,10 @@ import java.util.Optional;
 @Repository
 public interface CourseSubjectSectionRepository extends JpaRepository<CourseSubjectSection, Long> {
 
+    @Query("select new com.red_escuela.backend.academicstructure.repository.EndedSection(s.id, s.term.endDate) from CourseSubjectSection s where s.status = :status and s.term.endDate >= :from and s.term.endDate < :until")
+    List<EndedSection> findEndedByStatus(@Param("status") StatusType status, @Param("from") java.time.LocalDateTime from, @Param("until") java.time.LocalDateTime until);
+
+
     boolean existsByCode(String code);
 
     List<CourseSubjectSection> findByCourseSubjectId(Long courseSubjectId);

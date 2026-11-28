@@ -5517,6 +5517,24 @@
         "required" : [ "cadence", "description", "upfrontDiscount", "upfrontWindowEnabled", "upfrontWindowEnd", "upfrontWindowStart" ],
         "type" : "object"
       },
+      "CreatePreceptorAssignmentRequest" : {
+        "properties" : {
+          "courseSectionId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "personId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "subjectSectionId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "personId" ],
+        "type" : "object"
+      },
       "CreateProgramCohortRequest" : {
         "properties" : {
           "admissionEnd" : {
@@ -12944,6 +12962,37 @@
         "required" : [ "id", "requestedAt", "requestedByName", "requestedByPersonId", "type" ],
         "type" : "object"
       },
+      "PendingExamBoardClosureResponse" : {
+        "properties" : {
+          "daysAfterExamDate" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "examBoardId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "examDate" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "graceOver" : {
+            "type" : "boolean"
+          },
+          "registeredCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "subjectName" : {
+            "type" : "string"
+          },
+          "withoutTribunal" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "daysAfterExamDate", "examBoardId", "examDate", "graceOver", "registeredCount", "subjectName", "withoutTribunal" ],
+        "type" : "object"
+      },
       "PendingLegalAcceptancesResponse" : {
         "properties" : {
           "documents" : {
@@ -13021,6 +13070,62 @@
           }
         },
         "required" : [ "amount", "count", "parts" ],
+        "type" : "object"
+      },
+      "PendingSectionClosureResponse" : {
+        "properties" : {
+          "closureState" : {
+            "enum" : [ "NOT_STARTED", "DRAFT_AVAILABLE", "TEACHER_CONFIRMED", "REOPENED" ],
+            "type" : "string"
+          },
+          "daysAfterTermEnd" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "graceOver" : {
+            "type" : "boolean"
+          },
+          "hasPublishedGrades" : {
+            "type" : "boolean"
+          },
+          "sectionId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "sectionKind" : {
+            "type" : "string"
+          },
+          "sectionLabel" : {
+            "type" : "string"
+          },
+          "termEnd" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "required" : [ "closureState", "daysAfterTermEnd", "graceOver", "hasPublishedGrades", "sectionId", "sectionKind", "sectionLabel", "termEnd" ],
+        "type" : "object"
+      },
+      "PendingTermClosuresResponse" : {
+        "properties" : {
+          "examBoards" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PendingExamBoardClosureResponse"
+            },
+            "type" : "array"
+          },
+          "graceDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "sections" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PendingSectionClosureResponse"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "examBoards", "graceDays", "sections" ],
         "type" : "object"
       },
       "PeriodRangeResponse" : {
@@ -13297,6 +13402,31 @@
           }
         },
         "required" : [ "code", "message" ],
+        "type" : "object"
+      },
+      "PreceptorAssignmentResponse" : {
+        "properties" : {
+          "courseSectionId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "personId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "personName" : {
+            "type" : "string"
+          },
+          "subjectSectionId" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "id", "personId", "personName" ],
         "type" : "object"
       },
       "PrerequisiteResponse" : {
@@ -23697,7 +23827,7 @@
           "required" : false,
           "schema" : {
             "items" : {
-              "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED", "BROADCAST_CONFIRMED", "BROADCAST_CANCELLED", "BROADCAST_RECIPIENT_DATA_ANONYMIZED", "BROADCAST_RECIPIENTS_PURGED", "BROADCAST_COMPLETED", "WHATSAPP_API_ENABLED", "WHATSAPP_API_DISABLED", "GATEWAY_PAYMENT_AMOUNT_MISMATCH", "GATEWAY_PAYMENT_CHECKOUT_EXPIRED", "GATEWAY_PAYMENT_UNMATCHED", "GATEWAY_PAYMENT_DUPLICATE_FOR_CHECKOUT", "CERTIFICATE_EXCEPTION_DIRECT_CREATED", "CERTIFICATE_SIGNATORY_CREATED", "CERTIFICATE_SIGNATORY_UPDATED", "CERTIFICATE_SIGNATORY_PERMS_CHANGED", "CERTIFICATE_SIGNATORY_DEACTIVATED", "CERTIFICATE_SIGNATORY_ACTIVATED", "CERTIFICATE_SIGNATORY_SIGNATURE_UPLOADED", "CERTIFICATE_SIGNATORY_SIGNATURE_DELETED", "PERMISSION_GRID_CHANGED", "CALENDAR_FEED_TOKEN_ROTATED", "CALENDAR_FEED_TOKEN_REVOKED", "GRADUATION_CERTIFICATE_DOWNLOADED", "GRADUATION_CERTIFICATE_PDF_MISMATCH", "PERMISSION_SENSITIVE_CHANGED", "DOCUMENT_PDF_DOWNLOADED", "DOCUMENT_PDF_HASH_MISMATCH", "DOCUMENT_TEMPLATE_PUBLISHED", "REGULAR_CERTIFICATE_ISSUED", "REGULAR_CERTIFICATE_REVOKED", "APPROVED_SUBJECTS_CERT_ISSUED", "APPROVED_SUBJECTS_CERT_REVOKED", "EXAM_CERTIFICATE_ISSUED", "EXAM_CERTIFICATE_BATCH_ISSUED", "EXAM_CERTIFICATE_REVOKED", "DOCUMENT_GENERATED_BY_STUDENT", "DOCUMENT_SETTINGS_CHANGED", "DOCUMENT_DEBT_EXC_ISSUED", "DOCUMENT_DEBT_EXC_USED", "DOCUMENT_DEBT_EXC_EXPIRED", "DOCUMENT_DEBT_EXC_DOWNLOADED", "GRADUATION_CERTIFICATE_REVIEW_ENABLED", "GRADUATION_CERTIFICATE_REVIEW_DISABLED", "SUBJECT_EQUIVALENCE_RECORDED", "SUBJECT_EQUIVALENCE_VOIDED", "ATTENDANCE_CHANGE_DECISION_REVERTED" ],
+              "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED", "BROADCAST_CONFIRMED", "BROADCAST_CANCELLED", "BROADCAST_RECIPIENT_DATA_ANONYMIZED", "BROADCAST_RECIPIENTS_PURGED", "BROADCAST_COMPLETED", "WHATSAPP_API_ENABLED", "WHATSAPP_API_DISABLED", "GATEWAY_PAYMENT_AMOUNT_MISMATCH", "GATEWAY_PAYMENT_CHECKOUT_EXPIRED", "GATEWAY_PAYMENT_UNMATCHED", "GATEWAY_PAYMENT_DUPLICATE_FOR_CHECKOUT", "CERTIFICATE_EXCEPTION_DIRECT_CREATED", "CERTIFICATE_SIGNATORY_CREATED", "CERTIFICATE_SIGNATORY_UPDATED", "CERTIFICATE_SIGNATORY_PERMS_CHANGED", "CERTIFICATE_SIGNATORY_DEACTIVATED", "CERTIFICATE_SIGNATORY_ACTIVATED", "CERTIFICATE_SIGNATORY_SIGNATURE_UPLOADED", "CERTIFICATE_SIGNATORY_SIGNATURE_DELETED", "PERMISSION_GRID_CHANGED", "CALENDAR_FEED_TOKEN_ROTATED", "CALENDAR_FEED_TOKEN_REVOKED", "GRADUATION_CERTIFICATE_DOWNLOADED", "GRADUATION_CERTIFICATE_PDF_MISMATCH", "PERMISSION_SENSITIVE_CHANGED", "DOCUMENT_PDF_DOWNLOADED", "DOCUMENT_PDF_HASH_MISMATCH", "DOCUMENT_TEMPLATE_PUBLISHED", "REGULAR_CERTIFICATE_ISSUED", "REGULAR_CERTIFICATE_REVOKED", "APPROVED_SUBJECTS_CERT_ISSUED", "APPROVED_SUBJECTS_CERT_REVOKED", "EXAM_CERTIFICATE_ISSUED", "EXAM_CERTIFICATE_BATCH_ISSUED", "EXAM_CERTIFICATE_REVOKED", "DOCUMENT_GENERATED_BY_STUDENT", "DOCUMENT_SETTINGS_CHANGED", "DOCUMENT_DEBT_EXC_ISSUED", "DOCUMENT_DEBT_EXC_USED", "DOCUMENT_DEBT_EXC_EXPIRED", "DOCUMENT_DEBT_EXC_DOWNLOADED", "GRADUATION_CERTIFICATE_REVIEW_ENABLED", "GRADUATION_CERTIFICATE_REVIEW_DISABLED", "SUBJECT_EQUIVALENCE_RECORDED", "SUBJECT_EQUIVALENCE_VOIDED", "ATTENDANCE_CHANGE_DECISION_REVERTED", "PRECEPTOR_ASSIGNED", "PRECEPTOR_UNASSIGNED" ],
               "type" : "string"
             },
             "type" : "array"
@@ -23707,7 +23837,7 @@
           "name" : "entityType",
           "required" : false,
           "schema" : {
-            "enum" : [ "PERSON", "STUDENT", "SECTION_ENROLLMENT", "COURSE_SECTION_ENROLLMENT", "PROGRAM_ENROLLMENT", "COURSE_ENROLLMENT", "DATA_IMPORT_BATCH", "BROADCAST", "INSTITUTE_SETTING", "INVOICE", "GATEWAY_PAYMENT", "CERTIFICATE_SIGNATORY", "CERTIFICATE_EXCEPTION", "PERMISSION", "GRADUATION_CERTIFICATE", "CERTIFICATE_DOCUMENT", "CERTIFICATE_TEMPLATE", "EXAM_CERTIFICATE", "DOCUMENT_DEBT_EXCEPTION", "GRADUATION_REQUEST", "SUBJECT_EQUIVALENCE", "ATTENDANCE_CHANGE_REQUEST" ],
+            "enum" : [ "PERSON", "STUDENT", "SECTION_ENROLLMENT", "COURSE_SECTION_ENROLLMENT", "PROGRAM_ENROLLMENT", "COURSE_ENROLLMENT", "DATA_IMPORT_BATCH", "BROADCAST", "INSTITUTE_SETTING", "INVOICE", "GATEWAY_PAYMENT", "CERTIFICATE_SIGNATORY", "CERTIFICATE_EXCEPTION", "PERMISSION", "GRADUATION_CERTIFICATE", "CERTIFICATE_DOCUMENT", "CERTIFICATE_TEMPLATE", "EXAM_CERTIFICATE", "DOCUMENT_DEBT_EXCEPTION", "GRADUATION_REQUEST", "SUBJECT_EQUIVALENCE", "ATTENDANCE_CHANGE_REQUEST", "PRECEPTOR_ASSIGNMENT" ],
             "type" : "string"
           }
         }, {
@@ -37339,6 +37469,124 @@
           }
         },
         "tags" : [ "commission-closure-list-controller" ]
+      }
+    },
+    "/commission-closures/pending-term-closures" : {
+      "get" : {
+        "operationId" : "PendingTermClosure_listPendingTermClosures",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PendingTermClosuresResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "pending-term-closure-controller" ]
       }
     },
     "/commission-closures/{closureId}/export" : {
@@ -81061,7 +81309,7 @@
           "required" : false,
           "schema" : {
             "items" : {
-              "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED", "BROADCAST_CONFIRMED", "BROADCAST_CANCELLED", "BROADCAST_RECIPIENT_DATA_ANONYMIZED", "BROADCAST_RECIPIENTS_PURGED", "BROADCAST_COMPLETED", "WHATSAPP_API_ENABLED", "WHATSAPP_API_DISABLED", "GATEWAY_PAYMENT_AMOUNT_MISMATCH", "GATEWAY_PAYMENT_CHECKOUT_EXPIRED", "GATEWAY_PAYMENT_UNMATCHED", "GATEWAY_PAYMENT_DUPLICATE_FOR_CHECKOUT", "CERTIFICATE_EXCEPTION_DIRECT_CREATED", "CERTIFICATE_SIGNATORY_CREATED", "CERTIFICATE_SIGNATORY_UPDATED", "CERTIFICATE_SIGNATORY_PERMS_CHANGED", "CERTIFICATE_SIGNATORY_DEACTIVATED", "CERTIFICATE_SIGNATORY_ACTIVATED", "CERTIFICATE_SIGNATORY_SIGNATURE_UPLOADED", "CERTIFICATE_SIGNATORY_SIGNATURE_DELETED", "PERMISSION_GRID_CHANGED", "CALENDAR_FEED_TOKEN_ROTATED", "CALENDAR_FEED_TOKEN_REVOKED", "GRADUATION_CERTIFICATE_DOWNLOADED", "GRADUATION_CERTIFICATE_PDF_MISMATCH", "PERMISSION_SENSITIVE_CHANGED", "DOCUMENT_PDF_DOWNLOADED", "DOCUMENT_PDF_HASH_MISMATCH", "DOCUMENT_TEMPLATE_PUBLISHED", "REGULAR_CERTIFICATE_ISSUED", "REGULAR_CERTIFICATE_REVOKED", "APPROVED_SUBJECTS_CERT_ISSUED", "APPROVED_SUBJECTS_CERT_REVOKED", "EXAM_CERTIFICATE_ISSUED", "EXAM_CERTIFICATE_BATCH_ISSUED", "EXAM_CERTIFICATE_REVOKED", "DOCUMENT_GENERATED_BY_STUDENT", "DOCUMENT_SETTINGS_CHANGED", "DOCUMENT_DEBT_EXC_ISSUED", "DOCUMENT_DEBT_EXC_USED", "DOCUMENT_DEBT_EXC_EXPIRED", "DOCUMENT_DEBT_EXC_DOWNLOADED", "GRADUATION_CERTIFICATE_REVIEW_ENABLED", "GRADUATION_CERTIFICATE_REVIEW_DISABLED", "SUBJECT_EQUIVALENCE_RECORDED", "SUBJECT_EQUIVALENCE_VOIDED", "ATTENDANCE_CHANGE_DECISION_REVERTED" ],
+              "enum" : [ "STAFF_WITHDRAWN", "STAFF_REACTIVATED", "STAFF_CREATED", "PASSWORD_RESET_REQUESTED", "PASSWORD_RESET_COMPLETED", "PASSWORD_CHANGED", "STUDENT_WITHDRAWN", "STUDENT_REACTIVATED", "ENROLLMENT_WITHDRAWN_BY_STAFF", "ENROLLMENT_SECTION_CHANGED_BY_STAFF", "DATA_IMPORT_CREATED", "DATA_IMPORT_COMMITTED", "DATA_IMPORT_RETRIED", "DATA_IMPORT_SEALED", "DATA_IMPORT_ROLLED_BACK", "DATA_IMPORT_ROLLBACK_BLOCKED", "DATA_IMPORT_REPORT_DOWNLOADED", "CONTACT_CONSENT_GRANTED", "CONTACT_CONSENT_REVOKED", "WAITLIST_PROMOTED_AUTOMATICALLY", "WAITLIST_PROMOTED_BY_STAFF", "WAITLIST_PRIORITIZED_BY_STAFF", "WAITLIST_REMOVED_BY_STAFF", "WAITLIST_EXPIRED", "BROADCAST_CONFIRMED", "BROADCAST_CANCELLED", "BROADCAST_RECIPIENT_DATA_ANONYMIZED", "BROADCAST_RECIPIENTS_PURGED", "BROADCAST_COMPLETED", "WHATSAPP_API_ENABLED", "WHATSAPP_API_DISABLED", "GATEWAY_PAYMENT_AMOUNT_MISMATCH", "GATEWAY_PAYMENT_CHECKOUT_EXPIRED", "GATEWAY_PAYMENT_UNMATCHED", "GATEWAY_PAYMENT_DUPLICATE_FOR_CHECKOUT", "CERTIFICATE_EXCEPTION_DIRECT_CREATED", "CERTIFICATE_SIGNATORY_CREATED", "CERTIFICATE_SIGNATORY_UPDATED", "CERTIFICATE_SIGNATORY_PERMS_CHANGED", "CERTIFICATE_SIGNATORY_DEACTIVATED", "CERTIFICATE_SIGNATORY_ACTIVATED", "CERTIFICATE_SIGNATORY_SIGNATURE_UPLOADED", "CERTIFICATE_SIGNATORY_SIGNATURE_DELETED", "PERMISSION_GRID_CHANGED", "CALENDAR_FEED_TOKEN_ROTATED", "CALENDAR_FEED_TOKEN_REVOKED", "GRADUATION_CERTIFICATE_DOWNLOADED", "GRADUATION_CERTIFICATE_PDF_MISMATCH", "PERMISSION_SENSITIVE_CHANGED", "DOCUMENT_PDF_DOWNLOADED", "DOCUMENT_PDF_HASH_MISMATCH", "DOCUMENT_TEMPLATE_PUBLISHED", "REGULAR_CERTIFICATE_ISSUED", "REGULAR_CERTIFICATE_REVOKED", "APPROVED_SUBJECTS_CERT_ISSUED", "APPROVED_SUBJECTS_CERT_REVOKED", "EXAM_CERTIFICATE_ISSUED", "EXAM_CERTIFICATE_BATCH_ISSUED", "EXAM_CERTIFICATE_REVOKED", "DOCUMENT_GENERATED_BY_STUDENT", "DOCUMENT_SETTINGS_CHANGED", "DOCUMENT_DEBT_EXC_ISSUED", "DOCUMENT_DEBT_EXC_USED", "DOCUMENT_DEBT_EXC_EXPIRED", "DOCUMENT_DEBT_EXC_DOWNLOADED", "GRADUATION_CERTIFICATE_REVIEW_ENABLED", "GRADUATION_CERTIFICATE_REVIEW_DISABLED", "SUBJECT_EQUIVALENCE_RECORDED", "SUBJECT_EQUIVALENCE_VOIDED", "ATTENDANCE_CHANGE_DECISION_REVERTED", "PRECEPTOR_ASSIGNED", "PRECEPTOR_UNASSIGNED" ],
               "type" : "string"
             },
             "type" : "array"
@@ -81071,7 +81319,7 @@
           "name" : "entityType",
           "required" : false,
           "schema" : {
-            "enum" : [ "PERSON", "STUDENT", "SECTION_ENROLLMENT", "COURSE_SECTION_ENROLLMENT", "PROGRAM_ENROLLMENT", "COURSE_ENROLLMENT", "DATA_IMPORT_BATCH", "BROADCAST", "INSTITUTE_SETTING", "INVOICE", "GATEWAY_PAYMENT", "CERTIFICATE_SIGNATORY", "CERTIFICATE_EXCEPTION", "PERMISSION", "GRADUATION_CERTIFICATE", "CERTIFICATE_DOCUMENT", "CERTIFICATE_TEMPLATE", "EXAM_CERTIFICATE", "DOCUMENT_DEBT_EXCEPTION", "GRADUATION_REQUEST", "SUBJECT_EQUIVALENCE", "ATTENDANCE_CHANGE_REQUEST" ],
+            "enum" : [ "PERSON", "STUDENT", "SECTION_ENROLLMENT", "COURSE_SECTION_ENROLLMENT", "PROGRAM_ENROLLMENT", "COURSE_ENROLLMENT", "DATA_IMPORT_BATCH", "BROADCAST", "INSTITUTE_SETTING", "INVOICE", "GATEWAY_PAYMENT", "CERTIFICATE_SIGNATORY", "CERTIFICATE_EXCEPTION", "PERMISSION", "GRADUATION_CERTIFICATE", "CERTIFICATE_DOCUMENT", "CERTIFICATE_TEMPLATE", "EXAM_CERTIFICATE", "DOCUMENT_DEBT_EXCEPTION", "GRADUATION_REQUEST", "SUBJECT_EQUIVALENCE", "ATTENDANCE_CHANGE_REQUEST", "PRECEPTOR_ASSIGNMENT" ],
             "type" : "string"
           }
         }, {
@@ -82076,6 +82324,390 @@
           }
         },
         "tags" : [ "platform-provisioning-controller" ]
+      }
+    },
+    "/preceptor-assignments" : {
+      "get" : {
+        "operationId" : "PreceptorAssignment_list",
+        "parameters" : [ {
+          "in" : "query",
+          "name" : "subjectSectionId",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "courseSectionId",
+          "required" : false,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/PreceptorAssignmentResponse"
+                  },
+                  "type" : "array"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "preceptor-assignment-controller" ]
+      },
+      "post" : {
+        "operationId" : "PreceptorAssignment_assign",
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/CreatePreceptorAssignmentRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "201" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PreceptorAssignmentResponse"
+                }
+              }
+            },
+            "description" : "Created"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "preceptor-assignment-controller" ]
+      }
+    },
+    "/preceptor-assignments/{id}" : {
+      "delete" : {
+        "operationId" : "PreceptorAssignment_unassign",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "204" : {
+            "description" : "No Content"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "preceptor-assignment-controller" ]
       }
     },
     "/price-versions/{priceVersionId}/cancellation" : {
