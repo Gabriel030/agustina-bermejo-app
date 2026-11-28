@@ -15,9 +15,9 @@ public class ProgramPlanSubjectGuard {
         this.programCurriculumFinder = programCurriculumFinder;
     }
 
-    public void requireSubjectInPlan(Long programId, Long subjectId) {
-        if (!programCurriculumFinder.subjectBelongsToProgram(programId, subjectId)) {
-            throw new SubjectNotInProgramPlanException(subjectId, programId);
+    public void requireSubjectInPlan(ProgramEnrollment enrollment, Long subjectId) {
+        if (!programCurriculumFinder.subjectBelongsToPlan(enrollment.getPlan().getId(), subjectId)) {
+            throw new SubjectNotInProgramPlanException(subjectId, enrollment.getProgram().getId());
         }
     }
 

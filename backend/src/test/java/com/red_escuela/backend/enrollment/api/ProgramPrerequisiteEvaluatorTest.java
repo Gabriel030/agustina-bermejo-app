@@ -6,6 +6,7 @@ import com.red_escuela.backend.academicstructure.api.PrerequisiteView;
 import com.red_escuela.backend.academicstructure.api.ProgramCurriculumFinder;
 import com.red_escuela.backend.academicstructure.api.ProgramSubjectView;
 import com.red_escuela.backend.academicstructure.domain.RequirementType;
+import com.red_escuela.backend.academicstructure.entity.CurriculumPlan;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ExceptionType;
@@ -42,6 +43,7 @@ class ProgramPrerequisiteEvaluatorTest {
 
     private static final Long ENROLLMENT_ID = 5L;
     private static final Long PROGRAM_ID = 9L;
+    private static final Long PLAN_ID = 17L;
     private static final Long SUBJECT_ID = 30L;
     private static final Long PROGRAM_SUBJECT_ID = 300L;
 
@@ -61,10 +63,13 @@ class ProgramPrerequisiteEvaluatorTest {
         when(sectionRepository.findPrerequisiteStatusRows(any(), any(), any())).thenReturn(studentRows);
         ProgramEnrollment enrollment = mock(ProgramEnrollment.class);
         Program program = mock(Program.class);
+        CurriculumPlan plan = mock(CurriculumPlan.class);
         when(enrollmentRepository.findById(ENROLLMENT_ID)).thenReturn(Optional.of(enrollment));
         when(enrollment.getProgram()).thenReturn(program);
+        when(enrollment.getPlan()).thenReturn(plan);
+        when(plan.getId()).thenReturn(PLAN_ID);
         when(program.getId()).thenReturn(PROGRAM_ID);
-        when(curriculumFinder.findProgramSubject(PROGRAM_ID, SUBJECT_ID)).thenReturn(Optional.of(
+        when(curriculumFinder.findProgramSubjectOfPlan(PLAN_ID, SUBJECT_ID)).thenReturn(Optional.of(
                 new ProgramSubjectView(PROGRAM_SUBJECT_ID, SUBJECT_ID, "Algebra II", 4, 1, null, null)));
     }
 
@@ -173,7 +178,7 @@ class ProgramPrerequisiteEvaluatorTest {
 
     @Test
     void aSubjectOutsideThePlanDoesNotBlockApproval() {
-        when(curriculumFinder.findProgramSubject(PROGRAM_ID, 99L)).thenReturn(Optional.empty());
+        when(curriculumFinder.findProgramSubjectOfPlan(PLAN_ID, 99L)).thenReturn(Optional.empty());
 
         assertThat(evaluator.areAllApprovedOrWaivedOrSubjectOutsidePlan(ENROLLMENT_ID, 99L)).isTrue();
     }
@@ -187,7 +192,7 @@ class ProgramPrerequisiteEvaluatorTest {
 
     @Test
     void aSubjectOutsideThePlanIsRejectedEvenWhenAWaiverExists() {
-        when(curriculumFinder.findProgramSubject(PROGRAM_ID, 99L)).thenReturn(Optional.empty());
+        when(curriculumFinder.findProgramSubjectOfPlan(PLAN_ID, 99L)).thenReturn(Optional.empty());
         when(approvalRepository.hasApproved(ENROLLMENT_ID, 99L, ExceptionType.PREREQUISITE_WAIVER)).thenReturn(true);
 
         assertThatThrownBy(() -> evaluator.assess(ENROLLMENT_ID, 99L)).isInstanceOf(SubjectNotInProgramPlanException.class);
@@ -218,7 +223,7 @@ class ProgramPrerequisiteEvaluatorTest {
 
     @Test
     void allMetIsTrueForASubjectOutsideThePlan() {
-        when(curriculumFinder.findProgramSubject(PROGRAM_ID, 99L)).thenReturn(Optional.empty());
+        when(curriculumFinder.findProgramSubjectOfPlan(PLAN_ID, 99L)).thenReturn(Optional.empty());
 
         assertThat(evaluator.areAllMetOrSubjectOutsidePlan(ENROLLMENT_ID, 99L)).isTrue();
     }
@@ -246,7 +251,7 @@ class ProgramPrerequisiteEvaluatorTest {
 
     @Test
     void unmetForApprovalIsEmptyWhenTheSubjectIsOutsideThePlan() {
-        when(curriculumFinder.findProgramSubject(PROGRAM_ID, 99L)).thenReturn(Optional.empty());
+        when(curriculumFinder.findProgramSubjectOfPlan(PLAN_ID, 99L)).thenReturn(Optional.empty());
 
         assertThat(evaluator.findUnmetForApprovalOrEmptyOutsidePlan(ENROLLMENT_ID, 99L)).isEmpty();
     }
@@ -437,7 +442,7 @@ class ProgramPrerequisiteEvaluatorTest {
 
     @Test
     void finalExamIsEmptyWhenTheSubjectIsOutsideThePlan() {
-        when(curriculumFinder.findProgramSubject(PROGRAM_ID, 99L)).thenReturn(Optional.empty());
+        when(curriculumFinder.findProgramSubjectOfPlan(PLAN_ID, 99L)).thenReturn(Optional.empty());
 
         assertThat(evaluator.findUnmetForFinalExamOrEmptyOutsidePlan(ENROLLMENT_ID, 99L)).isEmpty();
     }
