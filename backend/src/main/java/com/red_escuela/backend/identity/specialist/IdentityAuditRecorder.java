@@ -3,6 +3,7 @@ package com.red_escuela.backend.identity.specialist;
 import com.red_escuela.backend.identity.domain.PermissionModuleMode;
 import com.red_escuela.backend.identity.dto.WithdrawStudentRequest;
 import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.entity.PreceptorAssignment;
 import com.red_escuela.backend.shared.audit.AuditAction;
 import com.red_escuela.backend.shared.audit.AuditEntityType;
 import com.red_escuela.backend.shared.audit.AuditRecord;
@@ -24,6 +25,23 @@ public class IdentityAuditRecorder {
     public void recordPasswordResetCompleted(Person person) {
         auditTrail.record(new AuditRecord(AuditAction.PASSWORD_RESET_COMPLETED, AuditEntityType.PERSON,
                 person.getId(), null, null, null));
+    }
+
+    public void recordPreceptorAssigned(PreceptorAssignment assignment) {
+        auditTrail.record(new AuditRecord(AuditAction.PRECEPTOR_ASSIGNED, AuditEntityType.PRECEPTOR_ASSIGNMENT,
+                assignment.getId(), null, describe(assignment), null));
+    }
+
+    public void recordPreceptorUnassigned(PreceptorAssignment assignment) {
+        auditTrail.record(new AuditRecord(AuditAction.PRECEPTOR_UNASSIGNED, AuditEntityType.PRECEPTOR_ASSIGNMENT,
+                assignment.getId(), describe(assignment), null, null));
+    }
+
+    private String describe(PreceptorAssignment assignment) {
+        String section = assignment.getSubjectSectionId() != null
+                ? "subjectSectionId=" + assignment.getSubjectSectionId()
+                : "courseSectionId=" + assignment.getCourseSectionId();
+        return "personId=" + assignment.getPersonId() + ";" + section;
     }
 
     public void recordStaffCreated(Person person, String initialRole) {
