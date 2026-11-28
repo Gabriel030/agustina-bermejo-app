@@ -129,5 +129,62 @@ class EpicBoardTest(unittest.TestCase):
         self.assertEqual(row.count('`'), 2)
 
 
+INFER_CONFIG = {
+    'ignored_head_prefixes': ['backport/', 'release/', 'dependabot/'],
+    'epics': [
+        {'id': 'E34-B', 'refs': ['e34-b'], 'issues': [1643]},
+        {'id': 'E34-C', 'refs': ['e34-c'], 'issues': [1650]},
+        {'id': 'E18-S6', 'refs': ['e18-s6'], 'issues': [1696]},
+        {'id': 'E23'},
+    ],
+}
+
+
+class InferEpicTest(unittest.TestCase):
+    def infer(self, head_ref='feat/x', title='t', body='', labels=(), number=1800):
+        directory = tempfile.mkdtemp()
+        with open(os.path.join(directory, 'config.json'), 'w') as handle:
+            json.dump(INFER_CONFIG, handle)
+        with open(os.path.join(directory, 'pr.json'), 'w') as handle:
+            json.dump({'number': number, 'title': title, 'body': body, 'head_ref': head_ref, 'labels': list(labels)}, handle)
+        result = subprocess.run([SCRIPT, 'infer', directory], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        return result.stdout.strip()
+
+    def test_existing_epic_label_is_kept(self):
+        self.assertEqual(self.infer(head_ref='feat/e34-c-f2', labels=['epic:E23']), 'keep')
+
+    def test_branch_segment_selects_epic(self):
+        self.assertEqual(self.infer(head_ref='feat/e34-c-f2-courses'), 'label E34-C')
+
+    def test_branch_ref_needs_token_boundary(self):
+        self.assertEqual(self.infer(head_ref='feat/e34-cc-x'), 'none')
+
+    def test_branch_wins_over_issue_reference(self):
+        self.assertEqual(self.infer(head_ref='fix/e34-b-p3', body='Refs #1650'), 'label E34-B')
+
+    def test_refs_in_body_selects_epic(self):
+        self.assertEqual(self.infer(body='Closes #1696'), 'label E18-S6')
+
+    def test_issue_in_title_parentheses_selects_epic(self):
+        self.assertEqual(self.infer(title='feat: algo (#1643)'), 'label E34-B')
+
+    def test_issue_number_prefix_does_not_match(self):
+        self.assertEqual(self.infer(body='Refs #16430'), 'none')
+
+    def test_own_pr_number_is_not_an_issue(self):
+        self.assertEqual(self.infer(title='feat (#1650)', number=1650), 'none')
+
+    def test_two_epics_from_issues_is_ambiguous(self):
+        self.assertEqual(self.infer(body='Refs #1643 y Refs #1650'), 'none')
+
+    def test_not_inferable(self):
+        self.assertEqual(self.infer(head_ref='feat/misc', body='Refs #999'), 'none')
+
+    def test_ignored_prefixes_are_skipped(self):
+        for ref in ('backport/x', 'release/12-rc', 'dependabot/npm/y'):
+            self.assertEqual(self.infer(head_ref=ref, body='Refs #1643'), 'ignore')
+
+
 if __name__ == '__main__':
     unittest.main()

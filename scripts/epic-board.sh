@@ -5,6 +5,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/cell-board.sh"
 
 EPIC_MARKER='<!-- epic-board -->'
 MISSING_MARKER='<!-- epic-board-missing -->'
+AUTOLABEL_MARKER='<!-- epic-autolabel-missing -->'
 EPIC_CONFIG="${EPIC_BOARD_CONFIG:-.github/epic-board.json}"
 
 collect_epics() {
@@ -114,14 +115,60 @@ create_epic_labels() {
   done
 }
 
+infer_epic() {
+  local dir="$1"
+  jq -r --slurpfile cfg "$dir/config.json" '
+    def tok($s; $r): ($s | ascii_downcase) | test("(^|[^a-z0-9])" + ($r | ascii_downcase) + "($|[^a-z0-9])");
+    def only($c): ($c | map(.id) | unique) as $ids | if ($ids | length) == 1 then $ids[0] else null end;
+    $cfg[0] as $c
+    | . as $pr
+    | if ([$c.ignored_head_prefixes[] | . as $x | $pr.head_ref | startswith($x)] | any) then "ignore"
+      elif ([$pr.labels[] | ascii_downcase | startswith("epic:")] | any) then "keep"
+      else
+        ([ $c.epics[] | . as $e | ($e.refs // [])[] | select(tok($pr.head_ref; .)) | {id: $e.id, len: length} ]) as $b
+        | (if ($b | length) == 0 then null else only($b | (map(.len) | max) as $m | map(select(.len == $m))) end) as $byBranch
+        | ((($pr.title // "") + "\n" + ($pr.body // ""))) as $text
+        | ([ $c.epics[] | . as $e | ($e.issues // [])[] | tostring as $n
+            | select($n != ($pr.number | tostring))
+            | select($text | test("(\\b(refs?|closes?|closed|fix(es|ed)?|resolves?|resolved)\\b:? *#" + $n + "(?![0-9])|\\(#" + $n + "\\))"; "i"))
+            | {id: $e.id} ]) as $i
+        | (if ($b | length) > 0 then $byBranch else only($i) end) as $found
+        | if $found == null then "none" else "label " + $found end
+      end' "$dir/pr.json"
+}
+
+autolabel_pr() {
+  local dir="$1" number="$2" result body_file posted
+  mkdir -p "$dir"
+  cp "$EPIC_CONFIG" "$dir/config.json"
+  api "repos/$REPO/pulls/$number" \
+    | jq '{number, title, body, head_ref: .head.ref, merged, labels: [.labels[].name]}' > "$dir/pr.json"
+  [ "$(jq -r '.merged' "$dir/pr.json")" = false ] || return 0
+  result=$(infer_epic "$dir")
+  case "$result" in
+    label\ *)
+      ensure_label "epic:${result#label }" "C5DEF5"
+      api "repos/$REPO/issues/$number/labels" -f "labels[]=epic:${result#label }" >/dev/null ;;
+    none)
+      posted=$(api_stream "repos/$REPO/issues/$number/comments?per_page=100" \
+        | jq -r --arg m "$AUTOLABEL_MARKER" '[.[] | select(.body | contains($m))] | length')
+      [ "$posted" -eq 0 ] || return 0
+      body_file="$dir/autolabel.md"
+      printf '%s\nNo pude inferir la épica de este PR. Agregá la etiqueta `epic:<id>` (por ejemplo `epic:E23`) o usá una rama con el prefijo de la épica (`e34-c`) o `Refs #<issue>` de una rebanada del catálogo.\n' "$AUTOLABEL_MARKER" > "$body_file"
+      api "repos/$REPO/issues/$number/comments" -F body=@"$body_file" >/dev/null ;;
+  esac
+}
+
 main() {
   local cmd="${1:-publish}" dir="${2:-$(mktemp -d)}"
   case "$cmd" in
     collect) collect_epics "$dir" ;;
     render) render_epics "$dir" ;;
     labels) create_epic_labels ;;
+    infer) infer_epic "${2:?dir}" ;;
+    autolabel) autolabel_pr "$dir" "${PR_NUMBER:?PR_NUMBER}" ;;
     publish) collect_epics "$dir"; publish_epics "$dir" ;;
-    *) echo "uso: epic-board.sh collect|render|labels|publish [dir]" >&2; exit 2 ;;
+    *) echo "uso: epic-board.sh collect|render|labels|infer|autolabel|publish [dir]" >&2; exit 2 ;;
   esac
 }
 
