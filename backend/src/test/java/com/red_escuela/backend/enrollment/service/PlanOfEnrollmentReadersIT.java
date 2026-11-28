@@ -211,6 +211,33 @@ class PlanOfEnrollmentReadersIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void subjectOnlyInTheCurrentPlanHasNoPrerequisitesForAnEnrollmentOfTheOlderPlan() {
+        Program program = persistProgram("Carrera con materia nueva");
+        Subject algebra = persistSubject("Álgebra");
+        addToProgram(program, algebra, 1);
+        ProgramCohort cohort = persistOpenCohort(program);
+        Student student = persistStudent("72000003");
+        entityManager.flush();
+        ProgramEnrollment enrollment = programEnrollmentService.enroll(student.getId(),
+                new CreateProgramEnrollmentRequest(program.getId(), cohort.getId()));
+        Subject onlyInNewPlan = persistSubject("Estadística");
+        CurriculumPlanResponse draft = createCurriculumPlanUseCase.createDraftVersion(program.getId(),
+                new CreateCurriculumPlanRequest("Plan nuevo", LocalDate.now(clock), null, null, null, cohort.getPlan().getId()));
+        ProgramSubject newEntry = programSubjectService.addSubjectToPlan(draft.id(), new CreateProgramSubjectRequest(
+                onlyInNewPlan.getId(), ProgramSubjectCategory.MANDATORY, 2, CurricularTerm.FIRST, 10, null, null, null));
+        Long algebraEntryInNewPlan = programCurriculumFinder.findProgramSubjectOfPlan(draft.id(), algebra.getId()).orElseThrow().id();
+        programSubjectService.addPrerequisite(newEntry.getId(),
+                new AddPrerequisiteRequest(algebraEntryInNewPlan, RequirementType.APPROVED, null, null));
+        activateCurriculumPlanUseCase.activate(draft.id());
+        entityManager.flush();
+
+        PrerequisiteBatchResult result = prerequisiteBatchEvaluator.assessAll(
+                List.of(new PrerequisiteBatchQuery(1L, enrollment.getId(), onlyInNewPlan.getId()))).get(1L);
+
+        assertThat(result.details()).isEmpty();
+    }
+
+    @Test
     void equivalenceLabelsComeFromThePlanOfTheEnrollmentEvenWhenTheCurrentPlanDroppedTheSubject() {
         Program program = persistProgram("Carrera con materia dada de baja");
         Subject biology = persistSubject("Biología");
