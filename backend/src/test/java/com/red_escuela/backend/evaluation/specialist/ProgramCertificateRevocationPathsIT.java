@@ -11,6 +11,7 @@ import com.red_escuela.backend.enrollment.entity.ExceptionType;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
+import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentRequiredException;
 import com.red_escuela.backend.enrollment.repository.DirectorApprovalRequestRepository;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import com.red_escuela.backend.evaluation.dto.CorrectGradeItemRequest;
@@ -287,6 +288,6 @@ class ProgramCertificateRevocationPathsIT extends AbstractIntegrationTest {
         programEnrollmentService.withdrawForNonpayment(setup.enrollment().getProgramEnrollment().getId());
         entityManager.flush();
 
-        assertThatThrownBy(() -> loadFinal(setup, board, 7.0, null)).isInstanceOf(RuntimeException.class);
+        assertThatThrownBy(() -> loadFinal(setup, board, 7.0, null)).isInstanceOf(ProgramEnrollmentRequiredException.class);
     }
 }

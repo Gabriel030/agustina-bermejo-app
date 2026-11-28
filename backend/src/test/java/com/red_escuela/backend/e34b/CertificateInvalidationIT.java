@@ -8,19 +8,25 @@ import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.FinalGradeType;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
+import com.red_escuela.backend.enrollment.entity.SubjectEquivalence;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.service.EnrollmentChange;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import com.red_escuela.backend.enrollment.service.SubjectSectionEnrollmentService;
+import com.red_escuela.backend.enrollment.service.VoidSubjectEquivalenceTransaction;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.Grade;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -32,6 +38,8 @@ class CertificateInvalidationIT extends ReproductionFixture {
     private SubjectSectionEnrollmentService subjectSectionEnrollmentService;
     @Autowired
     private SectionEnrollmentOutcomeRecorder outcomeRecorder;
+    @Autowired
+    private VoidSubjectEquivalenceTransaction voidSubjectEquivalenceTransaction;
     @Autowired
     private ApplicationEventPublisher eventPublisher;
 
@@ -305,5 +313,62 @@ class CertificateInvalidationIT extends ReproductionFixture {
         assertThat(rows.auditEntries("REGULAR_CERTIFICATE_REVOKED", certificateId)).isEqualTo(1);
         assertThat(rows.auditActor("REGULAR_CERTIFICATE_REVOKED", certificateId)).isNull();
         assertThat(rows.revocationReasonOfRegular(certificateId)).isNotBlank();
+    }
+
+    private SubjectEquivalence equivalence(ProgramEnrollment enrollment, Subject subject) {
+        SubjectEquivalence equivalence = new SubjectEquivalence();
+        equivalence.setProgramEnrollment(enrollment);
+        equivalence.setSubjectId(subject.getId());
+        equivalence.setOriginInstitution("Otra institución");
+        equivalence.setOriginSubjectName("Algebra I");
+        equivalence.setRecognizedOn(LocalDate.now());
+        equivalence.setResolutionNumber("R-1");
+        equivalence.setReason("Equivalencia");
+        equivalence.setRecordedById(enrollment.getStudent().getPerson().getId());
+        equivalence.setRecordedAt(LocalDateTime.now());
+        entityManager.persist(equivalence);
+        return equivalence;
+    }
+
+    private void voidEquivalence(ProgramEnrollment enrollment, SubjectEquivalence equivalence) {
+        SecurityContextHolder.getContext().setAuthentication(new UsernamePasswordAuthenticationToken(
+                enrollment.getStudent().getPerson().getId().toString(), null, List.of()));
+        try {
+            voidSubjectEquivalenceTransaction.voidEquivalence(enrollment.getId(), equivalence.getId(), "Se cargó sobre la materia equivocada");
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+        flushAndClear();
+    }
+
+    @Test
+    void voidingAnEquivalenceRevokesTheValidApprovedSubjectsCertificate() {
+        ProgramEnrollment enrollment = enrolled();
+        SubjectEquivalence equivalence = equivalence(enrollment, subject("Algebra"));
+        Long certificateId = rows.validApprovedSubjects(enrollment.getStudent().getId(), enrollment.getId(), person().getId());
+        flushAndClear();
+
+        voidEquivalence(enrollment, entityManager.find(SubjectEquivalence.class, equivalence.getId()));
+
+        assertThat(rows.approvedSubjectsStatus(certificateId)).isEqualTo("REVOKED");
+        assertThat(rows.auditEntries("APPROVED_SUBJECTS_CERT_REVOKED", certificateId)).isEqualTo(1);
+    }
+
+    @Test
+    void voidingAnEquivalenceDoesNotRevokeAgainAnAlreadyRevokedOrExpiredCertificate() {
+        ProgramEnrollment enrollment = enrolled();
+        SubjectEquivalence equivalence = equivalence(enrollment, subject("Algebra"));
+        Long revokedId = rows.validApprovedSubjects(enrollment.getStudent().getId(), enrollment.getId(), person().getId());
+        Long expiredId = rows.validApprovedSubjects(enrollment.getStudent().getId(), enrollment.getId(), person().getId());
+        rows.markApprovedSubjectsAs(revokedId, "REVOKED");
+        rows.markApprovedSubjectsAs(expiredId, "EXPIRED");
+        flushAndClear();
+
+        voidEquivalence(enrollment, entityManager.find(SubjectEquivalence.class, equivalence.getId()));
+
+        assertThat(rows.approvedSubjectsStatus(revokedId)).isEqualTo("REVOKED");
+        assertThat(rows.approvedSubjectsStatus(expiredId)).isEqualTo("EXPIRED");
+        assertThat(rows.auditEntries("APPROVED_SUBJECTS_CERT_REVOKED", revokedId)).isZero();
+        assertThat(rows.auditEntries("APPROVED_SUBJECTS_CERT_REVOKED", expiredId)).isZero();
     }
 }

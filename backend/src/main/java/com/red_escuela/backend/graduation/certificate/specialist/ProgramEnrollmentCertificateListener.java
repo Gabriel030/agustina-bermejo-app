@@ -2,6 +2,7 @@ package com.red_escuela.backend.graduation.certificate.specialist;
 
 import com.red_escuela.backend.enrollment.events.ProgramEnrollmentWithdrawnEvent;
 import com.red_escuela.backend.enrollment.events.ProgramSectionStatusChangedEvent;
+import com.red_escuela.backend.enrollment.events.SubjectEquivalenceVoidedEvent;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.specialist.ApprovedSubjectsEnrollmentCertificateRevoker;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularityKind;
 import com.red_escuela.backend.graduation.certificate.regular.specialist.RegularEnrollmentCertificateRevoker;
@@ -14,6 +15,7 @@ import org.springframework.stereotype.Component;
 public class ProgramEnrollmentCertificateListener {
 
     static final String WITHDRAWN_REASON = "La matrícula de la carrera fue dada de baja";
+    static final String EQUIVALENCE_VOIDED_REASON = "Se anuló una equivalencia después de emitida la constancia";
     static final String APPROVAL_CHANGED_REASON = "La aprobación de una materia cambió después de emitida la constancia";
 
     private final RegularEnrollmentCertificateRevoker regularRevoker;
@@ -46,5 +48,10 @@ public class ProgramEnrollmentCertificateListener {
         if (event.statusChanged()) {
             regularityLossRevoker.revokeIfNoLongerRegular(RegularityKind.PROGRAM, event.programEnrollmentId());
         }
+    }
+
+    @EventListener
+    public void onSubjectEquivalenceVoided(SubjectEquivalenceVoidedEvent event) {
+        approvedSubjectsRevoker.revokeValidCertificates(event.programEnrollmentId(), EQUIVALENCE_VOIDED_REASON);
     }
 }
