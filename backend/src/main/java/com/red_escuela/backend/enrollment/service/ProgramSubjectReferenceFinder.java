@@ -3,6 +3,7 @@ package com.red_escuela.backend.enrollment.service;
 import com.red_escuela.backend.academicstructure.api.AcademicReferenceFinder;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Subject;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -21,9 +22,9 @@ public class ProgramSubjectReferenceFinder {
         return academicReferenceFinder.findProgram(programId);
     }
 
-    public Subject findSubjectInProgramPlan(Long programId, Long subjectId) {
+    public Subject findSubjectInProgramPlan(ProgramEnrollment enrollment, Long subjectId) {
         Subject subject = academicReferenceFinder.findSubject(subjectId);
-        programPlanSubjectGuard.requireSubjectInPlan(programId, subject.getId());
+        programPlanSubjectGuard.requireSubjectInPlan(enrollment, subject.getId());
         return subject;
     }
 }

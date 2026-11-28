@@ -12,6 +12,10 @@ import com.red_escuela.backend.enrollment.api.PrerequisiteOutcome;
 import com.red_escuela.backend.enrollment.api.ProgramPrerequisiteBatchEvaluator;
 import com.red_escuela.backend.enrollment.dto.OwnSubjectEquivalenceResponse;
 import com.red_escuela.backend.enrollment.api.ProgramPrerequisiteEvaluator;
+import com.red_escuela.backend.enrollment.dto.CreateDirectorApprovalRequestRequest;
+import com.red_escuela.backend.enrollment.entity.ExceptionType;
+import com.red_escuela.backend.enrollment.exception.SubjectNotInProgramPlanException;
+import com.red_escuela.backend.enrollment.usecase.directorapproval.RequestDirectorApprovalUseCase;
 import com.red_escuela.backend.enrollment.api.PrerequisiteAssessment;
 import com.red_escuela.backend.enrollment.entity.SubjectEquivalence;
 import com.red_escuela.backend.enrollment.events.SubjectEquivalenceVoidedEvent;
@@ -90,6 +94,8 @@ class PlanOfEnrollmentReadersIT extends AbstractIntegrationTest {
     private VoidSubjectEquivalenceTransaction voidSubjectEquivalenceTransaction;
     @Autowired
     private ApplicationEvents applicationEvents;
+    @Autowired
+    private RequestDirectorApprovalUseCase requestDirectorApprovalUseCase;
     @Autowired
     private ProgramCurriculumFinder programCurriculumFinder;
     @Autowired
@@ -216,13 +222,15 @@ class PlanOfEnrollmentReadersIT extends AbstractIntegrationTest {
         return equivalence;
     }
 
-    private void activateNewPlanWithoutTheSubjects(Program program) {
+    private Subject activateNewPlanWithoutTheSubjects(Program program) {
         CurriculumPlanResponse draft = createCurriculumPlanUseCase.createDraftVersion(program.getId(),
                 new CreateCurriculumPlanRequest("Plan sin materias previas", LocalDate.now(clock), null, null, null, null));
+        Subject chemistry = persistSubject("Química");
         programSubjectService.addSubjectToPlan(draft.id(), new CreateProgramSubjectRequest(
-                persistSubject("Química").getId(), ProgramSubjectCategory.MANDATORY, 1, CurricularTerm.FIRST, 10, null, null, null));
+                chemistry.getId(), ProgramSubjectCategory.MANDATORY, 1, CurricularTerm.FIRST, 10, null, null, null));
         activateCurriculumPlanUseCase.activate(draft.id());
         entityManager.flush();
+        return chemistry;
     }
 
     @Test
@@ -320,6 +328,32 @@ class PlanOfEnrollmentReadersIT extends AbstractIntegrationTest {
 
         assertThat(applicationEvents.stream(SubjectEquivalenceVoidedEvent.class).map(SubjectEquivalenceVoidedEvent::subjectName))
                 .containsExactly("Biología");
+    }
+
+    @Test
+    void directorApprovalRequestValidatesTheSubjectAgainstThePlanOfTheEnrollment() {
+        Program program = persistProgram("Carrera con solicitud a Dirección");
+        Subject biology = persistSubject("Biología");
+        addToProgram(program, biology, 1);
+        ProgramCohort cohort = persistOpenCohort(program);
+        Student student = persistStudent("72000006");
+        entityManager.flush();
+        ProgramEnrollment enrollment = programEnrollmentService.enroll(student.getId(),
+                new CreateProgramEnrollmentRequest(program.getId(), cohort.getId()));
+        Subject onlyInNewPlan = activateNewPlanWithoutTheSubjects(program);
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(student.getPerson().getId().toString(), null, List.of()));
+
+        try {
+            assertThat(requestDirectorApprovalUseCase.request(new CreateDirectorApprovalRequestRequest(
+                    ExceptionType.LATE_EXAM, enrollment.getId(), biology.getId(), "Materia del plan de la matrícula")).getId())
+                    .isNotNull();
+            assertThatThrownBy(() -> requestDirectorApprovalUseCase.request(new CreateDirectorApprovalRequestRequest(
+                    ExceptionType.LATE_EXAM, enrollment.getId(), onlyInNewPlan.getId(), "Materia solo del plan nuevo")))
+                    .isInstanceOf(SubjectNotInProgramPlanException.class);
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
     }
 
     @Test
