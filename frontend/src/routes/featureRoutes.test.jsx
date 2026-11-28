@@ -24,6 +24,7 @@ describe('feature routes', () => {
         'enrollment',
         'evaluation',
         'graduation',
+        'help',
         'identity',
         'institution',
         'notifications',

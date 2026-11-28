@@ -268,6 +268,20 @@ describe('TopNav', () => {
     expect(screen.getByRole('button', { name: 'Cerrar sesión' })).toBeInTheDocument();
   });
 
+  it('offersTheHelpEntryInTheUserMenuToStaffButNotToStudents', async () => {
+    const user = userEvent.setup();
+    const staff = renderTopNav();
+
+    await user.click(trigger(/Mi cuenta/));
+    expect(screen.getByRole('link', { name: 'Ayuda' })).toHaveAttribute('href', '/ayuda');
+    staff.unmount();
+
+    authState.roles = ['ALUMNO'];
+    renderTopNav({ role: 'alumno', route: '/alumno/inicio' });
+    await user.click(trigger(/Mi cuenta/));
+    expect(screen.queryByRole('link', { name: 'Ayuda' })).not.toBeInTheDocument();
+  });
+
   it('showsTheUserNameRoleAndLogoutInTheUserMenu', async () => {
     const user = userEvent.setup();
     renderTopNav();

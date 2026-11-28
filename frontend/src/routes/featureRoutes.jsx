@@ -15,6 +15,7 @@ import { routes as dataImport } from '@/features/data-import/routes';
 import { routes as audit } from '@/features/audit/routes';
 import { routes as permissions } from '@/features/permissions/routes';
 import { routes as backups } from '@/features/backups/routes';
+import { routes as help } from '@/features/help/routes';
 
 export const FEATURE_ROUTES = {
   identity,
@@ -34,6 +35,7 @@ export const FEATURE_ROUTES = {
   audit,
   permissions,
   backups,
+  help,
 };
 
 const collect = (kind) => Object.values(FEATURE_ROUTES).flatMap((featureRoutes) => featureRoutes[kind]);
