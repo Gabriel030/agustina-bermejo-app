@@ -132,6 +132,7 @@ class ProgramEnrollmentRulesTest {
 
     private ProgramCohort cohort(LocalDate start, LocalDate end) {
         ProgramCohort cohort = new ProgramCohort();
+        cohort.markOpened(java.time.LocalDateTime.of(2000, 1, 1, 0, 0));
         cohort.setId(9L);
         cohort.setProgramId(4L);
         cohort.setPlan(PLAN);

@@ -13,6 +13,7 @@ import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.operation.BillingOperationPipeline;
 import com.red_escuela.backend.academicstructure.api.ProgramCohortRecorder;
 import com.red_escuela.backend.billing.service.ProgramYearBillingTemplateService;
+import com.red_escuela.backend.identity.api.CohortResponsibleAssigner;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import com.red_escuela.backend.shared.domain.Percentage;
@@ -36,15 +37,18 @@ public class CreateProgramCohortTransaction {
     private final ChangeBillingConfigurationOperation operation;
     private final BillingActorResolver actorResolver;
     private final Clock clock;
+    private final CohortResponsibleAssigner cohortResponsibleAssigner;
 
     public CreateProgramCohortTransaction(ProgramCohortRecorder programCohortRecorder, ProgramYearBillingTemplateService templateService,
                                           CurrentPersonService currentPersonService, DirectConfigurationPublisher publisher, BillingOperationPipeline pipeline,
-                                          ChangeBillingConfigurationOperation operation, BillingActorResolver actorResolver, Clock clock) {
+                                          ChangeBillingConfigurationOperation operation, BillingActorResolver actorResolver, Clock clock,
+                                          CohortResponsibleAssigner cohortResponsibleAssigner) {
         this.pipeline = pipeline;
         this.operation = operation;
         this.actorResolver = actorResolver;
         this.publisher = publisher;
         this.clock = clock;
+        this.cohortResponsibleAssigner = cohortResponsibleAssigner;
         this.programCohortRecorder = programCohortRecorder;
         this.templateService = templateService;
         this.currentPersonService = currentPersonService;
@@ -67,6 +71,7 @@ public class CreateProgramCohortTransaction {
         cohort.setCursadaStart(request.cursadaStart());
         cohort.setCreatedBy(actor);
         ProgramCohort saved = programCohortRecorder.save(cohort);
+        cohortResponsibleAssigner.assign(saved.getId(), request.responsiblePreceptorIds(), actor.getId());
         Percentage defaultDiscount = Percentage.ofFraction(request.intake() == CohortIntake.SECOND ? new BigDecimal("0.5") : BigDecimal.ZERO);
         Percentage requested = request.entryFeeDiscountPercent() != null ? request.entryFeeDiscountPercent() : defaultDiscount;
         LocalDate today = LocalDate.now(clock);

@@ -39,6 +39,9 @@ public class PreceptorAssignment {
     @Column(name = "program_cohort_id")
     private Long programCohortId;
 
+    @Column(name = "course_id")
+    private Long courseId;
+
     @Column(name = "created_by", nullable = false)
     private Long createdBy;
 

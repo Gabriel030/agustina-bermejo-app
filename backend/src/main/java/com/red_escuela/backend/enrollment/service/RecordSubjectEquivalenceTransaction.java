@@ -63,7 +63,7 @@ public class RecordSubjectEquivalenceTransaction {
 
     @Transactional
     public Long record(Long programEnrollmentId, RecordSubjectEquivalenceRequest request) {
-        ProgramEnrollment enrollment = programEnrollmentRepository.findById(programEnrollmentId)
+        ProgramEnrollment enrollment = programEnrollmentRepository.findByIdForUpdate(programEnrollmentId)
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(programEnrollmentId));
         SubjectEquivalencePolicy.requireActiveEnrollment(programEnrollmentId, enrollment.getStatus());
         Long subjectId = request.subjectId();

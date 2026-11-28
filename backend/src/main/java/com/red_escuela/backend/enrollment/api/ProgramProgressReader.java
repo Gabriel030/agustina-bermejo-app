@@ -3,6 +3,7 @@ package com.red_escuela.backend.enrollment.api;
 import com.red_escuela.backend.academicstructure.api.ElectiveGroupRequirementView;
 import com.red_escuela.backend.academicstructure.api.ProgramCurriculumFinder;
 import com.red_escuela.backend.academicstructure.api.ProgramSubjectView;
+import com.red_escuela.backend.academicstructure.entity.CurriculumPlan;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -20,7 +21,6 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 @Component
 @Transactional(readOnly = true)
@@ -43,8 +43,9 @@ public class ProgramProgressReader {
     public ProgramProgressView calculateProgress(Long programEnrollmentId) {
         ProgramEnrollment enrollment = findOrThrow(programEnrollmentId);
         Program program = enrollment.getProgram();
+        CurriculumPlan plan = enrollment.getPlan();
 
-        List<ProgramSubjectView> entries = programCurriculumFinder.findProgramSubjects(program.getId());
+        List<ProgramSubjectView> entries = programCurriculumFinder.findActiveProgramSubjectsOfPlan(plan.getId());
         Map<Long, SubjectStanding> standings = standingsOf(programEnrollmentId, entries, List.of(EnrollmentStatus.APPROVED));
         Set<Long> approvedSubjectIds = subjectIdsMatching(standings, SubjectStanding::isApproved);
         List<ProgramSubjectView> approved = entriesOfSubjects(entries, approvedSubjectIds);
@@ -55,7 +56,7 @@ public class ProgramProgressReader {
                 .toList();
 
         int accumulatedCredits = approved.stream().mapToInt(ProgramSubjectView::credits).sum();
-        int requiredCredits = program.getTotalCreditsRequired();
+        int requiredCredits = plan.getTotalCreditsRequired();
 
         List<ElectiveGroupProgressView> electiveGroups = programCurriculumFinder
                 .findElectiveGroupRequirements(program.getId()).stream()
@@ -67,24 +68,21 @@ public class ProgramProgressReader {
                 && accumulatedCredits >= requiredCredits
                 && electiveGroups.stream().allMatch(ElectiveGroupProgressView::fulfilled);
 
-        List<Grade> finalGrades = Stream.concat(
-                        subjectSectionEnrollmentRepository.findByProgramEnrollmentId(programEnrollmentId).stream()
-                                .map(SubjectSectionEnrollment::getFinalScore),
-                        standings.values().stream()
-                                .filter(standing -> standing.isApprovedByEquivalence() && !standing.isApprovedByCoursework())
-                                .map(standing -> standing.equivalence().originScore()))
+        List<Grade> approvedScores = approved.stream()
+                .map(entry -> standings.get(entry.subjectId()).approvedScore())
                 .filter(Objects::nonNull)
                 .toList();
 
         return new ProgramProgressView(
                 enrollment.getId(), accumulatedCredits, requiredCredits, pendingMandatory, electiveGroups,
-                eligibleToComplete, hasActiveCoursework(programEnrollmentId), Grade.average(finalGrades).orElse(null));
+                eligibleToComplete, hasActiveCoursework(programEnrollmentId), Grade.average(approvedScores).orElse(null));
     }
 
     public boolean hasOnlyFinalExamsLeft(Long programEnrollmentId) {
         ProgramEnrollment enrollment = findOrThrow(programEnrollmentId);
         Program program = enrollment.getProgram();
-        List<ProgramSubjectView> entries = programCurriculumFinder.findProgramSubjects(program.getId());
+        CurriculumPlan plan = enrollment.getPlan();
+        List<ProgramSubjectView> entries = programCurriculumFinder.findActiveProgramSubjectsOfPlan(plan.getId());
         if (entries.isEmpty()
                 || subjectSectionEnrollmentRepository.existsByProgramEnrollmentIdAndStatusIn(
                         programEnrollmentId, List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS))) {
@@ -99,8 +97,8 @@ public class ProgramProgressReader {
         int coursedCredits = coursed.stream().mapToInt(ProgramSubjectView::credits).sum();
         boolean electiveGroupsMet = programCurriculumFinder.findElectiveGroupRequirements(program.getId()).stream()
                 .allMatch(group -> countElectivesOfGroup(coursed, group) >= group.minRequired());
-        return !coursed.isEmpty() && program.getTotalCreditsRequired() > 0
-                && !mandatoryPending && coursedCredits >= program.getTotalCreditsRequired() && electiveGroupsMet;
+        return !coursed.isEmpty() && plan.getTotalCreditsRequired() > 0
+                && !mandatoryPending && coursedCredits >= plan.getTotalCreditsRequired() && electiveGroupsMet;
     }
 
     public boolean hasActiveCoursework(Long programEnrollmentId) {
@@ -115,7 +113,7 @@ public class ProgramProgressReader {
 
     public List<ApprovedSubjectView> listApprovedSubjectsWithSource(Long programEnrollmentId) {
         ProgramEnrollment enrollment = findOrThrow(programEnrollmentId);
-        List<ProgramSubjectView> entries = programCurriculumFinder.findProgramSubjects(enrollment.getProgram().getId());
+        List<ProgramSubjectView> entries = programCurriculumFinder.findActiveProgramSubjectsOfPlan(enrollment.getPlan().getId());
         Map<Long, SubjectStanding> standings = standingsOf(programEnrollmentId, entries, List.of(EnrollmentStatus.APPROVED));
         return entries.stream()
                 .filter(entry -> standings.getOrDefault(entry.subjectId(), SubjectStanding.NONE).isApproved())

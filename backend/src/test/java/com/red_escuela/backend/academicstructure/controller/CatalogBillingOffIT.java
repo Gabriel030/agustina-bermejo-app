@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.controller;
 
+import com.red_escuela.backend.testsupport.PreceptorTestFactory;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -47,6 +48,9 @@ import tools.jackson.databind.ObjectMapper;
 @SpringBootTest
 @ActiveProfiles("test")
 class CatalogBillingOffIT extends AbstractIntegrationTest {
+    @org.springframework.beans.factory.annotation.Autowired
+    private PreceptorTestFactory preceptors;
+
 
     @Autowired
     private MockMvc mockMvc;
@@ -89,7 +93,7 @@ class CatalogBillingOffIT extends AbstractIntegrationTest {
         programId = programService.create(new CreateProgramRequest(
                 "Carrera " + UUID.randomUUID(), 3, ars("1000"), ars("500"), 100, null, null, null, null, null, null)).getId();
         courseId = courseService.create(new CreateCourseRequest(
-                "Curso " + UUID.randomUUID(), termId, null, 10, ars("800"), 6, null, null, null)).getId();
+                "Curso " + UUID.randomUUID(), termId, null, 10, ars("800"), 6, null, null, null, null, null, java.util.List.of(preceptors.createPreceptorId()))).getId();
     }
 
     @AfterEach
@@ -179,7 +183,7 @@ class CatalogBillingOffIT extends AbstractIntegrationTest {
         var createProgram = new CreateProgramRequest("Carrera nueva " + UUID.randomUUID(), 3, ars("1100"), ars("600"), 100, null, null, null, null, null, null);
         var updateProgram = new UpdateProgramRequest();
         updateProgram.setPrice(ars("1300"));
-        var createCourse = new CreateCourseRequest("Curso nuevo " + UUID.randomUUID(), termId, null, 10, ars("900"), 6, null, null, null);
+        var createCourse = new CreateCourseRequest("Curso nuevo " + UUID.randomUUID(), termId, null, 10, ars("900"), 6, null, null, null, null, null, java.util.List.of(preceptors.createPreceptorId()));
         var updateCourse = new UpdateCourseRequest(null, null, null, ars("950"), null, null, null, null);
 
         mockMvc.perform(post("/programs").header("Authorization", "Bearer " + adminToken)

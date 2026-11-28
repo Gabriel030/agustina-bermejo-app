@@ -16,9 +16,11 @@ import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.platform.infrastructure.FeatureSnapshotHolder;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
+import com.red_escuela.backend.testsupport.PreceptorTestFactory;
 import com.red_escuela.backend.testsupport.TermFixtures;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -38,6 +40,7 @@ class ProgramCohortWithBillingOffIT extends AbstractIntegrationTest {
     @Autowired private EntityManager entityManager;
     @Autowired private JdbcTemplate jdbc;
     @Autowired private FeatureSnapshotHolder snapshotHolder;
+    @Autowired private PreceptorTestFactory preceptorTestFactory;
 
     @AfterEach
     void restoreBillingFull() {
@@ -84,8 +87,9 @@ class ProgramCohortWithBillingOffIT extends AbstractIntegrationTest {
         assertThat(jdbc.queryForObject("select count(*) from program_cohort where program_id = ?", Integer.class, ids[0])).isZero();
     }
 
-    private static CreateProgramTermCohortRequest request(CohortIntake intake) {
-        return new CreateProgramTermCohortRequest(intake, LocalDate.of(2027, 1, 1), LocalDate.of(2027, 2, 1), LocalDate.of(2027, 3, 1));
+    private CreateProgramTermCohortRequest request(CohortIntake intake) {
+        return new CreateProgramTermCohortRequest(intake, LocalDate.of(2027, 1, 1), LocalDate.of(2027, 2, 1), LocalDate.of(2027, 3, 1),
+                List.of(preceptorTestFactory.createPreceptorId()));
     }
 
     private void switchBillingTo(String mode, boolean enabled) {

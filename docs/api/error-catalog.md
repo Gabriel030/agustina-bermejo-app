@@ -85,9 +85,11 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `CLASS_DAY_WITHOUT_SCHEDULE_SLOT` | no | `ClassDayWithoutScheduleSlotException` | attendance |
 | `CLASS_ON_HOLIDAY` | no | `ClassOnHolidayException` | attendance |
 | `CLASS_ON_WEEKEND` | no | `ClassOnWeekendException` | attendance |
+| `COHORT_RESPONSIBLE_REQUIRED` | no | `CohortResponsibleRequiredException` | identity |
 | `CONSENT_CATEGORY_NOT_OPTIONAL` | no | `ConsentCategoryNotOptionalException` | notification |
 | `CONSENT_CATEGORY_REPEATED` | no | `ConsentCategoryRepeatedException` | notification |
 | `CONSENT_SOURCE_NOT_ACCEPTED` | no | `ConsentSourceNotAcceptedException` | notification |
+| `COURSE_RESPONSIBLE_REQUIRED` | no | `CourseResponsibleRequiredException` | identity |
 | `CREDIT_NOTE_JUSTIFICATION_REQUIRED` | no | `CreditNoteJustificationRequiredException` | billing |
 | `CREDIT_NOTE_LINES_INVALID` | no | `CreditNoteLinesInvalidException` | billing |
 | `CURRENCY_MISMATCH` | no | `CurrencyMismatchException` | billing |
@@ -451,6 +453,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `COREQUISITE_ALREADY_EXISTS` | no | `CorequisiteAlreadyExistsException` | academicstructure |
 | `COURSE_ADMISSION_ALREADY_CHARGED` | no | `CourseAdmissionAlreadyChargedException` | enrollment |
 | `COURSE_ADMISSION_CHARGE_REJECTED` | no | `CourseAdmissionChargeRejectedException` | enrollment |
+| `COURSE_CYCLE_NOT_READY` | no | `CourseCycleNotReadyException` | academicstructure |
 | `COURSE_NOT_AVAILABLE` | no | `CourseNotAvailableException` | enrollment |
 | `COURSE_PAYMENT_PLAN_ALREADY_SET` | no | `CoursePaymentPlanAlreadySetException` | billing |
 | `CREDIT_NOTE_DIRECTOR_APPROVAL_REQUIRED` | no | `CreditNoteDirectorApprovalRequiredException` | billing |
@@ -626,10 +629,13 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `PERSON_ALREADY_ACTIVATED` | no | `PersonAlreadyActivatedException` | identity |
 | `PERSON_NOT_ELIGIBLE_FOR_ACTIVATION` | no | `PersonNotEligibleForActivationException` | identity |
 | `POSSIBLE_DUPLICATE_BANK_TRANSFER` | no | `PossibleDuplicateBankTransferException` | billing |
+| `PRECEPTOR_ROLE_REQUIRED` | no | `PreceptorRoleRequiredException` | identity |
 | `PREREQUISITE_ALREADY_EXISTS` | no | `PrerequisiteAlreadyExistsException` | academicstructure |
 | `PRICE_CHANGED_CONCURRENTLY` | no | `PriceChangedConcurrentlyException` | billing |
 | `PROGRAM_COHORT_ALREADY_EXISTS` | no | `ProgramCohortAlreadyExistsException` | academicstructure |
+| `PROGRAM_COHORT_ALREADY_OPEN` | no | `ProgramCohortAlreadyOpenException` | academicstructure |
 | `PROGRAM_COHORT_BILLING_TEMPLATE_REQUIRED` | no | `ProgramCohortBillingTemplateRequiredException` | academicstructure |
+| `PROGRAM_COHORT_NOT_READY` | no | `ProgramCohortNotReadyException` | academicstructure |
 | `PROGRAM_ENROLLMENT_COHORT_PROGRAM_MISMATCH` | no | `ProgramEnrollmentCohortProgramMismatchException` | enrollment |
 | `PROGRAM_ENROLLMENT_MISSING_COHORT` | no | `ProgramEnrollmentMissingCohortException` | billing |
 | `PROGRAM_ENROLLMENT_PLAN_MISMATCH` | no | `ProgramEnrollmentPlanMismatchException` | enrollment |
@@ -697,7 +703,10 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SUBJECT_IS_PREREQUISITE_OF_ACTIVE_SUBJECT` | no | `SubjectIsPrerequisiteOfActiveSubjectException` | academicstructure |
 | `SUBJECT_NOT_ASSIGNABLE_TO_PLAN` | no | `SubjectNotAssignableToPlanException` | academicstructure |
 | `SUBJECT_NOT_IN_ENROLLMENT_PLAN` | no | `SubjectNotInEnrollmentPlanException` | enrollment |
+| `SUBJECT_NOT_OFFERABLE_IN_PROGRAM_PLAN` | no | `SubjectNotOfferableInProgramPlanException` | academicstructure |
 | `SUBJECT_NOT_OPENABLE_FOR_SECTIONS` | no | `SubjectNotOpenableForSectionsException` | academicstructure |
+| `SUBJECT_RECURRENCE_INCOMPATIBLE_WITH_TERM` | no | `SubjectRecurrenceIncompatibleWithTermException` | academicstructure |
+| `SUBJECT_REGULAR` | no | `SubjectRegularException` | enrollment |
 | `SUBMISSION_WINDOW_CLOSED` | no | `SubmissionWindowClosedException` | evaluation |
 | `TEMPLATE_NOTHING_TO_DISCARD` | no | `TemplateNothingToDiscardException` | graduation |
 | `TEMPLATE_NOTHING_TO_PUBLISH` | no | `TemplateNothingToPublishException` | graduation |
@@ -895,6 +904,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/classrooms` | `ClassroomController#create` |
 | POST | `/classrooms/{id}/deactivate` | `ClassroomController#deactivate` |
 | PATCH | `/cohorts/{id}/entry-fee-discount` | `ProgramYearBillingTemplateController#updateEntryFeeDiscount` |
+| POST | `/cohorts/{id}/open` | `ProgramCohortController#openProgramCohort` |
 | POST | `/collection-reminders/impact` | `CollectionReminderImpactController#getImpact` |
 | POST | `/course-enrollments/{id}/payment-plan` | `PaymentPlanSelectionController#selectForCourse` |
 | POST | `/course-enrollments/{id}/student-discounts` | `StudentDiscountController#grantForCourseEnrollment` |
