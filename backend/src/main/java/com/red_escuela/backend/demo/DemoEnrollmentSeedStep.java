@@ -1,5 +1,7 @@
 package com.red_escuela.backend.demo;
 
+import com.red_escuela.backend.shared.module.BillingMode;
+import com.red_escuela.backend.shared.module.CurrentBillingModePort;
 import org.springframework.context.annotation.Profile;
 import org.springframework.jdbc.core.JdbcTemplate;
 import tools.jackson.databind.JsonNode;
@@ -19,11 +21,13 @@ public class DemoEnrollmentSeedStep implements DemoSeedStep {
 
     private final DemoSeedSession session;
     private final JdbcTemplate jdbcTemplate;
+    private final CurrentBillingModePort billingMode;
     private final Map<Long, Long> cohortIdsByProgramId = new HashMap<>();
 
-    public DemoEnrollmentSeedStep(DemoSeedSession session, JdbcTemplate jdbcTemplate) {
+    public DemoEnrollmentSeedStep(DemoSeedSession session, JdbcTemplate jdbcTemplate, CurrentBillingModePort billingMode) {
         this.session = session;
         this.jdbcTemplate = jdbcTemplate;
+        this.billingMode = billingMode;
     }
 
     @Override
@@ -71,12 +75,17 @@ public class DemoEnrollmentSeedStep implements DemoSeedStep {
     private long findOrCreateCohort(long programId) {
         return cohortIdsByProgramId.computeIfAbsent(programId, id -> {
             long termId = findAnnualTermId(2026);
-            long templateId = session.api().post(DemoPersona.DIRECTOR, "/programs/" + id + "/year-billing-templates",
-                    Map.of("termId", termId)).get("id").asLong();
             long preceptorId = jdbcTemplate.queryForObject("select id from person where username = 'preceptor.demo'", Long.class);
-            long cohortId = session.api().post(DemoPersona.ADMIN, "/year-billing-templates/" + templateId + "/cohorts",
-                    Map.of("intake", "FIRST", "admissionStart", "2020-01-01", "admissionEnd", "2099-12-31", "cursadaStart", "2026-03-01",
-                            "responsiblePreceptorIds", List.of(preceptorId))).get("id").asLong();
+            Map<String, Object> cohortBody = Map.of("intake", "FIRST", "admissionStart", "2020-01-01", "admissionEnd", "2099-12-31",
+                    "cursadaStart", "2026-03-01", "responsiblePreceptorIds", List.of(preceptorId));
+            long cohortId;
+            if (billingMode.currentMode() == BillingMode.OFF) {
+                cohortId = session.api().post(DemoPersona.ADMIN, "/programs/" + id + "/terms/" + termId + "/cohorts", cohortBody).get("id").asLong();
+            } else {
+                long templateId = session.api().post(DemoPersona.DIRECTOR, "/programs/" + id + "/year-billing-templates",
+                        Map.of("termId", termId)).get("id").asLong();
+                cohortId = session.api().post(DemoPersona.ADMIN, "/year-billing-templates/" + templateId + "/cohorts", cohortBody).get("id").asLong();
+            }
             jdbcTemplate.update("update program_cohort set opened_at = now() where id = ?", cohortId);
             return cohortId;
         });
