@@ -495,6 +495,57 @@ export const handlers = [
       { id: 2, programId: Number(params.id), label: 'Agosto 2026', ordenEnAnio: 2, cursadaStart: '2026-08-01', admissionOpen: true },
     ]),
   ),
+  http.get(`${API}/cohorts/:id/readiness`, ({ params }) => {
+    const cohortId = Number(params.id);
+    const incomplete = cohortId === 1;
+    return HttpResponse.json({
+      cohortId,
+      open: false,
+      openedAt: '2026-01-01T00:00:00Z',
+      ready: !incomplete,
+      items: [
+        { code: 'CURRENT_PLAN', blocking: true, fulfilled: true, reasons: [] },
+        { code: 'FIRST_YEAR_SECTIONS', blocking: true, fulfilled: true, reasons: [] },
+        {
+          code: 'SECTION_PRECEPTORS',
+          blocking: true,
+          fulfilled: !incomplete,
+          reasons: incomplete ? ['Programación I (A): sin preceptor', 'Matemática (A): sin preceptor'] : [],
+        },
+        {
+          code: 'COHORT_RESPONSIBLE',
+          blocking: false,
+          fulfilled: !incomplete,
+          reasons: incomplete ? ['La cohorte no tiene preceptor responsable'] : [],
+        },
+        { code: 'HOLIDAYS_LOADED', blocking: true, fulfilled: true, reasons: [] },
+      ],
+    });
+  }),
+  http.post(`${API}/cohorts/:id/open`, ({ params }) =>
+    HttpResponse.json({
+      id: Number(params.id),
+      programId: 1,
+      termId: 1,
+      planId: 1,
+      intake: 'FIRST',
+      admissionStart: '2026-02-01',
+      admissionEnd: '2026-03-31',
+      cursadaStart: '2026-03-15',
+      createdAt: '2026-01-10T12:00:00Z',
+      openedAt: '2026-11-28T12:00:00Z',
+    }),
+  ),
+  http.get(`${API}/staff`, () =>
+    HttpResponse.json([
+      { id: 31, nombre: 'Marcela', apellido: 'Quiroga', dni: '20111222', email: 'marcela.quiroga@demo.test', role: 'PRECEPTOR', status: 'ACTIVE', telefono: null, username: 'mquiroga' },
+      { id: 32, nombre: 'Julián', apellido: 'Ferreyra', dni: '20111223', email: 'julian.ferreyra@demo.test', role: 'PRECEPTOR', status: 'ACTIVE', telefono: null, username: 'jferreyra' },
+      { id: 33, nombre: 'Sofía', apellido: 'Paredes', dni: '20111224', email: 'sofia.paredes@demo.test', role: 'PRECEPTOR', status: 'ACTIVE', telefono: null, username: 'sparedes' },
+      { id: 34, nombre: 'Tomás', apellido: 'Aguirre', dni: '20111225', email: 'tomas.aguirre@demo.test', role: 'PRECEPTOR', status: 'ACTIVE', telefono: null, username: 'taguirre' },
+      { id: 35, nombre: 'Lucía', apellido: 'Benítez', dni: '20111226', email: 'lucia.benitez@demo.test', role: 'PRECEPTOR', status: 'ACTIVE', telefono: null, username: 'lbenitez' },
+      { id: 36, nombre: 'Nicolás', apellido: 'Ramos', dni: '20111227', email: 'nicolas.ramos@demo.test', role: 'PRECEPTOR', status: 'ACTIVE', telefono: null, username: 'nramos' },
+    ]),
+  ),
   http.get(`${API}/programs`, () => HttpResponse.json([])),
   http.get(`${API}/academic-offering-cycles`, () => HttpResponse.json([])),
   http.get(`${API}/academic-offering-cycles/:id/occupancy`, ({ params }) => HttpResponse.json({ cycleId: Number(params.id), sections: [] })),

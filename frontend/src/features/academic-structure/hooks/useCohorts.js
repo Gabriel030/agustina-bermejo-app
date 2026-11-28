@@ -40,6 +40,25 @@ export function useProgramCohorts(programId) {
   return useQuery(programCohortsQueryOptions(programId));
 }
 
+export function useCohortReadiness(cohortId) {
+  return useQuery({
+    queryKey: ['cohort-readiness', cohortId],
+    queryFn: () => apiFetch(`/cohorts/${cohortId}/readiness`),
+    enabled: !!cohortId,
+  });
+}
+
+export function useOpenCohort() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (cohortId) => apiFetch(`/cohorts/${cohortId}/open`, { method: 'POST' }),
+    onSuccess: (_data, cohortId) => {
+      queryClient.invalidateQueries({ queryKey: ['cohort-readiness', cohortId] });
+      queryClient.invalidateQueries({ queryKey: ['program-cohorts'] });
+    },
+  });
+}
+
 export function useCreateCohort() {
   const queryClient = useQueryClient();
   return useMutation({
