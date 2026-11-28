@@ -329,11 +329,11 @@
     {
       "id": "E28-F",
       "name": "E28-F cierre de la épica 28 #1607",
-      "total": 10,
+      "total": 9,
       "done_at_baseline": null,
       "done_at_seed": 8,
       "total_estimated": true,
-      "next_step": "S0 verificada (comentario del 28-nov): S6 botón del acta en curso; S7 listado de mesas por rol del personal necesita mockup y OK de Gabriel",
+      "next_step": "S0 verificada (P28-24 ya estaba hecho; S7 descartada por Gabriel el 28-nov). Falta S6, botón del acta (#1744); después cerrar el Issue #1607",
       "refs": [
         "e28-f"
       ],
