@@ -47,6 +47,7 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [handoffs/2026-11-28/release-32-dossier.md](cell/handoffs/2026-11-28/release-32-dossier.md) | Dossier recalculado del release 32: migraciones V466 a V510, contrato, variables y riesgos | vigente |
 | [handoffs/2026-11-28/modularizacion-plan.md](cell/handoffs/2026-11-28/modularizacion-plan.md) | Plan por rebanadas de la modularización restante (ciclos entre matrícula, asistencia, evaluación y facturación) | vigente |
 | [handoffs/2026-11-28/restyling-auditoria-etiquetas.md](cell/handoffs/2026-11-28/restyling-auditoria-etiquetas.md) | Inventario de etiquetas y colores de la app para el re-styling | vigente |
+| [handoffs/2026-11-28/restyling-auditoria-reglas-movimiento.md](cell/handoffs/2026-11-28/restyling-auditoria-reglas-movimiento.md) | Auditoría de reglas de diseño y movimiento por pantalla para el re-styling (E36-A): tokens, componentes base y decisiones pendientes | vigente |
 | [handoffs/2026-11-28/manual-auditoria.md](cell/handoffs/2026-11-28/manual-auditoria.md) | Auditoría del manual de usuario existente contra la app actual | vigente |
 | [handoffs/1643-P3.md](cell/handoffs/1643-P3.md) | Handoff de E34-B P3 parte 2: cierre automático de matrículas por notas | vigente |
 | `cell/progress/` | Estado de cada subtarea de la célula; se genera por rama y no se lista uno por uno | vigente |
