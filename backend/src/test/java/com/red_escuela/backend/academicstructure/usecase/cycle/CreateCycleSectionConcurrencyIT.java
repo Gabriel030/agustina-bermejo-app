@@ -60,8 +60,9 @@ class CreateCycleSectionConcurrencyIT extends AbstractIntegrationTest {
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             var fixtures = new CycleTestFixtures(entityManager);
             var term = fixtures.term(2040 + (int) (System.nanoTime() % 50));
-            cycleId = fixtures.programCycle(fixtures.program(), term, AcademicOfferingCycleStatus.DRAFT).getId();
-            subjectId = fixtures.subject().getId();
+            var program = fixtures.program();
+            cycleId = fixtures.programCycle(program, term, AcademicOfferingCycleStatus.DRAFT).getId();
+            subjectId = fixtures.subjectInPlanOf(program).getId();
             sharedClassroomId = fixtures.classroom(30).getId();
         });
     }

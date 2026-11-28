@@ -9,7 +9,6 @@ import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.red_escuela.backend.academicstructure.entity.SubjectRecurrence;
 import com.red_escuela.backend.academicstructure.entity.SubjectStatus;
-import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.academicstructure.exception.SubjectNotInProgramPlanException;
 import com.red_escuela.backend.academicstructure.exception.SubjectNotOpenableForSectionsException;
 import com.red_escuela.backend.academicstructure.exception.SubjectRecurrenceIncompatibleWithTermException;
@@ -108,9 +107,9 @@ class CycleSectionCreationReproductionIT extends ReproductionFixture {
     @Test
     void annualSubjectCannotBeOfferedInASemesterTerm() {
         Subject subject = cycleFixtures.subject();
-        ProgramSubject entry = programSubject(program, subject, 4, StatusType.ACTIVE);
-        entry.setSubjectRecurrence(SubjectRecurrence.ANNUAL);
-        cycle.getTerm().setType(TermType.FIRST_SEMESTER);
+        programSubject(program, subject, 4, StatusType.ACTIVE).setSubjectRecurrence(SubjectRecurrence.ANNUAL);
+        flushAndClear();
+        entityManager.find(Term.class, cycle.getTerm().getId()).setType(TermType.FIRST_SEMESTER);
         flushAndClear();
 
         assertThatThrownBy(() -> createSectionOf(subject)).isInstanceOf(SubjectRecurrenceIncompatibleWithTermException.class);
@@ -119,9 +118,9 @@ class CycleSectionCreationReproductionIT extends ReproductionFixture {
     @Test
     void annualSubjectCanBeOfferedInAnAnnualTerm() {
         Subject subject = cycleFixtures.subject();
-        ProgramSubject entry = programSubject(program, subject, 4, StatusType.ACTIVE);
-        entry.setSubjectRecurrence(SubjectRecurrence.ANNUAL);
-        cycle.getTerm().setType(TermType.ANNUAL);
+        programSubject(program, subject, 4, StatusType.ACTIVE).setSubjectRecurrence(SubjectRecurrence.ANNUAL);
+        flushAndClear();
+        entityManager.find(Term.class, cycle.getTerm().getId()).setType(TermType.ANNUAL);
         flushAndClear();
 
         assertThat(createSectionOf(subject)).isNotNull();

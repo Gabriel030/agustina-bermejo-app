@@ -75,6 +75,7 @@ class EvaluationRulesImmutabilityReproductionIT extends ReproductionFixture {
         Subject subject = subject("Algebra");
         subject.setStatus(SubjectStatus.ACTIVE);
         subject.setGradeMode(GradeMode.NUMERIC);
+        section(subject, term(LocalDateTime.of(2026, 3, 1, 0, 0), LocalDateTime.of(2026, 7, 1, 0, 0)));
         flushAndClear();
 
         UpdateSubjectRequest request = new UpdateSubjectRequest(null, null, null, null, GradeMode.PASS_FAIL, 9, null);
