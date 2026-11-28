@@ -4,6 +4,7 @@ import com.red_escuela.backend.academicstructure.api.SectionClosureGuard;
 import com.red_escuela.backend.evaluation.domain.CourseworkOutcome;
 import com.red_escuela.backend.evaluation.entity.SectionGradeItemPublication;
 import com.red_escuela.backend.evaluation.events.GradeCorrectedEvent;
+import com.red_escuela.backend.evaluation.events.ProgramGradeCorrectedEvent;
 import com.red_escuela.backend.evaluation.events.GradesPublishedEvent;
 import com.red_escuela.backend.evaluation.events.SubjectApprovalRevertedEvent;
 import com.red_escuela.backend.evaluation.events.SubjectApprovalStandingChangedEvent;
@@ -138,6 +139,7 @@ public class GradeItemRecorder {
         requireFinalFromExamBoard(request);
         sectionEnrollmentFinder.lockProgramEnrollment(enrollmentId);
         SubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findProgramEnrollment(enrollmentId);
+        enrollment.getProgramEnrollment().requireActive();
         requireSectionNotClosedUnlessFinal(request, SectionKind.PROGRAM, enrollment.getSubjectSection().getId());
         EvaluationScheme scheme = enrollment.getSubjectSection().getEvaluationScheme();
         ExamBoard examBoard = validateGradeSource(
@@ -179,7 +181,16 @@ public class GradeItemRecorder {
         announceFinalSaved(gradeItem, previousScore, correction, request.reason(),
                 enrollment.getSubjectSection().getId(), enrollment.getSubjectSection().getName(),
                 enrollment.getStudent().getPerson().getId());
+        announceProgramFinalCorrection(gradeItem, previousScore, correction, enrollment);
         return gradeItem;
+    }
+
+    private void announceProgramFinalCorrection(GradeItem gradeItem, Grade previousScore, boolean correction,
+                                                SubjectSectionEnrollment enrollment) {
+        if (correction && gradeItem.getType() == GradeItemType.FINAL && !gradeItem.getScore().equals(previousScore)) {
+            eventPublisher.publishEvent(ProgramGradeCorrectedEvent.correctedFor(
+                    enrollment.getProgramEnrollment().getId(), enrollment.getStudent().getPerson().getId()));
+        }
     }
 
     @Transactional

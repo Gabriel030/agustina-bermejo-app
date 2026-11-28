@@ -171,6 +171,40 @@ class EvaluationFindingsReproductionIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void correctingAPublishedGradeRevokesTheValidApprovedSubjectsCertificate() {
+        Setup setup = setup("74000031", 2, 0, false, EnrollmentStatus.IN_PROGRESS);
+        GradeItem exam = loadItem(setup, GradeItemType.EXAM, 1, 3.0);
+        entityManager.flush();
+        publishExam(setup, 1);
+        var programEnrollment = setup.enrollment().getProgramEnrollment();
+        var rows = new com.red_escuela.backend.e34b.IssuedCertificateRows(entityManager);
+        Long certificateId = rows.validApprovedSubjects(setup.enrollment().getStudent().getId(), programEnrollment.getId(),
+                setup.instructor().getPerson().getId());
+        entityManager.flush();
+        entityManager.clear();
+
+        publishedGradeCorrector.correct(exam.getId(),
+                new CorrectGradeItemRequest(Grade.of(BigDecimal.valueOf(6.0)), "Error de carga detectado en la revision", null),
+                setup.enrollment().getStudent().getPerson().getId());
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(rows.approvedSubjectsStatus(certificateId)).isEqualTo("REVOKED");
+    }
+
+    @Test
+    void loadingAGradeIsRejectedWhenTheProgramEnrollmentWasWithdrawn() {
+        Setup setup = setup("74000032", 2, 0, false, EnrollmentStatus.IN_PROGRESS);
+        var withdrawn = setup.enrollment().getProgramEnrollment();
+        withdrawn.setStatus(com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus.WITHDRAWN);
+        withdrawn.setWithdrawalEffectiveDate(LocalDate.of(2026, 5, 1));
+        entityManager.flush();
+
+        assertThatThrownBy(() -> loadItem(setup, GradeItemType.EXAM, 1, 3.0))
+                .isInstanceOf(com.red_escuela.backend.enrollment.exception.ProgramEnrollmentRequiredException.class);
+    }
+
+    @Test
     void h9CorrectionAfterTermEndIsAllowedWhenTheClosureWasReopened() {
         Setup setup = setup("74000007", 2, 0, false, EnrollmentStatus.IN_PROGRESS);
         GradeItem exam = loadItem(setup, GradeItemType.EXAM, 1, 3.0);

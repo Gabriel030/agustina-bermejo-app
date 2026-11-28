@@ -15,6 +15,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.headers.Header;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import org.springframework.http.ResponseEntity;
+import com.red_escuela.backend.graduation.certificate.regular.dto.CertificatePage;
+
 import java.util.List;
 
 @RestController
@@ -36,10 +42,15 @@ public class RegularCertificateRequestController {
         return rejectUseCase.reject(id, request.reason());
     }
 
+    @ApiResponse(responseCode = "200", description = "Pedidos de constancia, el más nuevo primero; el total sin paginar viaja en el header X-Total-Count",
+            headers = @Header(name = "X-Total-Count", description = "Cantidad total que cumple el filtro, sin paginar", schema = @Schema(type = "integer", format = "int64")))
     @GetMapping
     @RequiresPermission(code = "certificate.regular_requests_view", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
-    public List<RegularCertificateRequestResponse> list(@RequestParam(required = false) Long studentId,
-                                                        @RequestParam(required = false) RegularRequestOutcome outcome) {
-        return listUseCase.list(studentId, outcome);
+    public ResponseEntity<List<RegularCertificateRequestResponse>> list(@RequestParam(required = false) Long studentId,
+                                                                        @RequestParam(required = false) RegularRequestOutcome outcome,
+                                                                        @RequestParam(required = false) Integer page,
+                                                                        @RequestParam(required = false) Integer size) {
+        CertificatePage<RegularCertificateRequestResponse> requests = listUseCase.listPage(studentId, outcome, page, size);
+        return ResponseEntity.ok().header("X-Total-Count", Long.toString(requests.totalElements())).body(requests.items());
     }
 }

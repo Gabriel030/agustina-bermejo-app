@@ -97707,6 +97707,22 @@
             "enum" : [ "PENDING_STAFF", "ISSUED", "NOT_REGULAR", "ALREADY_ISSUED", "REJECTED" ],
             "type" : "string"
           }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
         } ],
         "responses" : {
           "200" : {
@@ -97720,7 +97736,17 @@
                 }
               }
             },
-            "description" : "OK"
+            "description" : "Pedidos de constancia, el más nuevo primero; el total sin paginar viaja en el header X-Total-Count",
+            "headers" : {
+              "X-Total-Count" : {
+                "description" : "Cantidad total que cumple el filtro, sin paginar",
+                "schema" : {
+                  "format" : "int64",
+                  "type" : "integer"
+                },
+                "style" : "simple"
+              }
+            }
           },
           "400" : {
             "content" : {
@@ -97982,6 +98008,22 @@
             "enum" : [ "VALID", "EXPIRED", "REVOKED" ],
             "type" : "string"
           }
+        }, {
+          "in" : "query",
+          "name" : "page",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        }, {
+          "in" : "query",
+          "name" : "size",
+          "required" : false,
+          "schema" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
         } ],
         "responses" : {
           "200" : {
@@ -97995,7 +98037,17 @@
                 }
               }
             },
-            "description" : "OK"
+            "description" : "Constancias de regularidad, la más nueva primero; el total sin paginar viaja en el header X-Total-Count",
+            "headers" : {
+              "X-Total-Count" : {
+                "description" : "Cantidad total que cumple el filtro, sin paginar",
+                "schema" : {
+                  "format" : "int64",
+                  "type" : "integer"
+                },
+                "style" : "simple"
+              }
+            }
           },
           "400" : {
             "content" : {
