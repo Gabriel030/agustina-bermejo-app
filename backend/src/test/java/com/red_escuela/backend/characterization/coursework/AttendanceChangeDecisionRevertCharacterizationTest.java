@@ -266,7 +266,7 @@ class AttendanceChangeDecisionRevertCharacterizationTest extends CourseworkChara
     }
 
     @Test
-    void decidingAgainAfterARevertClearsTheRevertFields() throws Exception {
+    void decidingAgainAfterARevertKeepsTheLastRevertInTheResolvedHistory() throws Exception {
         Classroom classroom = classroom("revf3", "7700023");
         Person preceptor = persistPreceptorAssignedToEverySection("revf3.preceptor", "77000237");
         long requestId = approvedRequest(classroom, preceptor);
@@ -276,8 +276,24 @@ class AttendanceChangeDecisionRevertCharacterizationTest extends CourseworkChara
         postEmpty(preceptor, "/attendance/change-requests/" + requestId + "/approve")
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("APPROVED"))
-                .andExpect(jsonPath("$.revertedByName").doesNotExist())
-                .andExpect(jsonPath("$.revertedAt").doesNotExist())
-                .andExpect(jsonPath("$.revertReason").doesNotExist());
+                .andExpect(jsonPath("$.revertReason").value(VALID_REASON));
+        getAs(preceptor, "/attendance/change-requests/resolved?result=APPROVED")
+                .andExpect(jsonPath("$.items[?(@.id==" + requestId + ")].revertReason").value(VALID_REASON))
+                .andExpect(jsonPath("$.items[?(@.id==" + requestId + ")].revertedByName")
+                        .value(preceptor.getName() + " " + preceptor.getLastname()));
+    }
+
+    @Test
+    void rejectingAgainAfterARevertKeepsTheLastRevertInTheResolvedHistory() throws Exception {
+        Classroom classroom = classroom("revf4", "7700024");
+        Person preceptor = persistPreceptorAssignedToEverySection("revf4.preceptor", "77000247");
+        long requestId = approvedRequest(classroom, preceptor);
+        postJson(preceptor, "/attendance/change-requests/" + requestId + "/revert",
+                new RevertAttendanceChangeRequestDecisionRequest(VALID_REASON)).andExpect(status().isOk());
+        postJson(preceptor, "/attendance/change-requests/" + requestId + "/reject",
+                new RejectAttendanceChangeRequestRequest("La asistencia estaba bien cargada")).andExpect(status().isOk());
+
+        getAs(preceptor, "/attendance/change-requests/resolved?result=REJECTED")
+                .andExpect(jsonPath("$.items[?(@.id==" + requestId + ")].revertReason").value(VALID_REASON));
     }
 }

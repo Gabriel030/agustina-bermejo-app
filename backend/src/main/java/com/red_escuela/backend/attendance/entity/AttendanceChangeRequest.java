@@ -75,12 +75,6 @@ public class AttendanceChangeRequest {
         this.revertReason = reason;
     }
 
-    public void clearRevert() {
-        this.revertedBy = null;
-        this.revertedAt = null;
-        this.revertReason = null;
-    }
-
     public void reopen() {
         this.status = AttendanceChangeRequestStatus.PENDING;
         this.approvedBy = null;

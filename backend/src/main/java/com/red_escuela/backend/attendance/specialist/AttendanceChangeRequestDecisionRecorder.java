@@ -16,7 +16,6 @@ public class AttendanceChangeRequestDecisionRecorder {
 
     public void recordDecisionByCurrentActor(AttendanceChangeRequest request, AttendanceChangeRequestStatus decision) {
         request.setStatus(decision);
-        request.clearRevert();
         request.setApprovedBy(actorResolver.currentActor());
         request.setApprovedAt(ApplicationTime.now());
     }
