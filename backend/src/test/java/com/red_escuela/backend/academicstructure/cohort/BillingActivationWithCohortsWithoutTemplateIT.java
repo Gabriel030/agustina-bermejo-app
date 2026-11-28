@@ -21,9 +21,11 @@ import com.red_escuela.backend.platform.usecase.PreviewPlatformFeatureChangeUseC
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.module.BillingMode;
+import com.red_escuela.backend.testsupport.PreceptorTestFactory;
 import com.red_escuela.backend.testsupport.TermFixtures;
 import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
+import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -45,6 +47,7 @@ class BillingActivationWithCohortsWithoutTemplateIT extends AbstractIntegrationT
     @Autowired private EntityManager entityManager;
     @Autowired private JdbcTemplate jdbc;
     @Autowired private FeatureSnapshotHolder snapshotHolder;
+    @Autowired private PreceptorTestFactory preceptorTestFactory;
 
     @AfterEach
     void restoreBillingFull() {
@@ -96,7 +99,8 @@ class BillingActivationWithCohortsWithoutTemplateIT extends AbstractIntegrationT
     private Long createCohortWithoutTemplate() {
         Long[] ids = persistProgramTermAndActor();
         return createProgramTermCohortUseCase.createProgramTermCohort(ids[0], ids[1],
-                new CreateProgramTermCohortRequest(CohortIntake.FIRST, LocalDate.of(2027, 1, 1), LocalDate.of(2027, 2, 1), LocalDate.of(2027, 3, 1))).id();
+                new CreateProgramTermCohortRequest(CohortIntake.FIRST, LocalDate.of(2027, 1, 1), LocalDate.of(2027, 2, 1), LocalDate.of(2027, 3, 1),
+                        List.of(preceptorTestFactory.createPreceptorId()))).id();
     }
 
     private Long[] persistProgramTermAndActor() {
