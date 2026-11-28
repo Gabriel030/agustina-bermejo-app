@@ -234,4 +234,50 @@ class AttendanceChangeDecisionRevertCharacterizationTest extends CourseworkChara
         Classroom classroom = classroom("hist4", "7700014");
         getAs(classroom.teacher(), "/attendance/change-requests/resolved").andExpect(status().isForbidden());
     }
+
+    @Test
+    void aRevertedRequestExposesWhoRevertedItWhenAndWhy() throws Exception {
+        Classroom classroom = classroom("revf1", "7700021");
+        Person preceptor = persistPreceptorAssignedToEverySection("revf1.preceptor", "77000217");
+        long requestId = approvedRequest(classroom, preceptor);
+        MutableClock.INSTANCE.setDateTime(DECISION_TIME.plusDays(1));
+
+        postJson(preceptor, "/attendance/change-requests/" + requestId + "/revert",
+                new RevertAttendanceChangeRequestDecisionRequest("  " + VALID_REASON + "  "))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.revertedByName").value(preceptor.getName() + " " + preceptor.getLastname()))
+                .andExpect(jsonPath("$.revertedAt").value("2026-11-21T10:00:00"))
+                .andExpect(jsonPath("$.revertReason").value(VALID_REASON))
+                .andExpect(jsonPath("$.decidedAt").doesNotExist());
+        getAs(preceptor, "/attendance/change-requests?status=PENDING")
+                .andExpect(jsonPath("$[?(@.id==" + requestId + ")].revertReason").value(VALID_REASON));
+    }
+
+    @Test
+    void aRequestThatWasNeverRevertedReturnsNullRevertFields() throws Exception {
+        Classroom classroom = classroom("revf2", "7700022");
+        Person preceptor = persistPreceptorAssignedToEverySection("revf2.preceptor", "77000227");
+        long requestId = approvedRequest(classroom, preceptor);
+
+        getAs(preceptor, "/attendance/change-requests/resolved?result=APPROVED")
+                .andExpect(jsonPath("$.items[?(@.id==" + requestId + ")].revertedByName").value(org.hamcrest.Matchers.contains((Object) null)))
+                .andExpect(jsonPath("$.items[?(@.id==" + requestId + ")].revertedAt").value(org.hamcrest.Matchers.contains((Object) null)))
+                .andExpect(jsonPath("$.items[?(@.id==" + requestId + ")].revertReason").value(org.hamcrest.Matchers.contains((Object) null)));
+    }
+
+    @Test
+    void decidingAgainAfterARevertClearsTheRevertFields() throws Exception {
+        Classroom classroom = classroom("revf3", "7700023");
+        Person preceptor = persistPreceptorAssignedToEverySection("revf3.preceptor", "77000237");
+        long requestId = approvedRequest(classroom, preceptor);
+        postJson(preceptor, "/attendance/change-requests/" + requestId + "/revert",
+                new RevertAttendanceChangeRequestDecisionRequest(VALID_REASON)).andExpect(status().isOk());
+
+        postEmpty(preceptor, "/attendance/change-requests/" + requestId + "/approve")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("APPROVED"))
+                .andExpect(jsonPath("$.revertedByName").doesNotExist())
+                .andExpect(jsonPath("$.revertedAt").doesNotExist())
+                .andExpect(jsonPath("$.revertReason").doesNotExist());
+    }
 }
