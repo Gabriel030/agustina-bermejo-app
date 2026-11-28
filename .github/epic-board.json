@@ -159,9 +159,12 @@
       "name": "E21",
       "total": 14,
       "done_at_baseline": 3,
-      "done_at_seed": 13,
+      "done_at_seed": 14,
       "total_estimated": true,
-      "next_step": ""
+      "next_step": "Completa: PDF del certificado aprobado por Gabriel el 28-nov (D5). Cerrar #1609",
+      "issues": [
+        1609
+      ]
     },
     {
       "id": "E22",
@@ -178,7 +181,10 @@
       "done_at_baseline": 5,
       "done_at_seed": 6,
       "total_estimated": true,
-      "next_step": ""
+      "next_step": "PDF de R1 y N1 aprobados por Gabriel el 28-nov; cierra con #1742 (requests de Bruno, Fixes #1523)",
+      "issues": [
+        1523
+      ]
     },
     {
       "id": "E24",
@@ -266,10 +272,10 @@
     {
       "id": "E34-A",
       "name": "E34-A integridad académica #1638",
-      "total": 12,
+      "total": 17,
       "done_at_baseline": null,
       "done_at_seed": 12,
-      "next_step": "Cerrar el Issue #1638; billing en FULL queda como rebanada posterior",
+      "next_step": "Requisitos de aprobación (H10/H15): 5 rebanadas nuevas aprobadas el 28-nov (refactor #1739, cierre con APPROVAL_PENDING, término y egreso, exposición, vencimiento)",
       "refs": [
         "e34-a"
       ],
@@ -298,7 +304,7 @@
       "done_at_baseline": null,
       "done_at_seed": 8,
       "total_estimated": true,
-      "next_step": "F2: terminar pantallas (cohorte y curso mergeadas) y cerrar el Issue #1650",
+      "next_step": "F2 completo; update_baselines disparado el 28-nov (rama chore/visual-baselines-2026-11-28); después cerrar el Issue #1650",
       "refs": [
         "e34-c"
       ],
@@ -312,7 +318,7 @@
       "total": 5,
       "done_at_baseline": null,
       "done_at_seed": 4,
-      "next_step": "S5: eventos, job de espera de pago y regla ArchUnit",
+      "next_step": "Cerrar el Issue #1606 (S5 mergeada en #1732)",
       "refs": [
         "e19-a"
       ],
@@ -323,11 +329,11 @@
     {
       "id": "E28-F",
       "name": "E28-F cierre de la épica 28 #1607",
-      "total": 8,
+      "total": 9,
       "done_at_baseline": null,
-      "done_at_seed": 7,
+      "done_at_seed": 8,
       "total_estimated": true,
-      "next_step": "Confirmar S0 (verificación, solo comentario) y cerrar el Issue #1607",
+      "next_step": "S0 verificada (P28-24 ya estaba hecho; S7 descartada por Gabriel el 28-nov). Falta S6, botón del acta (#1744); después cerrar el Issue #1607",
       "refs": [
         "e28-f"
       ],
@@ -368,9 +374,9 @@
       "name": "E35 Manual de usuario dentro de la app #1721",
       "total": 11,
       "done_at_baseline": null,
-      "done_at_seed": 0,
+      "done_at_seed": 1,
       "total_estimated": true,
-      "next_step": "Mockup /ayuda v2 en revisión de Gabriel; esqueleto en PR #1723 (borrador)",
+      "next_step": "Página /ayuda #1737 y contenido E, F, G y J en PR; faltan H e I (después de #1638), D (test de cobertura) y K (capturas)",
       "refs": [
         "e35",
         "help-manual",
@@ -387,7 +393,7 @@
       "done_at_baseline": null,
       "done_at_seed": 0,
       "total_estimated": true,
-      "next_step": "Auditoría de pantallas y definición de la paleta cerrada (decisiones de Gabriel pendientes)",
+      "next_step": "Auditoría A en #1731; decisiones de Gabriel pendientes (tipografía, duraciones, hover, radios, GlassCard a Card)",
       "refs": [
         "e36",
         "restyling"
