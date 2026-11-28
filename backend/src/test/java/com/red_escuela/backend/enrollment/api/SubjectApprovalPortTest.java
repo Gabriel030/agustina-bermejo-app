@@ -4,6 +4,7 @@ import com.red_escuela.backend.academicstructure.api.PrerequisiteView;
 import com.red_escuela.backend.academicstructure.api.ProgramCurriculumFinder;
 import com.red_escuela.backend.academicstructure.api.ProgramSubjectView;
 import com.red_escuela.backend.academicstructure.domain.RequirementType;
+import com.red_escuela.backend.academicstructure.entity.CurriculumPlan;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -42,6 +43,7 @@ class SubjectApprovalPortTest {
     private static final Long ENROLLMENT_ID = 5L;
     private static final Long OTHER_ENROLLMENT_ID = 6L;
     private static final Long PROGRAM_ID = 9L;
+    private static final Long PLAN_ID = 17L;
 
     private final ProgramEnrollmentRepository enrollmentRepository = mock(ProgramEnrollmentRepository.class);
     private final SubjectSectionEnrollmentRepository sectionRepository = mock(SubjectSectionEnrollmentRepository.class);
@@ -132,8 +134,11 @@ class SubjectApprovalPortTest {
                 approvalRepository, curriculumFinder);
         ProgramEnrollment enrollment = mock(ProgramEnrollment.class);
         Program program = mock(Program.class);
+        CurriculumPlan plan = mock(CurriculumPlan.class);
         when(enrollmentRepository.findById(ENROLLMENT_ID)).thenReturn(Optional.of(enrollment));
         when(enrollment.getProgram()).thenReturn(program);
+        when(enrollment.getPlan()).thenReturn(plan);
+        when(plan.getId()).thenReturn(PLAN_ID);
         when(program.getId()).thenReturn(PROGRAM_ID);
         when(curriculumFinder.findProgramSubject(PROGRAM_ID, 3L))
                 .thenReturn(Optional.of(new ProgramSubjectView(33L, 3L, "Analisis", 4, 1, null, null)));
@@ -199,14 +204,17 @@ class SubjectApprovalPortTest {
         ProgramProgressReader reader = new ProgramProgressReader(enrollmentRepository, sectionRepository, curriculumFinder, lookup);
         ProgramEnrollment enrollment = mock(ProgramEnrollment.class);
         Program program = mock(Program.class);
+        CurriculumPlan plan = mock(CurriculumPlan.class);
         when(enrollmentRepository.findById(ENROLLMENT_ID)).thenReturn(Optional.of(enrollment));
         when(enrollment.getId()).thenReturn(ENROLLMENT_ID);
         when(enrollment.getProgram()).thenReturn(program);
+        when(enrollment.getPlan()).thenReturn(plan);
+        when(plan.getId()).thenReturn(PLAN_ID);
         when(program.getId()).thenReturn(PROGRAM_ID);
-        when(program.getTotalCreditsRequired()).thenReturn(8);
+        when(plan.getTotalCreditsRequired()).thenReturn(8);
         ProgramSubjectView first = new ProgramSubjectView(11L, 1L, "Algebra", 4, 1, null, null);
         ProgramSubjectView second = new ProgramSubjectView(22L, 2L, "Fisica", 4, 1, null, null);
-        when(curriculumFinder.findProgramSubjects(PROGRAM_ID)).thenReturn(List.of(first, second));
+        when(curriculumFinder.findActiveProgramSubjectsOfPlan(PLAN_ID)).thenReturn(List.of(first, second));
         when(curriculumFinder.findElectiveGroupRequirements(PROGRAM_ID)).thenReturn(List.of());
         when(sectionRepository.findByProgramEnrollmentId(ENROLLMENT_ID)).thenReturn(List.of());
         coursework(ENROLLMENT_ID, 1L, EnrollmentStatus.APPROVED);
@@ -230,11 +238,14 @@ class SubjectApprovalPortTest {
         ProgramProgressReader reader = new ProgramProgressReader(enrollmentRepository, sectionRepository, curriculumFinder, lookup);
         ProgramEnrollment enrollment = mock(ProgramEnrollment.class);
         Program program = mock(Program.class);
+        CurriculumPlan plan = mock(CurriculumPlan.class);
         when(enrollmentRepository.findById(ENROLLMENT_ID)).thenReturn(Optional.of(enrollment));
         when(enrollment.getProgram()).thenReturn(program);
+        when(enrollment.getPlan()).thenReturn(plan);
+        when(plan.getId()).thenReturn(PLAN_ID);
         when(program.getId()).thenReturn(PROGRAM_ID);
-        when(program.getTotalCreditsRequired()).thenReturn(8);
-        when(curriculumFinder.findProgramSubjects(PROGRAM_ID)).thenReturn(List.of(
+        when(plan.getTotalCreditsRequired()).thenReturn(8);
+        when(curriculumFinder.findActiveProgramSubjectsOfPlan(PLAN_ID)).thenReturn(List.of(
                 new ProgramSubjectView(11L, 1L, "Algebra", 4, 1, null, null),
                 new ProgramSubjectView(22L, 2L, "Fisica", 4, 1, null, null)));
         when(curriculumFinder.findElectiveGroupRequirements(PROGRAM_ID)).thenReturn(List.of());
@@ -257,12 +268,15 @@ class SubjectApprovalPortTest {
         ProgramProgressReader reader = new ProgramProgressReader(enrollmentRepository, sectionRepository, curriculumFinder, lookup);
         ProgramEnrollment enrollment = mock(ProgramEnrollment.class);
         Program program = mock(Program.class);
+        CurriculumPlan plan = mock(CurriculumPlan.class);
         when(enrollmentRepository.findById(ENROLLMENT_ID)).thenReturn(Optional.of(enrollment));
         when(enrollment.getId()).thenReturn(ENROLLMENT_ID);
         when(enrollment.getProgram()).thenReturn(program);
+        when(enrollment.getPlan()).thenReturn(plan);
+        when(plan.getId()).thenReturn(PLAN_ID);
         when(program.getId()).thenReturn(PROGRAM_ID);
-        when(program.getTotalCreditsRequired()).thenReturn(4);
-        when(curriculumFinder.findProgramSubjects(PROGRAM_ID)).thenReturn(List.of(
+        when(plan.getTotalCreditsRequired()).thenReturn(4);
+        when(curriculumFinder.findActiveProgramSubjectsOfPlan(PLAN_ID)).thenReturn(List.of(
                 new ProgramSubjectView(11L, 1L, "Algebra", 4, 1, null, null)));
         when(curriculumFinder.findElectiveGroupRequirements(PROGRAM_ID)).thenReturn(List.of());
         coursework(ENROLLMENT_ID, 1L, EnrollmentStatus.APPROVED);

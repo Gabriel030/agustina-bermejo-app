@@ -96,11 +96,16 @@ public interface SubjectSectionEnrollmentRepository extends JpaRepository<Subjec
         com.red_escuela.backend.shared.domain.Grade getFinalScore();
 
         Long getTermId();
+
+        java.time.LocalDate getFinalScoreDate();
+
+        Long getEnrollmentId();
     }
 
     @Query("""
             select e.programEnrollment.id as programEnrollmentId, e.subjectSection.subject.id as subjectId, e.status as status,
-            e.finalScore as finalScore, e.subjectSection.term.id as termId
+            e.finalScore as finalScore, e.subjectSection.term.id as termId, e.finalScoreDate as finalScoreDate,
+            e.id as enrollmentId
             from SubjectSectionEnrollment e
             where e.programEnrollment.id in :programEnrollmentIds and e.subjectSection.subject.id in :subjectIds
             and e.status in :statuses
@@ -118,10 +123,13 @@ public interface SubjectSectionEnrollmentRepository extends JpaRepository<Subjec
         EnrollmentStatus getStatus();
 
         com.red_escuela.backend.shared.domain.Grade getFinalScore();
+
+        java.time.LocalDate getFinalScoreDate();
     }
 
     @Query("""
-            select e.id as enrollmentId, e.subjectSection.subject.id as subjectId, e.status as status, e.finalScore as finalScore
+            select e.id as enrollmentId, e.subjectSection.subject.id as subjectId, e.status as status, e.finalScore as finalScore,
+            e.finalScoreDate as finalScoreDate
             from SubjectSectionEnrollment e
             where e.programEnrollment.id = :programEnrollmentId
             """)

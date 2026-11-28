@@ -63,8 +63,26 @@ public class ProgramCurriculumFinder {
                 .toList();
     }
 
-    public boolean subjectBelongsToPlan(Long planId, Long subjectId) {
-        return programSubjectRepository.findByPlanIdAndSubjectId(planId, subjectId).isPresent();
+    public List<ProgramSubjectView> findActiveProgramSubjectsOfPlan(Long planId) {
+        return programSubjectRepository.findActiveByPlanId(planId).stream()
+                .map(this::toProgramSubjectView)
+                .toList();
+    }
+
+    public Map<Long, List<PrerequisiteView>> findPrerequisitesOfPlan(Long planId) {
+        return prerequisiteRepository.findAllOfPlan(planId).stream()
+                .collect(Collectors.groupingBy(prerequisite -> prerequisite.getProgramSubject().getId(),
+                        Collectors.mapping(this::toPrerequisiteView, Collectors.toList())));
+    }
+
+    public Map<Long, List<ProgramCorequisiteView>> findCorequisitesOfPlan(Long planId) {
+        return corequisiteRepository.findAllOfPlan(planId).stream()
+                .collect(Collectors.groupingBy(corequisite -> corequisite.getProgramSubject().getId(),
+                        Collectors.mapping(this::toCorequisiteView, Collectors.toList())));
+    }
+
+    public boolean subjectIsActiveInPlan(Long planId, Long subjectId) {
+        return programSubjectRepository.existsActiveByPlanIdAndSubjectId(planId, subjectId);
     }
 
     public boolean subjectBelongsToProgram(Long programId, Long subjectId) {

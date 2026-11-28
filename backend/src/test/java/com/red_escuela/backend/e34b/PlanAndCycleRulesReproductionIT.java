@@ -5,7 +5,6 @@ import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycle;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.Program;
-import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.service.CycleApproval;
@@ -38,10 +37,10 @@ class PlanAndCycleRulesReproductionIT extends ReproductionFixture {
     private SubjectEquivalenceEligibilityGuard equivalenceEligibilityGuard;
 
     @Test
-    void changingPlanCreditsRetroactivelyChangesTheProgressOfACompletedGraduate() {
+    void changingTheProgramTotalCreditsDoesNotChangeTheProgressOfAnEnrollmentOnItsPlan() {
         Program program = program(4);
         Subject subject = subject("Algebra");
-        ProgramSubject planEntry = programSubject(program, subject, 4, StatusType.ACTIVE);
+        programSubject(program, subject, 4, StatusType.ACTIVE);
         ProgramEnrollment enrollment = programEnrollment(student(), program, ProgramEnrollmentStatus.COMPLETED);
         Term term = term(LocalDateTime.of(2026, 3, 1, 0, 0), LocalDateTime.of(2026, 7, 1, 0, 0));
         SubjectSectionEnrollment approved = sectionEnrollment(enrollment, section(subject, term), EnrollmentStatus.APPROVED);
@@ -53,14 +52,12 @@ class PlanAndCycleRulesReproductionIT extends ReproductionFixture {
 
         entityManager.createQuery("update Program p set p.totalCreditsRequired = 8 where p.id = :id")
                 .setParameter("id", program.getId()).executeUpdate();
-        entityManager.createQuery("update ProgramSubject ps set ps.credits = 2 where ps.id = :id")
-                .setParameter("id", planEntry.getId()).executeUpdate();
         flushAndClear();
 
         var after = programProgressReader.calculateProgress(enrollment.getId());
-        assertThat(after.requiredCredits()).isEqualTo(8);
-        assertThat(after.accumulatedCredits()).isEqualTo(2);
-        assertThat(after.eligibleToComplete()).isFalse();
+        assertThat(after.requiredCredits()).isEqualTo(4);
+        assertThat(after.accumulatedCredits()).isEqualTo(4);
+        assertThat(after.eligibleToComplete()).isTrue();
     }
 
     @Test
@@ -94,7 +91,6 @@ class PlanAndCycleRulesReproductionIT extends ReproductionFixture {
     }
 
     @Test
-    @Disabled("E34-B-P2")
     void equivalenceCannotBeRecordedForASubjectTheStudentIsRegularIn() {
         Program program = program(4);
         Subject subject = subject("Algebra");
@@ -105,6 +101,6 @@ class PlanAndCycleRulesReproductionIT extends ReproductionFixture {
         flushAndClear();
 
         assertThatThrownBy(() -> equivalenceEligibilityGuard.requireSubjectOpenForEquivalence(enrollment.getId(), subject.getId()))
-                .isInstanceOf(RuntimeException.class);
+                .isInstanceOf(com.red_escuela.backend.enrollment.exception.SubjectRegularException.class);
     }
 }

@@ -108,6 +108,7 @@ class ApprovedSubjectsCertificateIssuerTest {
         when(repository.existsByCode(anyString())).thenReturn(true);
         ProgramEnrollment enrollment = mock(ProgramEnrollment.class);
         when(enrollment.getProgram()).thenReturn(mock(Program.class));
+        when(enrollment.getPlan()).thenReturn(mock(com.red_escuela.backend.academicstructure.entity.CurriculumPlan.class));
         when(programEnrollmentFinder.requireOwnedBy(2L, 1L)).thenReturn(enrollment);
         when(holderFactory.create(any(), anyString(), any(), any(), any(), any())).thenReturn(mock(CertificateSnapshot.class));
 
