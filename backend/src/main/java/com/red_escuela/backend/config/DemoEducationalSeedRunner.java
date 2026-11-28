@@ -223,8 +223,12 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
 
     private long createOpenCohort(DemoApiClient api, long programId, long termId) {
         long templateId = api.post(DIRECTOR, "/programs/" + programId + "/year-billing-templates", Map.of("termId", termId)).get("id").asLong();
-        return api.post(ADMIN, "/year-billing-templates/" + templateId + "/cohorts",
-                Map.of("intake", "FIRST", "admissionStart", "2020-01-01", "admissionEnd", "2099-12-31", "cursadaStart", "2026-03-01")).get("id").asLong();
+        long preceptorId = jdbcTemplate.queryForObject("select id from person where username = 'preceptor.demo'", Long.class);
+        long cohortId = api.post(ADMIN, "/year-billing-templates/" + templateId + "/cohorts",
+                Map.of("intake", "FIRST", "admissionStart", "2020-01-01", "admissionEnd", "2099-12-31", "cursadaStart", "2026-03-01",
+                        "responsiblePreceptorIds", List.of(preceptorId))).get("id").asLong();
+        jdbcTemplate.update("update program_cohort set opened_at = now() where id = ?", cohortId);
+        return cohortId;
     }
 
     private void enrollRegularStudent(DemoApiClient api, long studentId, long programId, long termId, List<Long> sectionIds) {

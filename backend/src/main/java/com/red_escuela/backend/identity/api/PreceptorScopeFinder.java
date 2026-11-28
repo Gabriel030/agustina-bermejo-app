@@ -5,6 +5,7 @@ import com.red_escuela.backend.identity.repository.PreceptorAssignmentRepository
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
@@ -30,6 +31,21 @@ public class PreceptorScopeFinder {
 
     public Set<Long> assignedProgramCohortIds(Long personId) {
         return idsOf(personId, PreceptorAssignment::getProgramCohortId);
+    }
+
+    public Set<Long> responsiblePersonIdsOfCohort(Long programCohortId) {
+        return preceptorAssignmentRepository.findByProgramCohortId(programCohortId).stream()
+                .map(PreceptorAssignment::getPersonId)
+                .collect(Collectors.toUnmodifiableSet());
+    }
+
+    public Set<Long> subjectSectionIdsWithPreceptor(Collection<Long> subjectSectionIds) {
+        if (subjectSectionIds.isEmpty()) {
+            return Set.of();
+        }
+        return preceptorAssignmentRepository.findBySubjectSectionIdIn(subjectSectionIds).stream()
+                .map(PreceptorAssignment::getSubjectSectionId)
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     private Set<Long> idsOf(Long personId, Function<PreceptorAssignment, Long> target) {

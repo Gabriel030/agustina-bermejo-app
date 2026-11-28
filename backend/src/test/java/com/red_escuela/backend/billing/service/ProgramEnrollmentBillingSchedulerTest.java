@@ -126,6 +126,7 @@ class ProgramEnrollmentBillingSchedulerTest extends AbstractIntegrationTest {
         template = com.red_escuela.backend.billing.planning.TestTemplateTerms.publish(configurationVersionRepository, templateRepository.save(template));
 
         ProgramCohort cohort = new ProgramCohort();
+        cohort.markOpened(java.time.LocalDateTime.of(2000, 1, 1, 0, 0));
         cohort.setTemplateId(template.getId());
         cohort.setProgramId(template.programId());
         cohort.setTermId(template.termId());

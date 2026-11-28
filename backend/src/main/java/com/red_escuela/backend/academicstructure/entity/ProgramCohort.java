@@ -55,8 +55,19 @@ public class ProgramCohort {
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 
+    @Column(name = "opened_at")
+    private LocalDateTime openedAt;
+
+    public boolean isOpen() {
+        return openedAt != null;
+    }
+
+    public void markOpened(LocalDateTime when) {
+        this.openedAt = when;
+    }
+
     public boolean isAdmissionOpenOn(LocalDate day) {
-        return !day.isBefore(admissionStart) && !day.isAfter(admissionEnd);
+        return isOpen() && !day.isBefore(admissionStart) && !day.isAfter(admissionEnd);
     }
 
     @PrePersist

@@ -13,6 +13,8 @@ public interface SectionEvaluationConfigRepository extends JpaRepository<Section
 
     Optional<SectionEvaluationConfig> findBySubjectSectionId(Long subjectSectionId);
 
+    List<SectionEvaluationConfig> findBySubjectSectionIdInAndStatus(java.util.Collection<Long> subjectSectionIds, SectionEvaluationConfigStatus status);
+
     Optional<SectionEvaluationConfig> findByCourseSectionId(Long courseSectionId);
 
     List<SectionEvaluationConfig> findBySubjectSection_Instructors_InstructorId(Long instructorId);
