@@ -104,7 +104,7 @@ public class ProgramProgressReader {
     public boolean hasActiveCoursework(Long programEnrollmentId) {
         return subjectSectionEnrollmentRepository.existsByProgramEnrollmentIdAndStatusIn(
                 programEnrollmentId,
-                List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR));
+                List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVAL_PENDING));
     }
 
     public List<ProgramSubjectView> listApprovedSubjects(Long programEnrollmentId) {

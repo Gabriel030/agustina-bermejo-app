@@ -11,7 +11,7 @@ public enum GradeGridCondition {
 
     public static GradeGridCondition of(EnrollmentStatus status, boolean freeByAbsences) {
         return switch (status) {
-            case REGULAR -> REGULAR;
+            case REGULAR, APPROVAL_PENDING -> REGULAR;
             case APPROVED -> APPROVED;
             case FAILED -> FAILED;
             case ENROLLED, IN_PROGRESS -> freeByAbsences ? FREE : IN_PROGRESS;

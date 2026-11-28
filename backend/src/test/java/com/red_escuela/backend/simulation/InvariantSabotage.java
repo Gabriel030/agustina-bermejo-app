@@ -80,6 +80,8 @@ public final class InvariantSabotage {
                 "update program_enrollment set program_id = program_id + 100000 where id = (select min(program_enrollment_id) from subject_section_enrollment)"));
         MUTATIONS.put(AcademicInvariants.SECTION_WITHOUT_APPROVED_CYCLE, List.of(
                 "update subject_section set academic_offering_cycle_id = null where id = (select min(id) from subject_section where status = 'ACTIVE')"));
+        MUTATIONS.put(AcademicInvariants.APPROVAL_PENDING_WITH_REQUIREMENTS_MET, List.of(
+                "update subject_section_enrollment set status = 'APPROVAL_PENDING' where id = (select min(id) from subject_section_enrollment where status = 'APPROVED')"));
         MUTATIONS.put(AcademicInvariants.FOREIGN_KEY_ORPHAN, List.of(
                 "update attendance set program_section_enrollment_id = 987654321 where id = (select min(id) from attendance where program_section_enrollment_id is not null)"));
     }

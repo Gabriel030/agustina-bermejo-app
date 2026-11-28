@@ -25,7 +25,13 @@ class ClosureConditionPolicyTest {
 
     private Optional<ClosureFinalCondition> decide(Optional<CourseworkOutcome> outcome, boolean forced,
             EnrollmentStatus current, boolean free, PaymentsStanding payments, boolean documentsComplete) {
-        return policy.decideFinalCondition(outcome, forced, current, free, payments, documentsComplete);
+        return policy.decideFinalCondition(outcome, forced, current, free, payments, documentsComplete, false);
+    }
+
+    private Optional<ClosureFinalCondition> decideWithRequirementsPending(Optional<CourseworkOutcome> outcome,
+            PaymentsStanding payments, boolean documentsComplete) {
+        return policy.decideFinalCondition(
+                outcome, false, EnrollmentStatus.IN_PROGRESS, false, payments, documentsComplete, true);
     }
 
     @Test
@@ -85,5 +91,25 @@ class ClosureConditionPolicyTest {
     @Test
     void withoutOutcomeTheConditionIsUndecided() {
         assertThat(decide(Optional.empty(), false, EnrollmentStatus.IN_PROGRESS, false, PaymentsStanding.OK, true)).isEmpty();
+    }
+
+    @Test
+    void promotionWithPendingRequirementsIsConditionalEvenWithPaymentsOkAndCompleteDocuments() {
+        assertThat(decideWithRequirementsPending(promotion, PaymentsStanding.OK, true))
+                .contains(ClosureFinalCondition.PROMOTION_CONDITIONAL);
+    }
+
+    @Test
+    void promotionWithPendingRequirementsAndAdministrativeBlockIsConditional() {
+        assertThat(decideWithRequirementsPending(promotion, PaymentsStanding.NOT_OK, false))
+                .contains(ClosureFinalCondition.PROMOTION_CONDITIONAL);
+    }
+
+    @Test
+    void pendingRequirementsDoNotChangeANonPromotionOutcome() {
+        assertThat(decideWithRequirementsPending(regular, PaymentsStanding.OK, true))
+                .contains(ClosureFinalCondition.GOES_TO_FINAL);
+        assertThat(decideWithRequirementsPending(failed, PaymentsStanding.OK, true))
+                .contains(ClosureFinalCondition.FAILED);
     }
 }

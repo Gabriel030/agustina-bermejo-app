@@ -87,7 +87,8 @@ class StudentActiveSectionsReaderIT extends AbstractIntegrationTest {
         assertThat(views).extracting(ActiveSectionView::sectionId).containsExactlyInAnyOrder(
                 sections.get(EnrollmentStatus.ENROLLED).getId(),
                 sections.get(EnrollmentStatus.IN_PROGRESS).getId(),
-                sections.get(EnrollmentStatus.REGULAR).getId());
+                sections.get(EnrollmentStatus.REGULAR).getId(),
+                sections.get(EnrollmentStatus.APPROVAL_PENDING).getId());
         SubjectSection enrolled = sections.get(EnrollmentStatus.ENROLLED);
         assertThat(views).contains(new ActiveSectionView(SectionKind.PROGRAM, enrolled.getId(), enrolled.getName(),
                 enrolled.getSubject().getName(), term.getId()));

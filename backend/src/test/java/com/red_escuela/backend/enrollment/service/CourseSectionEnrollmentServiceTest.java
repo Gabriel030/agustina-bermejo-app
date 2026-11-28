@@ -37,7 +37,7 @@ import static org.mockito.Mockito.when;
 class CourseSectionEnrollmentServiceTest {
 
     private static final List<EnrollmentStatus> SEAT_HOLDING =
-            List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR);
+            List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVAL_PENDING);
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-05-04T15:30:00Z"), ZoneOffset.UTC);
 
     @Mock

@@ -189,7 +189,7 @@ class ProgramProgressReaderTest {
     @Test
     void progressReportsRegularWhenSomeSubjectIsStillActive() {
         when(sectionRepository.existsByProgramEnrollmentIdAndStatusIn(ENROLLMENT_ID,
-                List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR)))
+                List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVAL_PENDING)))
                 .thenReturn(true);
 
         assertThat(reader.calculateProgress(ENROLLMENT_ID).hasActiveCoursework()).isTrue();

@@ -21,7 +21,7 @@ import java.util.Set;
 public class CourseInstitutionalRegularityRule implements InstitutionalRegularityRule {
 
     private static final Set<EnrollmentStatus> ACTIVE_STATUSES =
-            Set.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR);
+            Set.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVAL_PENDING);
 
     private final CourseEnrollmentFinder courseEnrollmentFinder;
     private final ActiveSectionEnrollmentFinder activeSectionEnrollmentFinder;

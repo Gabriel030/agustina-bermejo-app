@@ -55,6 +55,8 @@ public class ClosureOutcomeApplier {
                     flagGraduationOutdated(kind, row.getEnrollmentId());
                 }
                 case PROMOTION_CONDITIONAL -> {
+                    record(kind, row.getEnrollmentId(), EnrollmentStatus.APPROVAL_PENDING, row.getPromotionGrade(), FinalGradeType.PROMOTION);
+                    flagGraduationOutdated(kind, row.getEnrollmentId());
                 }
             }
         }

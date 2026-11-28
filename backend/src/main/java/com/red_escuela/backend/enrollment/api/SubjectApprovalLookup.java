@@ -64,7 +64,7 @@ public class SubjectApprovalLookup {
         Map<Long, Map<Long, List<CourseworkEntry>>> coursework = new HashMap<>();
         for (PrerequisiteStatusRow row : subjectSectionEnrollmentRepository.findPrerequisiteStatusRows(
                 programEnrollmentIds, subjectIds, courseworkStatuses)) {
-            if (ignoreRegularInTermId != null && row.getStatus() == EnrollmentStatus.REGULAR
+            if (ignoreRegularInTermId != null && (row.getStatus() == EnrollmentStatus.REGULAR || row.getStatus() == EnrollmentStatus.APPROVAL_PENDING)
                     && ignoreRegularInTermId.equals(row.getTermId())) {
                 continue;
             }

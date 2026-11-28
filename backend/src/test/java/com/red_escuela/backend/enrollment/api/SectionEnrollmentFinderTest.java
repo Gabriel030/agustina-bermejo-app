@@ -120,21 +120,21 @@ class SectionEnrollmentFinderTest {
     }
 
     @Test
-    void findMembersOfProgramSectionQueriesTheFiveMemberStatuses() {
+    void findMembersOfProgramSectionQueriesTheSixMemberStatuses() {
         SubjectSectionEnrollment enrollment = mock(SubjectSectionEnrollment.class);
         when(programEnrollmentRepository.findBySubjectSectionIdAndStatusIn(3L, List.of(
                 EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR,
-                EnrollmentStatus.APPROVED, EnrollmentStatus.FAILED))).thenReturn(List.of(enrollment));
+                EnrollmentStatus.APPROVAL_PENDING, EnrollmentStatus.APPROVED, EnrollmentStatus.FAILED))).thenReturn(List.of(enrollment));
 
         assertThat(finder.findMembersOfProgramSection(3L)).containsExactly(enrollment);
     }
 
     @Test
-    void findMembersOfCourseSectionQueriesTheFiveMemberStatuses() {
+    void findMembersOfCourseSectionQueriesTheSixMemberStatuses() {
         CourseSubjectSectionEnrollment enrollment = mock(CourseSubjectSectionEnrollment.class);
         when(courseEnrollmentRepository.findByCourseSubjectSectionIdAndStatusIn(3L, List.of(
                 EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR,
-                EnrollmentStatus.APPROVED, EnrollmentStatus.FAILED))).thenReturn(List.of(enrollment));
+                EnrollmentStatus.APPROVAL_PENDING, EnrollmentStatus.APPROVED, EnrollmentStatus.FAILED))).thenReturn(List.of(enrollment));
 
         assertThat(finder.findMembersOfCourseSection(3L)).containsExactly(enrollment);
     }

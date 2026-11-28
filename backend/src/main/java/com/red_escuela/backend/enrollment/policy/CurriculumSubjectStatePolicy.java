@@ -15,7 +15,8 @@ public final class CurriculumSubjectStatePolicy {
         if (approvedByEquivalence || statuses.contains(EnrollmentStatus.APPROVED)) {
             return CurriculumSubjectState.APPROVED;
         }
-        if (statuses.contains(EnrollmentStatus.ENROLLED) || statuses.contains(EnrollmentStatus.IN_PROGRESS)) {
+        if (statuses.contains(EnrollmentStatus.ENROLLED) || statuses.contains(EnrollmentStatus.IN_PROGRESS)
+                || statuses.contains(EnrollmentStatus.APPROVAL_PENDING)) {
             return CurriculumSubjectState.IN_PROGRESS;
         }
         if (statuses.contains(EnrollmentStatus.REGULAR)) {
@@ -29,7 +30,7 @@ public final class CurriculumSubjectStatePolicy {
 
     public boolean countsAsAttempt(EnrollmentStatus status) {
         return switch (status) {
-            case ENROLLED, IN_PROGRESS, REGULAR, APPROVED, FAILED -> true;
+            case ENROLLED, IN_PROGRESS, REGULAR, APPROVAL_PENDING, APPROVED, FAILED -> true;
             default -> false;
         };
     }

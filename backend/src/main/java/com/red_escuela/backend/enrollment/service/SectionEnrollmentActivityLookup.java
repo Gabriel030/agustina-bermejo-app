@@ -14,7 +14,7 @@ import java.util.List;
 public class SectionEnrollmentActivityLookup implements SectionEnrollmentActivityPort {
 
     private static final List<EnrollmentStatus> LIVE_STATUSES = List.of(
-            EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR, EnrollmentStatus.WAITLISTED);
+            EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVAL_PENDING, EnrollmentStatus.WAITLISTED);
 
     private final SubjectSectionEnrollmentRepository programRepository;
     private final CourseSubjectSectionEnrollmentRepository courseRepository;

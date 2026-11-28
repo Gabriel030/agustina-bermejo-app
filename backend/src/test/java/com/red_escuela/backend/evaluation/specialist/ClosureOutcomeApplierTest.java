@@ -100,4 +100,26 @@ class ClosureOutcomeApplierTest {
         verify(recorder).markCourseFreeReason(1L);
         verifyNoInteractions(graduation);
     }
+
+    @Test
+    void conditionalPromotionsAreRecordedAsApprovalPendingKeepingThePromotionGradeWithoutRequestingGraduation() {
+        Grade grade = Grade.of(new BigDecimal("8.50"));
+        programEnrollment(1L, EnrollmentStatus.IN_PROGRESS, 71L);
+
+        applier.applyClosedResults(SectionKind.PROGRAM, List.of(row(1L, ClosureFinalCondition.PROMOTION_CONDITIONAL, "8.50")));
+
+        verify(recorder).recordProgramOutcome(1L, EnrollmentStatus.APPROVAL_PENDING, grade, FinalGradeType.PROMOTION, true);
+        verify(graduation, never()).requestGraduationIfEligible(org.mockito.ArgumentMatchers.anyLong());
+    }
+
+    @Test
+    void approvalPendingEnrollmentsAreNotClosedAgain() {
+        programEnrollment(1L, EnrollmentStatus.APPROVAL_PENDING, 71L);
+
+        applier.applyClosedResults(SectionKind.PROGRAM, List.of(row(1L, ClosureFinalCondition.GOES_TO_FINAL, null)));
+
+        verify(recorder, never()).recordProgramOutcome(
+                org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyBoolean());
+    }
 }
