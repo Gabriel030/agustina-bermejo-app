@@ -21,6 +21,7 @@ public class ApprovalRequirementsEvaluator {
         List<ApprovalRequirement> unmet = checks.stream()
                 .filter(check -> check.isUnmet(context))
                 .map(ApprovalRequirementCheck::requirement)
+                .sorted()
                 .toList();
         return UnmetApprovalRequirements.of(unmet);
     }
