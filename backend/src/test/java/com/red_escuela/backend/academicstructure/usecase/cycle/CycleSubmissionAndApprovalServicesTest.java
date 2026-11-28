@@ -74,6 +74,8 @@ class CycleSubmissionAndApprovalServicesTest {
     @Mock
     private SectionConflictChecker conflictChecker;
     @Mock
+    private com.red_escuela.backend.academicstructure.service.CourseReadinessChecker courseReadinessChecker;
+    @Mock
     private CurrentActorFinder currentActorFinder;
     @Mock
     private ApplicationEventPublisher eventPublisher;
@@ -104,7 +106,7 @@ class CycleSubmissionAndApprovalServicesTest {
         return new ApproveCycleService(new CycleApproval(cycleRepository, subjectSectionRepository, courseSectionRepository,
                 slotRepository, conflictChecker,
                 new AcademicOfferingCycleReviewer(currentActorFinder, Clock.systemDefaultZone()),
-                eventPublisher, new com.red_escuela.backend.academicstructure.service.TermOfferingGuard(Clock.systemDefaultZone())));
+                eventPublisher, new com.red_escuela.backend.academicstructure.service.TermOfferingGuard(Clock.systemDefaultZone()), courseReadinessChecker));
     }
 
     private SubjectSection subjectSection(Long id, InstructorRole... roles) {

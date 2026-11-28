@@ -23,8 +23,8 @@ public final class JdbcCurriculumPlans {
                                     + "values (extract(year from current_date), 'ACTIVE', now() - interval '60 days', now() + interval '300 days', "
                                     + "timestamp '2000-01-01 00:00:00', timestamp '2999-12-31 00:00:00') returning id", Long.class));
                     return jdbc.queryForObject("insert into program_cohort (program_id, term_id, plan_id, intake, admission_start, admission_end, cursada_start, "
-                            + "created_by_id, created_at) values (?, ?, ?, 'FIRST', current_date - 30, current_date + 30, current_date, "
-                            + "(select min(id) from person), now()) returning id", Long.class, programId, termId, planIdOf(jdbc, programId));
+                            + "created_by_id, created_at, opened_at) values (?, ?, ?, 'FIRST', current_date - 30, current_date + 30, current_date, "
+                            + "(select min(id) from person), now(), now()) returning id", Long.class, programId, termId, planIdOf(jdbc, programId));
                 });
     }
 

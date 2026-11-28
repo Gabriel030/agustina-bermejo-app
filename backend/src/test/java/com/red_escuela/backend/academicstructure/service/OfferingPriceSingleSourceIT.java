@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.service;
 
+import com.red_escuela.backend.testsupport.PreceptorTestFactory;
 import static com.red_escuela.backend.shared.domain.TestMoney.ars;
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -47,6 +48,9 @@ import org.springframework.transaction.support.TransactionTemplate;
 @SpringBootTest
 @ActiveProfiles("test")
 class OfferingPriceSingleSourceIT extends AbstractIntegrationTest {
+    @org.springframework.beans.factory.annotation.Autowired
+    private PreceptorTestFactory preceptors;
+
 
     private static final LocalDate CREATION_DAY = LocalDate.of(2027, 3, 1);
     private static final LocalDate INCREASE_DAY = LocalDate.of(2027, 6, 1);
@@ -176,7 +180,7 @@ class OfferingPriceSingleSourceIT extends AbstractIntegrationTest {
             entityManager.flush();
             return id;
         });
-        Long courseId = courseService.create(new CreateCourseRequest("Curso " + UUID.randomUUID(), termId, null, 10, ars("800"), 6, null, null, null)).getId();
+        Long courseId = courseService.create(new CreateCourseRequest("Curso " + UUID.randomUUID(), termId, null, 10, ars("800"), 6, null, null, null, null, null, java.util.List.of(preceptors.createPreceptorId()))).getId();
         courseService.update(courseId, new UpdateCourseRequest(null, null, null, ars("900"), null, null, null, null));
 
         assertThat(jdbc.queryForObject("select count(*) from program where id = ? and (price is not null or enrollment_fee_amount is not null)", Long.class, program.getId())).isZero();

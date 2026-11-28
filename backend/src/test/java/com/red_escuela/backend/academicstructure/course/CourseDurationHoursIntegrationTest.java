@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.course;
 
+import com.red_escuela.backend.testsupport.PreceptorTestFactory;
 import com.red_escuela.backend.academicstructure.CycleTestFixtures;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
@@ -55,6 +56,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @Transactional
 class CourseDurationHoursIntegrationTest extends AbstractIntegrationTest {
+    @org.springframework.beans.factory.annotation.Autowired
+    private PreceptorTestFactory preceptors;
+
 
     @Autowired
     private MockMvc mockMvc;
@@ -206,7 +210,7 @@ class CourseDurationHoursIntegrationTest extends AbstractIntegrationTest {
         Course course = persistCourse(40);
         Term term = course.getTerm();
         String createBody = "{\"name\":\"Nuevo\",\"termId\":" + term.getId()
-                + ",\"capacity\":10,\"durationMonths\":3,\"durationHours\":0,"
+                + ",\"capacity\":10,\"durationMonths\":3,\"durationHours\":0,\"responsiblePreceptorIds\":[" + preceptors.createPreceptorId() + "],"
                 + "\"price\":{\"amount\":100,\"currency\":\"ARS\"}}";
 
         mockMvc.perform(post("/courses").header("Authorization", "Bearer " + administrative)

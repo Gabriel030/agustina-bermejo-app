@@ -132,6 +132,7 @@ public class IssuingScenarioFactory {
     public Long newCohort(Long templateId, CohortIntake intake, LocalDate cursadaStart, Percentage entryDiscount) {
         return transactionTemplate.execute(status -> {
             ProgramCohort cohort = new ProgramCohort();
+            cohort.markOpened(java.time.LocalDateTime.of(2000, 1, 1, 0, 0));
             cohort.setTemplateId(templateId);
             ProgramYearBillingTemplate cohortTemplate = entityManager.find(ProgramYearBillingTemplate.class, templateId);
             cohort.setProgramId(cohortTemplate.programId());

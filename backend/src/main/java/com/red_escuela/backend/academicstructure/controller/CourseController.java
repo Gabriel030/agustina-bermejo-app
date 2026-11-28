@@ -1,6 +1,7 @@
 package com.red_escuela.backend.academicstructure.controller;
 
 import com.red_escuela.backend.academicstructure.dto.CoursePricingResponse;
+import com.red_escuela.backend.academicstructure.dto.CourseReadinessResponse;
 import com.red_escuela.backend.academicstructure.dto.CourseResponse;
 import com.red_escuela.backend.academicstructure.dto.CreateCourseRequest;
 import com.red_escuela.backend.academicstructure.dto.SetCatalogVisibilityRequest;
@@ -9,6 +10,7 @@ import com.red_escuela.backend.academicstructure.usecase.SetCatalogVisibilityCom
 import com.red_escuela.backend.academicstructure.dto.UpdateCourseRequest;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.usecase.CreateCourseUseCase;
+import com.red_escuela.backend.academicstructure.usecase.GetCourseReadinessUseCase;
 import com.red_escuela.backend.academicstructure.usecase.DeactivateCourseUseCase;
 import com.red_escuela.backend.academicstructure.usecase.GetCourseUseCase;
 import com.red_escuela.backend.academicstructure.usecase.GetCoursePricingUseCase;
@@ -45,6 +47,7 @@ public class CourseController {
     private final GetCourseUseCase getCourse;
     private final GetCoursePricingUseCase getCoursePricing;
     private final SetCourseCatalogVisibilityUseCase setCatalogVisibility;
+    private final GetCourseReadinessUseCase getCourseReadiness;
 
     public CourseController(CreateCourseUseCase createCourse,
             UpdateCourseUseCase updateCourse,
@@ -53,7 +56,8 @@ public class CourseController {
             ListCoursesUseCase listCourses,
             GetCourseUseCase getCourse,
             GetCoursePricingUseCase getCoursePricing,
-            SetCourseCatalogVisibilityUseCase setCatalogVisibility) {
+            SetCourseCatalogVisibilityUseCase setCatalogVisibility,
+            GetCourseReadinessUseCase getCourseReadiness) {
         this.createCourse = createCourse;
         this.updateCourse = updateCourse;
         this.deactivateCourse = deactivateCourse;
@@ -62,6 +66,13 @@ public class CourseController {
         this.getCourse = getCourse;
         this.getCoursePricing = getCoursePricing;
         this.setCatalogVisibility = setCatalogVisibility;
+        this.getCourseReadiness = getCourseReadiness;
+    }
+
+    @GetMapping("/{id}/readiness")
+    @RequiresPermission(code = "academicstructure.manage_courses", legacyRoles = "ROLE_ADMINISTRATIVO")
+    public CourseReadinessResponse getReadiness(@PathVariable Long id) {
+        return getCourseReadiness.getCourseReadiness(id);
     }
 
     @PostMapping

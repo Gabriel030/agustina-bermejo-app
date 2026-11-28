@@ -223,8 +223,12 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
 
     private long createOpenCohort(DemoApiClient api, long programId, long termId) {
         long templateId = api.post(DIRECTOR, "/programs/" + programId + "/year-billing-templates", Map.of("termId", termId)).get("id").asLong();
-        return api.post(ADMIN, "/year-billing-templates/" + templateId + "/cohorts",
-                Map.of("intake", "FIRST", "admissionStart", "2020-01-01", "admissionEnd", "2099-12-31", "cursadaStart", "2026-03-01")).get("id").asLong();
+        long preceptorId = jdbcTemplate.queryForObject("select id from person where username = 'preceptor.demo'", Long.class);
+        long cohortId = api.post(ADMIN, "/year-billing-templates/" + templateId + "/cohorts",
+                Map.of("intake", "FIRST", "admissionStart", "2020-01-01", "admissionEnd", "2099-12-31", "cursadaStart", "2026-03-01",
+                        "responsiblePreceptorIds", List.of(preceptorId))).get("id").asLong();
+        jdbcTemplate.update("update program_cohort set opened_at = now() where id = ?", cohortId);
+        return cohortId;
     }
 
     private void enrollRegularStudent(DemoApiClient api, long studentId, long programId, long termId, List<Long> sectionIds) {
@@ -349,6 +353,8 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
         course.put("capacity", 20);
         course.put("price", Map.of("amount", "15000", "currency", "ARS"));
         course.put("durationMonths", 3);
+        long preceptorId = jdbcTemplate.queryForObject("select id from person where username = 'preceptor.demo'", Long.class);
+        course.put("responsiblePreceptorIds", List.of(preceptorId));
         long courseId = api.post(ADMIN, "/courses", course).get("id").asLong();
         long cycleId = createCycle(api, "courseId", courseId, termId);
         List<Long> moduleSectionIds = new ArrayList<>();
@@ -365,6 +371,7 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
             long sectionId = api.post(ADMIN, "/academic-offering-cycles/" + cycleId + "/sections", section).asLong();
             api.put(ADMIN, "/course-sections/" + sectionId, Map.of("evaluationSchemeId", schemeId));
             api.post(ADMIN, "/course-sections/" + sectionId + "/instructors", Map.of("instructorId", instructorId, "role", "LEAD"));
+            jdbcTemplate.update("insert into preceptor_assignment (person_id, course_section_id, created_by) values (?, ?, ?)", preceptorId, sectionId, preceptorId);
             moduleSectionIds.add(sectionId);
         }
         approveCycle(api, cycleId);

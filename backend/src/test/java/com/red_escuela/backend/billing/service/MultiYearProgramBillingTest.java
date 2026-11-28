@@ -166,6 +166,7 @@ class MultiYearProgramBillingTest extends AbstractIntegrationTest {
     private ProgramCohort persistCohort(ProgramYearBillingTemplate template, CohortIntake intake,
                                          LocalDate admissionStart, LocalDate admissionEnd, LocalDate cursadaStart, Person createdBy) {
         ProgramCohort cohort = new ProgramCohort();
+        cohort.markOpened(java.time.LocalDateTime.of(2000, 1, 1, 0, 0));
         cohort.setTemplateId(template.getId());
         cohort.setProgramId(template.programId());
         cohort.setTermId(template.termId());
