@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Stream;
 
 @Component
 @Transactional(readOnly = true)
@@ -67,7 +68,8 @@ public class CourseCatalogFinder {
     }
 
     public List<Long> findCourseIdsWithWaitlistDeadlinePassed(LocalDate today) {
-        return courseRepository.findByWaitlistDeadlineOffsetDaysIsNotNull().stream()
+        return Stream.concat(courseRepository.findByWaitlistDeadlineOffsetDaysIsNotNull().stream(),
+                        courseRepository.findByWaitlistDeadlineOffsetDaysIsNull().stream())
                 .filter(course -> course.waitlistDeadlineHasPassed(today))
                 .map(Course::getId)
                 .toList();

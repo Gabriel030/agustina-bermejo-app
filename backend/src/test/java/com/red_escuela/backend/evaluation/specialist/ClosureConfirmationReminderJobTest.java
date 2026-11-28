@@ -1,5 +1,7 @@
 package com.red_escuela.backend.evaluation.specialist;
 
+import com.red_escuela.backend.academicstructure.api.EndedSectionFinder;
+import com.red_escuela.backend.academicstructure.api.EndedSectionRef;
 import com.red_escuela.backend.academicstructure.api.SectionTermEndFinder;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.evaluation.api.ClosureNotificationTargetsFinder;
@@ -13,6 +15,7 @@ import com.red_escuela.backend.evaluation.repository.SectionGradeItemPublication
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.transaction.support.TransactionOperations;
 
 import java.time.Clock;
 import java.time.LocalDate;
@@ -39,6 +42,7 @@ class ClosureConfirmationReminderJobTest {
     private final SectionTermEndFinder sectionTermEndFinder = mock(SectionTermEndFinder.class);
     private final ClosureNotificationTargetsFinder targetsFinder = mock(ClosureNotificationTargetsFinder.class);
     private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
+    private final EndedSectionFinder endedSectionFinder = mock(EndedSectionFinder.class);
 
     private ClosureConfirmationReminderJob jobOn(LocalDate today) {
         Clock clock = Clock.fixed(today.atTime(9, 0).toInstant(ZoneOffset.UTC), ZoneOffset.UTC);
@@ -48,7 +52,7 @@ class ClosureConfirmationReminderJobTest {
         when(targetsFinder.findSectionLabel(SectionKind.PROGRAM, 9L)).thenReturn("Teorías · A");
         when(reminderRepository.insertIfAbsent(any(), any(), anyInt(), any())).thenReturn(1);
         return new ClosureConfirmationReminderJob(publicationRepository, closureRepository, reminderRepository, sectionTermEndFinder,
-                targetsFinder, eventPublisher, clock);
+                targetsFinder, eventPublisher, endedSectionFinder, TransactionOperations.withoutTransaction(), clock);
     }
 
     private ClosureConfirmationReminderJob jobOnDaysAfterTermEnd(int days) {
@@ -129,6 +133,26 @@ class ClosureConfirmationReminderJobTest {
         ClosureConfirmationReminderJob job = jobOnDaysAfterTermEnd(3);
         CommissionClosure draft = CommissionClosure.builder().status(ClosureStatus.DRAFT_AVAILABLE).build();
         when(closureRepository.findBySectionKindAndSectionId(SectionKind.PROGRAM, 9L)).thenReturn(Optional.of(draft));
+
+        assertThat(job.remindDueSections()).isEqualTo(1);
+    }
+
+    @Test
+    void aSectionWithoutPublishedGradesIsRemindedWhenItsTermEndedThreeDaysAgo() {
+        ClosureConfirmationReminderJob job = jobOnDaysAfterTermEnd(3);
+        when(publicationRepository.findDistinctPublishedSections()).thenReturn(List.of());
+        when(endedSectionFinder.findActiveSectionsEndedBetween(any(), any()))
+                .thenReturn(List.of(new EndedSectionRef(SectionKind.PROGRAM, 9L, TERM_END)));
+
+        assertThat(job.remindDueSections()).isEqualTo(1);
+    }
+
+    @Test
+    void aFailingSectionDoesNotStopTheRemindersOfTheOthers() {
+        ClosureConfirmationReminderJob job = jobOnDaysAfterTermEnd(3);
+        when(publicationRepository.findDistinctPublishedSections())
+                .thenReturn(List.of(new PublishedSectionRef(SectionKind.PROGRAM, 8L), new PublishedSectionRef(SectionKind.PROGRAM, 9L)));
+        when(sectionTermEndFinder.termEndDate(SectionKind.PROGRAM, 8L)).thenThrow(new IllegalStateException("boom"));
 
         assertThat(job.remindDueSections()).isEqualTo(1);
     }

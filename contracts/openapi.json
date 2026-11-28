@@ -12962,6 +12962,37 @@
         "required" : [ "id", "requestedAt", "requestedByName", "requestedByPersonId", "type" ],
         "type" : "object"
       },
+      "PendingExamBoardClosureResponse" : {
+        "properties" : {
+          "daysAfterExamDate" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "examBoardId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "examDate" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "graceOver" : {
+            "type" : "boolean"
+          },
+          "registeredCount" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "subjectName" : {
+            "type" : "string"
+          },
+          "withoutTribunal" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "daysAfterExamDate", "examBoardId", "examDate", "graceOver", "registeredCount", "subjectName", "withoutTribunal" ],
+        "type" : "object"
+      },
       "PendingLegalAcceptancesResponse" : {
         "properties" : {
           "documents" : {
@@ -13039,6 +13070,62 @@
           }
         },
         "required" : [ "amount", "count", "parts" ],
+        "type" : "object"
+      },
+      "PendingSectionClosureResponse" : {
+        "properties" : {
+          "closureState" : {
+            "enum" : [ "NOT_STARTED", "DRAFT_AVAILABLE", "TEACHER_CONFIRMED", "REOPENED" ],
+            "type" : "string"
+          },
+          "daysAfterTermEnd" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "graceOver" : {
+            "type" : "boolean"
+          },
+          "hasPublishedGrades" : {
+            "type" : "boolean"
+          },
+          "sectionId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "sectionKind" : {
+            "type" : "string"
+          },
+          "sectionLabel" : {
+            "type" : "string"
+          },
+          "termEnd" : {
+            "format" : "date",
+            "type" : "string"
+          }
+        },
+        "required" : [ "closureState", "daysAfterTermEnd", "graceOver", "hasPublishedGrades", "sectionId", "sectionKind", "sectionLabel", "termEnd" ],
+        "type" : "object"
+      },
+      "PendingTermClosuresResponse" : {
+        "properties" : {
+          "examBoards" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PendingExamBoardClosureResponse"
+            },
+            "type" : "array"
+          },
+          "graceDays" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "sections" : {
+            "items" : {
+              "$ref" : "#/components/schemas/PendingSectionClosureResponse"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "examBoards", "graceDays", "sections" ],
         "type" : "object"
       },
       "PeriodRangeResponse" : {
@@ -37382,6 +37469,124 @@
           }
         },
         "tags" : [ "commission-closure-list-controller" ]
+      }
+    },
+    "/commission-closures/pending-term-closures" : {
+      "get" : {
+        "operationId" : "PendingTermClosure_listPendingTermClosures",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/PendingTermClosuresResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "pending-term-closure-controller" ]
       }
     },
     "/commission-closures/{closureId}/export" : {

@@ -18,6 +18,7 @@ import { sectionEnrollment } from '@/test/fixtures/studentHome';
 import { signatoryDetail, signatoryList } from '@/test/fixtures/signatories';
 import { constanciasHandlers } from '@/test/mocks/constanciasHandlers';
 import { subjectEquivalenceHandlers } from '@/test/mocks/subjectEquivalenceHandlers';
+import { termClosureHandlers } from '@/test/mocks/termClosureHandlers';
 import { invitationWaveHandlers } from '@/test/mocks/invitationWaveHandlers';
 import { informativeSessionHandlers } from '@/test/mocks/informativeSessionHandlers';
 
@@ -710,6 +711,7 @@ export const handlers = [
   ),
   ...constanciasHandlers,
   ...subjectEquivalenceHandlers,
+  ...termClosureHandlers,
   ...invitationWaveHandlers,
   ...informativeSessionHandlers,
 ];
