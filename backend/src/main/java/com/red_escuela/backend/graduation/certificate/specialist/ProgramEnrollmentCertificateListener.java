@@ -1,10 +1,11 @@
-package com.red_escuela.backend.graduation.specialist;
+package com.red_escuela.backend.graduation.certificate.specialist;
 
 import com.red_escuela.backend.enrollment.events.ProgramEnrollmentWithdrawnEvent;
 import com.red_escuela.backend.evaluation.events.ProgramGradeCorrectedEvent;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.specialist.ApprovedSubjectsEnrollmentCertificateRevoker;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularityKind;
 import com.red_escuela.backend.graduation.certificate.regular.specialist.RegularEnrollmentCertificateRevoker;
+import com.red_escuela.backend.graduation.specialist.GraduationRequestEnrollmentCloser;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
