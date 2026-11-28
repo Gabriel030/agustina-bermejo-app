@@ -8,6 +8,8 @@ import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectStatus;
 import com.red_escuela.backend.academicstructure.entity.Term;
+import com.red_escuela.backend.academicstructure.exception.SectionEvaluationSchemeLockedException;
+import com.red_escuela.backend.academicstructure.exception.SubjectCriticalFieldsLockedException;
 import com.red_escuela.backend.academicstructure.service.SubjectSectionService;
 import com.red_escuela.backend.academicstructure.service.SubjectService;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
@@ -18,7 +20,6 @@ import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.entity.GradeItem;
 import com.red_escuela.backend.evaluation.entity.GradeItemType;
 import com.red_escuela.backend.shared.domain.Grade;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -48,7 +49,6 @@ class EvaluationRulesImmutabilityReproductionIT extends ReproductionFixture {
     }
 
     @Test
-    @Disabled("E34-B-P4")
     void sectionEvaluationSchemeCannotBeReassignedOnceGradesAreLoaded() {
         Program program = program(4);
         Subject subject = subject("Algebra");
@@ -69,19 +69,21 @@ class EvaluationRulesImmutabilityReproductionIT extends ReproductionFixture {
 
         UpdateSectionRequest request = new UpdateSectionRequest(null, null, null, other.getId(), null, null, null);
 
-        assertThatThrownBy(() -> subjectSectionService.update(section.getId(), request)).isInstanceOf(RuntimeException.class);
+        assertThatThrownBy(() -> subjectSectionService.update(section.getId(), request))
+                .isInstanceOf(SectionEvaluationSchemeLockedException.class);
     }
 
     @Test
-    @Disabled("E34-B-P4")
     void gradingRulesOfAnApprovedSubjectCannotBeEdited() {
         Subject subject = subject("Algebra");
         subject.setStatus(SubjectStatus.ACTIVE);
         subject.setGradeMode(GradeMode.NUMERIC);
+        section(subject, term(LocalDateTime.of(2026, 3, 1, 0, 0), LocalDateTime.of(2026, 7, 1, 0, 0)));
         flushAndClear();
 
         UpdateSubjectRequest request = new UpdateSubjectRequest(null, null, null, null, GradeMode.PASS_FAIL, 9, null);
 
-        assertThatThrownBy(() -> subjectService.update(subject.getId(), request)).isInstanceOf(RuntimeException.class);
+        assertThatThrownBy(() -> subjectService.update(subject.getId(), request))
+                .isInstanceOf(SubjectCriticalFieldsLockedException.class);
     }
 }
