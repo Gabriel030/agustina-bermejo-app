@@ -63,7 +63,7 @@ class AcademicStructurePermissionComparisonIT extends AuthorizationMatrixSupport
     private void assertDecisionsMatchLegacy(String mode) throws Exception {
         List<AuthorizationMatrixRow> rows = academicstructureRows();
         Map<String, MappedEndpoint> endpoints = endpointsByKey();
-        assertThat(rows).hasSize(78);
+        assertThat(rows).hasSize(79);
         List<String> mismatches = new ArrayList<>();
         for (AuthorizationMatrixRow row : rows) {
             assertThat(endpoints.get(row.key())).as(row.key()).isNotNull();
