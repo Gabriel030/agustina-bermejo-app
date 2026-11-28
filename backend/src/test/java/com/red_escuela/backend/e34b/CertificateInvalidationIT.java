@@ -8,6 +8,7 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
+import com.red_escuela.backend.evaluation.events.SubjectApprovalStandingChangedEvent;
 import com.red_escuela.backend.identity.entity.Person;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -119,5 +120,29 @@ class CertificateInvalidationIT extends ReproductionFixture {
         flushAndClear();
 
         assertThat(rows.regularStatus(certificateId)).isEqualTo("VALID");
+    }
+
+    @Test
+    void losingSubjectApprovalRevokesTheApprovedSubjectsCertificate() {
+        ProgramEnrollment enrollment = enrolled();
+        Long certificateId = rows.validApprovedSubjects(enrollment.getStudent().getId(), enrollment.getId(), person().getId());
+        flushAndClear();
+
+        eventPublisher.publishEvent(SubjectApprovalStandingChangedEvent.changedFor(enrollment.getId(), null, 1L, false));
+        flushAndClear();
+
+        assertThat(rows.approvedSubjectsStatus(certificateId)).isEqualTo("REVOKED");
+    }
+
+    @Test
+    void gainingSubjectApprovalKeepsTheApprovedSubjectsCertificateValid() {
+        ProgramEnrollment enrollment = enrolled();
+        Long certificateId = rows.validApprovedSubjects(enrollment.getStudent().getId(), enrollment.getId(), person().getId());
+        flushAndClear();
+
+        eventPublisher.publishEvent(SubjectApprovalStandingChangedEvent.changedFor(enrollment.getId(), null, 1L, true));
+        flushAndClear();
+
+        assertThat(rows.approvedSubjectsStatus(certificateId)).isEqualTo("VALID");
     }
 }
