@@ -60,6 +60,9 @@ public class DirectorApprovalRequest {
     @Column(name = "decision_notes", length = 500)
     private String decisionNotes;
 
+    @Column(name = "consumed_at")
+    private LocalDateTime consumedAt;
+
     public static DirectorApprovalRequest open(ExceptionType type, ProgramEnrollment programEnrollment, Subject subject,
                                                String justification, Person requestedBy, LocalDateTime requestedAt) {
         programEnrollment.requireActive();
