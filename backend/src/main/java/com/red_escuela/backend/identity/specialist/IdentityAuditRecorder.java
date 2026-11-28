@@ -38,9 +38,7 @@ public class IdentityAuditRecorder {
     }
 
     private String describe(PreceptorAssignment assignment) {
-        String section = assignment.getProgramCohortId() != null
-                ? "programCohortId=" + assignment.getProgramCohortId()
-                : assignment.getSubjectSectionId() != null
+        String section = assignment.getSubjectSectionId() != null
                 ? "subjectSectionId=" + assignment.getSubjectSectionId()
                 : "courseSectionId=" + assignment.getCourseSectionId();
         return "personId=" + assignment.getPersonId() + ";" + section;

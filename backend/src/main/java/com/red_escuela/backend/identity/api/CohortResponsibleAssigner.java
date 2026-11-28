@@ -7,7 +7,10 @@ import com.red_escuela.backend.identity.exception.CourseResponsibleRequiredExcep
 import com.red_escuela.backend.identity.exception.PreceptorRoleRequiredException;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.PreceptorAssignmentRepository;
-import com.red_escuela.backend.identity.specialist.IdentityAuditRecorder;
+import com.red_escuela.backend.shared.audit.AuditAction;
+import com.red_escuela.backend.shared.audit.AuditEntityType;
+import com.red_escuela.backend.shared.audit.AuditRecord;
+import com.red_escuela.backend.shared.audit.service.AuditTrail;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,13 +29,13 @@ public class CohortResponsibleAssigner {
 
     private final PreceptorAssignmentRepository preceptorAssignmentRepository;
     private final PersonRepository personRepository;
-    private final IdentityAuditRecorder identityAuditRecorder;
+    private final AuditTrail auditTrail;
 
     public CohortResponsibleAssigner(PreceptorAssignmentRepository preceptorAssignmentRepository, PersonRepository personRepository,
-                                     IdentityAuditRecorder identityAuditRecorder) {
+                                     AuditTrail auditTrail) {
         this.preceptorAssignmentRepository = preceptorAssignmentRepository;
         this.personRepository = personRepository;
-        this.identityAuditRecorder = identityAuditRecorder;
+        this.auditTrail = auditTrail;
     }
 
     @Transactional
@@ -46,7 +49,8 @@ public class CohortResponsibleAssigner {
         for (PreceptorAssignment assignment : current) {
             if (!distinctIds.contains(assignment.getPersonId())) {
                 preceptorAssignmentRepository.delete(assignment);
-                identityAuditRecorder.recordPreceptorUnassigned(assignment);
+                auditTrail.record(new AuditRecord(AuditAction.PRECEPTOR_UNASSIGNED, AuditEntityType.PRECEPTOR_ASSIGNMENT,
+                        assignment.getId(), describe(assignment), null, null));
             }
         }
         Set<Long> alreadyAssigned = current.stream().map(PreceptorAssignment::getPersonId).collect(Collectors.toSet());
@@ -54,7 +58,8 @@ public class CohortResponsibleAssigner {
             if (!alreadyAssigned.contains(personId)) {
                 PreceptorAssignment saved = preceptorAssignmentRepository.save(PreceptorAssignment.builder()
                         .personId(personId).programCohortId(programCohortId).createdBy(actorId).build());
-                identityAuditRecorder.recordPreceptorAssigned(saved);
+                auditTrail.record(new AuditRecord(AuditAction.PRECEPTOR_ASSIGNED, AuditEntityType.PRECEPTOR_ASSIGNMENT,
+                        saved.getId(), null, describe(saved), null));
             }
         }
         return distinctIds;
@@ -112,6 +117,10 @@ public class CohortResponsibleAssigner {
                         .personId(personId).courseSectionId(courseSectionId).createdBy(actorId).build());
             }
         }
+    }
+
+    private String describe(PreceptorAssignment assignment) {
+        return "personId=" + assignment.getPersonId() + ";programCohortId=" + assignment.getProgramCohortId();
     }
 
     private void requirePreceptors(Set<Long> distinctIds) {
