@@ -37,7 +37,7 @@ public class CommissionClosureAudit {
     @Column(name = "report_version", nullable = false)
     private int reportVersion;
 
-    @Column(name = "actor_person_id", nullable = false)
+    @Column(name = "actor_person_id")
     private Long actorPersonId;
 
     @Column(name = "reason", length = 500)
