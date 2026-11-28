@@ -12,7 +12,7 @@ public final class ApprovedSectionConfigFixture {
     }
 
     public static void persistWhenSchemeExpectsCoursework(EntityManager entityManager, SubjectSection section) {
-        EvaluationScheme scheme = section.getEvaluationScheme();
+        EvaluationScheme scheme = section.getEvaluationSchemeId() == null ? null : entityManager.find(EvaluationScheme.class, section.getEvaluationSchemeId());
         if (scheme != null && scheme.getTpCountExpected() != null && scheme.getTpCountExpected() > 0) {
             persist(entityManager, section, scheme.getTpCountExpected());
         }

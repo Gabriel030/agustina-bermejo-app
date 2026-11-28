@@ -54,7 +54,7 @@ class EvaluationRulesImmutabilityReproductionIT extends ReproductionFixture {
         Subject subject = subject("Algebra");
         Term term = term(LocalDateTime.of(2026, 3, 1, 0, 0), LocalDateTime.of(2026, 7, 1, 0, 0));
         SubjectSection section = section(subject, term);
-        section.setEvaluationScheme(scheme("Esquema original"));
+        section.setEvaluationSchemeId(scheme("Esquema original").getId());
         EvaluationScheme other = scheme("Esquema nuevo");
         ProgramEnrollment programEnrollment = programEnrollment(student(), program, ProgramEnrollmentStatus.ENROLLED);
         SubjectSectionEnrollment enrollment = sectionEnrollment(programEnrollment, section, EnrollmentStatus.IN_PROGRESS);

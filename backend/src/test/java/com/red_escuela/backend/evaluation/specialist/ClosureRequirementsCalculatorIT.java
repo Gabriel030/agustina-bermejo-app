@@ -144,7 +144,7 @@ class ClosureRequirementsCalculatorIT extends AbstractIntegrationTest {
         section.setTerm(term);
         section.setMaxAbsenceRate(Percentage.ofPoints(BigDecimal.valueOf(25)));
         section.setStatus(StatusType.ACTIVE);
-        section.setEvaluationScheme(scheme);
+        section.setEvaluationSchemeId(scheme == null ? null : scheme.getId());
         entityManager.persist(section);
         ApprovedSectionConfigFixture.persistWhenSchemeExpectsCoursework(entityManager, section);
         return section;

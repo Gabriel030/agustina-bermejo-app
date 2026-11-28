@@ -253,7 +253,7 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
         section.setName(subject.getName() + " - Com A");
         section.setSubject(subject);
         section.setTerm(term);
-        section.setEvaluationScheme(scheme);
+        section.setEvaluationSchemeId(scheme == null ? null : scheme.getId());
         section.setStatus(StatusType.ACTIVE);
         entityManager.persist(section);
         ApprovedSectionConfigFixture.persistWhenSchemeExpectsCoursework(entityManager, section);
@@ -1198,7 +1198,7 @@ class GradeItemRecorderTest extends AbstractIntegrationTest {
         SubjectSectionEnrollment reloaded = entityManager.find(SubjectSectionEnrollment.class, enrollment.getId());
         assertThat(historicalFinalScore).isEqualTo(Grade.of(BigDecimal.valueOf(7.5)));
         assertThat(historicalStatus).isEqualTo(EnrollmentStatus.APPROVED);
-        assertThat(reloaded.getSubjectSection().getEvaluationScheme().getId()).isEqualTo(promotionScheme.getId());
+        assertThat(reloaded.getSubjectSection().getEvaluationSchemeId()).isEqualTo(promotionScheme.getId());
         assertThat(reloaded.getFinalScore()).isEqualTo(historicalFinalScore);
         assertThat(reloaded.getStatus()).isEqualTo(historicalStatus);
         assertThat(reloaded.getFinalGradeType()).isEqualTo(historicalFinalGradeType);

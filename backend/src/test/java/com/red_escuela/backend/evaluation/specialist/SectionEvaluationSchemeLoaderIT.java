@@ -5,7 +5,6 @@ import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.shared.domain.Grade;
 import jakarta.persistence.EntityManager;
-import org.hibernate.Hibernate;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -38,8 +37,7 @@ class SectionEvaluationSchemeLoaderIT extends AbstractIntegrationTest {
         entityManager.flush();
         entityManager.clear();
         SubjectSection section = new SubjectSection();
-        section.setEvaluationScheme(entityManager.getReference(EvaluationScheme.class, scheme.getId()));
-        assertThat(Hibernate.isInitialized(section.getEvaluationScheme())).isFalse();
+        section.setEvaluationSchemeId(scheme.getId());
 
         EvaluationScheme loaded = loader.ofProgramSection(section);
 
@@ -50,7 +48,7 @@ class SectionEvaluationSchemeLoaderIT extends AbstractIntegrationTest {
     @Test
     void returnsNullWhenTheReferencedSchemeDoesNotExist() {
         SubjectSection section = new SubjectSection();
-        section.setEvaluationScheme(entityManager.getReference(EvaluationScheme.class, Long.MAX_VALUE));
+        section.setEvaluationSchemeId(Long.MAX_VALUE);
 
         assertThat(loader.ofProgramSection(section)).isNull();
     }
