@@ -581,10 +581,10 @@ where not exists (select 1 from curriculum_plan cp where cp.program_id = pe.prog
 order by 1, 2;
 \endif
 
-select :current_version < 507 as run_block \gset
+select :current_version < 508 as run_block \gset
 \if :run_block
 \echo
-\echo [V506/V507] Cierres CLOSED que no cumplen el CHECK nuevo (V507 ABORTA al validar ck_commission_closure_closed_has_report si hay filas; no se borran datos: completar libro, folio y quien cerro antes) y auditorias sin actor (V507 valida ck_commission_closure_audit_actor_required); debe devolver 0 filas:
+\echo [V507/V508] Cierres CLOSED que no cumplen el CHECK nuevo (V508 ABORTA al validar ck_commission_closure_closed_has_report si hay filas; no se borran datos: completar libro, folio y quien cerro antes) y auditorias sin actor (V508 valida ck_commission_closure_audit_actor_required); debe devolver 0 filas:
 select 'CLOSURE' as origin, id as row_id from commission_closure
 where status = 'CLOSED' and (report_number is null or closed_at is null or book is null or folio is null or closed_by_id is null)
 union all

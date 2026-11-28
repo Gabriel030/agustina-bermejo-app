@@ -24,7 +24,7 @@ class CommissionClosureAutomaticCloseMigrationTest {
 
     @Test
     void anAutomaticClosureNeedsNoBookFolioOrCloser() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("507")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("508")) {
             JdbcTemplate jdbc = migrated(dataSource);
 
             jdbc.update(CLOSED_ROW, 1, "ACTA-2026-0001", null, null, null, true);
@@ -35,7 +35,7 @@ class CommissionClosureAutomaticCloseMigrationTest {
 
     @Test
     void aManualClosureStillNeedsBookFolioAndCloser() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("507")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("508")) {
             JdbcTemplate jdbc = migrated(dataSource);
 
             jdbc.update(CLOSED_ROW, 1, "ACTA-2026-0001", "L1", "F9", 7, false);
@@ -51,7 +51,7 @@ class CommissionClosureAutomaticCloseMigrationTest {
 
     @Test
     void anAutomaticClosureStillNeedsReportNumberAndCannotHaveACloser() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("507")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("508")) {
             JdbcTemplate jdbc = migrated(dataSource);
 
             assertThatThrownBy(() -> jdbc.update(CLOSED_ROW, 1, null, null, null, null, true))
@@ -63,7 +63,7 @@ class CommissionClosureAutomaticCloseMigrationTest {
 
     @Test
     void onlyTheAutomaticClosureAuditMayOmitTheActor() {
-        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("507")) {
+        try (MigrationTestDatabase dataSource = MigrationTestDatabase.migratedTo("508")) {
             JdbcTemplate jdbc = migrated(dataSource);
             jdbc.update("insert into commission_closure (section_kind, section_id, status) values ('PROGRAM', 1, 'DRAFT_AVAILABLE')");
             long closureId = jdbc.queryForObject("select id from commission_closure", Long.class);
