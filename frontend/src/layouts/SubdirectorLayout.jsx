@@ -7,5 +7,5 @@ const ITEMS = menuItemsFor('subdirector');
 
 export function SubdirectorLayout() {
   const items = useVisibleMenuItems('subdirector', ITEMS);
-  return <RoleShell titulo="Subdirector" items={items} groups={buildNavModel('subdirector', items).groups} topNav />;
+  return <RoleShell titulo="Subdirector" items={items} groups={buildNavModel('subdirector', items).groups} topNav="wide" />;
 }
