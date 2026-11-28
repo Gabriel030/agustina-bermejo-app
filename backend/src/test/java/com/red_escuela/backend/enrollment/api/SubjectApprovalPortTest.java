@@ -160,16 +160,16 @@ class SubjectApprovalPortTest {
     void batchEvaluatorTreatsAnEquivalenceAsApprovedPerEnrollment() {
         ProgramPrerequisiteBatchEvaluator evaluator = new ProgramPrerequisiteBatchEvaluator(enrollmentRepository, lookup,
                 approvalRepository, curriculumFinder);
-        ProgramEnrollmentRepository.ProgramIdOfEnrollment first = mock(ProgramEnrollmentRepository.ProgramIdOfEnrollment.class);
+        ProgramEnrollmentRepository.PlanIdOfEnrollment first = mock(ProgramEnrollmentRepository.PlanIdOfEnrollment.class);
         when(first.getEnrollmentId()).thenReturn(ENROLLMENT_ID);
-        when(first.getProgramId()).thenReturn(PROGRAM_ID);
-        ProgramEnrollmentRepository.ProgramIdOfEnrollment second = mock(ProgramEnrollmentRepository.ProgramIdOfEnrollment.class);
+        when(first.getPlanId()).thenReturn(PLAN_ID);
+        ProgramEnrollmentRepository.PlanIdOfEnrollment second = mock(ProgramEnrollmentRepository.PlanIdOfEnrollment.class);
         when(second.getEnrollmentId()).thenReturn(OTHER_ENROLLMENT_ID);
-        when(second.getProgramId()).thenReturn(PROGRAM_ID);
-        when(enrollmentRepository.findProgramIdsByIdIn(any())).thenReturn(List.of(first, second));
-        when(curriculumFinder.findProgramSubjects(PROGRAM_ID))
+        when(second.getPlanId()).thenReturn(PLAN_ID);
+        when(enrollmentRepository.findPlanIdsByIdIn(any())).thenReturn(List.of(first, second));
+        when(curriculumFinder.findProgramSubjectsOfPlan(PLAN_ID))
                 .thenReturn(List.of(new ProgramSubjectView(33L, 3L, "Analisis", 4, 1, null, null)));
-        when(curriculumFinder.findProgramPrerequisites(PROGRAM_ID)).thenReturn(Map.of(33L,
+        when(curriculumFinder.findPrerequisitesOfPlan(PLAN_ID)).thenReturn(Map.of(33L,
                 List.of(new PrerequisiteView(1L, "Algebra", RequirementType.APPROVED, "S1", null))));
         when(approvalRepository.findProgramEnrollmentIdsWithRequest(any(), any(), any(), any())).thenReturn(List.of());
         recognized(ENROLLMENT_ID, 1L, null);

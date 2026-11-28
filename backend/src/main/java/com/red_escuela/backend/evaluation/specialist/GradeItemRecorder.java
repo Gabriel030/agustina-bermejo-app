@@ -300,7 +300,7 @@ public class GradeItemRecorder {
 
     private void publishApprovalStandingChanged(SubjectSectionEnrollment enrollment, boolean approved) {
         eventPublisher.publishEvent(SubjectApprovalStandingChangedEvent.changedFor(
-                enrollment.getProgramEnrollment().getId(), enrollment.getProgramEnrollment().getProgram().getId(),
+                enrollment.getProgramEnrollment().getId(), enrollment.getProgramEnrollment().getPlan().getId(),
                 enrollment.subjectId(), approved));
     }
 
