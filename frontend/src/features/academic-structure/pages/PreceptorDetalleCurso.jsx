@@ -1,6 +1,7 @@
+import { useRef, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
 import { useRoleBasePath } from '@/features/academic-structure/hooks/useRoleBasePath';
-import { ChevronLeft, Users, MapPin, Clock, ClipboardList } from 'lucide-react';
+import { ChevronLeft, Users, MapPin, Clock, ClipboardList, Pencil, Plus } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { StatusPill } from '@/components/StatusPill';
@@ -13,6 +14,7 @@ import { useCiclos, useCicloSecciones } from '@/features/academic-structure/hook
 import { ResumeCycleButton } from '@/features/academic-structure/components/ResumeCycleButton';
 import { RejectionReasonNotice } from '@/features/academic-structure/components/RejectionReasonNotice';
 import { SectionScheduleRequestAction } from '@/features/academic-structure/components/SectionScheduleRequestAction';
+import { SectionPreceptorsEditor } from '@/features/academic-structure/components/SectionPreceptorsEditor';
 import { SectionPendingScheduleNotice } from '@/features/academic-structure/components/SectionPendingScheduleNotice';
 import { formatCourseDuration } from '@/lib/courseDuration';
 
@@ -29,6 +31,8 @@ const DIA_LABELS = {
   THURSDAY: 'Jueves', FRIDAY: 'Viernes', SATURDAY: 'Sábado', SUNDAY: 'Domingo',
 };
 
+const PRECEPTOR_MANAGER_BASE_PATHS = ['/director', '/administrativo', '/subdirector'];
+
 function formatHora(t) {
   return t?.slice(0, 5) ?? '—';
 }
@@ -37,11 +41,20 @@ function SeccionDetalle({ ciclo }) {
   const basePath = useRoleBasePath();
   const { data: secciones, isLoading, isError, error, refetch } = useCicloSecciones(ciclo.id);
   const cfg = CICLO_STATUS_CONFIG[ciclo.status] ?? { label: ciclo.status, tone: 'neutral' };
+  const [editingPreceptors, setEditingPreceptors] = useState(false);
+  const editButton = useRef(null);
+
+  function closePreceptorsEditor() {
+    setEditingPreceptors(false);
+    requestAnimationFrame(() => editButton.current?.focus());
+  }
 
   if (isLoading) return <Skeleton className="h-[120px] w-full rounded-2xl" />;
   if (isError) return <LoadErrorState error={error} onRetry={refetch} resource="la comisión" />;
 
   const seccion = secciones?.[0];
+  const preceptors = seccion?.preceptors ?? [];
+  const canManagePreceptors = PRECEPTOR_MANAGER_BASE_PATHS.includes(basePath);
 
   return (
     <GlassCard className="flex flex-col gap-4 p-5">
@@ -100,6 +113,25 @@ function SeccionDetalle({ ciclo }) {
               valor={seccion.instructors.find((i) => i.role === 'LEAD')?.name ?? '—'}
             />
           )}
+          <div className="col-span-2">
+            {editingPreceptors && canManagePreceptors ? (
+              <SectionPreceptorsEditor
+                section={seccion}
+                cycleId={ciclo.id}
+                sectionKind="course-sections"
+                onClose={closePreceptorsEditor}
+              />
+            ) : (
+              <div className="flex flex-wrap items-center gap-2 text-size-13">
+                <span className="text-ink-faint">Preceptores</span>
+                {preceptors.length === 0 ? (
+                  <StatusPill tone="warning">Sin preceptor</StatusPill>
+                ) : (
+                  <span className="text-ink">{preceptors.map((p) => p.personName).join(', ')}</span>
+                )}
+              </div>
+            )}
+          </div>
           <div className="col-span-2 flex flex-wrap gap-2">
             <Button variant="outline" size="sm" asChild>
               <Link to={`${basePath}/oferta-academica/ciclos/${ciclo.id}/comisiones/${seccion.id}/inscriptos`}>
@@ -107,6 +139,16 @@ function SeccionDetalle({ ciclo }) {
                 Inscriptos
               </Link>
             </Button>
+            {canManagePreceptors && !editingPreceptors && (
+              <Button ref={editButton} variant="outline" size="sm" onClick={() => setEditingPreceptors(true)}>
+                {preceptors.length === 0 ? (
+                  <Plus className="mr-1.5 h-3.5 w-3.5" />
+                ) : (
+                  <Pencil className="mr-1.5 h-3.5 w-3.5" />
+                )}
+                {preceptors.length === 0 ? 'Asignar preceptor' : 'Preceptores'}
+              </Button>
+            )}
             {basePath !== '/director' && <SectionScheduleRequestAction section={seccion} cycle={ciclo} />}
           </div>
           {seccion.pendingApproval && !seccion.pendingModification && (
