@@ -2,6 +2,17 @@
 
 Documento para que otra sesión de Claude Code (otra cuenta, otra PC) retome el trabajo sin contexto previo. Escrito por la sesión coordinadora de la célula a las ~13:30 de Buenos Aires (UTC-3). El estado vivo está en GitHub (Issues y PRs); este archivo es la foto de hoy. Si algo discrepa, ganan el código y los Issues.
 
+## 0. Actualización de las ~13:45 de Buenos Aires (leer primero)
+
+- **Release 32 MERGEADO a master:** PR #1728, `release/32-rc` cortado en `e32ab218`, master en `b2e2a23a`. 255 PRs, migraciones V466 a V510, cambios rompedores de contrato autorizados por Gabriel (etiqueta `contract-break-approved` puesta). **No se desplegó**: el despliegue es de Gabriel. Falta verificar que el workflow de backport (`backport.yml`) corra en verde sin abrir un PR `backport/*` (si se abre, cerrarlo: la rama empezaba con `release/`). Riesgo nuevo del dossier: la migración V490 aborta si alguna carrera tiene el nombre vacío; en producción debe dar 0 filas `select id from program where name is null;`.
+- **F2 del frontend de preceptores COMPLETO:** mergeados #1715 (CursoWizard), #1720 (editor por comisión) y #1726 («Completar» responsable de cohorte). Falta el único `update_baselines` de capturas visuales, que dispara Gabriel (resuelve de paso el nightly de capturas #1707).
+- **No queda ninguna sesión paralela viva** (los líderes se archivaron) **ni subagentes corriendo.** Los dos últimos subagentes (egreso con requisitos pendientes, auditoría de reglas de diseño y movimiento) se pararon por orden de Gabriel y quedaron a medias.
+- **El barrido horario** (trigger `trig_01T9mgufRg1hVbXw5HLEMd58`) está atado a la sesión coordinadora original. La nueva sesión debe crear el suyo (merge de PRs verdes, avisar rojos, comentar #1592 solo si cambió algo).
+- **Acciones que el clasificador le niega a una sesión y que debe hacer Gabriel:** marcar un PR borrador como «Ready for review» (hoy #1723, esqueleto del manual), editar `.claude/settings.json`, y escribir «autorizo» en sesiones secundarias. Desde la sesión principal los subagentes pudieron hacer commit, push y PR sin denegaciones.
+- **Vault de Obsidian:** repo privado `Gabriel030/agustina-bermejo-vault` (no se adjuntó a la sesión; contenido sin verificar). No hacerlo público sin una instrucción explícita. En ese repo no se debe poner `Co-Authored-By: Claude` ni el link de sesión en los commits (pedido de Gabriel).
+- **Pendientes que solo puede resolver Gabriel (en orden):** «Ready for review» de #1723; disparar `update_baselines`; despliegue del release 32 (backup previo, ventana, `JWT_SECRET` ≥32 caracteres y ≥10 distintos, `JWT_ACCEPT_MISSING_AUDIENCE=true` en este release, chequeo de V490, aviso a Dirección, QR de constancias por el endpoint público retirado); contar qué no le convence del billing para escribir su spec de rediseño; cerrar los Issues terminados (#1696 y #1697, y el #1692 tras #1717) solo con su palabra.
+- **Para la sesión que retome (lo primero que haría):** 1) verificar el backport del release; 2) escribir la regla de «requisitos de aprobación» pendiente (sección 4) o pedir a Gabriel que confirme el diseño; 3) cuando Gabriel marque #1723 como listo, mergearlo y lanzar la página `/ayuda` (tarea B de #1721); 4) lanzar la auditoría de reglas de diseño y movimiento (tarea A de #1724) y luego tokens y componentes base; 5) terminar «cohortes sin facturación» (falta una tarea).
+
 ## 1. Cómo se trabaja ahora
 
 - **Una sola sesión principal con subagentes efímeros.** Se terminaron los líderes persistentes y los relevos (decisión de Gabriel, 28-nov). La sesión principal planifica, lanza subagentes (`backend`, `frontend`, `reviewer`, `ux-advisor`, `mechanic`, o `general-purpose` para lectura y specs), mergea con CI verde y mantiene el estado en GitHub. Cada subagente trabaja en su propio `git worktree`, abre su PR por REST (`gh pr create` falla por GraphQL 403: usar `gh api repos/Gabriel030/agustina-bermejo-app/pulls -f ...`) y no mergea.
@@ -46,7 +57,7 @@ Otros: nightly (#1695 parcial): `FirstYearSimulationIT` arreglado (#1717, cerrab
 - **Re-styling:** falta la auditoría de reglas de diseño y movimiento por pantalla (se la paró). La auditoría de etiquetas está en `restyling-auditoria-etiquetas.md`.
 - **Release 32 a master:** Gabriel ordenó meter todo en master «ya mismo» (ver §5). Estado: pendiente de que entre #1726, elegir SHA verde de develop, cortar `release/32-rc` y abrir el PR con dossier.
 
-## 5. Release 32 (develop a master)
+## 5. Release 32 (develop a master): MERGEADO el 28-nov, falta el despliegue de Gabriel
 
 - Gabriel ordenó adelantar el release antes del deploy del 15-dic (decisión expresa, 28-nov). Mergear a master **no despliega**: no hay workflow de deploy automático; el despliegue es manual según `docs/deploy/README.md`.
 - Procedimiento: skill `.claude/skills/cell-release/SKILL.md`. Cortar `release/32-rc` con `git push origin <sha>:refs/heads/release/32-rc` desde un SHA de develop con el run de `push` verde (nunca con la herramienta de crear rama). El nombre debe empezar con `release/` para que no se dispare un backport. Dossier completo en `release-32-dossier.md`.
