@@ -615,6 +615,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         persistProgramSubject(program, subject);
         LocalDateTime now = LocalDateTime.now();
         Term term = persistTerm(now.minusDays(20), now.minusDays(10));
+        term.setEndDate(now.plusDays(30));
         term.setEnrollmentOverride(TermEnrollmentOverride.OPEN);
         SubjectSection section = persistSubjectSection(subject, term, null);
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
