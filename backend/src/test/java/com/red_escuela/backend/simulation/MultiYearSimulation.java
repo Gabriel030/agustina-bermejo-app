@@ -62,6 +62,8 @@ public class MultiYearSimulation {
     private final Map<Integer, List<Long>> activeSectionsByYear = new TreeMap<>();
     private final Map<Long, Integer> classesBySection = new LinkedHashMap<>();
     private final Map<Integer, Long> boardIdsByKey = new LinkedHashMap<>();
+    private java.util.function.Consumer<LocalDate> dayObserver = day -> {
+    };
     private long schemeId;
     private int folio;
 
@@ -76,6 +78,10 @@ public class MultiYearSimulation {
         this.spec = spec;
         this.programId = programId;
         this.instructorId = instructorId;
+    }
+
+    public void observeEachDay(java.util.function.Consumer<LocalDate> observer) {
+        this.dayObserver = observer;
     }
 
     public void registerPupil(int index, StudentProfile profile, int cohortYear, long studentId) {
@@ -110,7 +116,10 @@ public class MultiYearSimulation {
 
     public void run(LocalDate firstDay, LocalDate lastDay) {
         long startedAt = System.currentTimeMillis();
-        int days = driver.run(firstDay, lastDay, this::simulateDay);
+        int days = driver.run(firstDay, lastDay, day -> {
+            simulateDay(day);
+            dayObserver.accept(day);
+        });
         report.finish(days, System.currentTimeMillis() - startedAt);
         recordOutcomes();
     }
