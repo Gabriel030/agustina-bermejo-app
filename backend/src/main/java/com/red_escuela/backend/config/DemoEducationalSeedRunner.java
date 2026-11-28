@@ -280,7 +280,8 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
         api.post(ADMIN, "/exam-boards/" + examBoardId + "/tribunal", Map.of("instructorId", board.instructorId()));
         api.post(ADMIN, "/exam-boards/" + examBoardId + "/registrations",
                 Map.of("examBoardId", examBoardId, board.registrationKey(), board.enrollmentId()));
-        api.post(ADMIN, "/exam-boards/" + examBoardId + "/reschedule", Map.of("examDate", finalExamDate(api)));
+        jdbcTemplate.update("update exam_board set exam_date = ? where id = ?",
+                java.sql.Timestamp.valueOf(LocalDate.parse(finalExamDate(api).substring(0, 10)).atStartOfDay()), examBoardId);
         return examBoardId;
     }
 
