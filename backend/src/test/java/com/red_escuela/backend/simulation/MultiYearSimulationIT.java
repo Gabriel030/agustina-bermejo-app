@@ -39,6 +39,9 @@ import org.springframework.boot.DefaultApplicationArguments;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
+import org.springframework.transaction.PlatformTransactionManager;
+import org.springframework.transaction.support.TransactionTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
@@ -76,6 +79,8 @@ class MultiYearSimulationIT extends AbstractIntegrationTest {
     private int port;
     @Autowired
     private JdbcTemplate jdbcTemplate;
+    @Autowired
+    private PlatformTransactionManager transactionManager;
     @Autowired
     private PersonRepository personRepository;
     @Autowired
@@ -116,6 +121,7 @@ class MultiYearSimulationIT extends AbstractIntegrationTest {
     @Test
     void fiveYearsOfSevenProfilesRunWithoutErrorsMeetExpectedOutcomesAndAreDeterministic() throws IOException {
         SimulationReport first = simulate();
+        InvariantReport firstInvariants = invariantReportOfLastRun;
         assertThat(failuresOfLastRun).isEmpty();
         assertThat(completedOfLastRun).isPositive();
         assertThat(first.counter("graduationsApproved")).isPositive();
@@ -126,13 +132,34 @@ class MultiYearSimulationIT extends AbstractIntegrationTest {
         settingsSnapshotHolders.forEach(InstituteSettingsSnapshotHolder::refresh);
         SimulationReport second = simulate();
 
+        InvariantReport secondInvariants = invariantReportOfLastRun;
         writeReport(first);
+        writeInvariantReport(secondInvariants);
         System.out.println(first.toJson());
+        System.out.println(secondInvariants.toConsole());
         System.out.println("simulation: second run took " + second.elapsedMillis() + " ms");
         assertThat(failuresOfLastRun).isEmpty();
         assertThat(second.digest()).isEqualTo(first.digest());
+        assertThat(secondInvariants.digest()).isEqualTo(firstInvariants.digest());
+        assertThat(secondInvariants.violations()).isEmpty();
+        assertSabotageIsDetected(secondInvariants);
     }
 
+    private void assertSabotageIsDetected(InvariantReport report) {
+        InvariantChecker checker = new InvariantChecker(new NamedParameterJdbcTemplate(jdbcTemplate));
+        TransactionTemplate transaction = new TransactionTemplate(transactionManager);
+        InvariantSabotage.mutations().forEach((code, statements) -> transaction.executeWithoutResult(status -> {
+            jdbcTemplate.execute("set local session_replication_role = replica");
+            statements.forEach(jdbcTemplate::update);
+            assertThat(checker.detect(code, LAST_DAY)).as("sabotage of " + code).isNotEmpty();
+            status.setRollbackOnly();
+        }));
+        assertThat(InvariantSabotage.mutations().keySet()).containsExactlyInAnyOrderElementsOf(AcademicInvariants.codes());
+        assertThat(checker.detect(AcademicInvariants.ENROLLMENT_WITHOUT_COHORT, LAST_DAY)).isEmpty();
+        assertThat(report.violations()).isEmpty();
+    }
+
+    private InvariantReport invariantReportOfLastRun;
     private List<String> failuresOfLastRun = List.of();
     private long completedOfLastRun;
 
@@ -169,7 +196,15 @@ class MultiYearSimulationIT extends AbstractIntegrationTest {
             simulation.registerPupil(index, PROFILES.get(index), COHORT_YEARS[index], studentId);
         }
         simulation.adoptSeededYear(YEAR);
+        InvariantChecker checker = new InvariantChecker(new NamedParameterJdbcTemplate(jdbcTemplate));
+        simulation.observeEachDay(day -> {
+            checker.checkDay(day);
+            if (day.getMonthValue() == 12 && day.getDayOfMonth() == 31) {
+                checker.checkTerm(day);
+            }
+        });
         simulation.run(FIRST_DAY, LAST_DAY);
+        invariantReportOfLastRun = new InvariantReport(SEED, checker.dailyChecks(), checker.violations());
         failuresOfLastRun = simulation.expectationFailures();
         completedOfLastRun = simulation.completedWithGraduationRequestCount();
         return report;
@@ -182,6 +217,12 @@ class MultiYearSimulationIT extends AbstractIntegrationTest {
             }
         }
         throw new IllegalStateException("No existe el perfil de docente");
+    }
+
+    private void writeInvariantReport(InvariantReport report) throws IOException {
+        Path directory = Path.of("target", "simulation");
+        Files.createDirectories(directory);
+        Files.writeString(directory.resolve("multi-year-invariants-" + SEED + ".json"), report.toJson());
     }
 
     private void writeReport(SimulationReport report) throws IOException {
