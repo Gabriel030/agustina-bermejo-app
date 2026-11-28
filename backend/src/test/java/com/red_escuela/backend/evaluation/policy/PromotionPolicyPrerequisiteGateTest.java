@@ -2,14 +2,12 @@ package com.red_escuela.backend.evaluation.policy;
 
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.FinalGradeType;
-import com.red_escuela.backend.evaluation.domain.ApprovalRequirementContext;
+import com.red_escuela.backend.evaluation.domain.ApprovalRequirement;
 import com.red_escuela.backend.evaluation.domain.ClosureAlert;
 import com.red_escuela.backend.evaluation.domain.CourseworkOutcome;
 import com.red_escuela.backend.evaluation.domain.RequirementGatedOutcome;
 import com.red_escuela.backend.evaluation.domain.UnmetApprovalRequirements;
 import com.red_escuela.backend.evaluation.entity.ClosureFinalCondition;
-import com.red_escuela.backend.evaluation.specialist.ApprovalRequirementsEvaluator;
-import com.red_escuela.backend.evaluation.specialist.PrerequisitesApprovalRequirementCheck;
 import com.red_escuela.backend.shared.domain.Grade;
 import org.junit.jupiter.api.Test;
 
@@ -66,8 +64,8 @@ class PromotionPolicyPrerequisiteGateTest {
     }
 
     private static UnmetApprovalRequirements unmet(boolean prerequisitesMet) {
-        return new ApprovalRequirementsEvaluator(List.of(new PrerequisitesApprovalRequirementCheck()))
-                .evaluate(new ApprovalRequirementContext(() -> prerequisitesMet));
+        return prerequisitesMet ? UnmetApprovalRequirements.none()
+                : UnmetApprovalRequirements.of(List.of(ApprovalRequirement.PREREQUISITES));
     }
 
     private static CourseworkOutcome approvedByFinal() {

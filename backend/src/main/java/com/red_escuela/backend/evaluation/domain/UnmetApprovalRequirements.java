@@ -1,16 +1,15 @@
 package com.red_escuela.backend.evaluation.domain;
 
 import java.util.List;
-import java.util.Optional;
 
-public record UnmetApprovalRequirements(List<ApprovalRequirement> requirements, Optional<String> detail) {
+public record UnmetApprovalRequirements(List<ApprovalRequirement> requirements) {
 
     public static UnmetApprovalRequirements none() {
-        return new UnmetApprovalRequirements(List.of(), Optional.empty());
+        return new UnmetApprovalRequirements(List.of());
     }
 
     public static UnmetApprovalRequirements of(List<ApprovalRequirement> requirements) {
-        return new UnmetApprovalRequirements(List.copyOf(requirements), Optional.empty());
+        return new UnmetApprovalRequirements(List.copyOf(requirements));
     }
 
     public boolean isEmpty() {
