@@ -24,6 +24,7 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [specs.md](context/specs.md) | Dónde viven las specs y el roadmap (Obsidian) | vigente |
 | [cell.md](context/cell.md) | Célula de agentes: roles, arranque de sesiones, flujo de un ticket, local vs nube | vigente |
 | [plans/TEMPLATE.md](cell/plans/TEMPLATE.md) | Plantilla de plan de la célula (`docs/cell/plans/<ticket>.md`) | vigente |
+| [handoffs/1643-P7.md](cell/handoffs/1643-P7.md) | Handoff de E34-B P7: hallazgos pendientes de la revisión independiente | vigente |
 | [plans/920.md](cell/plans/920.md) | Cierre de la Fase 1 de comunicación masiva: residual derivado | vigente |
 | [plans/921.md](cell/plans/921.md) | Residual de la lista de espera: vencimiento de colas de materias y auditoría de promoción automática | vigente |
 | [plans/932.md](cell/plans/932.md) | Residual de la Fase 2: variables faltantes en la vista previa, contrato y OR por clave | vigente |

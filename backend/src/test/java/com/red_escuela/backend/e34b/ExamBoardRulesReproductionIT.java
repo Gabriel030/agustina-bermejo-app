@@ -20,7 +20,6 @@ import com.red_escuela.backend.evaluation.specialist.ExamBoardRegistrationManage
 import com.red_escuela.backend.evaluation.specialist.ExamBoardRescheduler;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentSectionWithdrawer;
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -74,7 +73,6 @@ class ExamBoardRulesReproductionIT extends ReproductionFixture {
     }
 
     @Test
-    @Disabled("E34-B-P7")
     void examBoardRegistrationRequiresAnActiveProgramEnrollment() {
         Subject subject = subject("Algebra");
         Term term = term(LocalDateTime.of(2029, 3, 1, 0, 0), LocalDateTime.of(2029, 7, 1, 0, 0));
@@ -128,7 +126,6 @@ class ExamBoardRulesReproductionIT extends ReproductionFixture {
     }
 
     @Test
-    @Disabled("E34-B-P7")
     void withdrawingTheProgramEnrollmentAlsoClosesRegularSectionEnrollments() {
         Subject subject = subject("Algebra");
         Term term = term(LocalDateTime.of(2029, 3, 1, 0, 0), LocalDateTime.of(2029, 7, 1, 0, 0));

@@ -531,6 +531,7 @@ POST,/programs/{programId}/terms/{termId}/cohorts,DENY,DENY,DENY,DENY,ALLOW,ALLO
 GET,/cohorts/{id}/readiness,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/academic-readiness/incomplete,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/cohorts/{id}/open,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+PUT,/cohorts/{id}/responsible-preceptors,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,"{""responsiblePreceptorIds"":[1]}"
 PATCH,/year-billing-templates/{id}/configuration,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
 GET,/billing-run-alerts,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/billing-runs/executions,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.graduation.certificate.regular.specialist;
 
+import com.red_escuela.backend.graduation.certificate.regular.dto.CertificatePage;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertificateRequestResponse;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertificateResponse;
 import com.red_escuela.backend.graduation.certificate.regular.entity.CertificateExceptionApproval;
@@ -12,10 +13,14 @@ import com.red_escuela.backend.graduation.certificate.regular.entity.RegularityK
 import com.red_escuela.backend.graduation.certificate.regular.exception.RegularCertificateNotFoundException;
 import com.red_escuela.backend.graduation.certificate.regular.repository.CertificateExceptionApprovalRepository;
 import com.red_escuela.backend.graduation.certificate.regular.repository.RegularCertificateRequestRepository;
+import com.red_escuela.backend.graduation.certificate.regular.repository.RegularCertificateSpecifications;
 import com.red_escuela.backend.graduation.certificate.regular.repository.RegularStudentCertificateRepository;
 import com.red_escuela.backend.graduation.certificate.specialist.CertificateVerificationUrl;
 import com.red_escuela.backend.enrollment.api.EnrollmentNameFinder;
 import com.red_escuela.backend.identity.api.PersonNameFinder;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -28,6 +33,7 @@ import java.util.Map;
 @Service
 public class RegularCertificateReader {
 
+    private static final int MAX_PAGE_SIZE = 200;
     private static final List<CertificateExceptionStatus> OPEN_STATUSES = List.of(CertificateExceptionStatus.PENDING, CertificateExceptionStatus.APPROVED);
 
     private final RegularStudentCertificateRepository certificateRepository;
@@ -62,14 +68,29 @@ public class RegularCertificateReader {
 
     @Transactional(readOnly = true)
     public List<RegularCertificateResponse> list(Long studentId, RegularCertificateStatus status) {
+        return listPage(studentId, status, null, null).items();
+    }
+
+    @Transactional(readOnly = true)
+    public CertificatePage<RegularCertificateResponse> listPage(Long studentId, RegularCertificateStatus status, Integer page, Integer size) {
         LocalDateTime now = LocalDateTime.now(clock);
-        return responsesOf(certificatesOf(studentId, status), now).stream()
-                .filter(response -> status == null || response.status() == status).toList();
+        Page<RegularStudentCertificate> certificates = certificateRepository.findAll(
+                RegularCertificateSpecifications.certificatesOf(studentId, status, now),
+                pageOf(page, size, Sort.by(Sort.Order.desc("issuedAt"), Sort.Order.desc("id"))));
+        return new CertificatePage<>(responsesOf(certificates.getContent(), now), certificates.getTotalElements());
     }
 
     @Transactional(readOnly = true)
     public List<RegularCertificateRequestResponse> listRequests(Long studentId, RegularRequestOutcome outcome) {
-        List<RegularCertificateRequest> requests = requestsOf(studentId, outcome);
+        return listRequestsPage(studentId, outcome, null, null).items();
+    }
+
+    @Transactional(readOnly = true)
+    public CertificatePage<RegularCertificateRequestResponse> listRequestsPage(Long studentId, RegularRequestOutcome outcome,
+                                                                              Integer page, Integer size) {
+        Page<RegularCertificateRequest> found = requestRepository.findAll(RegularCertificateSpecifications.requestsOf(studentId, outcome),
+                pageOf(page, size, Sort.by(Sort.Order.desc("requestedAt"), Sort.Order.desc("id"))));
+        List<RegularCertificateRequest> requests = found.getContent();
         Map<Long, String> studentNames = personNameFinder.findFullNamesByStudentId(
                 requests.stream().map(RegularCertificateRequest::getStudentId).distinct().toList());
         Map<Long, String> programNames = enrollmentNameFinder.findProgramNamesByProgramEnrollmentId(
@@ -80,10 +101,16 @@ public class RegularCertificateReader {
                 requests.stream().map(RegularCertificateRequest::getStudentId).distinct().toList());
         boolean tracksDebt = debtFactsReader.tracksDebt();
         Map<String, CertificateExceptionApproval> openExceptions = openExceptionsOf(requests);
-        return requests.stream().map(request -> RegularRequestResponses.of(request, studentNames.get(request.getStudentId()),
+        return new CertificatePage<>(requests.stream().map(request -> RegularRequestResponses.of(request, studentNames.get(request.getStudentId()),
                 (request.getKind() == RegularityKind.PROGRAM ? programNames : courseNames).get(request.enrollmentId()),
                 tracksDebt ? debtByStudent.get(request.getStudentId()) : null,
-                openExceptions.get(request.getKind() + ":" + request.enrollmentId()))).toList();
+                openExceptions.get(request.getKind() + ":" + request.enrollmentId()))).toList(), found.getTotalElements());
+    }
+
+    private PageRequest pageOf(Integer page, Integer size, Sort sort) {
+        int safePage = page == null ? 0 : Math.max(page, 0);
+        int safeSize = size == null ? MAX_PAGE_SIZE : Math.min(Math.max(size, 1), MAX_PAGE_SIZE);
+        return PageRequest.of(safePage, safeSize, sort);
     }
 
     @Transactional(readOnly = true)
@@ -113,29 +140,6 @@ public class RegularCertificateReader {
     private List<Long> enrollmentIdsOf(List<RegularCertificateRequest> requests, RegularityKind kind) {
         return requests.stream().filter(request -> request.getKind() == kind).map(RegularCertificateRequest::enrollmentId)
                 .distinct().toList();
-    }
-
-    private List<RegularStudentCertificate> certificatesOf(Long studentId, RegularCertificateStatus status) {
-        if (status == null || status == RegularCertificateStatus.EXPIRED || status == RegularCertificateStatus.VALID) {
-            return studentId == null
-                    ? certificateRepository.findTop200ByOrderByIssuedAtDesc()
-                    : certificateRepository.findTop200ByStudentIdOrderByIssuedAtDesc(studentId);
-        }
-        return studentId == null
-                ? certificateRepository.findTop200ByStatusOrderByIssuedAtDesc(status)
-                : certificateRepository.findTop200ByStudentIdAndStatusOrderByIssuedAtDesc(studentId, status);
-    }
-
-    private List<RegularCertificateRequest> requestsOf(Long studentId, RegularRequestOutcome outcome) {
-        if (studentId == null && outcome == null) {
-            return requestRepository.findTop200ByOrderByRequestedAtDesc();
-        }
-        if (studentId == null) {
-            return requestRepository.findTop200ByOutcomeOrderByRequestedAtDesc(outcome);
-        }
-        return outcome == null
-                ? requestRepository.findTop200ByStudentIdOrderByRequestedAtDesc(studentId)
-                : requestRepository.findTop200ByStudentIdAndOutcomeOrderByRequestedAtDesc(studentId, outcome);
     }
 
     private List<RegularCertificateResponse> responsesOf(List<RegularStudentCertificate> certificates, LocalDateTime now) {

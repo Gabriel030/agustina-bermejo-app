@@ -55,6 +55,7 @@ describe('notificationDestination', () => {
     ['CLOSURE_REOPENED', 'DIRECTOR', '/director/cierres-de-comision'],
     ['TERM_CLOSURE_OVERDUE', 'DIRECTOR', '/director/cierres-de-comision'],
     ['EXAM_BOARD_AUTO_CLOSED', 'DIRECTOR', '/director/mesas-de-examen'],
+    ['CERTIFICATE_INVALIDATED', 'ALUMNO', '/alumno/mis-carreras?tab=tramites'],
     ['EXAM_BOARD_CANCELED', 'DOCENTE', '/docente/mesas-de-examen'],
     ['SUBJECT_EQUIVALENCE_RECORDED', 'ALUMNO', '/alumno/mis-carreras?tab=plan-de-estudio'],
     ['SUBJECT_EQUIVALENCE_VOIDED', 'ALUMNO', '/alumno/mis-carreras?tab=plan-de-estudio'],

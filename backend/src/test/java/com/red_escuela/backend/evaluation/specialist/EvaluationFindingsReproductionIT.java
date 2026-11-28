@@ -10,7 +10,9 @@ import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
+import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentRequiredException;
 import com.red_escuela.backend.evaluation.dto.CorrectGradeItemRequest;
 import com.red_escuela.backend.evaluation.dto.CreateExamBoardRequest;
 import com.red_escuela.backend.evaluation.dto.CreateGradeItemRequest;
@@ -89,7 +91,7 @@ class EvaluationFindingsReproductionIT extends AbstractIntegrationTest {
         fixtures.assignInstructor(section, instructor);
         var student = fixtures.student(dni + "1");
         var programEnrollment = fixtures.programEnrollment(student, fixtures.program("Carrera" + dni),
-                com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus.ENROLLED);
+                ProgramEnrollmentStatus.ENROLLED);
         SubjectSectionEnrollment enrollment = fixtures.sectionEnrollment(student, programEnrollment, section, status);
         entityManager.flush();
         return new Setup(instructor, section, enrollment);
@@ -168,6 +170,18 @@ class EvaluationFindingsReproductionIT extends AbstractIntegrationTest {
         assertThatThrownBy(() -> examRecoveryRecorder.record(exam.getId(), setup.instructor().getId(),
                 setup.instructor().getPerson().getId(), new RecordExamRecoveryRequest(Grade.of(BigDecimal.valueOf(8.0)))))
                 .isInstanceOf(RuntimeException.class);
+    }
+
+    @Test
+    void loadingAGradeIsRejectedWhenTheProgramEnrollmentWasWithdrawn() {
+        Setup setup = setup("74000032", 2, 0, false, EnrollmentStatus.IN_PROGRESS);
+        var withdrawn = setup.enrollment().getProgramEnrollment();
+        withdrawn.setStatus(ProgramEnrollmentStatus.WITHDRAWN);
+        withdrawn.setWithdrawalEffectiveDate(LocalDate.of(2026, 5, 1));
+        entityManager.flush();
+
+        assertThatThrownBy(() -> loadItem(setup, GradeItemType.EXAM, 1, 3.0))
+                .isInstanceOf(ProgramEnrollmentRequiredException.class);
     }
 
     @Test

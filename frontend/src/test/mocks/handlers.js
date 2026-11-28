@@ -491,9 +491,16 @@ export const handlers = [
   ),
   http.get(`${API}/programs/:id/cohorts`, ({ params }) =>
     HttpResponse.json([
-      { id: 1, programId: Number(params.id), label: 'Marzo 2026', ordenEnAnio: 1, cursadaStart: '2026-03-01', admissionOpen: true },
-      { id: 2, programId: Number(params.id), label: 'Agosto 2026', ordenEnAnio: 2, cursadaStart: '2026-08-01', admissionOpen: true },
+      { id: 1, programId: Number(params.id), label: 'Marzo 2026', ordenEnAnio: 1, cursadaStart: '2026-03-01', admissionOpen: true, intake: 'FIRST', planId: 1, planName: 'Plan 2026', openedAt: '2026-01-10T09:00:00', responsiblePreceptors: [{ id: 7, name: 'Paula Preceptora' }] },
+      { id: 2, programId: Number(params.id), label: 'Agosto 2026', ordenEnAnio: 2, cursadaStart: '2026-08-01', admissionOpen: true, intake: 'SECOND', planId: 1, planName: 'Plan 2026', openedAt: null, responsiblePreceptors: [] },
     ]),
+  ),
+  http.put(`${API}/cohorts/:id/responsible-preceptors`, async ({ request }) => {
+    const body = await request.json().catch(() => ({ responsiblePreceptorIds: [] }));
+    return HttpResponse.json(body.responsiblePreceptorIds.map((id) => ({ id, name: `Preceptor ${id}` })));
+  }),
+  http.get(`${API}/cohorts/:id/readiness`, ({ params }) =>
+    HttpResponse.json({ cohortId: Number(params.id), open: false, openedAt: null, ready: false, commissionsTotal: 4, commissionsWithoutPreceptor: 1, items: [] }),
   ),
   http.get(`${API}/programs`, () => HttpResponse.json([])),
   http.get(`${API}/academic-offering-cycles`, () => HttpResponse.json([])),

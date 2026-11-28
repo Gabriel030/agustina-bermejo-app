@@ -186,11 +186,13 @@ class ProgramCohortReadinessIT extends AbstractIntegrationTest {
         assertThat(item(result, CohortReadinessItemCode.FIRST_YEAR_SECTIONS).reasons())
                 .containsExactly("Análisis (Com A): falta titular, cupo, horario y aula, evaluación aprobada");
         assertThat(item(result, CohortReadinessItemCode.SECTION_PRECEPTORS).reasons()).containsExactly("Análisis (Com A): sin preceptor");
+        assertThat(result.commissionsTotal()).isEqualTo(1);
+        assertThat(result.commissionsWithoutPreceptor()).isEqualTo(1);
         assertThat(result.ready()).isFalse();
     }
 
     @Test
-    void cohortResponsibleItemIsInformativeAndNeverBlocksOpening() {
+    void cohortWithoutResponsibleIsNotReadyAndCannotBeOpened() {
         switchBillingTo("OFF", false);
         Long[] ids = persistProgramTermAndActor(2026);
         Long cohortId = createCohort.createProgramTermCohort(ids[0], ids[1], request(List.of(preceptors.createPreceptorId()))).id();
@@ -200,8 +202,24 @@ class ProgramCohortReadinessIT extends AbstractIntegrationTest {
 
         CohortReadinessItemResponse responsible = item(result, CohortReadinessItemCode.COHORT_RESPONSIBLE);
         assertThat(responsible.fulfilled()).isFalse();
-        assertThat(responsible.blocking()).isFalse();
-        assertThat(result.ready()).isTrue();
+        assertThat(responsible.blocking()).isTrue();
+        assertThat(result.ready()).isFalse();
+        assertThatThrownBy(() -> openCohort.openProgramCohort(cohortId))
+                .isInstanceOfSatisfying(ProgramCohortNotReadyException.class,
+                        exception -> assertThat(exception.details()).containsEntry("missingItems", List.of(CohortReadinessItemCode.COHORT_RESPONSIBLE.name())));
+    }
+
+    @Test
+    void readinessReportsTheCommissionCounters() {
+        switchBillingTo("OFF", false);
+        Long[] ids = persistProgramTermAndActor(2026);
+        Long cohortId = createCohort.createProgramTermCohort(ids[0], ids[1], request(List.of(preceptors.createPreceptorId()))).id();
+
+        CohortReadinessResponse result = readiness.getProgramCohortReadiness(cohortId);
+
+        assertThat(result.commissionsTotal()).isZero();
+        assertThat(result.commissionsWithoutPreceptor()).isZero();
+        assertThat(result.openedAt()).isNull();
     }
 
     @Test

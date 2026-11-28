@@ -28,6 +28,8 @@ public interface ApprovedSubjectsCertificateRepository extends JpaRepository<App
     Optional<ApprovedSubjectsCertificate> findFirstByProgramEnrollmentIdAndStatusOrderByIssuedAtDesc(
             Long programEnrollmentId, ApprovedSubjectsCertificateStatus status);
 
+    List<ApprovedSubjectsCertificate> findByProgramEnrollmentIdAndStatus(Long programEnrollmentId, ApprovedSubjectsCertificateStatus status);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select c from ApprovedSubjectsCertificate c where c.id = :id")
     Optional<ApprovedSubjectsCertificate> findByIdForUpdate(@Param("id") Long id);
