@@ -11,9 +11,17 @@ public final class InvariantSabotage {
     static {
         MUTATIONS.put(AcademicInvariants.ENROLLMENT_WITHOUT_COHORT, List.of(
                 "update program_enrollment set program_cohort_id = null where id = (select min(id) from program_enrollment)"));
-        MUTATIONS.put(AcademicInvariants.SECTION_OVER_CAPACITY, List.of(
-                "update subject_section_enrollment set status = 'ENROLLED' where id = (select min(id) from subject_section_enrollment where status = 'APPROVED')",
-                "update subject_section set capacity = 0 where id = (select program_section_id from subject_section_enrollment where status = 'ENROLLED' order by id limit 1)"));
+        MUTATIONS.put(AcademicInvariants.SECTION_OVER_CAPACITY, List.of("""
+                update subject_section_enrollment set status = 'ENROLLED' where id in (
+                    select id from subject_section_enrollment where status = 'APPROVED' and program_section_id = (
+                        select program_section_id from subject_section_enrollment where status = 'APPROVED'
+                        group by program_section_id having count(*) >= 2 order by program_section_id limit 1)
+                    order by id limit 2)
+                """, """
+                update subject_section set capacity = 1 where id = (
+                    select program_section_id from subject_section_enrollment where status = 'ENROLLED'
+                    group by program_section_id having count(*) >= 2 order by program_section_id limit 1)
+                """));
         MUTATIONS.put(AcademicInvariants.GRADE_ITEM_OUTSIDE_SCHEME, List.of(
                 "update grade_item set sequence_number = 99 where id = (select min(id) from grade_item where type = 'EXAM' and program_section_enrollment_id is not null and exam_board_id is null)"));
         MUTATIONS.put(AcademicInvariants.APPROVED_BELOW_SCHEME_THRESHOLD, List.of(
