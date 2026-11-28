@@ -1,0 +1,3 @@
+alter table course_enrollment validate constraint course_enrollment_status_enum;
+alter table course_section_enrollment validate constraint course_section_enrollment_status_enum;
+alter table subject_section_enrollment validate constraint subject_section_enrollment_status_enum;
