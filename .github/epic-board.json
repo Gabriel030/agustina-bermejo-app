@@ -159,9 +159,9 @@
       "name": "E21",
       "total": 14,
       "done_at_baseline": 3,
-      "done_at_seed": 13,
+      "done_at_seed": 14,
       "total_estimated": true,
-      "next_step": "Código completo (#1619, #1623, #1616). Falta D5: que Gabriel confirme un PDF demo; después cerrar #1609",
+      "next_step": "Completa: PDF del certificado aprobado por Gabriel el 28-nov (D5). Cerrar #1609",
       "issues": [
         1609
       ]
@@ -181,7 +181,7 @@
       "done_at_baseline": 5,
       "done_at_seed": 6,
       "total_estimated": true,
-      "next_step": "Endpoint legacy retirado (#1567); migrar 2 requests de Bruno (#1523) y que Gabriel confirme el PDF de R1/N1",
+      "next_step": "PDF de R1 y N1 aprobados por Gabriel el 28-nov; cierra con #1742 (requests de Bruno, Fixes #1523)",
       "issues": [
         1523
       ]
