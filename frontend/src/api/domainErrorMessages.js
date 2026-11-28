@@ -302,6 +302,8 @@ export const DOMAIN_ERROR_MESSAGES = {
   COHORT_RESPONSIBLE_REQUIRED: 'Indicá al menos un preceptor responsable de la cohorte.',
   COURSE_RESPONSIBLE_REQUIRED: 'Indicá al menos un preceptor responsable del curso.',
   COURSE_CYCLE_NOT_READY: 'Hay comisiones del curso sin preceptor asignado. Asignales un preceptor antes de aprobar el ciclo.',
+  PRECEPTOR_ASSIGNMENT_ALREADY_EXISTS: 'Esa persona ya es preceptora de la comisión.',
+  PRECEPTOR_ASSIGNMENT_TARGET_INVALID: 'Indicá una sola comisión: de carrera o de curso.',
   PRECEPTOR_ROLE_REQUIRED: 'La persona elegida no tiene el rol de preceptor.',
   PROGRAM_COHORT_ALREADY_EXISTS: 'Ya existe una cohorte de esa carrera, ese año lectivo y ese ingreso.',
   INFORMATIVE_SESSION_ALREADY_STARTED: 'La charla ya comenzó.',
