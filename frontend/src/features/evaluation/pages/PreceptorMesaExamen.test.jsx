@@ -1,13 +1,15 @@
 import { describe, expect, it, vi } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { errorBody } from '@/test/fixtures/errors';
 import { PreceptorMesaExamen } from './PreceptorMesaExamen';
+import { saveBlob } from '@/lib/saveBlob';
 import { installFixedClock } from '@/test/fixedClock';
 
+vi.mock('@/lib/saveBlob', () => ({ saveBlob: vi.fn() }));
 const toastMock = vi.hoisted(() => ({ error: vi.fn(), success: vi.fn() }));
 vi.mock('sonner', async (importOriginal) => ({ ...(await importOriginal()), toast: toastMock }));
 
@@ -387,5 +389,59 @@ describe('PreceptorMesaExamen', () => {
     expect(screen.getAllByText('Cancelada').length).toBeGreaterThan(0);
     expect(screen.getByRole('button', { name: 'Reprogramar' })).toBeDisabled();
     expect(screen.getByRole('button', { name: 'Cancelar mesa' })).toBeDisabled();
+  });
+
+  describe('acta download', () => {
+    function serveBoard(board) {
+      server.use(
+        http.get(`${API}/exam-boards`, () => HttpResponse.json([board])),
+        http.get(`${API}/exam-boards/6`, () => HttpResponse.json(board)),
+        http.get(`${API}/exam-boards/6/registrations`, () => HttpResponse.json([])),
+        http.get(`${API}/exam-boards/6/exam-certificates/candidates`, () => HttpResponse.json([])),
+      );
+    }
+
+    it.each(['preceptor', 'administrativo', 'docente', 'director'])('shows %s the acta button and saves the PDF with the server filename', async (role) => {
+      vi.mocked(saveBlob).mockClear();
+      serveBoard(mesa({ status: 'CLOSED' }));
+      server.use(
+        http.get(`${API}/exam-boards/6/acta`, () =>
+          new HttpResponse(new Uint8Array([0x25, 0x50, 0x44, 0x46]), {
+            headers: { 'Content-Type': 'application/pdf', 'Content-Disposition': 'attachment; filename="acta-mesa-6.pdf"' },
+          }),
+        ),
+      );
+      const user = userEvent.setup();
+      renderWithProviders(<PreceptorMesaExamen role={role} />);
+
+      await abrirMesa(user, 'Cerradas');
+      await user.click(await screen.findByRole('button', { name: 'Descargar acta' }));
+
+      await waitFor(() => expect(saveBlob).toHaveBeenCalledTimes(1));
+      expect(saveBlob.mock.calls[0][1]).toBe('acta-mesa-6.pdf');
+    });
+
+    it('hides the acta button when the board is canceled', async () => {
+      serveBoard(mesa({ status: 'CANCELED', cancelReason: 'Sin quórum' }));
+      const user = userEvent.setup();
+      renderWithProviders(<PreceptorMesaExamen />);
+
+      await abrirMesa(user, 'Canceladas');
+
+      await screen.findByText('Mesa cancelada');
+      expect(screen.queryByRole('button', { name: 'Descargar acta' })).not.toBeInTheDocument();
+    });
+
+    it('shows the backend error when the acta cannot be generated', async () => {
+      serveBoard(mesa());
+      server.use(http.get(`${API}/exam-boards/6/acta`, () => HttpResponse.json(errorBody('EXAM_BOARD_NOT_FOUND'), { status: 404 })));
+      const user = userEvent.setup();
+      renderWithProviders(<PreceptorMesaExamen />);
+
+      await abrirMesa(user);
+      await user.click(await screen.findByRole('button', { name: 'Descargar acta' }));
+
+      await waitFor(() => expect(toastMock.error).toHaveBeenCalled());
+    });
   });
 });
