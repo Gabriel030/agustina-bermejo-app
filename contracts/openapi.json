@@ -3926,6 +3926,14 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "commissionsTotal" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "commissionsWithoutPreceptor" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
           "items" : {
             "items" : {
               "$ref" : "#/components/schemas/CohortReadinessItemResponse"
@@ -3937,13 +3945,26 @@
           },
           "openedAt" : {
             "format" : "date-time",
-            "type" : "string"
+            "type" : [ "string", "null" ]
           },
           "ready" : {
             "type" : "boolean"
           }
         },
-        "required" : [ "cohortId", "items", "open", "openedAt", "ready" ],
+        "required" : [ "cohortId", "commissionsTotal", "commissionsWithoutPreceptor", "items", "open", "openedAt", "ready" ],
+        "type" : "object"
+      },
+      "CohortResponsiblePreceptorResponse" : {
+        "properties" : {
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "name" ],
         "type" : "object"
       },
       "CollectionReminderImpactRequest" : {
@@ -13972,19 +13993,39 @@
             "format" : "int64",
             "type" : "integer"
           },
+          "intake" : {
+            "type" : "string"
+          },
           "label" : {
             "type" : "string"
+          },
+          "openedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
           },
           "ordenEnAnio" : {
             "format" : "int32",
             "type" : "integer"
           },
+          "planId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "planName" : {
+            "type" : "string"
+          },
           "programId" : {
             "format" : "int64",
             "type" : "integer"
+          },
+          "responsiblePreceptors" : {
+            "items" : {
+              "$ref" : "#/components/schemas/ResponsiblePreceptor"
+            },
+            "type" : "array"
           }
         },
-        "required" : [ "admissionEnd", "admissionOpen", "admissionStart", "cursadaStart", "id", "label", "ordenEnAnio", "programId" ],
+        "required" : [ "admissionEnd", "admissionOpen", "admissionStart", "cursadaStart", "id", "intake", "label", "openedAt", "ordenEnAnio", "planId", "planName", "programId", "responsiblePreceptors" ],
         "type" : "object"
       },
       "ProgramCohortResponse" : {
@@ -16077,6 +16118,19 @@
           }
         },
         "required" : [ "newPassword", "resetToken" ],
+        "type" : "object"
+      },
+      "ResponsiblePreceptor" : {
+        "properties" : {
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "name" : {
+            "type" : "string"
+          }
+        },
+        "required" : [ "id", "name" ],
         "type" : "object"
       },
       "RestoreTestResponse" : {
@@ -18243,6 +18297,20 @@
           }
         },
         "required" : [ "audience", "body", "category", "expiresAt", "scheduledFor", "title", "urgent" ],
+        "type" : "object"
+      },
+      "UpdateCohortResponsiblesRequest" : {
+        "properties" : {
+          "responsiblePreceptorIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "minItems" : 1,
+            "type" : "array"
+          }
+        },
+        "required" : [ "responsiblePreceptorIds" ],
         "type" : "object"
       },
       "UpdateContactConsentRequest" : {
@@ -36897,6 +36965,146 @@
               "application/json" : {
                 "schema" : {
                   "$ref" : "#/components/schemas/CohortReadinessResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "program-cohort-controller" ]
+      }
+    },
+    "/cohorts/{id}/responsible-preceptors" : {
+      "put" : {
+        "operationId" : "ProgramCohort_replaceResponsiblePreceptors",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "requestBody" : {
+          "content" : {
+            "application/json" : {
+              "schema" : {
+                "$ref" : "#/components/schemas/UpdateCohortResponsiblesRequest"
+              }
+            }
+          },
+          "required" : true
+        },
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "items" : {
+                    "$ref" : "#/components/schemas/CohortResponsiblePreceptorResponse"
+                  },
+                  "type" : "array"
                 }
               }
             },

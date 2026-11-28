@@ -4,7 +4,7 @@ public enum CohortReadinessItemCode {
     CURRENT_PLAN(true),
     FIRST_YEAR_SECTIONS(true),
     SECTION_PRECEPTORS(true),
-    COHORT_RESPONSIBLE(false),
+    COHORT_RESPONSIBLE(true),
     HOLIDAYS_LOADED(true),
     BILLING_TEMPLATE(true);
 
