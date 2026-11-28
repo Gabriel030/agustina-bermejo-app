@@ -36,4 +36,13 @@ class MaxUploadSizeHandlingTest {
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
     }
+
+    @Test
+    void oversizedDataImportUploadIsMappedToImportFileTooLarge() {
+        ResponseEntity<ErrorCodeResponse> response = handler.handleMaxUploadSize(
+                new MaxUploadSizeExceededException(5L * 1024 * 1024), new MockHttpServletRequest("POST", "/data-imports/12/files/PERSONS"));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(response.getBody().code()).isEqualTo("IMPORT_FILE_TOO_LARGE");
+    }
 }

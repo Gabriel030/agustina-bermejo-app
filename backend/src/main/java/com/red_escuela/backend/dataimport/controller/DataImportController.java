@@ -17,7 +17,9 @@ import com.red_escuela.backend.dataimport.dto.CreateImportBatchRequest;
 import com.red_escuela.backend.dataimport.dto.ImportBatchResponse;
 import com.red_escuela.backend.dataimport.dto.ImportRowErrorResponse;
 import com.red_escuela.backend.dataimport.domain.ImportEntityType;
+import com.red_escuela.backend.dataimport.exception.ImportFileTooLargeException;
 import com.red_escuela.backend.dataimport.exception.ImportFileUnreadableException;
+import com.red_escuela.backend.dataimport.specialist.ImportFileStager;
 import com.red_escuela.backend.dataimport.usecase.CommitImportBatchUseCase;
 import com.red_escuela.backend.dataimport.usecase.CreateImportBatchUseCase;
 import com.red_escuela.backend.dataimport.usecase.GetImportBatchUseCase;
@@ -107,6 +109,9 @@ public class DataImportController {
     @RequiresPermission(code = "dataimport.upload", legacyRoles = "ROLE_DIRECTOR")
     public ImportBatchResponse uploadFile(@PathVariable Long id, @PathVariable ImportEntityType entityType,
             @RequestParam("file") MultipartFile file) {
+        if (file.getSize() > ImportFileStager.MAX_FILE_BYTES) {
+            throw new ImportFileTooLargeException(ImportFileStager.MAX_FILE_BYTES);
+        }
         try {
             String name = file.getOriginalFilename() == null ? "archivo.csv" : file.getOriginalFilename();
             return uploadImportFileUseCase.upload(new UploadImportFileCommand(id, entityType, name, file.getBytes()));

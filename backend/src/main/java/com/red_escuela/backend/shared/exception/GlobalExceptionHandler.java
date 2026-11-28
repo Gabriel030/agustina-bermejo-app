@@ -99,6 +99,9 @@ public class GlobalExceptionHandler {
         if ("PUT".equals(request.getMethod()) && request.getRequestURI().matches(".*/certificate-signatories/[^/]+/signature")) {
             return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(new ErrorCodeResponse("SIGNATORY_SIGNATURE_INVALID"));
         }
+        if ("POST".equals(request.getMethod()) && request.getRequestURI().matches(".*/data-imports/[^/]+/files/[^/]+")) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(new ErrorCodeResponse("IMPORT_FILE_TOO_LARGE"));
+        }
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorCodeResponse.of(exception));
     }
 
