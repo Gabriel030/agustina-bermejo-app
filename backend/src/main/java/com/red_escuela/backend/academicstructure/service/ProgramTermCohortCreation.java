@@ -7,6 +7,8 @@ import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.academicstructure.exception.ProgramCohortAlreadyExistsException;
 import com.red_escuela.backend.academicstructure.exception.ProgramCohortBillingTemplateRequiredException;
 import com.red_escuela.backend.academicstructure.repository.ProgramCohortRepository;
+import com.red_escuela.backend.identity.api.CohortResponsibleAssigner;
+import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.module.CurrentBillingModePort;
@@ -21,15 +23,18 @@ public class ProgramTermCohortCreation {
     private final AcademicReferenceFinder referenceFinder;
     private final CurrentPersonService currentPersonService;
     private final CurrentBillingModePort billingMode;
+    private final CohortResponsibleAssigner cohortResponsibleAssigner;
 
     public ProgramTermCohortCreation(ProgramCohortRepository cohortRepository, ProgramCohortRecorder cohortRecorder,
                                      AcademicReferenceFinder referenceFinder,
-                                     CurrentPersonService currentPersonService, CurrentBillingModePort billingMode) {
+                                     CurrentPersonService currentPersonService, CurrentBillingModePort billingMode,
+                                     CohortResponsibleAssigner cohortResponsibleAssigner) {
         this.cohortRepository = cohortRepository;
         this.cohortRecorder = cohortRecorder;
         this.referenceFinder = referenceFinder;
         this.currentPersonService = currentPersonService;
         this.billingMode = billingMode;
+        this.cohortResponsibleAssigner = cohortResponsibleAssigner;
     }
 
     @Transactional
@@ -49,7 +54,10 @@ public class ProgramTermCohortCreation {
         cohort.setAdmissionStart(request.admissionStart());
         cohort.setAdmissionEnd(request.admissionEnd());
         cohort.setCursadaStart(request.cursadaStart());
-        cohort.setCreatedBy(currentPersonService.resolveCurrentPerson());
-        return cohortRecorder.save(cohort);
+        Person actor = currentPersonService.resolveCurrentPerson();
+        cohort.setCreatedBy(actor);
+        ProgramCohort saved = cohortRecorder.save(cohort);
+        cohortResponsibleAssigner.assign(saved.getId(), request.responsiblePreceptorIds(), actor.getId());
+        return saved;
     }
 }
