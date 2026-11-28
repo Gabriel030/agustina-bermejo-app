@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Command, CommandEmpty, CommandGroup, CommandInput, CommandItem, CommandList } from '@/components/ui/command';
+import { saveBlob } from '@/lib/saveBlob';
 import { formatearFecha } from '@/lib/comisiones';
 import { ReprogramarMesaDialog } from '@/features/evaluation/components/ReprogramarMesaDialog';
 import { CancelarMesaDialog } from '@/features/evaluation/components/CancelarMesaDialog';
@@ -21,7 +22,7 @@ import { boardRoleCaps } from '@/features/evaluation/lib/examBoardGrades';
 import { ExamBoardGradesSection } from '@/features/evaluation/components/ExamBoardGradesSection';
 import { ExamCertificatesSection } from '@/features/evaluation/components/ExamCertificatesSection';
 import { certificateCaps } from '@/features/evaluation/lib/examCertificates';
-import { useMesas, useMesa, useAnotados, useInstructores, useAsignarTribunal, useCerrarActa, useDarDeBajaInscripcion, useReprogramarMesa, useCancelarMesa } from '@/features/evaluation/hooks/useMesasDeExamen';
+import { useMesas, useMesa, useAnotados, useInstructores, useAsignarTribunal, useCerrarActa, useDarDeBajaInscripcion, useReprogramarMesa, useCancelarMesa, useDescargarActaMesa } from '@/features/evaluation/hooks/useMesasDeExamen';
 
 const ESTADO_MESA = {
   SCHEDULED: { label: 'Agendada', tone: 'accent' }, CLOSED: { label: 'Cerrada', tone: 'neutral' },
@@ -124,6 +125,7 @@ function DetalleMesa({ mesaId, role, onBack }) {
   const darDeBaja = useDarDeBajaInscripcion(mesaId);
   const reprogramar = useReprogramarMesa(mesaId);
   const cancelar = useCancelarMesa(mesaId);
+  const descargarActa = useDescargarActaMesa(mesaId);
 
   const [modalTribunal, setModalTribunal] = useState(false);
   const [confirmarCierre, setConfirmarCierre] = useState(false);
@@ -169,6 +171,15 @@ function DetalleMesa({ mesaId, role, onBack }) {
     } finally {
       setConfirmarCierre(false);
       setCerrando(false);
+    }
+  }
+
+  async function descargarActaPdf() {
+    try {
+      const { blob, filename } = await descargarActa.mutateAsync();
+      saveBlob(blob, filename === 'archivo' ? 'acta-mesa-de-examen.pdf' : filename);
+    } catch (e) {
+      toast.error(mensajeErrorMesa(e));
     }
   }
 
@@ -230,20 +241,27 @@ function DetalleMesa({ mesaId, role, onBack }) {
       <GlassCard className="flex flex-col gap-3 p-4">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="font-heading text-size-16 font-semibold text-ink">Alumnos anotados</div>
-          {gestiona && <div className="flex flex-wrap gap-2">
-            <Button variant="outline" size="sm" className="min-h-11 md:min-h-8" disabled={!modificable || conNotaFinal} onClick={() => setReprogramando(true)}>
-              Reprogramar
-            </Button>
-            <Button variant="outline" size="sm" className="min-h-11 md:min-h-8 text-danger" disabled={!modificable || conNotaFinal} onClick={() => setCancelando(true)}>
-              Cancelar mesa
-            </Button>
-            <Button variant="outline" size="sm" className="min-h-11 md:min-h-8" disabled={soloLectura} onClick={() => setModalTribunal(true)}>
-              Asignar tribunal
-            </Button>
-            <Button variant="primary" size="sm" className="min-h-11 md:min-h-8" disabled={soloLectura || cerrando || examenPendiente} onClick={() => setConfirmarCierre(true)}>
-              Cerrar acta
-            </Button>
-          </div>}
+          <div className="flex flex-wrap gap-2">
+            {!cancelada && (
+              <Button variant="outline" size="sm" className="min-h-11 md:min-h-8" disabled={descargarActa.isPending} onClick={descargarActaPdf}>
+                Descargar acta
+              </Button>
+            )}
+            {gestiona && <>
+              <Button variant="outline" size="sm" className="min-h-11 md:min-h-8" disabled={!modificable || conNotaFinal} onClick={() => setReprogramando(true)}>
+                Reprogramar
+              </Button>
+              <Button variant="outline" size="sm" className="min-h-11 md:min-h-8 text-danger" disabled={!modificable || conNotaFinal} onClick={() => setCancelando(true)}>
+                Cancelar mesa
+              </Button>
+              <Button variant="outline" size="sm" className="min-h-11 md:min-h-8" disabled={soloLectura} onClick={() => setModalTribunal(true)}>
+                Asignar tribunal
+              </Button>
+              <Button variant="primary" size="sm" className="min-h-11 md:min-h-8" disabled={soloLectura || cerrando || examenPendiente} onClick={() => setConfirmarCierre(true)}>
+                Cerrar acta
+              </Button>
+            </>}
+          </div>
         </div>
         {gestiona && modificable && conNotaFinal && (
           <div className="text-size-12 font-semibold text-danger" role="alert">

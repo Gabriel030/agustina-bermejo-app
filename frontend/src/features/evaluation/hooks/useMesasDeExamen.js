@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiFetch } from '@/api/client';
+import { apiFetch, apiFetchBlob } from '@/api/client';
 
 export function useMesas(status) {
   const params = status ? `?status=${status}` : '';
@@ -83,5 +83,11 @@ export function useCancelarMesa(id) {
       invalidarMesa(queryClient, id);
       invalidarListas(queryClient);
     },
+  });
+}
+
+export function useDescargarActaMesa(id) {
+  return useMutation({
+    mutationFn: () => apiFetchBlob(`/exam-boards/${id}/acta`),
   });
 }
