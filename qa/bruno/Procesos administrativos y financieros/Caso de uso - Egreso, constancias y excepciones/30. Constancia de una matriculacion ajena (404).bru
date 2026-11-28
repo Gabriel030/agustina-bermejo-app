@@ -4,13 +4,20 @@ meta {
   seq: 30
 }
 
-get {
-  url: {{baseUrl}}/me/program-enrollments/{{programEnrollmentId2}}/certificates/approved-subjects
+post {
+  url: {{baseUrl}}/me/approved-subjects-certificates
+  body: json
   auth: none
 }
 
 headers {
   Authorization: Bearer {{alumnoAccessToken}}
+}
+
+body:json {
+  {
+    "enrollmentId": {{programEnrollmentId2}}
+  }
 }
 
 tests {
