@@ -1,0 +1,6 @@
+package com.red_escuela.backend.academicstructure.dto;
+
+import java.util.List;
+
+public record IncompleteOfferItemResponse(Long id, String name, List<String> missingCodes, List<String> reasons) {
+}

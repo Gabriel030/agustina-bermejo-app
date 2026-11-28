@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.service;
 
+import com.red_escuela.backend.academicstructure.api.HolidayAttendanceConflictPort;
 import com.red_escuela.backend.academicstructure.domain.HolidayType;
 import com.red_escuela.backend.academicstructure.dto.HolidayResponse;
 import com.red_escuela.backend.academicstructure.dto.UpdateHolidayRequest;
@@ -14,6 +15,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,12 +34,15 @@ class HolidayUpdaterTest {
     @Mock
     private HolidayRepository holidayRepository;
 
+    @Mock
+    private HolidayAttendanceConflictPort attendanceConflictPort;
+
     private HolidayUpdater updater;
     private Holiday holiday;
 
     @BeforeEach
     void setUp() {
-        updater = new HolidayUpdater(holidayRepository);
+        updater = new HolidayUpdater(holidayRepository, new HolidayImpactFinder(java.util.List.of()), attendanceConflictPort);
         holiday = new Holiday();
         holiday.setId(ID);
         holiday.setDate(LocalDate.of(2030, 5, 1));
@@ -55,7 +60,7 @@ class HolidayUpdaterTest {
         HolidayResponse response = updater.update(ID,
                 new UpdateHolidayRequest(NEW_DATE, "Puente", HolidayType.BRIDGE, null));
 
-        assertThat(response).isEqualTo(new HolidayResponse(ID, NEW_DATE, "Puente", HolidayType.BRIDGE, ""));
+        assertThat(response).isEqualTo(new HolidayResponse(ID, NEW_DATE, "Puente", HolidayType.BRIDGE, "", com.red_escuela.backend.academicstructure.domain.HolidayScope.BOTH, java.util.List.of(), List.of()));
     }
 
     @Test

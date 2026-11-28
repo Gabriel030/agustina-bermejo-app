@@ -7,11 +7,12 @@ import com.red_escuela.backend.enrollment.api.CurriculumProgressView;
 import com.red_escuela.backend.academicstructure.api.ProgramCurriculumEntryView;
 import com.red_escuela.backend.academicstructure.api.ProgramCurriculumFinder;
 import com.red_escuela.backend.academicstructure.domain.RequirementType;
+import com.red_escuela.backend.academicstructure.entity.CurriculumPlan;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubjectCategory;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
-import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.policy.CurriculumSubjectState;
 import com.red_escuela.backend.enrollment.policy.PrerequisiteStanding;
 import com.red_escuela.backend.enrollment.repository.DirectorApprovalRequestRepository;
@@ -40,6 +41,7 @@ class CurriculumProgressReaderTest {
 
     private static final Long ENROLLMENT_ID = 5L;
     private static final Long PROGRAM_ID = 9L;
+    private static final Long PLAN_ID = 17L;
 
     private final ProgramEnrollmentRepository enrollmentRepository = mock(ProgramEnrollmentRepository.class);
     private final SubjectSectionEnrollmentRepository sectionRepository = mock(SubjectSectionEnrollmentRepository.class);
@@ -49,6 +51,7 @@ class CurriculumProgressReaderTest {
             enrollmentRepository, approvalRepository, curriculumFinder,
             new SubjectApprovalLookup(sectionRepository, mock(SubjectEquivalenceRepository.class)));
     private final Program program = mock(Program.class);
+    private final CurriculumPlan curriculumPlan = mock(CurriculumPlan.class);
     private final ProgramEnrollment enrollment = mock(ProgramEnrollment.class);
     private final List<CurriculumProgressRow> rows = new ArrayList<>();
 
@@ -60,17 +63,19 @@ class CurriculumProgressReaderTest {
         when(enrollmentRepository.findById(ENROLLMENT_ID)).thenReturn(Optional.of(enrollment));
         when(enrollment.getId()).thenReturn(ENROLLMENT_ID);
         when(enrollment.getProgram()).thenReturn(program);
+        when(enrollment.getPlan()).thenReturn(curriculumPlan);
+        when(curriculumPlan.getId()).thenReturn(PLAN_ID);
         when(program.getId()).thenReturn(PROGRAM_ID);
         when(program.getName()).thenReturn("Tecnicatura");
-        when(program.getTotalCreditsRequired()).thenReturn(12);
-        when(curriculumFinder.findProgramCorequisites(PROGRAM_ID)).thenReturn(Map.of());
+        when(curriculumPlan.getTotalCreditsRequired()).thenReturn(12);
+        when(curriculumFinder.findCorequisitesOfPlan(PLAN_ID)).thenReturn(Map.of());
         when(curriculumFinder.findElectiveGroupRequirements(PROGRAM_ID)).thenReturn(List.of());
         when(approvalRepository.findSubjectIdsWithRequest(any(), any(), any())).thenReturn(List.of());
     }
 
     private CurriculumProgressView read() {
-        when(curriculumFinder.findActiveCurriculumEntries(PROGRAM_ID)).thenReturn(plan);
-        when(curriculumFinder.findProgramPrerequisites(PROGRAM_ID)).thenReturn(prerequisites);
+        when(curriculumFinder.findActiveCurriculumEntriesOfPlan(PLAN_ID)).thenReturn(plan);
+        when(curriculumFinder.findPrerequisitesOfPlan(PLAN_ID)).thenReturn(prerequisites);
         when(sectionRepository.findCurriculumProgressRows(ENROLLMENT_ID)).thenReturn(rows);
         return reader.readProgress(ENROLLMENT_ID);
     }
@@ -81,7 +86,7 @@ class CurriculumProgressReaderTest {
     }
 
     private static PrerequisiteView requires(Long subjectId, RequirementType type) {
-        return new PrerequisiteView(subjectId, "Materia " + subjectId, type, "S" + subjectId);
+        return new PrerequisiteView(subjectId, "Materia " + subjectId, type, "S" + subjectId, null);
     }
 
     private void mark(Long subjectId, EnrollmentStatus status, Grade score) {
@@ -131,7 +136,7 @@ class CurriculumProgressReaderTest {
 
     @Test
     void planWithoutRequiredCreditsHasNoPercentAndWarns() {
-        when(program.getTotalCreditsRequired()).thenReturn(0);
+        when(curriculumPlan.getTotalCreditsRequired()).thenReturn(0);
         plan = List.of(entry(1L, 3));
 
         CurriculumProgressView view = read();
@@ -142,7 +147,7 @@ class CurriculumProgressReaderTest {
 
     @Test
     void emptyPlanHasNoSubjectsAndNoPercentOfProgress() {
-        when(program.getTotalCreditsRequired()).thenReturn(0);
+        when(curriculumPlan.getTotalCreditsRequired()).thenReturn(0);
 
         CurriculumProgressView view = read();
 

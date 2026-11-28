@@ -1,7 +1,7 @@
 package com.red_escuela.backend.billing.advanceenrollmentfee.service;
 
 import com.red_escuela.backend.billing.advanceenrollmentfee.exception.AdvanceEnrollmentFeeNotAvailableException;
-import com.red_escuela.backend.billing.api.AdvanceEnrollmentFeeView;
+import com.red_escuela.backend.enrollment.api.AdvanceEnrollmentFeeView;
 import com.red_escuela.backend.billing.invoice.domain.issuing.InvoiceIssuingRequest;
 import com.red_escuela.backend.billing.invoice.service.InvoiceIssuingRequestFactory;
 import com.red_escuela.backend.billing.planning.domain.PlannedInvoice;

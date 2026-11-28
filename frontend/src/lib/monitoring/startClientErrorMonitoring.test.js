@@ -175,8 +175,8 @@ describe('startClientErrorMonitoring with DSN', () => {
     await startWithFakeSdk();
     const [{ beforeSend }] = sdk.init.mock.calls[0];
 
-    const withValidId = beforeSend({ event_id: 'a', tags: { request_id: REQUEST_ID } });
-    const withInjectedId = beforeSend({ event_id: 'b', tags: { request_id: 'token=SECRETO' } });
+    const withValidId = beforeSend({ event_id: 'a', message: 'uno', tags: { request_id: REQUEST_ID } });
+    const withInjectedId = beforeSend({ event_id: 'b', message: 'dos', tags: { request_id: 'token=SECRETO' } });
 
     expect(withValidId.tags).toEqual({ request_id: REQUEST_ID });
     expect(withInjectedId.tags).toBeUndefined();

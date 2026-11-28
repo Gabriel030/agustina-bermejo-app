@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.entity;
 
+import com.red_escuela.backend.academicstructure.domain.CatalogArea;
 import org.springframework.modulith.NamedInterface;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -78,6 +79,23 @@ public class Course {
     private boolean visibleInCatalog = false;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "catalog_area")
+    private CatalogArea catalogArea;
+
+    @Column(name = "catalog_published_at")
+    private LocalDateTime catalogPublishedAt;
+
+    public void changeCatalogVisibility(boolean visible, CatalogArea requestedArea, LocalDateTime now) {
+        this.visibleInCatalog = visible;
+        if (requestedArea != null) {
+            this.catalogArea = requestedArea;
+        }
+        if (visible && catalogPublishedAt == null) {
+            this.catalogPublishedAt = now;
+        }
+    }
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "teaching_mode")
     private TeachingMode teachingMode;
 
@@ -123,7 +141,12 @@ public class Course {
     }
 
     public boolean waitlistDeadlineHasPassed(LocalDate today) {
-        LocalDate deadline = waitlistDeadline();
-        return deadline != null && !today.isBefore(deadline);
+        if (waitlistDeadlineOffsetDays == null) {
+            return term.getEndDate() != null && today.isAfter(term.getEndDate().toLocalDate());
+        }
+        return !today.isBefore(waitlistDeadline());
     }
+
+    @Column(name = "duration_hours")
+    private Integer durationHours;
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { ChevronDown } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { GlassCard } from '@/components/GlassCard';
 import { EmptyState } from '@/components/EmptyState';
 import { StatusPill } from '@/components/StatusPill';
@@ -109,18 +110,20 @@ export function StudentCreditNotesSection({ studentId, invoices }) {
   return (
     <section aria-labelledby="student-credit-notes-heading">
       <GlassCard className="overflow-hidden">
-        <button
+        <Button
           type="button"
+          variant="ghost"
+          size="row"
           aria-expanded={open}
           aria-controls="student-credit-notes-body"
           onClick={() => setOpen((value) => !value)}
-          className="flex w-full items-center justify-between gap-3 px-5 py-4 text-left"
+          className="gap-3 rounded-none px-5 py-4"
         >
           <h2 id="student-credit-notes-heading" className="font-heading text-base font-semibold text-ink">
             {count == null ? 'Notas de crédito del alumno' : `Notas de crédito del alumno · ${count}`}
           </h2>
           <ChevronDown className={cn('size-4 shrink-0 text-ink-faint transition-transform', open && 'rotate-180')} aria-hidden="true" />
-        </button>
+        </Button>
         {open && (
           <div id="student-credit-notes-body" className="border-t border-border md:px-3 md:pb-2">
             <DataTable

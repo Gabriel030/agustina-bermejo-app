@@ -11,7 +11,6 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.List;
 import com.red_escuela.backend.academicstructure.domain.SectionShift;
-import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.shared.domain.StatusType;
 
 @NamedInterface("model")
@@ -40,9 +39,8 @@ public class SubjectSection {
     @JoinColumn(name = "term_id", nullable = false)
     private Term term;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "evaluation_scheme_id")
-    private EvaluationScheme evaluationScheme;
+    @Column(name = "evaluation_scheme_id")
+    private Long evaluationSchemeId;
 
     @Column(name = "schedule")
     private String schedule;
@@ -80,6 +78,10 @@ public class SubjectSection {
 
     @Column(name = "pending_approval", nullable = false)
     private boolean pendingApproval = false;
+
+    public boolean isOpenForEnrollment() {
+        return getStatus() == StatusType.ACTIVE && (academicOfferingCycle == null || academicOfferingCycle.isOpenForEnrollment());
+    }
 
     public boolean isOfferingApproved() {
         return academicOfferingCycle == null || academicOfferingCycle.wasApproved();

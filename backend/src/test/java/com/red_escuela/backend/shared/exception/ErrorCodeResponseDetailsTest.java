@@ -2,7 +2,7 @@ package com.red_escuela.backend.shared.exception;
 
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
-import com.red_escuela.backend.billing.exception.PendingDebtException;
+import com.red_escuela.backend.graduation.exception.PendingDebtException;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.Money;
 import org.junit.jupiter.api.Test;

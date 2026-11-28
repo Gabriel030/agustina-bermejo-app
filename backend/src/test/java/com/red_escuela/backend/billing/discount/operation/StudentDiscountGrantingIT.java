@@ -28,7 +28,7 @@ import com.red_escuela.backend.billing.discount.exception.ScholarshipStartBefore
 import com.red_escuela.backend.billing.discount.exception.StudentDiscountOverlapException;
 import com.red_escuela.backend.billing.discount.exception.StudentDiscountProposalExpiredException;
 import com.red_escuela.backend.billing.discount.repository.StudentDiscountRepository;
-import com.red_escuela.backend.billing.entity.CohortIntake;
+import com.red_escuela.backend.academicstructure.domain.CohortIntake;
 import com.red_escuela.backend.billing.entity.EnrollmentPaymentStatus;
 import com.red_escuela.backend.billing.invariant.BillingInvariantChecker;
 import com.red_escuela.backend.billing.invoice.domain.DiscountType;

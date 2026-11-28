@@ -20,19 +20,27 @@ public class ExamBoardRescheduler {
     private final ExamBoardRepository examBoardRepository;
     private final HolidayFinder holidayFinder;
     private final ExamBoardChangeChecker participants;
+    private final ExamBoardWindowValidator windowValidator;
+    private final ExamBoardRescheduleDateValidator dateValidator;
     private final ApplicationEventPublisher eventPublisher;
 
     public ExamBoardRescheduler(ExamBoardRepository examBoardRepository, HolidayFinder holidayFinder,
-                                ExamBoardChangeChecker participants, ApplicationEventPublisher eventPublisher) {
+                                ExamBoardChangeChecker participants, ExamBoardWindowValidator windowValidator,
+                                ExamBoardRescheduleDateValidator dateValidator,
+                                ApplicationEventPublisher eventPublisher) {
         this.examBoardRepository = examBoardRepository;
         this.holidayFinder = holidayFinder;
         this.participants = participants;
+        this.windowValidator = windowValidator;
+        this.dateValidator = dateValidator;
         this.eventPublisher = eventPublisher;
     }
 
     @Transactional
     public ExamBoardResponse reschedule(Long examBoardId, RescheduleExamBoardRequest request) {
         ExamBoard examBoard = examBoardRepository.findById(examBoardId).orElseThrow(() -> new ExamBoardNotFoundException(examBoardId));
+        dateValidator.require(request.examDate());
+        windowValidator.require(request.examDate(), request.registrationStart(), request.registrationEnd());
         if (holidayFinder.isHoliday(request.examDate().toLocalDate())) {
             throw new ExamDateOnHolidayException(request.examDate().toLocalDate());
         }

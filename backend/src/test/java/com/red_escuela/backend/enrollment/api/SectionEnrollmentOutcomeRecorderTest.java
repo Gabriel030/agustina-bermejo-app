@@ -3,16 +3,20 @@ package com.red_escuela.backend.enrollment.api;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.FinalGradeType;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
+import com.red_escuela.backend.enrollment.events.ProgramSectionStatusChangedEvent;
 import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.repository.CourseSubjectSectionEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
 import com.red_escuela.backend.shared.domain.Grade;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.TransactionDefinition;
 import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource;
 
@@ -22,6 +26,8 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -29,17 +35,20 @@ import static org.mockito.Mockito.when;
 class SectionEnrollmentOutcomeRecorderTest {
 
     private static final Grade SEVEN = Grade.of(new BigDecimal("7"));
+    private static final Long PROGRAM_ENROLLMENT_ID = 55L;
 
     @Mock
     private SubjectSectionEnrollmentRepository programEnrollmentRepository;
     @Mock
     private CourseSubjectSectionEnrollmentRepository courseEnrollmentRepository;
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
     @InjectMocks
     private SectionEnrollmentOutcomeRecorder recorder;
 
     @Test
     void recordProgramOutcomeStoresStatusScoreAndTypeThenSaves() {
-        SubjectSectionEnrollment enrollment = new SubjectSectionEnrollment();
+        SubjectSectionEnrollment enrollment = programSectionEnrollment();
         when(programEnrollmentRepository.findById(1L)).thenReturn(Optional.of(enrollment));
 
         recorder.recordProgramOutcome(1L, EnrollmentStatus.APPROVED, SEVEN, FinalGradeType.PROMOTION, false);
@@ -52,7 +61,7 @@ class SectionEnrollmentOutcomeRecorderTest {
 
     @Test
     void recordProgramOutcomeKeepsPreviousFinalWhenScoreAbsentAndNoClearRequested() {
-        SubjectSectionEnrollment enrollment = new SubjectSectionEnrollment();
+        SubjectSectionEnrollment enrollment = programSectionEnrollment();
         enrollment.setFinalScore(SEVEN);
         enrollment.setFinalGradeType(FinalGradeType.PROMOTION);
         when(programEnrollmentRepository.findById(1L)).thenReturn(Optional.of(enrollment));
@@ -66,7 +75,7 @@ class SectionEnrollmentOutcomeRecorderTest {
 
     @Test
     void recordProgramOutcomeClearsFinalWhenScoreAbsentAndClearRequested() {
-        SubjectSectionEnrollment enrollment = new SubjectSectionEnrollment();
+        SubjectSectionEnrollment enrollment = programSectionEnrollment();
         enrollment.setFinalScore(SEVEN);
         enrollment.setFinalGradeType(FinalGradeType.PROMOTION);
         when(programEnrollmentRepository.findById(1L)).thenReturn(Optional.of(enrollment));
@@ -76,6 +85,68 @@ class SectionEnrollmentOutcomeRecorderTest {
         assertThat(enrollment.getFinalScore()).isNull();
         assertThat(enrollment.getFinalGradeType()).isNull();
         verify(programEnrollmentRepository).save(enrollment);
+    }
+
+    @Test
+    void losingAnApprovedOutcomePublishesTheStatusChange() {
+        SubjectSectionEnrollment enrollment = programSectionEnrollment();
+        enrollment.setStatus(EnrollmentStatus.APPROVED);
+        enrollment.setFinalScore(SEVEN);
+        when(programEnrollmentRepository.findById(1L)).thenReturn(Optional.of(enrollment));
+
+        recorder.recordProgramOutcome(1L, EnrollmentStatus.REGULAR, null, null, true);
+
+        ArgumentCaptor<ProgramSectionStatusChangedEvent> captor = ArgumentCaptor.forClass(ProgramSectionStatusChangedEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().approvedOutcomeChanged()).isTrue();
+        assertThat(captor.getValue().programEnrollmentId()).isEqualTo(PROGRAM_ENROLLMENT_ID);
+    }
+
+    @Test
+    void changingTheScoreOfAnApprovedOutcomePublishesTheStatusChange() {
+        SubjectSectionEnrollment enrollment = programSectionEnrollment();
+        enrollment.setStatus(EnrollmentStatus.APPROVED);
+        enrollment.setFinalScore(SEVEN);
+        when(programEnrollmentRepository.findById(1L)).thenReturn(Optional.of(enrollment));
+
+        recorder.recordProgramOutcome(1L, EnrollmentStatus.APPROVED, Grade.of(new BigDecimal("9")), FinalGradeType.FINAL_EXAM, false);
+
+        ArgumentCaptor<ProgramSectionStatusChangedEvent> captor = ArgumentCaptor.forClass(ProgramSectionStatusChangedEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().approvedOutcomeChanged()).isTrue();
+    }
+
+    @Test
+    void recordingTheSameApprovedOutcomeDoesNotPublishAnything() {
+        SubjectSectionEnrollment enrollment = programSectionEnrollment();
+        enrollment.setStatus(EnrollmentStatus.APPROVED);
+        enrollment.setFinalScore(SEVEN);
+        when(programEnrollmentRepository.findById(1L)).thenReturn(Optional.of(enrollment));
+
+        recorder.recordProgramOutcome(1L, EnrollmentStatus.APPROVED, SEVEN, FinalGradeType.FINAL_EXAM, false);
+
+        verify(eventPublisher, never()).publishEvent(any(Object.class));
+    }
+
+    @Test
+    void gainingApprovalPublishesTheStatusChangeWithoutApprovedOutcomeChange() {
+        SubjectSectionEnrollment enrollment = programSectionEnrollment();
+        enrollment.setStatus(EnrollmentStatus.REGULAR);
+        when(programEnrollmentRepository.findById(1L)).thenReturn(Optional.of(enrollment));
+
+        recorder.recordProgramOutcome(1L, EnrollmentStatus.APPROVED, SEVEN, FinalGradeType.FINAL_EXAM, false);
+
+        ArgumentCaptor<ProgramSectionStatusChangedEvent> captor = ArgumentCaptor.forClass(ProgramSectionStatusChangedEvent.class);
+        verify(eventPublisher).publishEvent(captor.capture());
+        assertThat(captor.getValue().approvedOutcomeChanged()).isFalse();
+    }
+
+    private static SubjectSectionEnrollment programSectionEnrollment() {
+        ProgramEnrollment programEnrollment = new ProgramEnrollment();
+        programEnrollment.setId(PROGRAM_ENROLLMENT_ID);
+        SubjectSectionEnrollment enrollment = new SubjectSectionEnrollment();
+        enrollment.setProgramEnrollment(programEnrollment);
+        return enrollment;
     }
 
     @Test

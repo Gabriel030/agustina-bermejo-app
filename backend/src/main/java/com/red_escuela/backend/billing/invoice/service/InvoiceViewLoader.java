@@ -3,8 +3,8 @@ package com.red_escuela.backend.billing.invoice.service;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
-import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
-import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
+import com.red_escuela.backend.enrollment.api.CourseEnrollmentFinder;
+import com.red_escuela.backend.enrollment.api.ProgramEnrollmentFinder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,15 +18,15 @@ import java.util.stream.Collectors;
 @Service
 public class InvoiceViewLoader {
 
-    private final ProgramEnrollmentRepository programEnrollmentRepository;
-    private final CourseEnrollmentRepository courseEnrollmentRepository;
+    private final ProgramEnrollmentFinder programEnrollmentFinder;
+    private final CourseEnrollmentFinder courseEnrollmentFinder;
     private final InvoicePaymentShareSource paymentShareSource;
     private final InvoiceCreditNoteShareSource creditNoteShareSource;
 
-    public InvoiceViewLoader(ProgramEnrollmentRepository programEnrollmentRepository, CourseEnrollmentRepository courseEnrollmentRepository,
+    public InvoiceViewLoader(ProgramEnrollmentFinder programEnrollmentFinder, CourseEnrollmentFinder courseEnrollmentFinder,
                              InvoicePaymentShareSource paymentShareSource, InvoiceCreditNoteShareSource creditNoteShareSource) {
-        this.programEnrollmentRepository = programEnrollmentRepository;
-        this.courseEnrollmentRepository = courseEnrollmentRepository;
+        this.programEnrollmentFinder = programEnrollmentFinder;
+        this.courseEnrollmentFinder = courseEnrollmentFinder;
         this.paymentShareSource = paymentShareSource;
         this.creditNoteShareSource = creditNoteShareSource;
     }
@@ -41,10 +41,10 @@ public class InvoiceViewLoader {
         if (invoices.isEmpty()) {
             return List.of();
         }
-        Map<Long, ProgramEnrollment> programs = programEnrollmentRepository.findAllWithStudentAndProgramByIdIn(invoices.stream()
+        Map<Long, ProgramEnrollment> programs = programEnrollmentFinder.findAllWithStudentAndProgramByIds(invoices.stream()
                 .flatMap(invoice -> invoice.findProgramEnrollmentId().stream()).distinct().toList()).stream()
                 .collect(Collectors.toMap(ProgramEnrollment::getId, Function.identity()));
-        Map<Long, CourseEnrollment> courses = courseEnrollmentRepository.findAllWithStudentAndCourseByIdIn(invoices.stream()
+        Map<Long, CourseEnrollment> courses = courseEnrollmentFinder.findAllWithStudentAndCourseByIds(invoices.stream()
                 .flatMap(invoice -> invoice.findCourseEnrollmentId().stream()).distinct().toList()).stream()
                 .collect(Collectors.toMap(CourseEnrollment::getId, Function.identity()));
         List<Long> invoiceIds = invoices.stream().map(Invoice::getId).toList();
@@ -59,21 +59,21 @@ public class InvoiceViewLoader {
 
     @Transactional(readOnly = true)
     public Optional<ProgramEnrollment> findProgramEnrollment(Long programEnrollmentId) {
-        return programEnrollmentRepository.findById(programEnrollmentId);
+        return programEnrollmentFinder.findById(programEnrollmentId);
     }
 
     @Transactional(readOnly = true)
     public Optional<CourseEnrollment> findCourseEnrollment(Long courseEnrollmentId) {
-        return courseEnrollmentRepository.findById(courseEnrollmentId);
+        return courseEnrollmentFinder.findById(courseEnrollmentId);
     }
 
     @Transactional(readOnly = true)
     public List<ProgramEnrollment> findProgramEnrollmentsOfStudent(Long studentId) {
-        return programEnrollmentRepository.findByStudentId(studentId);
+        return programEnrollmentFinder.findByStudent(studentId);
     }
 
     @Transactional(readOnly = true)
     public List<CourseEnrollment> findCourseEnrollmentsOfStudent(Long studentId) {
-        return courseEnrollmentRepository.findByStudentId(studentId);
+        return courseEnrollmentFinder.findByStudent(studentId);
     }
 }

@@ -28,19 +28,22 @@ public class AcademicOfferingCycleReader {
     private final CourseSubjectSectionRepository courseSectionRepository;
     private final SectionScheduleSlotRepository slotRepository;
     private final SectionModificationProposalRepository proposalRepository;
+    private final CycleSectionPreceptorsResolver preceptorsResolver;
 
     public AcademicOfferingCycleReader(
             AcademicOfferingCycleRepository cycleRepository,
             SubjectSectionRepository subjectSectionRepository,
             CourseSubjectSectionRepository courseSectionRepository,
             SectionScheduleSlotRepository slotRepository,
-            SectionModificationProposalRepository proposalRepository
+            SectionModificationProposalRepository proposalRepository,
+            CycleSectionPreceptorsResolver preceptorsResolver
     ) {
         this.cycleRepository = cycleRepository;
         this.subjectSectionRepository = subjectSectionRepository;
         this.courseSectionRepository = courseSectionRepository;
         this.slotRepository = slotRepository;
         this.proposalRepository = proposalRepository;
+        this.preceptorsResolver = preceptorsResolver;
     }
 
     @Transactional(readOnly = true)
@@ -95,11 +98,13 @@ public class AcademicOfferingCycleReader {
             var proposalBySection = ids.isEmpty() ? Map.<Long, SectionModificationProposal>of()
                     : proposalRepository.findLatestBySubjectSectionIds(ids).stream()
                             .collect(Collectors.toMap(p -> p.getSubjectSection().getId(), p -> p));
+            var preceptorsBySection = preceptorsResolver.resolveForSubjectSections(ids);
             return sections.stream()
                     .map(s -> CycleSectionResponse.fromSubjectSection(
                             s,
                             slotsBySection.getOrDefault(s.getId(), List.of()),
-                            proposalBySection.get(s.getId())))
+                            proposalBySection.get(s.getId()),
+                            preceptorsBySection.getOrDefault(s.getId(), List.of())))
                     .toList();
         }
         var sections = courseSectionRepository.findByAcademicOfferingCycleId(cycleId);
@@ -107,8 +112,10 @@ public class AcademicOfferingCycleReader {
         var slotsBySection = ids.isEmpty() ? Map.<Long, List<SectionScheduleSlot>>of()
                 : slotRepository.findByCourseSectionIdInOrderByIdAsc(ids).stream()
                         .collect(Collectors.groupingBy(sl -> sl.getCourseSection().getId()));
+        var preceptorsBySection = preceptorsResolver.resolveForCourseSections(ids);
         return sections.stream()
-                .map(s -> CycleSectionResponse.fromCourseSection(s, slotsBySection.getOrDefault(s.getId(), List.of())))
+                .map(s -> CycleSectionResponse.fromCourseSection(s, slotsBySection.getOrDefault(s.getId(), List.of()),
+                        preceptorsBySection.getOrDefault(s.getId(), List.of())))
                 .toList();
     }
 }

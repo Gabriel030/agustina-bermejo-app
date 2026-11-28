@@ -8,7 +8,7 @@ import com.red_escuela.backend.enrollment.events.DirectorApprovalRequestRejected
 import com.red_escuela.backend.enrollment.events.EnrollmentFeeExemptionGrantedEvent;
 import com.red_escuela.backend.enrollment.events.EnrollmentFeeExemptionRevokedEvent;
 import com.red_escuela.backend.identity.entity.Person;
-import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
+import com.red_escuela.backend.shared.event.service.ProcessedEffectGuard;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -66,7 +66,7 @@ class EnrollmentEventsNotificationListenerTest {
 
         DomainNotificationEvent notification = published();
         assertThat(notification.message()).isEqualTo("No conseguiste lugar en Jazz I"
-                + " antes del cierre de la lista de espera — tu inscripción se canceló y el pago se reembolsará.");
+                + " antes del cierre de la lista de espera — tu inscripción se canceló. La institución te contactará por tu pago.");
         assertThat(notification.recipients()).containsExactly(recipientOf(student));
         assertThat(notification.relatedEntityType()).isEqualTo("CourseEnrollment");
         assertThat(notification.relatedEntityId()).isEqualTo(3L);

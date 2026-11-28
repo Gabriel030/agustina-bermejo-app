@@ -4,25 +4,23 @@ import com.red_escuela.backend.academicstructure.api.OfferingCurrencyFinder;
 import com.red_escuela.backend.billing.discount.domain.DiscountDefinitionDraft;
 import com.red_escuela.backend.billing.discount.exception.DiscountScopeOfferingNotFoundException;
 import com.red_escuela.backend.billing.discount.policy.DiscountDefinitionCheck;
-import com.red_escuela.backend.billing.exception.ProgramCohortNotFoundException;
-import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
+import com.red_escuela.backend.academicstructure.api.ProgramCohortFinder;
 import com.red_escuela.backend.shared.domain.Currency;
 import org.springframework.stereotype.Component;
 
 @Component
 public class DiscountOfferingScopeResolver {
     private final OfferingCurrencyFinder currencyFinder;
-    private final ProgramCohortRepository programCohortRepository;
+    private final ProgramCohortFinder programCohortFinder;
 
-    public DiscountOfferingScopeResolver(OfferingCurrencyFinder currencyFinder, ProgramCohortRepository programCohortRepository) {
+    public DiscountOfferingScopeResolver(OfferingCurrencyFinder currencyFinder, ProgramCohortFinder programCohortFinder) {
         this.currencyFinder = currencyFinder;
-        this.programCohortRepository = programCohortRepository;
+        this.programCohortFinder = programCohortFinder;
     }
 
     public DiscountDefinitionCheck resolveScopeOf(DiscountDefinitionDraft draft) {
         Currency offeringCurrency = findOfferingCurrency(draft);
-        Long cohortProgramId = draft.programCohortId() == null ? null : programCohortRepository.findById(draft.programCohortId())
-                .orElseThrow(() -> new ProgramCohortNotFoundException(draft.programCohortId())).getTemplate().programId();
+        Long cohortProgramId = draft.programCohortId() == null ? null : programCohortFinder.findOrThrow(draft.programCohortId()).getProgramId();
         return new DiscountDefinitionCheck(draft, offeringCurrency, cohortProgramId);
     }
 

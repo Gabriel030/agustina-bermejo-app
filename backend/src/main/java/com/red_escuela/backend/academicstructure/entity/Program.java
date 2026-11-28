@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.entity;
 
+import com.red_escuela.backend.academicstructure.domain.CatalogArea;
 import org.springframework.modulith.NamedInterface;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
@@ -10,6 +11,7 @@ import lombok.Setter;
 import com.red_escuela.backend.shared.domain.Currency;
 import com.red_escuela.backend.shared.domain.CurrencyMismatchException;
 import com.red_escuela.backend.shared.domain.Money;
+import java.time.LocalDateTime;
 import java.util.List;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.exception.CurricularYearOutOfRangeException;
@@ -60,6 +62,23 @@ public class Program {
     private boolean visibleInCatalog = false;
 
     @Enumerated(EnumType.STRING)
+    @Column(name = "catalog_area")
+    private CatalogArea catalogArea;
+
+    @Column(name = "catalog_published_at")
+    private LocalDateTime catalogPublishedAt;
+
+    public void changeCatalogVisibility(boolean visible, CatalogArea requestedArea, LocalDateTime now) {
+        this.visibleInCatalog = visible;
+        if (requestedArea != null) {
+            this.catalogArea = requestedArea;
+        }
+        if (visible && catalogPublishedAt == null) {
+            this.catalogPublishedAt = now;
+        }
+    }
+
+    @Enumerated(EnumType.STRING)
     @Column(name = "teaching_mode")
     private TeachingMode teachingMode;
 
@@ -102,5 +121,15 @@ public class Program {
         if (money.currency() != currency) {
             throw new CurrencyMismatchException(currency, money.currency());
         }
+    }
+
+    @Version
+    @Column(name = "version")
+    private Long version;
+
+    public void adoptCurriculumTotals(CurriculumPlan plan) {
+        this.totalYears = plan.getTotalYears();
+        this.totalCreditsRequired = plan.getTotalCreditsRequired();
+        this.totalHoursRequired = plan.getTotalHoursRequired();
     }
 }

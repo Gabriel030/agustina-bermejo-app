@@ -4,7 +4,7 @@ import { examOptionsOf } from './procedures';
 const registration = (id, overrides = {}, boardOverrides = {}) => ({
   id,
   enrollmentId: 5,
-  status: 'REGISTERED',
+  status: 'GRADED',
   examBoard: { status: 'OPEN', examDate: '2026-11-10T09:00:00', ...boardOverrides },
   ...overrides,
 });
@@ -25,6 +25,16 @@ describe('examOptionsOf', () => {
     );
 
     expect(result.map((item) => item.id)).toEqual([2, 1]);
+  });
+
+  it('keeps only registrations with recorded attendance', () => {
+    const result = examOptionsOf(
+      [registration(1, { status: 'REGISTERED' }), registration(2, { status: 'ABSENT' }), registration(3, { status: 'GRADED' })],
+      5,
+      now,
+    );
+
+    expect(result.map((item) => item.id)).toEqual([3]);
   });
 
   it('drops withdrawn registrations and canceled boards', () => {

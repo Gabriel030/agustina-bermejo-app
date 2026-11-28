@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { ChevronRight } from 'lucide-react';
+import { AlertTriangle, ChevronRight, Clock } from 'lucide-react';
 import { GlassCard } from '@/components/GlassCard';
 import { PageContainer } from '@/components/PageContainer';
 import { StatCard } from '@/components/StatCard';
@@ -8,8 +8,33 @@ import { EmptyState } from '@/components/EmptyState';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
 import { useComisionesDictadas } from '@/features/academic-structure';
-import { useMisComisiones } from '@/features/evaluation';
-import { agruparComisionesPorFase, formatearFecha, ESTADO_CONFIG_LABEL } from '@/lib/comisiones';
+import { useMisComisiones, sectionConfigKey, sectionConfigKind, sectionConfigSectionId } from '@/features/evaluation';
+import {
+  agruparComisionesPorFase,
+  formatearDiaMes,
+  formatearFecha,
+  plazoConfiguracionVencido,
+  ESTADO_CONFIG_LABEL,
+} from '@/lib/comisiones';
+
+const ESTADOS_SIN_ENVIAR = new Set(['DRAFT']);
+
+function AlertaPlazoConfiguracion({ comision, destino }) {
+  const esCurso = comision.type === 'COURSE';
+  if (esCurso || !comision.evaluationConfigDeadline || !ESTADOS_SIN_ENVIAR.has(comision.status)) return null;
+  const vencido = plazoConfiguracionVencido(comision.evaluationConfigDeadline);
+  const dia = formatearDiaMes(comision.evaluationConfigDeadline);
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 px-4 pb-2" data-testid="evaluation-config-deadline-alert">
+      <StatusPill tone={vencido ? 'danger' : 'warning'} icon={vencido ? AlertTriangle : Clock} className="whitespace-nowrap">
+        {vencido ? `Configuración vencida el ${dia}` : `Completá la configuración antes del ${dia}`}
+      </StatusPill>
+      <Link to={destino} className="text-size-12 font-semibold text-primary underline-offset-2 hover:underline">
+        Configurar evaluación
+      </Link>
+    </div>
+  );
+}
 
 function FilaComision({ comision }) {
   const esCurso = comision.type === 'COURSE';
@@ -20,9 +45,10 @@ function FilaComision({ comision }) {
     : `/docente/mis-comisiones/${comision.sectionId}`;
 
   return (
+    <div className="rounded-2xl transition-colors hover:bg-neutral-bg/60">
     <Link
       to={destino}
-      className="flex flex-col gap-2 rounded-2xl px-4 py-3 transition-colors hover:bg-neutral-bg/60 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
+      className="flex flex-col gap-2 rounded-2xl px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:gap-4"
     >
       <div className="min-w-0">
         <div className="font-heading text-size-13-5 font-semibold text-ink">
@@ -39,6 +65,8 @@ function FilaComision({ comision }) {
         <ChevronRight className="ml-auto h-4 w-4 text-ink-faint sm:ml-0" />
       </div>
     </Link>
+    <AlertaPlazoConfiguracion comision={comision} destino={destino} />
+    </div>
   );
 }
 
@@ -66,10 +94,10 @@ function SeccionComisiones({ titulo, comisiones, vacio }) {
 function unificarComisiones(configs, dictadas) {
   const porSeccion = new Map();
   for (const config of configs) {
-    porSeccion.set(`PROGRAM-${config.subjectSectionId}`, {
+    porSeccion.set(sectionConfigKey(config), {
       ...config,
-      type: 'PROGRAM',
-      sectionId: config.subjectSectionId,
+      type: sectionConfigKind(config),
+      sectionId: sectionConfigSectionId(config),
     });
   }
   for (const dictada of dictadas) {

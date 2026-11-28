@@ -20,9 +20,9 @@ import com.red_escuela.backend.graduation.certificate.specialist.CertificateRegi
 import com.red_escuela.backend.graduation.certificate.template.dto.CertificateTemplateContent;
 import com.red_escuela.backend.graduation.certificate.template.usecase.PublishCertificateTemplateUseCase;
 import com.red_escuela.backend.graduation.certificate.template.usecase.SaveCertificateTemplateDraftUseCase;
-import com.red_escuela.backend.graduation.certificate.verification.dto.PublicCertificateStatus;
-import com.red_escuela.backend.graduation.certificate.verification.dto.PublicCertificateView;
-import com.red_escuela.backend.graduation.certificate.verification.usecase.VerifyPublicCertificateUseCase;
+import com.red_escuela.backend.graduation.certificate.dto.DocumentValidityStatus;
+import com.red_escuela.backend.graduation.certificate.verification.dto.PublicDocumentVerificationResponse;
+import com.red_escuela.backend.graduation.certificate.verification.usecase.VerifyPublicDocumentUseCase;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.Student;
@@ -72,7 +72,7 @@ class GraduationCertificateTemplateRenderIT extends AbstractIntegrationTest {
     @Autowired
     private PublishCertificateTemplateUseCase publish;
     @Autowired
-    private VerifyPublicCertificateUseCase verifyUseCase;
+    private VerifyPublicDocumentUseCase verifyUseCase;
     @Autowired
     private CertificateRegistryNumberAssigner registryNumberAssigner;
     @Autowired
@@ -242,15 +242,14 @@ class GraduationCertificateTemplateRenderIT extends AbstractIntegrationTest {
 
         assertThat(decodeQr(pdf)).isEqualTo(frontendBaseUrl.replaceAll("/$", "") + "/verificar/" + stored.getCode());
 
-        PublicCertificateView valid = verifyUseCase.verify(stored.getCode(), "client-" + UUID.randomUUID());
-        assertThat(valid.status()).isEqualTo(PublicCertificateStatus.VALID);
+        PublicDocumentVerificationResponse valid = verifyUseCase.verify(stored.getCode(), "client-" + UUID.randomUUID());
+        assertThat(valid.status()).isEqualTo(DocumentValidityStatus.VALID);
         assertThat(valid.holderFullName()).isEqualTo(stored.getSnapshot().holderFullName());
-        assertThat(valid.titleName()).isEqualTo(stored.getSnapshot().titleName());
         assertThat(valid.registryNumber()).isEqualTo(stored.getRegistryNumber());
 
         jdbc.update("update graduation_certificate set status = 'REVOKED', revoked_at = now(), revoked_by_id = issued_by_id, revocation_reason = 'revocado por la prueba' where id = ?", stored.getId());
         entityManager.clear();
 
-        assertThat(verifyUseCase.verify(stored.getCode(), "client-" + UUID.randomUUID()).status()).isEqualTo(PublicCertificateStatus.REVOKED);
+        assertThat(verifyUseCase.verify(stored.getCode(), "client-" + UUID.randomUUID()).status()).isEqualTo(DocumentValidityStatus.REVOKED);
     }
 }

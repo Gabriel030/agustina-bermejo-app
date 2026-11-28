@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.planning.service;
 
+import com.red_escuela.backend.billing.planning.domain.InstallmentBusinessDays;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.planning.domain.InvoicePlanningDecision;
 import com.red_escuela.backend.billing.planning.domain.InvoicePlanningScope;
@@ -25,7 +26,7 @@ public final class ProgramMonthlyInvoicePlanner implements MonthlyInvoicePlanner
     private final LectiveYearCycleResolver cycleResolver = new LectiveYearCycleResolver();
     private final EnrollmentFeeSlotCandidateSelector candidateSelector = new EnrollmentFeeSlotCandidateSelector();
     private final EnrollmentFeeChargeFactory chargeFactory = new EnrollmentFeeChargeFactory();
-    private final MonthlyInstallmentDueDateCalculator dueDateCalculator = new MonthlyInstallmentDueDateCalculator();
+    private final MonthlyInstallmentDueDateCalculator dueDateCalculator;
 
     public ProgramMonthlyInvoicePlanner() {
         this(new PlanningPolicySetsConfiguration());
@@ -33,6 +34,12 @@ public final class ProgramMonthlyInvoicePlanner implements MonthlyInvoicePlanner
 
     public ProgramMonthlyInvoicePlanner(PlanningPolicySetsConfiguration policySets) {
         this.policySets = policySets;
+        this.dueDateCalculator = new MonthlyInstallmentDueDateCalculator();
+    }
+
+    public ProgramMonthlyInvoicePlanner(PlanningPolicySetsConfiguration policySets, InstallmentBusinessDays billingCalendar) {
+        this.policySets = policySets;
+        this.dueDateCalculator = new MonthlyInstallmentDueDateCalculator(billingCalendar);
     }
 
     public MonthlyInvoicePlan planInvoicesForMonth(ProgramInvoicePlanningFacts facts) {

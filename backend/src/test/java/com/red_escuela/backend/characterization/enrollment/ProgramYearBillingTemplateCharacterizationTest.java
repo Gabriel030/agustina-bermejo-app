@@ -1,7 +1,7 @@
 package com.red_escuela.backend.characterization.enrollment;
 
 import com.red_escuela.backend.academicstructure.entity.Program;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateMismatchException;
 import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateNotFoundException;
@@ -42,7 +42,7 @@ class ProgramYearBillingTemplateCharacterizationTest extends CohortP3Characteriz
 
         billingSetup.assignTemplateIfMissing(enrollment);
 
-        assertThat(storedTemplateIdOf(enrollment.getId())).isEqualTo(cohort.getTemplate().getId());
+        assertThat(storedTemplateIdOf(enrollment.getId())).isEqualTo(cohort.getTemplateId());
     }
 
     @Test

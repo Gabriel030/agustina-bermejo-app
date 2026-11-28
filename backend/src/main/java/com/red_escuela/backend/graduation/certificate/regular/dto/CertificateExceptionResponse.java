@@ -14,5 +14,7 @@ public record CertificateExceptionResponse(Long id, Long studentId, RegularityKi
                                            @Schema(nullable = true) LocalDateTime decidedAt, @Schema(nullable = true) String decisionReason,
                                            @Schema(nullable = true) LocalDateTime validUntil, boolean createdByDirector,
                                            @Schema(nullable = true, description = "Deuda al momento del pedido; null si billing estaba apagado") Money debtTotalAtRequest,
-                                           @Schema(nullable = true, description = "Cuotas vencidas al momento del pedido; null si billing estaba apagado") Integer overdueInstallmentsAtRequest) {
+                                           @Schema(nullable = true, description = "Cuotas vencidas al momento del pedido; null si billing estaba apagado") Integer overdueInstallmentsAtRequest,
+                                           @Schema(nullable = true) String studentName, @Schema(nullable = true) String programName,
+                                           @Schema(nullable = true) String requestedByName, @Schema(nullable = true) String decidedByName) {
 }

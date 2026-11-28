@@ -242,7 +242,7 @@ export function IssuedCertificatesTable() {
   return (
     <div className="flex flex-col gap-4">
       <Tabs value={kind} onValueChange={changeKind}>
-        <TabsList variant="segmented">
+        <TabsList variant="line">
           {ISSUED_KIND_TABS.map((tab) => (
             <TabsTrigger key={tab.value} value={tab.value}>
               {tab.label}

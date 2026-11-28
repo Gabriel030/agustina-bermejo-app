@@ -7,8 +7,8 @@ import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.enrollment.exception.CourseEnrollmentNotFoundException;
-import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.CourseEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
@@ -95,7 +95,7 @@ public class RecurringFeeWindowService {
         if (managed.getCurrentBillingTemplate() != null) {
             return managed.getCurrentBillingTemplate();
         }
-        return managed.getProgramCohort() != null ? managed.getProgramCohort().getTemplate() : null;
+        return managed.getProgramCohort() != null && managed.getProgramCohort().getTemplateId() != null ? templateRepository.getReferenceById(managed.getProgramCohort().getTemplateId()) : null;
     }
 
     private ProgramEnrollment managedProgramEnrollment(ProgramEnrollment programEnrollment) {

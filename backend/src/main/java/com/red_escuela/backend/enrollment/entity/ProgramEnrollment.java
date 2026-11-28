@@ -13,8 +13,9 @@ import org.springframework.data.domain.DomainEvents;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
+import com.red_escuela.backend.academicstructure.entity.CurriculumPlan;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentRequiredException;
 
@@ -42,6 +43,10 @@ public class ProgramEnrollment implements BillableEnrollment {
     @JoinColumn(name = "program_id", nullable = false)
     private Program program;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "plan_id", nullable = false)
+    private CurriculumPlan plan;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "program_cohort_id")
     private ProgramCohort programCohort;
@@ -66,10 +71,6 @@ public class ProgramEnrollment implements BillableEnrollment {
 
     @OneToMany(mappedBy = "programEnrollment", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = false)
     private List<SubjectSectionEnrollment> sectionEnrollments;
-
-    public ProgramYearBillingTemplate effectiveBillingTemplate() {
-        return currentBillingTemplate != null ? currentBillingTemplate : programCohort.getTemplate();
-    }
 
     public boolean isActive() {
         return status == ProgramEnrollmentStatus.ENROLLED || status == ProgramEnrollmentStatus.PAUSED;

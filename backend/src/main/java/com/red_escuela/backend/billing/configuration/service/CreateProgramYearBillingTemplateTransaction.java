@@ -1,0 +1,83 @@
+package com.red_escuela.backend.billing.configuration.service;
+
+import com.red_escuela.backend.academicstructure.api.AcademicReferenceFinder;
+import com.red_escuela.backend.academicstructure.entity.Program;
+import com.red_escuela.backend.academicstructure.entity.Term;
+import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
+import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
+import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.identity.specialist.CurrentPersonService;
+import com.red_escuela.backend.billing.configuration.domain.AnnualUpfrontSettings;
+import com.red_escuela.backend.billing.configuration.domain.ConfigurationTopic;
+import com.red_escuela.backend.billing.configuration.domain.YearBillingTerms;
+import java.time.Clock;
+import java.time.LocalDate;
+import org.springframework.stereotype.Service;
+import org.springframework.context.ApplicationEventPublisher;
+import com.red_escuela.backend.billing.dto.YearBillingConfigurationRequest;
+import com.red_escuela.backend.billing.service.YearBillingConfiguredEvent;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+public class CreateProgramYearBillingTemplateTransaction {
+    private static final String INITIAL_VERSION_REASON = "Versión inicial del año lectivo";
+    private static final int INITIAL_PAYMENT_DEADLINE_HOURS = 48;
+
+    private final ProgramYearBillingTemplateRepository templateRepository;
+    private final AcademicReferenceFinder academicReferenceFinder;
+    private final CurrentPersonService currentPersonService;
+    private final YearBillingTermsOverlay termsOverlay;
+    private final ApplicationEventPublisher eventPublisher;
+    private final YearBillingConfigurationChangeLoader changeLoader;
+    private final ConfigurationPolicyEvaluator policyEvaluator;
+    private final YearBillingConfigurationDefaults configurationDefaults;
+    private final DirectConfigurationPublisher publisher;
+    private final Clock clock;
+
+    public CreateProgramYearBillingTemplateTransaction(ProgramYearBillingTemplateRepository templateRepository, AcademicReferenceFinder academicReferenceFinder,
+                                                     CurrentPersonService currentPersonService,
+                                                     YearBillingTermsOverlay termsOverlay, ApplicationEventPublisher eventPublisher,
+                                                     YearBillingConfigurationChangeLoader changeLoader, ConfigurationPolicyEvaluator policyEvaluator,
+                                                     YearBillingConfigurationDefaults configurationDefaults, DirectConfigurationPublisher publisher, Clock clock) {
+        this.publisher = publisher;
+        this.clock = clock;
+        this.configurationDefaults = configurationDefaults;
+        this.changeLoader = changeLoader;
+        this.policyEvaluator = policyEvaluator;
+        this.termsOverlay = termsOverlay;
+        this.eventPublisher = eventPublisher;
+        this.templateRepository = templateRepository;
+        this.academicReferenceFinder = academicReferenceFinder;
+        this.currentPersonService = currentPersonService;
+    }
+
+    @Transactional
+    public ProgramYearBillingTemplate create(Long programId, Long termId, Integer requestedInstallmentsCount, YearBillingConfigurationRequest configuration) {
+        Program program = academicReferenceFinder.findProgram(programId);
+        Term term = academicReferenceFinder.findTerm(termId);
+        Person actor = currentPersonService.resolveCurrentPerson();
+        Integer recurringFeeInvoicesCount = requestedInstallmentsCount != null ? requestedInstallmentsCount : configurationDefaults.defaultInstallmentsCount(term);
+        YearBillingConfigurationRequest effectiveConfiguration = configurationDefaults.completeForCreation(term.getStartDate(), configuration);
+        policyEvaluator.requireCoherentYearConfiguration(changeLoader.loadCreation(term.getStartDate(), term.getEndDate(), recurringFeeInvoicesCount, effectiveConfiguration));
+
+        ProgramYearBillingTemplate template = new ProgramYearBillingTemplate();
+        template.setProgram(program);
+        template.setTerm(term);
+        template.setCreatedBy(actor);
+        ProgramYearBillingTemplate saved = templateRepository.save(template);
+        publishInitialVersions(saved, term, termsOverlay.overlay(YearBillingTerms.initial(recurringFeeInvoicesCount), effectiveConfiguration), actor.getId());
+        eventPublisher.publishEvent(YearBillingConfiguredEvent.configuredFor(programId));
+        return saved;
+    }
+
+    private void publishInitialVersions(ProgramYearBillingTemplate template, Term term, YearBillingTerms terms, Long actorId) {
+        LocalDate today = LocalDate.now(clock);
+        LocalDate termStart = term.getStartDate() == null ? today : term.getStartDate().toLocalDate();
+        LocalDate effectiveFrom = termStart.isBefore(today) ? termStart : today;
+        publisher.publishVersion(ConfigurationTopic.ofYearTerms(template.programId(), term.getId()), terms, effectiveFrom, INITIAL_VERSION_REASON, actorId);
+        if (term.getStartDate() != null) {
+            publisher.publishVersion(ConfigurationTopic.ofAnnualUpfront(template.programId(), term.getId()),
+                    new AnnualUpfrontSettings(termStart.minusDays(1), INITIAL_PAYMENT_DEADLINE_HOURS), effectiveFrom, INITIAL_VERSION_REASON, actorId);
+        }
+    }
+}

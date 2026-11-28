@@ -10,6 +10,9 @@ import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.jayway.jsonpath.JsonPath;
 import jakarta.persistence.EntityManager;
+import org.apache.pdfbox.Loader;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -47,6 +50,7 @@ class DocumentCertificateTemplateHttpIT extends AbstractIntegrationTest {
 
     private static final String[] DOCUMENT_TYPES = {"REGULAR_STUDENT_CERTIFICATE", "APPROVED_SUBJECTS_CERTIFICATE",
             "EXAM_REGISTRATION_CERTIFICATE", "EXAM_CERTIFICATE"};
+    private static final java.util.Set<String> VALIDITY_TYPES = java.util.Set.of("REGULAR_STUDENT_CERTIFICATE", "EXAM_CERTIFICATE");
     private static final String REGULAR = "/certificate-templates/documents/REGULAR_STUDENT_CERTIFICATE";
     private static final String DRAFT = """
             {"content":{"instituteName":"INSTITUTO NUEVO","title":"CONSTANCIA NUEVA","introText":"Se certifica que {holder} cursa {titleName}",
@@ -142,12 +146,13 @@ class DocumentCertificateTemplateHttpIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void getReturnsSeededPublishedVersionOneForEachDocumentType() throws Exception {
+    void getReturnsSeededPublishedVersionForEachDocumentType() throws Exception {
         for (String type : DOCUMENT_TYPES) {
+            int seededVersion = VALIDITY_TYPES.contains(type) ? 2 : 1;
             send(get("/certificate-templates/documents/" + type), administrative)
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.documentType").value(type))
-                    .andExpect(jsonPath("$.published.versionNumber").value(1))
+                    .andExpect(jsonPath("$.published.versionNumber").value(seededVersion))
                     .andExpect(jsonPath("$.published.status").value("PUBLISHED"))
                     .andExpect(jsonPath("$.draft").doesNotExist())
                     .andExpect(jsonPath("$.hasUnpublishedChanges").value(false));
@@ -158,15 +163,16 @@ class DocumentCertificateTemplateHttpIT extends AbstractIntegrationTest {
     void getReturnsAllowedMarkersOfEachDocumentType() throws Exception {
         send(get(REGULAR), administrative)
                 .andExpect(jsonPath("$.allowedMarkers", containsInAnyOrder("holder", "documentType", "documentNumber", "issuedOn",
-                        "registryNumber", "titleName", "recipient")));
+                        "registryNumber", "titleName", "recipient", "validUntil")));
         send(get("/certificate-templates/documents/APPROVED_SUBJECTS_CERTIFICATE"), administrative)
                 .andExpect(jsonPath("$.allowedMarkers", containsInAnyOrder("holder", "documentType", "documentNumber", "issuedOn",
                         "registryNumber", "titleName", "average", "completionPercent")));
-        for (String type : new String[] {"EXAM_REGISTRATION_CERTIFICATE", "EXAM_CERTIFICATE"}) {
-            send(get("/certificate-templates/documents/" + type), administrative)
-                    .andExpect(jsonPath("$.allowedMarkers", containsInAnyOrder("holder", "documentType", "documentNumber", "issuedOn",
-                            "registryNumber", "subjectName", "examDate", "recipient")));
-        }
+        send(get("/certificate-templates/documents/EXAM_REGISTRATION_CERTIFICATE"), administrative)
+                .andExpect(jsonPath("$.allowedMarkers", containsInAnyOrder("holder", "documentType", "documentNumber", "issuedOn",
+                        "registryNumber", "subjectName", "examDate", "recipient")));
+        send(get("/certificate-templates/documents/EXAM_CERTIFICATE"), administrative)
+                .andExpect(jsonPath("$.allowedMarkers", containsInAnyOrder("holder", "documentType", "documentNumber", "issuedOn",
+                        "registryNumber", "subjectName", "examDate", "recipient", "validUntil")));
     }
 
     @Test
@@ -191,7 +197,7 @@ class DocumentCertificateTemplateHttpIT extends AbstractIntegrationTest {
     @Test
     void draftIsBasedOnRequestedPublishedVersionOrOtherwiseOnTheLatest() throws Exception {
         saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk());
-        entityManager.createNativeQuery("update certificate_template_version set status = 'PUBLISHED', version_number = 2, "
+        entityManager.createNativeQuery("update certificate_template_version set status = 'PUBLISHED', version_number = 3, "
                 + "published_at = now(), published_by_name = 'Test' where status = 'DRAFT' and template_id = "
                 + "(select id from certificate_template where document_type = 'REGULAR_STUDENT_CERTIFICATE')").executeUpdate();
         entityManager.flush();
@@ -201,7 +207,7 @@ class DocumentCertificateTemplateHttpIT extends AbstractIntegrationTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.basedOnVersionNumber").value(1));
         send(delete(REGULAR + "/draft"), director).andExpect(status().isNoContent());
         saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.basedOnVersionNumber").value(2));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.basedOnVersionNumber").value(3));
     }
 
     @Test
@@ -237,13 +243,13 @@ class DocumentCertificateTemplateHttpIT extends AbstractIntegrationTest {
         saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("DRAFT"))
-                .andExpect(jsonPath("$.basedOnVersionNumber").value(1))
+                .andExpect(jsonPath("$.basedOnVersionNumber").value(2))
                 .andExpect(jsonPath("$.content.signatory1Id").value(firstSignatoryId))
                 .andExpect(jsonPath("$.content.firstSigner.name").value("Ana Gómez"))
                 .andExpect(jsonPath("$.content.secondSigner.role").value("Director Académico"));
 
         send(get(REGULAR), administrative)
-                .andExpect(jsonPath("$.published.versionNumber").value(1))
+                .andExpect(jsonPath("$.published.versionNumber").value(2))
                 .andExpect(jsonPath("$.published.content.title").value("CONSTANCIA DE ALUMNO REGULAR"))
                 .andExpect(jsonPath("$.draft.content.title").value("CONSTANCIA NUEVA"))
                 .andExpect(jsonPath("$.hasUnpublishedChanges").value(true));
@@ -303,5 +309,193 @@ class DocumentCertificateTemplateHttpIT extends AbstractIntegrationTest {
         assertThat(image.getResponse().getContentAsByteArray()).isEqualTo(png());
         send(get("/certificate-templates/documents/EXAM_CERTIFICATE/images/" + imageId), administrative)
                 .andExpect(status().isNotFound());
+    }
+
+    private static final String PUBLISHED_PREVIEW = "{\"source\":\"PUBLISHED\"}";
+    private static final String DRAFT_PREVIEW = "{\"source\":\"DRAFT\"}";
+
+    @Test
+    void directorPublishesDraftWithSignatureAsNextVersionAndDraftDisappears() throws Exception {
+        uploadSignature(firstSignatoryId);
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk());
+        send(post(REGULAR + "/publish"), director)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.versionNumber").value(3))
+                .andExpect(jsonPath("$.status").value("PUBLISHED"))
+                .andExpect(jsonPath("$.content.title").value("CONSTANCIA NUEVA"))
+                .andExpect(jsonPath("$.content.firstSigner.name").value("Ana Gómez"));
+        send(get(REGULAR), administrative)
+                .andExpect(jsonPath("$.published.versionNumber").value(3))
+                .andExpect(jsonPath("$.draft").doesNotExist())
+                .andExpect(jsonPath("$.hasUnpublishedChanges").value(false));
+        send(get("/certificate-templates/documents/EXAM_CERTIFICATE"), administrative)
+                .andExpect(jsonPath("$.published.versionNumber").value(2));
+    }
+
+    @Test
+    void publishWithoutAnySignatureIsRejected() throws Exception {
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk());
+        send(post(REGULAR + "/publish"), director)
+                .andExpect(status().isUnprocessableEntity())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_SIGNATURE_MISSING"));
+        send(get(REGULAR), administrative)
+                .andExpect(jsonPath("$.published.versionNumber").value(2))
+                .andExpect(jsonPath("$.hasUnpublishedChanges").value(true));
+    }
+
+    @Test
+    void publishWithOnlyOneSignatoryWithSignatureIsAccepted() throws Exception {
+        uploadSignature(secondSignatoryId);
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk());
+        send(post(REGULAR + "/publish"), director).andExpect(status().isOk()).andExpect(jsonPath("$.versionNumber").value(3));
+    }
+
+    @Test
+    void publishPicksUpSignatureUploadedAfterTheDraftWasSaved() throws Exception {
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk());
+        uploadSignature(firstSignatoryId);
+        String published = send(post(REGULAR + "/publish"), director).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        assertThat(JsonPath.<Object>read(published, "$.content.firstSigner.signatureImageId")).isNotNull();
+    }
+
+    @Test
+    void publishWithoutDraftIsConflict() throws Exception {
+        send(post(REGULAR + "/publish"), director)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_NOTHING_TO_PUBLISH"));
+    }
+
+    @Test
+    void publishingTwiceTheSameDraftIsConflictTheSecondTime() throws Exception {
+        uploadSignature(firstSignatoryId);
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk());
+        send(post(REGULAR + "/publish"), director).andExpect(status().isOk());
+        send(post(REGULAR + "/publish"), director)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_NOTHING_TO_PUBLISH"));
+    }
+
+    @Test
+    void administrativeCannotPublish() throws Exception {
+        uploadSignature(firstSignatoryId);
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk());
+        send(post(REGULAR + "/publish"), administrative).andExpect(status().isForbidden());
+        send(post(REGULAR + "/publish"), student).andExpect(status().isForbidden());
+        send(get(REGULAR), administrative).andExpect(jsonPath("$.published.versionNumber").value(2));
+    }
+
+    @Test
+    void versionsListPublishedVersionsNewestFirstAndAdministrativeReadsThem() throws Exception {
+        uploadSignature(firstSignatoryId);
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk());
+        send(post(REGULAR + "/publish"), director).andExpect(status().isOk());
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId).replace("CONSTANCIA NUEVA", "CONSTANCIA OTRA"))
+                .andExpect(status().isOk());
+        send(get(REGULAR + "/versions"), administrative)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(3))
+                .andExpect(jsonPath("$[0].versionNumber").value(3))
+                .andExpect(jsonPath("$[1].versionNumber").value(2))
+                .andExpect(jsonPath("$[2].versionNumber").value(1));
+        send(get(REGULAR + "/versions/1"), administrative)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.versionNumber").value(1))
+                .andExpect(jsonPath("$.content.title").value("CONSTANCIA DE ALUMNO REGULAR"));
+        send(get(REGULAR + "/versions/3"), administrative)
+                .andExpect(jsonPath("$.content.title").value("CONSTANCIA NUEVA"));
+        send(get(REGULAR + "/versions"), student).andExpect(status().isForbidden());
+    }
+
+    @Test
+    void versionsAreIsolatedByDocumentType() throws Exception {
+        uploadSignature(firstSignatoryId);
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk());
+        send(post(REGULAR + "/publish"), director).andExpect(status().isOk());
+        send(get("/certificate-templates/documents/EXAM_CERTIFICATE/versions"), administrative)
+                .andExpect(jsonPath("$.length()").value(2));
+        send(get("/certificate-templates/documents/EXAM_CERTIFICATE/versions/3"), administrative)
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void unknownVersionIsNotFound() throws Exception {
+        send(get(REGULAR + "/versions/99"), administrative)
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_VERSION_NOT_FOUND"));
+    }
+
+    @Test
+    void draftIsNotReadableAsAPublishedVersion() throws Exception {
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk());
+        send(get(REGULAR + "/versions"), administrative).andExpect(jsonPath("$.length()").value(2));
+    }
+
+    @Test
+    void previewOfPublishedVersionReturnsPdfForAdministrativeAndDirector() throws Exception {
+        for (String token : new String[] {administrative, director}) {
+            MvcResult result = send(post(REGULAR + "/preview").contentType(MediaType.APPLICATION_JSON).content(PUBLISHED_PREVIEW), token)
+                    .andExpect(status().isOk()).andReturn();
+            assertThat(result.getResponse().getContentType()).isEqualTo("application/pdf");
+            assertThat(new String(result.getResponse().getContentAsByteArray(), 0, 4)).isEqualTo("%PDF");
+        }
+    }
+
+    @Test
+    void previewOfDraftIsDirectorOnlyAndRequiresADraft() throws Exception {
+        send(post(REGULAR + "/preview").contentType(MediaType.APPLICATION_JSON).content(DRAFT_PREVIEW), director)
+                .andExpect(status().isNotFound());
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk());
+        MvcResult result = send(post(REGULAR + "/preview").contentType(MediaType.APPLICATION_JSON).content(DRAFT_PREVIEW), director)
+                .andExpect(status().isOk()).andReturn();
+        assertThat(new String(result.getResponse().getContentAsByteArray(), 0, 4)).isEqualTo("%PDF");
+        send(post(REGULAR + "/preview").contentType(MediaType.APPLICATION_JSON).content(DRAFT_PREVIEW), administrative)
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void previewWorksForEveryDocumentType() throws Exception {
+        for (String type : DOCUMENT_TYPES) {
+            send(post("/certificate-templates/documents/" + type + "/preview").contentType(MediaType.APPLICATION_JSON)
+                    .content(PUBLISHED_PREVIEW), administrative).andExpect(status().isOk());
+        }
+    }
+
+    @Test
+    void versionNumberThatExistsOnlyInAnotherDocumentTypeIsNotFound() throws Exception {
+        uploadSignature(firstSignatoryId);
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk());
+        send(post(REGULAR + "/publish"), director).andExpect(status().isOk());
+        send(get(REGULAR + "/versions/2"), administrative).andExpect(status().isOk());
+        send(get("/certificate-templates/documents/APPROVED_SUBJECTS_CERTIFICATE/versions/2"), administrative)
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_VERSION_NOT_FOUND"));
+    }
+
+    @Test
+    void imageOfAnotherDocumentTypeIsNotFoundInBothDirections() throws Exception {
+        MvcResult uploaded = mockMvc.perform(multipart("/certificate-templates/documents/EXAM_CERTIFICATE/images")
+                .file(new MockMultipartFile("file", "logo.png", "image/png", png()))
+                .param("purpose", "LOGO").header("Authorization", "Bearer " + director)).andExpect(status().isCreated()).andReturn();
+        int examImageId = JsonPath.read(uploaded.getResponse().getContentAsString(), "$.id");
+        send(get("/certificate-templates/documents/EXAM_CERTIFICATE/images/" + examImageId), administrative).andExpect(status().isOk());
+        send(get(REGULAR + "/images/" + examImageId), administrative)
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("TEMPLATE_IMAGE_NOT_FOUND"));
+    }
+
+    @Test
+    void previewUsesFixedSampleDataAndNoRealHolderData() throws Exception {
+        saveDraft(director, draftBody(firstSignatoryId, secondSignatoryId)).andExpect(status().isOk());
+        for (String source : new String[] {DRAFT_PREVIEW, PUBLISHED_PREVIEW}) {
+            MvcResult result = send(post(REGULAR + "/preview").contentType(MediaType.APPLICATION_JSON).content(source), director)
+                    .andExpect(status().isOk()).andReturn();
+            String text;
+            try (PDDocument document = Loader.loadPDF(result.getResponse().getContentAsByteArray())) {
+                text = new PDFTextStripper().getText(document);
+            }
+            assertThat(text).contains("APELLIDO, NOMBRE DE EJEMPLO").contains("Nombre de la carrera de ejemplo")
+                    .doesNotContain("PlantillaDoc").doesNotContain("DIRECTOR");
+        }
     }
 }

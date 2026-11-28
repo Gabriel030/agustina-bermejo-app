@@ -100,15 +100,17 @@ function SendingSettingsBlock({ overrides, general, readOnly, onChange }) {
   const [open, setOpen] = useState(false);
   return (
     <div className="flex flex-col gap-3">
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="inline"
         aria-expanded={open}
         onClick={() => setOpen((value) => !value)}
-        className="flex items-center gap-2 font-heading text-base font-semibold text-ink"
+        className="min-h-11 gap-2 self-start font-heading text-base font-semibold text-ink hover:bg-transparent"
       >
         Ajustes de envío
         <ChevronDown className={`size-4 transition-transform ${open ? 'rotate-180' : ''}`} />
-      </button>
+      </Button>
       {open && <SendingOverrides overrides={overrides} general={general} disabled={readOnly} onChange={onChange} />}
     </div>
   );
@@ -222,7 +224,7 @@ export function ReminderSettingsPage() {
     <PageContainer title="Recordatorios de pago" description="Cuándo y cómo le avisamos a cada alumno que tiene una cuota por pagar.">
       {hasChanges && <Stepper pasos={STEPS} pasoActual="changes" pasosVisitados={['changes']} />}
       <Tabs value={tab} onValueChange={changeTab}>
-        <TabsList variant="segmented">
+        <TabsList variant="line">
           <TabsTrigger value="PROGRAMS">Carreras</TabsTrigger>
           <TabsTrigger value="MONTHLY_COURSES">Cursos con pago mensual</TabsTrigger>
           <TabsTrigger value={GENERAL}>General</TabsTrigger>
@@ -245,7 +247,7 @@ export function ReminderSettingsPage() {
           ) : isGeneral ? (
             <TabsContent value={GENERAL} className="flex flex-col gap-5">
               <Tabs defaultValue="settings">
-                <TabsList variant="segmented">
+                <TabsList variant="line">
                   <TabsTrigger value="settings">Ajustes</TabsTrigger>
                   <TabsTrigger value="history">Historial</TabsTrigger>
                 </TabsList>
@@ -279,7 +281,7 @@ export function ReminderSettingsPage() {
               {readOnly && <PendingBanner roleBase={roleBase} />}
               <Tabs defaultValue="notices">
                 <div className="flex flex-wrap items-center gap-3">
-                  <TabsList variant="segmented">
+                  <TabsList variant="line">
                     <TabsTrigger value="notices">Avisos</TabsTrigger>
                     <TabsTrigger value="history">Historial</TabsTrigger>
                   </TabsList>

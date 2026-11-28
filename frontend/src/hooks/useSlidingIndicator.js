@@ -2,7 +2,7 @@ import { useLayoutEffect, useRef, useState } from 'react';
 
 // Mide la posición del elemento activo dentro de un contenedor (leyendo el DOM
 // vía MutationObserver, no el estado de quien lo usa) para poder deslizar un
-// fondo detrás de él — usado por TabsList variant="segmented" y por el
+// fondo detrás de él — usado por TabsList variant="line" y por el
 // Sidebar. `activeSelector` identifica al elemento activo actual (ej. un
 // data-state o una clase que ya cambia sola con la navegación/selección).
 export function useSlidingIndicator(activeSelector) {
@@ -13,8 +13,16 @@ export function useSlidingIndicator(activeSelector) {
     const container = containerRef.current;
     if (!container) return;
 
+    const resizeObserver = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(() => medir());
+    let observado = null;
+
     function medir() {
       const activo = container.querySelector(activeSelector);
+      if (activo !== observado) {
+        if (observado) resizeObserver?.unobserve(observado);
+        if (activo) resizeObserver?.observe(activo);
+        observado = activo;
+      }
       if (activo) {
         setRect({ top: activo.offsetTop, left: activo.offsetLeft, width: activo.offsetWidth, height: activo.offsetHeight });
       }
@@ -26,6 +34,7 @@ export function useSlidingIndicator(activeSelector) {
     window.addEventListener('resize', medir);
     return () => {
       observer.disconnect();
+      resizeObserver?.disconnect();
       window.removeEventListener('resize', medir);
     };
   }, [activeSelector]);

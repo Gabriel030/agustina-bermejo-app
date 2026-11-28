@@ -32,7 +32,7 @@ class JwtServiceTest {
 
     @Test
     void generatesAndParsesAValidTokenWithTheSameSubAndRoles() {
-        JwtService jwtService = new JwtService(SECRET, 15, "agustina-bermejo-app");
+        JwtService jwtService = new JwtService(SECRET, 15, "agustina-bermejo-app", "agustina-bermejo-app-api", false);
         Person person = personWithRoles("DOCENTE", "PRECEPTOR");
 
         String token = jwtService.generateAccessToken(person);
@@ -44,7 +44,7 @@ class JwtServiceTest {
 
     @Test
     void expiredTokenFailsValidation() {
-        JwtService expiredService = new JwtService(SECRET, -1, "agustina-bermejo-app");
+        JwtService expiredService = new JwtService(SECRET, -1, "agustina-bermejo-app", "agustina-bermejo-app-api", false);
         String token = expiredService.generateAccessToken(personWithRoles("ALUMNO"));
 
         assertThatThrownBy(() -> expiredService.validateAndParse(token))
@@ -53,8 +53,8 @@ class JwtServiceTest {
 
     @Test
     void tokenSignedWithAnotherSecretFailsValidation() {
-        JwtService serviceA = new JwtService(SECRET, 15, "agustina-bermejo-app");
-        JwtService serviceB = new JwtService("otro-secret-completamente-distinto", 15, "agustina-bermejo-app");
+        JwtService serviceA = new JwtService(SECRET, 15, "agustina-bermejo-app", "agustina-bermejo-app-api", false);
+        JwtService serviceB = new JwtService("otro-secret-completamente-distinto", 15, "agustina-bermejo-app", "agustina-bermejo-app-api", false);
 
         String token = serviceA.generateAccessToken(personWithRoles("ALUMNO"));
 

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.demo;
 
+import com.red_escuela.backend.identity.api.CohortResponsibleAssigner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Component;
 import tools.jackson.databind.JsonNode;
@@ -17,16 +18,19 @@ public class DemoAcademicOfferSeedStep implements DemoSeedStep {
 
     private static final int CREDITS_PER_SUBJECT = 5;
     private static final int SUBJECTS_PER_TERM_HALF = 3;
-    private static final String[] SCHEDULES = {"Lunes y miércoles 18:00 a 20:00", "Martes y jueves 18:00 a 20:00", "Viernes 18:00 a 22:00"};
 
     private final DemoSeedSession session;
+    private final org.springframework.jdbc.core.JdbcTemplate jdbcTemplate;
+    private final CohortResponsibleAssigner preceptorAssigner;
     private final Map<String, Long> subjectIdsByName = new LinkedHashMap<>();
-    private final Map<Long, Long> sectionIdsBySubjectId = new LinkedHashMap<>();
     private long leadTeacherId;
     private long schemeId;
 
-    public DemoAcademicOfferSeedStep(DemoSeedSession session) {
+    public DemoAcademicOfferSeedStep(DemoSeedSession session, org.springframework.jdbc.core.JdbcTemplate jdbcTemplate,
+                                      CohortResponsibleAssigner preceptorAssigner) {
         this.session = session;
+        this.preceptorAssigner = preceptorAssigner;
+        this.jdbcTemplate = jdbcTemplate;
     }
 
     @Override
@@ -42,15 +46,20 @@ public class DemoAcademicOfferSeedStep implements DemoSeedStep {
     @Override
     public void seed(DemoDataset dataset) {
         subjectIdsByName.clear();
-        sectionIdsBySubjectId.clear();
         leadTeacherId = findLeadTeacherId();
         schemeId = findOrCreateScheme();
+        boolean firstProgram = true;
         for (DemoCatalog.ProgramSpec program : dataset.programs()) {
-            seedProgram(program);
+            seedProgram(program, firstProgram);
+            firstProgram = false;
         }
         for (DemoCatalog.CourseSpec course : dataset.courses()) {
             seedCourse(course);
         }
+    }
+
+    private long findPreceptorId() {
+        return jdbcTemplate.queryForObject("select id from person where username = 'preceptor.demo'", Long.class);
     }
 
     private long findLeadTeacherId() {
@@ -110,7 +119,7 @@ public class DemoAcademicOfferSeedStep implements DemoSeedStep {
         return termId;
     }
 
-    private void seedProgram(DemoCatalog.ProgramSpec spec) {
+    private void seedProgram(DemoCatalog.ProgramSpec spec, boolean assignPreceptor) {
         if (session.findIdByName(session.api().get(DemoPersona.ADMIN, "/programs"), spec.name()) != null) {
             throw new IllegalStateException("La carrera " + spec.name() + " ya existe sin el marcador de la demo");
         }
@@ -124,18 +133,24 @@ public class DemoAcademicOfferSeedStep implements DemoSeedStep {
         long programId = session.api().post(DemoPersona.ADMIN, "/programs", program).get("id").asLong();
         session.programIdsByName().put(spec.name(), programId);
         long termId = findOrCreateAnnualTerm(2026);
+        long cycleId = createCycle("programId", programId, termId);
         Map<String, Long> programSubjectIdsByName = new LinkedHashMap<>();
         for (int yearIndex = 0; yearIndex < spec.subjectsByYear().size(); yearIndex++) {
             List<String> subjects = spec.subjectsByYear().get(yearIndex);
             for (int position = 0; position < subjects.size(); position++) {
                 long subjectId = findOrCreateSubject(subjects.get(position));
                 programSubjectIdsByName.put(subjects.get(position), linkSubject(programId, subjectId, yearIndex + 1, position));
-                long sectionId = ensureSection(subjectId, termId);
+                long sectionId = createProgramSection(cycleId, subjectId);
                 if (yearIndex == 0) {
+                    if (assignPreceptor) {
+                        long preceptorId = findPreceptorId();
+                        preceptorAssigner.assignToSubjectSection(sectionId, List.of(preceptorId), preceptorId);
+                    }
                     session.firstYearSectionIdsByProgram().computeIfAbsent(spec.name(), name -> new ArrayList<>()).add(sectionId);
                 }
             }
         }
+        approveCycle(cycleId);
         seedPrerequisites(programSubjectIdsByName);
     }
 
@@ -177,23 +192,26 @@ public class DemoAcademicOfferSeedStep implements DemoSeedStep {
         return session.api().post(DemoPersona.ADMIN, "/programs/" + programId + "/subjects", link).get("id").asLong();
     }
 
-    private long ensureSection(long subjectId, long termId) {
-        Long existing = sectionIdsBySubjectId.get(subjectId);
-        if (existing != null) {
-            return existing;
-        }
+    private long createCycle(String ownerKey, long ownerId, long termId) {
+        return session.api().post(DemoPersona.ADMIN, "/academic-offering-cycles", Map.of(ownerKey, ownerId, "termId", termId)).get("id").asLong();
+    }
+
+    private long createProgramSection(long cycleId, long subjectId) {
         Map<String, Object> section = new LinkedHashMap<>();
         section.put("name", "Comisión A");
-        section.put("termId", termId);
-        section.put("schedule", SCHEDULES[(int) (subjectId % SCHEDULES.length)]);
+        section.put("subjectId", subjectId);
         section.put("capacity", 30);
         section.put("shift", "MORNING");
-        section.put("evaluationSchemeId", schemeId);
-        long sectionId = session.api().post(DemoPersona.ADMIN, "/subjects/" + subjectId + "/sections", section).get("id").asLong();
+        long sectionId = session.api().post(DemoPersona.ADMIN, "/academic-offering-cycles/" + cycleId + "/sections", section).asLong();
+        session.api().put(DemoPersona.ADMIN, "/program-sections/" + sectionId, Map.of("evaluationSchemeId", schemeId));
         session.api().post(DemoPersona.ADMIN, "/program-sections/" + sectionId + "/instructors",
                 Map.of("instructorId", leadTeacherId, "role", "LEAD"));
-        sectionIdsBySubjectId.put(subjectId, sectionId);
         return sectionId;
+    }
+
+    private void approveCycle(long cycleId) {
+        session.api().post(DemoPersona.ADMIN, "/academic-offering-cycles/" + cycleId + "/submit", null);
+        session.api().post(DemoPersona.DIRECTOR, "/academic-offering-cycles/" + cycleId + "/approve", null);
     }
 
     private void seedPrerequisites(Map<String, Long> programSubjectIdsByName) {
@@ -217,21 +235,26 @@ public class DemoAcademicOfferSeedStep implements DemoSeedStep {
         course.put("price", Map.of("amount", spec.price().toPlainString(), "currency", "ARS"));
         course.put("durationMonths", spec.durationMonths());
         course.put("teachingMode", spec.teachingMode());
+        long preceptorId = findPreceptorId();
+        course.put("responsiblePreceptorIds", List.of(preceptorId));
         long courseId = session.api().post(DemoPersona.ADMIN, "/courses", course).get("id").asLong();
         session.courseIdsByName().put(spec.name(), courseId);
+        long cycleId = createCycle("courseId", courseId, termId);
         int order = 1;
         for (String module : spec.subjects()) {
             long moduleId = session.api().post(DemoPersona.ADMIN, "/courses/" + courseId + "/subjects",
                     Map.of("name", module, "sortOrder", order++)).get("id").asLong();
             Map<String, Object> section = new LinkedHashMap<>();
             section.put("name", "Comisión única");
-            section.put("termId", termId);
+            section.put("courseSubjectId", moduleId);
             section.put("capacity", spec.capacity());
             section.put("shift", "MORNING");
-            section.put("evaluationSchemeId", schemeId);
-            long sectionId = session.api().post(DemoPersona.ADMIN, "/course-subjects/" + moduleId + "/sections", section).get("id").asLong();
+            long sectionId = session.api().post(DemoPersona.ADMIN, "/academic-offering-cycles/" + cycleId + "/sections", section).asLong();
+            session.api().put(DemoPersona.ADMIN, "/course-sections/" + sectionId, Map.of("evaluationSchemeId", schemeId));
             session.api().post(DemoPersona.ADMIN, "/course-sections/" + sectionId + "/instructors",
                     Map.of("instructorId", leadTeacherId, "role", "LEAD"));
+            preceptorAssigner.assignToCourseSection(sectionId, List.of(preceptorId), preceptorId);
         }
+        approveCycle(cycleId);
     }
 }

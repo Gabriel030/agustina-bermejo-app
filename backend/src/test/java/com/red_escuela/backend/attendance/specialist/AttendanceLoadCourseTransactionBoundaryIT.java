@@ -76,7 +76,7 @@ class AttendanceLoadCourseTransactionBoundaryIT extends AbstractIntegrationTest 
             CycleTestFixtures fixtures = new CycleTestFixtures(entityManager);
             Course course = new Course();
             course.setName("Course " + System.nanoTime());
-            course.setTerm(fixtures.term(2400 + (int) (System.nanoTime() % 90)));
+            course.setTerm(fixtures.term(CLASS_DAY.getYear()));
             course.setCapacity(10);
             course.setIsActive(StatusType.ACTIVE);
             course.setTeachingMode(TeachingMode.ONLINE);

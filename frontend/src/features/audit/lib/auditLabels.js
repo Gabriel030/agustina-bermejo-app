@@ -67,6 +67,9 @@ const ACTIONS = {
   DOCUMENT_DEBT_EXC_DOWNLOADED: ['Documento por excepción descargado por Administración', 'warning'],
   SUBJECT_EQUIVALENCE_RECORDED: ['Equivalencia de materia registrada', 'accent'],
   SUBJECT_EQUIVALENCE_VOIDED: ['Equivalencia de materia anulada', 'warning'],
+  ATTENDANCE_CHANGE_DECISION_REVERTED: ['Decisión de asistencia revertida', 'warning'],
+  PRECEPTOR_ASSIGNED: ['Preceptor asignado a una comisión', 'accent'],
+  PRECEPTOR_UNASSIGNED: ['Preceptor quitado de una comisión', 'warning'],
   DOCUMENT_SETTINGS_CHANGED: ['Configuración de emisión de documentos modificada', 'accent'],
 };
 
@@ -92,6 +95,8 @@ const ENTITIES = {
   EXAM_CERTIFICATE: 'Constancia de examen',
   DOCUMENT_DEBT_EXCEPTION: 'Excepción de deuda de documento',
   SUBJECT_EQUIVALENCE: 'Equivalencia de materia',
+  ATTENDANCE_CHANGE_REQUEST: 'Solicitud de cambio de asistencia',
+  PRECEPTOR_ASSIGNMENT: 'Asignación de preceptor',
 };
 
 const ROLES = {

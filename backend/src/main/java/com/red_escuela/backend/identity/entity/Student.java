@@ -1,16 +1,13 @@
 package com.red_escuela.backend.identity.entity;
 
 import org.springframework.modulith.NamedInterface;
-import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.identity.entity.Institution;
-import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.LocalDateTime;
-import java.util.List;
 
 @NamedInterface("model")
 @Getter
@@ -26,12 +23,6 @@ public class Student {
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "person_id", nullable = false, unique = true)
     private Person person;
-
-    @OneToMany(mappedBy = "student", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<CourseEnrollment> courseEnrollments;
-
-    @OneToMany(mappedBy = "student", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<ProgramEnrollment> programEnrollments;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "institution_id", nullable = false)

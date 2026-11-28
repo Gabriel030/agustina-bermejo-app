@@ -118,6 +118,7 @@ class SectionReactivationAvailabilityIT extends AbstractIntegrationTest {
         SubjectSection original = subjectSection(StatusType.ACTIVE, roomA, DayOfWeek.MONDAY);
         fixtures.flushAndClear();
         subjectSectionService.deactivate(original.getId());
+        fixtures.flushAndClear();
         subjectSection(StatusType.ACTIVE, roomA, DayOfWeek.MONDAY);
         fixtures.flushAndClear();
 
@@ -132,6 +133,7 @@ class SectionReactivationAvailabilityIT extends AbstractIntegrationTest {
         fixtures.assignLead(original, teacher);
         fixtures.flushAndClear();
         subjectSectionService.deactivate(original.getId());
+        fixtures.flushAndClear();
         SubjectSection taker = subjectSection(StatusType.ACTIVE, roomB, DayOfWeek.MONDAY);
         fixtures.assignLead(taker, teacher);
         fixtures.flushAndClear();
@@ -146,6 +148,7 @@ class SectionReactivationAvailabilityIT extends AbstractIntegrationTest {
         fixtures.assignLead(original, teacher);
         fixtures.flushAndClear();
         subjectSectionService.deactivate(original.getId());
+        fixtures.flushAndClear();
         SubjectSection other = subjectSection(StatusType.ACTIVE, roomB, DayOfWeek.TUESDAY);
         fixtures.assignLead(other, teacher);
         fixtures.flushAndClear();
@@ -159,6 +162,7 @@ class SectionReactivationAvailabilityIT extends AbstractIntegrationTest {
         CourseSubjectSection original = courseSection(StatusType.ACTIVE, roomA, DayOfWeek.MONDAY);
         fixtures.flushAndClear();
         courseSectionService.deactivate(original.getId());
+        fixtures.flushAndClear();
         courseSection(StatusType.ACTIVE, roomA, DayOfWeek.MONDAY);
         fixtures.flushAndClear();
 
@@ -175,6 +179,7 @@ class SectionReactivationAvailabilityIT extends AbstractIntegrationTest {
                 teacher.getId(), InstructorRole.LEAD, null, null, null, null));
         fixtures.flushAndClear();
         courseSectionService.deactivate(original.getId());
+        fixtures.flushAndClear();
         SubjectSection taker = subjectSection(StatusType.ACTIVE, roomB, DayOfWeek.MONDAY);
         fixtures.assignLead(taker, teacher);
         fixtures.flushAndClear();
@@ -188,6 +193,7 @@ class SectionReactivationAvailabilityIT extends AbstractIntegrationTest {
         CourseSubjectSection original = courseSection(StatusType.ACTIVE, roomA, DayOfWeek.MONDAY);
         fixtures.flushAndClear();
         courseSectionService.deactivate(original.getId());
+        fixtures.flushAndClear();
         courseSection(StatusType.ACTIVE, roomB, DayOfWeek.MONDAY);
         fixtures.flushAndClear();
 

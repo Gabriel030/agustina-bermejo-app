@@ -1,9 +1,1 @@
-com.red_escuela.backend.academicstructure.dto.CourseResponse
-com.red_escuela.backend.academicstructure.dto.TermResponse
-com.red_escuela.backend.academicstructure.service.CourseSectionService
-com.red_escuela.backend.academicstructure.service.SubjectSectionService
-com.red_escuela.backend.academicstructure.usecase.cycle.CreateCycleSectionService
-com.red_escuela.backend.announcement.specialist.ScheduledAnnouncementDispatchJob
-com.red_escuela.backend.announcement.usecase.broadcast.CreateAnnouncementService
-com.red_escuela.backend.announcement.usecase.broadcast.UpdateAnnouncementService
 com.red_escuela.backend.identity.infrastructure.JwtService

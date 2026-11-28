@@ -1,10 +1,10 @@
 package com.red_escuela.backend.announcement.usecase.broadcast;
 
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import com.red_escuela.backend.announcement.entity.Announcement;
 import com.red_escuela.backend.announcement.specialist.CreateAnnouncementTransaction;
 import com.red_escuela.backend.shared.UseCase;
 
-import java.time.LocalDateTime;
 
 @UseCase
 public class CreateAnnouncementService implements CreateAnnouncementUseCase {
@@ -19,6 +19,6 @@ public class CreateAnnouncementService implements CreateAnnouncementUseCase {
     public Announcement create(CreateAnnouncementCommand command) {
         return createAnnouncementTransaction.create(command.sectionType(), command.sectionId(), command.title(),
                 command.body(), command.category(), command.urgent(), command.expiresAt(), command.scheduledFor(),
-                command.audienceSpec(), LocalDateTime.now());
+                command.audienceSpec(), ApplicationTime.now());
     }
 }

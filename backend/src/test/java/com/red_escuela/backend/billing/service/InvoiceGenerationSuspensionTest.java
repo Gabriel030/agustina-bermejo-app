@@ -125,6 +125,12 @@ class InvoiceGenerationSuspensionTest extends AbstractIntegrationTest {
         enrollment.setStudent(student);
         enrollment.setProgram(program);
         enrollment.setStatus(status);
+        if (status == ProgramEnrollmentStatus.WITHDRAWN) {
+            enrollment.setWithdrawalEffectiveDate(java.time.LocalDate.now());
+        }
+        if (status == ProgramEnrollmentStatus.COMPLETED) {
+            enrollment.setCompletionDate(LocalDateTime.now());
+        }
         enrollment.setEnrollmentDate(LocalDateTime.now());
         ProgramEnrollment saved = programEnrollmentRepository.save(enrollment);
         com.red_escuela.backend.billing.support.PaymentStandingSeed.seedProgramEnrollmentStanding(jdbc, saved.getId(), paymentStatus);

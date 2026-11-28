@@ -33,7 +33,15 @@ class SimulationLatePaymentIT extends AbstractSimulationTest {
     }
 
     private static Row installment(YearMonth month, String outstanding, String paymentStatus) {
-        return Row.of("MONTHLY_INSTALLMENT", month, month.atDay(1), month.atDay(11), "48000.00", outstanding, "ISSUED", paymentStatus);
+        return Row.of("MONTHLY_INSTALLMENT", month, month.atDay(1), rolledToMonday(month.atDay(11)), "48000.00", outstanding, "ISSUED", paymentStatus);
+    }
+
+    private static LocalDate rolledToMonday(LocalDate date) {
+        return switch (date.getDayOfWeek()) {
+            case SATURDAY -> date.plusDays(2);
+            case SUNDAY -> date.plusDays(1);
+            default -> date;
+        };
     }
 
     private static Row installment(YearMonth month, LocalDate issued, LocalDate due, String outstanding, String paymentStatus) {
@@ -66,9 +74,9 @@ class SimulationLatePaymentIT extends AbstractSimulationTest {
         onlyInExplorationTierNightly();
         Scenario scenario = paidMarch(Timeline.Mode.DAILY);
 
-        for (LocalDate current = day(4, 8); !current.isAfter(day(4, 18)); current = current.plusDays(1)) {
+        for (LocalDate current = day(4, 8); !current.isAfter(day(4, 19)); current = current.plusDays(1)) {
             scenario.advanceTo(current);
-            String expected = current.isBefore(day(4, 17)) ? "PENDING" : "OVERDUE";
+            String expected = current.isBefore(day(4, 18)) ? "PENDING" : "OVERDUE";
             assertThat(scenario.ledger().rows().get(2).paymentStatus()).as("April installment on %s", current).isEqualTo(expected);
         }
         scenario.finish();
@@ -78,6 +86,7 @@ class SimulationLatePaymentIT extends AbstractSimulationTest {
     @Tag("D-330")
     @Tag("D-331")
     @Tag("D-297")
+    @Tag("D-540")
     void lateFeeIsDailyFromOriginalDueDateWhenPaidAfterGrace() {
         onlyInExplorationTierNightly();
         Scenario scenario = paidMarch(Timeline.Mode.DAILY);
@@ -85,7 +94,7 @@ class SimulationLatePaymentIT extends AbstractSimulationTest {
         scenario.advanceTo(day(4, 20)).payEverythingDue();
 
         scenario.ledger().hasExactly(enrollmentFee(), installment(MARCH, "0.00", "PAID"), installment(APRIL, "0.00", "PAID"),
-                lateFee(APRIL, day(4, 20), day(4, 30), "734.40", "734.40", "PENDING"));
+                lateFee(APRIL, day(4, 20), day(4, 30), "652.80", "652.80", "PENDING"));
         scenario.finish();
     }
 
@@ -96,10 +105,10 @@ class SimulationLatePaymentIT extends AbstractSimulationTest {
         onlyInExplorationTierNightly();
         Scenario scenario = paidMarch(Timeline.Mode.DAILY);
 
-        scenario.advanceTo(day(4, 17)).payEverythingDue();
+        scenario.advanceTo(day(4, 18)).payEverythingDue();
 
         scenario.ledger().hasExactly(enrollmentFee(), installment(MARCH, "0.00", "PAID"), installment(APRIL, "0.00", "PAID"),
-                lateFee(APRIL, day(4, 17), day(4, 27), "489.60", "489.60", "PENDING"));
+                lateFee(APRIL, day(4, 18), day(4, 28), "489.60", "489.60", "PENDING"));
         scenario.finish();
     }
 
@@ -109,7 +118,7 @@ class SimulationLatePaymentIT extends AbstractSimulationTest {
         onlyInExplorationTierNightly();
         Scenario scenario = paidMarch(Timeline.Mode.DAILY);
 
-        scenario.advanceTo(day(4, 16)).payEverythingDue();
+        scenario.advanceTo(day(4, 17)).payEverythingDue();
         scenario.advanceTo(day(5, 3));
 
         scenario.ledger().hasExactly(enrollmentFee(), installment(MARCH, "0.00", "PAID"), installment(APRIL, "0.00", "PAID"),
@@ -128,7 +137,7 @@ class SimulationLatePaymentIT extends AbstractSimulationTest {
         scenario.advanceTo(day(5, 3));
 
         scenario.ledger().hasExactly(enrollmentFee(), installment(MARCH, "0.00", "PAID"), installment(APRIL, "48000.00", "OVERDUE"),
-                lateFee(APRIL, day(5, 1), day(5, 11), "1550.40", "1550.40", "PENDING"));
+                lateFee(APRIL, day(5, 1), day(5, 11), "1468.80", "1468.80", "PENDING"));
         scenario.finish();
     }
 
@@ -142,7 +151,7 @@ class SimulationLatePaymentIT extends AbstractSimulationTest {
         scenario.advanceTo(day(5, 3)).payEverythingDue();
 
         scenario.ledger().hasExactly(enrollmentFee(), installment(MARCH, "0.00", "PAID"), installment(APRIL, "0.00", "PAID"),
-                lateFee(APRIL, day(5, 1), day(5, 11), "1550.40", "0.00", "PAID"), lateFee(APRIL, day(5, 3), day(5, 13), "244.80", "244.80", "PENDING"),
+                lateFee(APRIL, day(5, 1), day(5, 11), "1468.80", "0.00", "PAID"), lateFee(APRIL, day(5, 3), day(5, 13), "244.80", "244.80", "PENDING"),
                 installment(MAY, day(5, 3), day(5, 13), "48000.00", "PENDING"));
         scenario.finish();
     }
@@ -158,7 +167,7 @@ class SimulationLatePaymentIT extends AbstractSimulationTest {
         scenario.advanceTo(day(6, 2));
 
         scenario.ledger().hasExactly(enrollmentFee(), installment(MARCH, "0.00", "PAID"), installment(APRIL, "0.00", "PAID"),
-                lateFee(APRIL, day(5, 1), day(5, 11), "1550.40", "0.00", "PAID"), lateFee(APRIL, day(5, 3), day(5, 13), "244.80", "244.80", "OVERDUE"),
+                lateFee(APRIL, day(5, 1), day(5, 11), "1468.80", "0.00", "PAID"), lateFee(APRIL, day(5, 3), day(5, 13), "244.80", "244.80", "OVERDUE"),
                 installment(MAY, day(5, 3), day(5, 13), "48000.00", "OVERDUE"), lateFee(MAY, day(6, 1), day(6, 11), "1468.80", "1468.80", "PENDING"));
         scenario.finish();
     }
@@ -179,7 +188,7 @@ class SimulationLatePaymentIT extends AbstractSimulationTest {
 
         scenario.advanceTo(day(6, 2));
         scenario.ledger().hasExactly(enrollmentFee(), installment(MARCH, "0.00", "PAID"), installment(APRIL, "48000.00", "OVERDUE"),
-                lateFee(APRIL, day(5, 1), day(5, 11), "1550.40", "1550.40", "OVERDUE"), lateFee(APRIL, day(6, 1), day(6, 11), "2529.60", "2529.60", "PENDING"));
+                lateFee(APRIL, day(5, 1), day(5, 11), "1468.80", "1468.80", "OVERDUE"), lateFee(APRIL, day(6, 1), day(6, 11), "2529.60", "2529.60", "PENDING"));
         scenario.finish();
     }
 
@@ -242,7 +251,7 @@ class SimulationLatePaymentIT extends AbstractSimulationTest {
         Ledger ledger = scenario.ledger();
         assertThat(ledger.outstandingTotal()).isEqualByComparingTo("0");
         ledger.hasExactly(enrollmentFee(), installment(MARCH, "0.00", "PAID"), installment(APRIL, "0.00", "PAID"),
-                lateFee(APRIL, day(5, 1), day(5, 11), "1550.40", "0.00", "PAID"), lateFee(APRIL, day(5, 3), day(5, 13), "244.80", "0.00", "PAID"),
+                lateFee(APRIL, day(5, 1), day(5, 11), "1468.80", "0.00", "PAID"), lateFee(APRIL, day(5, 3), day(5, 13), "244.80", "0.00", "PAID"),
                 installment(MAY, day(5, 3), day(5, 13), "0.00", "PAID"), installment(YearMonth.of(2027, 6), "0.00", "PAID"), installment(YearMonth.of(2027, 7), "0.00", "PAID"),
                 installment(YearMonth.of(2027, 8), "0.00", "PAID"), installment(YearMonth.of(2027, 9), "0.00", "PAID"), installment(YearMonth.of(2027, 10), "0.00", "PAID"),
                 installment(YearMonth.of(2027, 11), "0.00", "PAID"), installment(YearMonth.of(2027, 12), "0.00", "PAID"));

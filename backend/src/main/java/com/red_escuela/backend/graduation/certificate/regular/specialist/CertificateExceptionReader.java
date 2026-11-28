@@ -22,10 +22,13 @@ public class CertificateExceptionReader {
 
     private final CertificateExceptionApprovalRepository repository;
     private final CurrentActorFinder currentActorFinder;
+    private final CertificateExceptionResponses responses;
 
-    public CertificateExceptionReader(CertificateExceptionApprovalRepository repository, CurrentActorFinder currentActorFinder) {
+    public CertificateExceptionReader(CertificateExceptionApprovalRepository repository, CurrentActorFinder currentActorFinder,
+                                      CertificateExceptionResponses responses) {
         this.repository = repository;
         this.currentActorFinder = currentActorFinder;
+        this.responses = responses;
     }
 
     @Transactional(readOnly = true)
@@ -34,7 +37,7 @@ public class CertificateExceptionReader {
         if (!seesAll && !approval.getRequestedById().equals(currentActorFinder.currentPersonId())) {
             throw new CertificateExceptionNotFoundException();
         }
-        return CertificateExceptionResponses.of(approval);
+        return responses.of(approval);
     }
 
     @Transactional(readOnly = true)
@@ -50,9 +53,7 @@ public class CertificateExceptionReader {
         if (status != null) {
             filter = filter.and((root, query, builder) -> builder.equal(root.get("status"), status));
         }
-        return repository.findAll(filter, Sort.by(Sort.Direction.DESC, "id")).stream()
-                .map(CertificateExceptionResponses::of)
-                .toList();
+        return responses.all(repository.findAll(filter, Sort.by(Sort.Direction.DESC, "id")));
     }
 
     @Transactional(readOnly = true)

@@ -10,7 +10,7 @@ import com.red_escuela.backend.academicrecord.specialist.AcademicRecordCourseEnr
 import com.red_escuela.backend.academicrecord.specialist.AcademicRecordCourseSectionEnrollmentFinder;
 import com.red_escuela.backend.academicrecord.specialist.AcademicRecordGradeItemFinder;
 import com.red_escuela.backend.enrollment.api.CourseEnrollmentDetailView;
-import com.red_escuela.backend.enrollment.exception.CourseEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.CourseEnrollmentNotFoundException;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;

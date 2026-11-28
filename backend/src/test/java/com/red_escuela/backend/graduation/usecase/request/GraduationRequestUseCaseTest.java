@@ -33,7 +33,7 @@ import com.red_escuela.backend.graduation.exception.GraduationRequestAlreadyActi
 import com.red_escuela.backend.graduation.exception.GraduationRequirementsNotMetException;
 import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentRequiredException;
 import com.red_escuela.backend.graduation.exception.NotEligibleForGraduationException;
-import com.red_escuela.backend.billing.exception.PendingDebtException;
+import com.red_escuela.backend.graduation.exception.PendingDebtException;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
@@ -131,6 +131,7 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
         entityManager.persist(subject);
         ProgramSubject programSubject = new ProgramSubject();
         programSubject.setProgram(program);
+        programSubject.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
         programSubject.setSubject(subject);
         programSubject.setCredits(0);
         programSubject.setCurricularYear(1);
@@ -180,6 +181,7 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
 
         ProgramSubject ps = new ProgramSubject();
         ps.setProgram(program);
+        ps.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
         ps.setSubject(subject);
         ps.setCredits(10);
         ps.setCurricularYear(1);
@@ -331,6 +333,7 @@ class GraduationRequestUseCaseTest extends AbstractIntegrationTest {
         GraduationRequest request = requestAndVerify(enrollment, "ADMIN80000009");
 
         enrollment.setStatus(ProgramEnrollmentStatus.WITHDRAWN);
+        enrollment.setWithdrawalEffectiveDate(java.time.LocalDate.now());
         entityManager.flush();
         authenticateAsPerson("DIRECTOR80000009");
 

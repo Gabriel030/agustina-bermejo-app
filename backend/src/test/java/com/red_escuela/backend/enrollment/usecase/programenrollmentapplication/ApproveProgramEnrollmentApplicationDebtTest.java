@@ -2,7 +2,7 @@ package com.red_escuela.backend.enrollment.usecase.programenrollmentapplication;
 
 import com.red_escuela.backend.enrollment.service.ApproveProgramEnrollmentApplicationTransaction;
 import com.red_escuela.backend.billing.invoice.exception.OutstandingDebtBlocksReenrollmentException;
-import com.red_escuela.backend.billing.invoice.service.ProgramAdmissionInvoiceIssuer;
+import com.red_escuela.backend.enrollment.api.ProgramAdmissionInvoicePort;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplicationStatus;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentApplicationFinder;
@@ -32,7 +32,7 @@ class ApproveProgramEnrollmentApplicationDebtTest {
     @Test
     void approvingAnApplicationOfAStudentWithOutstandingDebtIsRejectedBeforeIssuingTheAdmissionInvoice() {
         ProgramEnrollmentApplicationFinder finder = mock(ProgramEnrollmentApplicationFinder.class);
-        ProgramAdmissionInvoiceIssuer issuer = mock(ProgramAdmissionInvoiceIssuer.class);
+        ProgramAdmissionInvoicePort issuer = mock(ProgramAdmissionInvoicePort.class);
         ProgramEnrollmentService enrollmentService = mock(ProgramEnrollmentService.class);
         ProgramApplicantRoleGranter roleGranter = mock(ProgramApplicantRoleGranter.class);
         ProgramEnrollmentApplication application = mock(ProgramEnrollmentApplication.class);

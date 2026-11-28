@@ -1,15 +1,9 @@
 academicstructure<->attendance
 academicstructure<->billing
 academicstructure<->enrollment
-academicstructure<->evaluation
-academicstructure<->identity
 attendance<->billing
 attendance<->enrollment
 attendance<->evaluation
-attendance<->identity
 billing<->enrollment
 billing<->evaluation
-billing<->identity
 enrollment<->evaluation
-enrollment<->identity
-evaluation<->identity

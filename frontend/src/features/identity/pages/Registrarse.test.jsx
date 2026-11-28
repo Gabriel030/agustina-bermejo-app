@@ -51,6 +51,12 @@ function captureRegisterBody() {
 }
 
 describe('Registrarse', () => {
+  it('exposesCreateAccountAsTheSingleH1', () => {
+    renderRegistrarse();
+    expect(screen.getAllByRole('heading', { level: 1 })).toHaveLength(1);
+    expect(screen.getByRole('heading', { level: 1, name: 'Creá tu cuenta' })).toBeInTheDocument();
+  });
+
   it('rejectsMismatchedPasswordsWithoutCallingTheBackend', async () => {
     server.use(
       http.post(`${API}/auth/register`, () => {

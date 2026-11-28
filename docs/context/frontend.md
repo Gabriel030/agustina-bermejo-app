@@ -22,8 +22,8 @@ lo ya construido en la Fase 1 (Fundación técnica y login) la sigue; lo que fal
 3. **Verificar variantes de componentes existentes** antes de extender — si el
    componente admite `variant=`, revisar cuáles existen antes de agregar estilos
    a mano. Ejemplo: `Button` tiene `primary/default/outline/secondary/ghost/destructive/
-   link` (+ prop `loading`); `TabsList` usa `variant="segmented"` (pill deslizante)
-   como estándar en este proyecto.
+   link` (+ prop `loading`); `TabsList` usa `variant="line"` (subrayado de acento,
+   mismo lenguaje que la barra superior) como estándar en este proyecto.
 4. **Patrón de filas clickeables**: `rounded-2xl px-4 py-3 transition-colors
    hover:bg-neutral-bg/60` + `ChevronRight` al final, dentro de un contenedor
    `flex flex-col gap-1`. No usar `divide-y divide-border` — fue descartado a favor
@@ -180,7 +180,7 @@ necesite de verdad.
   con `npx shadcn add` (y se revisa el resultado, ver "Reglas prácticas"). Los ya
   adaptados (`button`, `tabs`, `table`, `sonner`) se editan solo para aplicar tokens
   de la dirección B o sumar una variante/prop del sistema (`primary`, `loading`,
-  `segmented`); no se les mete lógica de una pantalla puntual. Para algo específico,
+  `line`); no se les mete lógica de una pantalla puntual. Para algo específico,
   se envuelve (`GlassCard` envuelve el patrón `.card`, no lo reimplementa).
 - **Composición sobre herencia / props gigantes**: para piezas con varios estados
   visuales relacionados (ej. un modal de confirmación con variantes), preferir el
@@ -249,8 +249,22 @@ se implementa una pantalla "solo desktop" para adaptarla después. Breakpoints
 Tailwind default, mobile-first (clases sin prefijo = mobile, `md:`/`lg:`
 agregan desde ahí, nunca al revés):
 
-- **Layouts por rol** (`Sidebar.jsx` + contenido): el sidebar fijo a la
-  izquierda es el layout `lg:` (≥1024px). En mobile/tablet colapsa a un
+- **Menú aprobado (26-nov, Gabriel; plan #1589):** toda pantalla nueva usa el
+  `TopNav` del layout de su rol, con el patrón aprobado: pestañas en la barra
+  superior (sin hamburguesa en escritorio), hover abre y cambia cada nivel sin
+  clics intermedios, grilla con dos ejes (grupos | pantallas), el clic fija,
+  menú de usuario único (Mi perfil, Cambiar de rol, Cerrar sesión), móvil por
+  niveles con «Volver». Una pantalla nueva se registra en
+  `frontend/src/routes/navModel.js`; no se arma un menú propio ni se usa el
+  sidebar. Mockups de referencia: personal https://claude.ai/artifact/1hrEnhGQFFCWDu4ZwkNBDy,
+  Director https://claude.ai/artifact/KcQJCpWLaojL3SB28jkHw1, roles cortos
+  https://claude.ai/artifact/W8NNZwZAUuMLgqzFn44psx, menú de usuario
+  https://claude.ai/artifact/G2wUkJqbimmmftzqxNckVA, barra pública
+  https://claude.ai/artifact/Gx2rsFpaaBuBxnMVQb3Hin, cajón móvil
+  https://claude.ai/artifact/DmL28LFA8VgbnXwzfZz6wH y catálogo
+  https://claude.ai/artifact/JwUHLAWU1iQeqjys7tJgEJ.
+- **Layouts por rol** (histórico, `Sidebar.jsx` + contenido): el sidebar fijo a la
+  izquierda era el layout `lg:` (≥1024px). En mobile/tablet colapsa a un
   **menú hamburguesa** (`MobileMenu.jsx`, drawer lateral con los mismos
   ítems) — decisión revisada con el usuario; la versión anterior de esta
   convención pedía una bottom tab bar, descartada a pedido explícito.
@@ -271,11 +285,12 @@ pantalla de ese tipo.
 ## Tabs / navegación secundaria por pestañas
 
 **Siempre el componente `Tabs`/`TabsList`/`TabsTrigger` de shadcn
-(`components/ui/tabs.jsx`), con `<TabsList variant="segmented">`** — cinta con un
-fondo en gradiente que se desliza detrás de la pestaña activa (hook
-`useSlidingIndicator`). Nunca un grupo de `<button>` hecho a mano, aunque sea "solo
-para filtrar una lista". `variant="line"` (subrayado) fue reemplazado por
-`segmented` (PR #80 + #89); no usarlo en pantallas nuevas.
+(`components/ui/tabs.jsx`), con `<TabsList variant="line">`** — mismo lenguaje que la
+barra superior aprobada (26-nov y 27-nov, Gabriel): pestaña activa con subrayado de
+acento de 3 px y texto `--accent`, hover `--neutral-bg`, foco visible discreto, sin
+relleno de color, tira con borde inferior y scroll horizontal sin barra. Nunca un
+grupo de `<button>` hecho a mano, aunque sea "solo para filtrar una lista". La
+variante `segmented` (píldora con indicador deslizante) fue eliminada; no se reintroduce.
 
 Aplica tanto si las pestañas separan paneles distintos como si solo cambian el
 filtro de una misma lista — visualmente es la misma interacción.
@@ -308,7 +323,7 @@ Dirección B (plana), aprobada con mockup antes de codificar. La fuente de verda
 | KPI / métrica | `StatCard` (dentro de `Stagger` en grillas) |
 | Tablas | `components/ui/table.jsx` (`Table`, `TableHeader`, `TableRow`, `TableHead`, `TableCell`), dentro de un `GlassCard` — la tabla no trae borde propio. Header sticky, mayúsculas, hover `accent-soft`. Excepción: grillas con rowSpan/colSpan/sticky propias (ej. tomar asistencia) |
 | Encabezado ordenable | `features/evaluation/components/SortableColumnHeader.jsx` (ya con el estilo del header de tabla) |
-| Pestañas | `Tabs` con `variant="segmented"` |
+| Pestañas | `Tabs` con `variant="line"` |
 | Stepper / wizard | `components/Stepper.jsx` único (completados en verde con tilde, activo en color de marca con pulso; pasos visitados clickeables). No hay otro Stepper |
 | Notificaciones/feedback de acciones | `toast` de `sonner` (`toast.error/success`), con `<Toaster />` ya montado en `App.jsx`. No mostrar errores de mutaciones como párrafos inline |
 | Botón con acción en curso | `<Button loading={mutation.isPending}>` (no combinar `loading` con `asChild`) |

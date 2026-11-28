@@ -65,8 +65,9 @@ class AcademicStructureTransactionBoundaryIT extends AbstractIntegrationTest {
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             var fixtures = new CycleTestFixtures(entityManager);
             var term = fixtures.term(2040);
-            ids[0] = fixtures.programCycle(fixtures.program(), term, AcademicOfferingCycleStatus.DRAFT).getId();
-            ids[1] = fixtures.subject().getId();
+            var program = fixtures.program();
+            ids[0] = fixtures.programCycle(program, term, AcademicOfferingCycleStatus.DRAFT).getId();
+            ids[1] = fixtures.subjectInPlanOf(program).getId();
             ids[2] = fixtures.classroom(30).getId();
             ids[3] = fixtures.classroom(5).getId();
         });
@@ -89,11 +90,14 @@ class AcademicStructureTransactionBoundaryIT extends AbstractIntegrationTest {
         long[] ids = new long[3];
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             var fixtures = new CycleTestFixtures(entityManager);
+            com.red_escuela.backend.testsupport.HolidayFixtures.ensureHolidaysLoaded(entityManager, 2026, 2028);
             var program = fixtures.program();
             var otherTerm = fixtures.term(CLOSED_YEAR);
             fixtures.programCycle(program, otherTerm, AcademicOfferingCycleStatus.APPROVED);
             ids[0] = program.getId();
-            ids[1] = fixtures.term(CLOSED_YEAR - 1).getId();
+            var openTerm = fixtures.term(CLOSED_YEAR - 1);
+            openTerm.setEndDate(java.time.LocalDateTime.of(2999, 12, 15, 0, 0));
+            ids[1] = openTerm.getId();
             ids[2] = fixtures.person().getId();
         });
         SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(String.valueOf(ids[2]), null));

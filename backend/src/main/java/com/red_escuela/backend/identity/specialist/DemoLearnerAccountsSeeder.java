@@ -27,7 +27,9 @@ public class DemoLearnerAccountsSeeder implements ApplicationRunner {
     public static final int RUN_ORDER = 10;
     private static final String DEMO_PASSWORD = "Test1234";
     private static final String STUDENT_ROLE = "ALUMNO";
+    private static final String TEACHER_ROLE = "DOCENTE";
     private static final String TEACHER_USERNAME = "docente.demo";
+    private static final LearnerAccount SECOND_TEACHER = new LearnerAccount("docente2.demo", "Docente", "Demo 2");
 
     private record LearnerAccount(String username, String firstName, String lastName) {}
 
@@ -74,6 +76,9 @@ public class DemoLearnerAccountsSeeder implements ApplicationRunner {
         Institution institution = findOrCreateInstitution();
         LEARNERS.forEach(learner -> seedConfirmedStudent(learner, institution));
         personRepository.findByUsername(TEACHER_USERNAME).ifPresent(instructorProfileCreationPort::createInstructorProfile);
+        Person secondTeacher = personRepository.findByUsername(SECOND_TEACHER.username())
+                .orElseGet(() -> createPerson(SECOND_TEACHER, TEACHER_ROLE));
+        instructorProfileCreationPort.createInstructorProfile(secondTeacher);
     }
 
     private Institution findOrCreateInstitution() {
@@ -85,7 +90,7 @@ public class DemoLearnerAccountsSeeder implements ApplicationRunner {
     }
 
     private void seedConfirmedStudent(LearnerAccount learner, Institution institution) {
-        Person person = personRepository.findByUsername(learner.username()).orElseGet(() -> createLearnerPerson(learner));
+        Person person = personRepository.findByUsername(learner.username()).orElseGet(() -> createPerson(learner, STUDENT_ROLE));
         if (studentRepository.findByPerson_Id(person.getId()).isPresent()) {
             return;
         }
@@ -96,13 +101,13 @@ public class DemoLearnerAccountsSeeder implements ApplicationRunner {
         studentRepository.save(student);
     }
 
-    private Person createLearnerPerson(LearnerAccount learner) {
+    private Person createPerson(LearnerAccount learner, String roleName) {
         Person person = personFactory.createBasePerson(learner.firstName(), learner.lastName(), learner.username() + "@demo.local");
         person.setUsername(learner.username());
         person.setPassword(passwordEncoder.encode(DEMO_PASSWORD));
         person.setDni("DEMO-" + learner.username());
-        Role role = roleRepository.findByName(STUDENT_ROLE)
-                .orElseThrow(() -> new IllegalStateException("Falta el rol " + STUDENT_ROLE));
+        Role role = roleRepository.findByName(roleName)
+                .orElseThrow(() -> new IllegalStateException("Falta el rol " + roleName));
         person.getRoles().add(role);
         return personRepository.save(person);
     }

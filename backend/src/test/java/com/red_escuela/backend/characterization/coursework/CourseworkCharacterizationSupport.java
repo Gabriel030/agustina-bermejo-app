@@ -1,5 +1,6 @@
 package com.red_escuela.backend.characterization.coursework;
 
+import com.red_escuela.backend.testsupport.ApprovedSectionConfigFixture;
 import com.red_escuela.backend.testsupport.TermFixtures;
 import tools.jackson.databind.JsonNode;
 import com.red_escuela.backend.testsupport.AsyncNotifications;
@@ -41,6 +42,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
@@ -55,6 +57,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
+@TestPropertySource(properties = "app.scheduling.enabled=false")
 @Transactional
 abstract class CourseworkCharacterizationSupport extends AbstractIntegrationTest {
 
@@ -170,6 +173,7 @@ abstract class CourseworkCharacterizationSupport extends AbstractIntegrationTest
     protected ProgramSubject persistPlanEntry(Program program, Subject subject, int credits) {
         ProgramSubject entry = new ProgramSubject();
         entry.setProgram(program);
+        entry.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
         entry.setSubject(subject);
         entry.setCredits(credits);
         entry.setCurricularYear(1);
@@ -217,11 +221,12 @@ abstract class CourseworkCharacterizationSupport extends AbstractIntegrationTest
         section.setName("Comision " + key);
         section.setSubject(subject);
         section.setTerm(term);
-        section.setEvaluationScheme(scheme);
+        section.setEvaluationSchemeId(scheme == null ? null : scheme.getId());
         section.setMaxAbsenceRate(maxAbsenceRate);
         section.setCapacity(30);
         section.setStatus(StatusType.ACTIVE);
         entityManager.persist(section);
+        ApprovedSectionConfigFixture.persistWhenSchemeExpectsCoursework(entityManager, section);
 
         SubjectSectionInstructor assignment = new SubjectSectionInstructor();
         assignment.setSection(section);
@@ -246,6 +251,14 @@ abstract class CourseworkCharacterizationSupport extends AbstractIntegrationTest
         entityManager.persist(enrollment);
         entityManager.flush();
         return new Classroom(teacher, instructor, studentPerson, section, enrollment, programEnrollment, subject);
+    }
+
+    protected Person persistPreceptorAssignedToEverySection(String username, String dni) {
+        Person preceptor = persistPerson(username, dni, "PRECEPTOR");
+        entityManager.flush();
+        jdbcTemplate.update("insert into preceptor_assignment (person_id, subject_section_id, created_by) select ?, id, ? from subject_section", preceptor.getId(), preceptor.getId());
+        jdbcTemplate.update("insert into preceptor_assignment (person_id, course_section_id, created_by) select ?, id, ? from course_section", preceptor.getId(), preceptor.getId());
+        return preceptor;
     }
 
     protected String bearer(Person person) {

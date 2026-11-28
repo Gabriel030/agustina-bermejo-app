@@ -2,6 +2,8 @@ package com.red_escuela.backend.academicstructure.service;
 
 import com.red_escuela.backend.academicstructure.dto.CreateTermRequest;
 import com.red_escuela.backend.academicstructure.entity.Term;
+import com.red_escuela.backend.academicstructure.exception.TermEnrollmentWindowOutsideTermException;
+import com.red_escuela.backend.academicstructure.exception.TermYearMismatchException;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.shared.domain.StatusType;
 import org.springframework.stereotype.Service;
@@ -23,6 +25,7 @@ public class TermCreation {
 
     @Transactional
     public Term create(CreateTermRequest request) {
+        requireYearMatchesStart(request);
         uniquenessGuard.ensureNoOtherActiveTerm(request.year(), request.type(), null);
         Term term = new Term();
         term.setYear(request.year());
@@ -30,8 +33,22 @@ public class TermCreation {
         term.setType(request.type());
         term.reschedule(request.startDate(), request.endDate());
         term.defineEnrollmentWindow(request.enrollmentStart(), request.enrollmentEnd());
+        requireEnrollmentWindowWithinTerm(term);
         holidayYearGuard.ensureHolidaysLoaded(request.year());
         term.setStatus(StatusType.ACTIVE);
         return termRepository.save(term);
+    }
+
+    private static void requireYearMatchesStart(CreateTermRequest request) {
+        if (request.startDate() != null && request.startDate().getYear() != request.year()) {
+            throw new TermYearMismatchException(request.year(), request.startDate());
+        }
+    }
+
+    private static void requireEnrollmentWindowWithinTerm(Term term) {
+        if (term.getEnrollmentEnd() != null && term.getEndDate() != null
+                && term.getEnrollmentEnd().isAfter(term.getEndDate())) {
+            throw new TermEnrollmentWindowOutsideTermException(term.getEnrollmentEnd(), term.getEndDate());
+        }
     }
 }

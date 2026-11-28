@@ -6,3 +6,4 @@ export { TabMesasDeExamen } from './components/TabMesasDeExamen';
 export { TeacherGradeGrid } from './components/TeacherGradeGrid';
 export { useClosureList } from './hooks/useClosureList';
 export { useMesas } from './hooks/useMesasDeExamen';
+export { sectionConfigKey, sectionConfigKind, sectionConfigSectionId } from './lib/sectionConfigKey';

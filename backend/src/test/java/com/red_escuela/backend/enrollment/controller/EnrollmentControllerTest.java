@@ -36,7 +36,7 @@ import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.academicstructure.entity.Program;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
@@ -180,8 +180,11 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         com.red_escuela.backend.billing.planning.TestTemplateTerms.publish(entityManager, template);
 
         ProgramCohort cohort = new ProgramCohort();
-        cohort.setTemplate(template);
-        cohort.setIntake(com.red_escuela.backend.billing.entity.CohortIntake.FIRST);
+        cohort.markOpened(java.time.LocalDateTime.of(2000, 1, 1, 0, 0));
+        cohort.setTemplateId(template.getId());
+        cohort.setProgramId(template.programId());
+        cohort.setTermId(template.termId());
+        cohort.setIntake(com.red_escuela.backend.academicstructure.domain.CohortIntake.FIRST);
         cohort.setAdmissionStart(admissionStart);
         cohort.setAdmissionEnd(admissionEnd);
         cohort.setCursadaStart(java.time.LocalDate.now());
@@ -216,6 +219,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
     private ProgramSubject persistProgramSubject(Program program, Subject subject, int credits) {
         ProgramSubject ps = new ProgramSubject();
         ps.setProgram(program);
+        ps.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
         ps.setSubject(subject);
         ps.setCredits(credits);
         ps.setCurricularYear(1);
@@ -262,8 +266,22 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         enrollment.setProgram(program);
         enrollment.setStatus(status);
         enrollment.setEnrollmentDate(LocalDateTime.now());
+        if (status == ProgramEnrollmentStatus.WITHDRAWN) {
+            enrollment.setWithdrawalEffectiveDate(java.time.LocalDate.now());
+        }
+        if (status == ProgramEnrollmentStatus.COMPLETED) {
+            enrollment.setCompletionDate(java.time.LocalDateTime.now());
+        }
         entityManager.persist(enrollment);
         return enrollment;
+    }
+
+    private SubjectSection persistFullSubjectSection(Subject subject, Term term, Program program, String occupantKey) {
+        SubjectSection section = persistSubjectSection(subject, term, 1);
+        Student occupant = persistStudent(occupantKey, StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, persistInstitution());
+        ProgramEnrollment occupantEnrollment = persistProgramEnrollment(occupant, program, ProgramEnrollmentStatus.ENROLLED);
+        persistSectionEnrollment(occupant, occupantEnrollment, section, EnrollmentStatus.ENROLLED, 1);
+        return section;
     }
 
     private SubjectSectionEnrollment persistSectionEnrollment(
@@ -331,9 +349,11 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         Institution institution = persistInstitution();
         Student student = persistStudent("50000002", StudentOnboardingStatus.CONFIRMADO, StatusType.ACTIVE, institution);
         Program program = persistProgram("Tecnicatura2", 100);
+        java.time.LocalDate today = java.time.LocalDate.now();
+        ProgramCohort cohort = persistProgramCohort(program, today.minusDays(10), today.plusDays(10));
         entityManager.flush();
         String token = tokenWithRole("preceptor-insc2", "PRECEPTOR");
-        CreateProgramEnrollmentRequest request = new CreateProgramEnrollmentRequest(program.getId());
+        CreateProgramEnrollmentRequest request = new CreateProgramEnrollmentRequest(program.getId(), cohort.getId());
 
         mockMvc.perform(post("/students/{id}/program-enrollments", student.getId())
                         .contentType(MediaType.APPLICATION_JSON)
@@ -1118,7 +1138,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         Term sameTerm = scenario.origin().getSubjectSection().getTerm();
         SubjectSection free = persistSubjectSection(subject, sameTerm, 10);
         persistSlot(free, DayOfWeek.TUESDAY, LocalTime.of(8, 0), LocalTime.of(10, 0));
-        SubjectSection full = persistSubjectSection(subject, sameTerm, 0);
+        SubjectSection full = persistFullSubjectSection(subject, sameTerm, scenario.origin().getProgramEnrollment().getProgram(), "70000021");
         SubjectSection otherPeriod = persistSubjectSection(subject, persistTermBetween(SECOND_PERIOD_START, SECOND_PERIOD_END), 10);
         entityManager.flush();
 
@@ -1353,7 +1373,7 @@ class EnrollmentControllerTest extends AbstractIntegrationTest {
         Subject subject = scenario.origin().getSubjectSection().getSubject();
         Term sameTerm = scenario.origin().getSubjectSection().getTerm();
         SubjectSection free = persistSubjectSection(subject, sameTerm, 10);
-        SubjectSection full = persistSubjectSection(subject, sameTerm, 0);
+        SubjectSection full = persistFullSubjectSection(subject, sameTerm, scenario.origin().getProgramEnrollment().getProgram(), "70000065");
         entityManager.flush();
 
         mockMvc.perform(get("/me/section-enrollments/{id}/change-section-candidates", scenario.origin().getId())

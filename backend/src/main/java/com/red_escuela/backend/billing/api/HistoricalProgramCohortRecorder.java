@@ -5,13 +5,13 @@ import com.red_escuela.backend.academicstructure.api.HistoricalProgramRecorder;
 import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.billing.entity.CohortIntake;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.domain.CohortIntake;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.cohort.exception.HistoricalCohortReferenceMissingException;
-import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
+import com.red_escuela.backend.academicstructure.api.ProgramCohortFinder;
+import com.red_escuela.backend.academicstructure.api.ProgramCohortRecorder;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
-import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
 import com.red_escuela.backend.identity.entity.Person;
 import jakarta.persistence.EntityManager;
@@ -25,17 +25,19 @@ public class HistoricalProgramCohortRecorder {
     private static final int SECOND_INTAKE_START_MONTH = 8;
 
     private final ProgramYearBillingTemplateRepository templateRepository;
-    private final ProgramCohortRepository cohortRepository;
+    private final ProgramCohortFinder cohortFinder;
+    private final ProgramCohortRecorder cohortRecorder;
     private final HistoricalProgramRecorder programRecorder;
     private final HistoricalCycleRecorder cycleRecorder;
     private final CurrentActorFinder currentActorFinder;
     private final EntityManager entityManager;
 
     public HistoricalProgramCohortRecorder(ProgramYearBillingTemplateRepository templateRepository,
-            ProgramCohortRepository cohortRepository, HistoricalProgramRecorder programRecorder,
+            ProgramCohortFinder cohortFinder, ProgramCohortRecorder cohortRecorder, HistoricalProgramRecorder programRecorder,
             HistoricalCycleRecorder cycleRecorder, CurrentActorFinder currentActorFinder, EntityManager entityManager) {
         this.templateRepository = templateRepository;
-        this.cohortRepository = cohortRepository;
+        this.cohortFinder = cohortFinder;
+        this.cohortRecorder = cohortRecorder;
         this.programRecorder = programRecorder;
         this.cycleRecorder = cycleRecorder;
         this.currentActorFinder = currentActorFinder;
@@ -43,18 +45,15 @@ public class HistoricalProgramCohortRecorder {
     }
 
     @Transactional
-    public Long assignCohort(Long programEnrollmentId, HistoricalProgramCohort historical) {
-        ProgramCohort cohort = findOrCreateCohort(historical);
-        ProgramEnrollment enrollment = entityManager.getReference(ProgramEnrollment.class, programEnrollmentId);
-        enrollment.setProgramCohort(cohort);
-        return cohort.getId();
+    public Long findOrCreateCohortId(HistoricalProgramCohort historical) {
+        return findOrCreateCohort(historical).getId();
     }
 
     private ProgramCohort findOrCreateCohort(HistoricalProgramCohort historical) {
         ProgramYearBillingTemplate template = findOrCreateTemplate(historical);
         CohortIntake intake = CohortIntake.valueOf(historical.intake().name());
-        return cohortRepository.findByTemplateIdAndIntake(template.getId(), intake)
-                .orElseGet(() -> cohortRepository.save(newCohort(template, historical, intake)));
+        return cohortFinder.findByTemplateIdAndIntake(template.getId(), intake)
+                .orElseGet(() -> cohortRecorder.save(newCohort(template, historical, intake)));
     }
 
     private ProgramYearBillingTemplate findOrCreateTemplate(HistoricalProgramCohort historical) {
@@ -78,7 +77,9 @@ public class HistoricalProgramCohortRecorder {
         int startMonth = intake == CohortIntake.FIRST ? FIRST_INTAKE_START_MONTH : SECOND_INTAKE_START_MONTH;
         LocalDate closedAdmissionDay = LocalDate.of(historical.year(), 1, 1);
         ProgramCohort cohort = new ProgramCohort();
-        cohort.setTemplate(template);
+        cohort.setTemplateId(template.getId());
+        cohort.setProgramId(template.programId());
+        cohort.setTermId(template.termId());
         cohort.setIntake(intake);
         cohort.setAdmissionStart(closedAdmissionDay);
         cohort.setAdmissionEnd(closedAdmissionDay);

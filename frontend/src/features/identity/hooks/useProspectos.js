@@ -1,10 +1,19 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { apiFetch } from '@/api/client';
 
-export function useStaffProspects() {
+export const PROSPECTS_PAGE_SIZE = 25;
+
+export function useStaffProspects({ search, page = 0, size = PROSPECTS_PAGE_SIZE } = {}) {
   return useQuery({
-    queryKey: ['prospects'],
-    queryFn: () => apiFetch('/prospects'),
+    queryKey: ['prospects', 'list', { search, page, size }],
+    queryFn: () => {
+      const params = new URLSearchParams();
+      if (search) params.set('search', search);
+      params.set('page', String(page));
+      params.set('size', String(size));
+      return apiFetch(`/prospects?${params.toString()}`);
+    },
+    placeholderData: (previous) => previous,
   });
 }
 
@@ -69,7 +78,7 @@ export function useConfirmarAlta() {
       queryClient.invalidateQueries({ queryKey: ['students', studentId] });
       queryClient.invalidateQueries({ queryKey: ['alumno', studentId], exact: true });
       queryClient.invalidateQueries({ queryKey: ['alumnos'], refetchType: 'none' });
-      queryClient.invalidateQueries({ queryKey: ['prospects'], exact: true });
+      queryClient.invalidateQueries({ queryKey: ['prospects', 'list'] });
     },
   });
 }

@@ -17,9 +17,9 @@ public interface ProgramSubjectPrerequisiteRepository extends JpaRepository<Prog
             select p from ProgramSubjectPrerequisite p
             join fetch p.prerequisiteProgramSubject prerequisiteEntry
             join fetch prerequisiteEntry.subject
-            where p.programSubject.program.id = :programId
+            where p.programSubject.plan.id = :planId
             """)
-    List<ProgramSubjectPrerequisite> findAllOfProgram(@Param("programId") Long programId);
+    List<ProgramSubjectPrerequisite> findAllOfPlan(@Param("planId") Long planId);
 
     List<ProgramSubjectPrerequisite> findByPrerequisiteProgramSubjectId(Long prerequisiteProgramSubjectId);
 

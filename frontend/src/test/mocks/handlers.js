@@ -1,4 +1,5 @@
 import { http, HttpResponse } from 'msw';
+import { studentFixture } from '@/test/fixtures/students';
 import { annualTerms, auditedAnnualTerms } from '@/test/fixtures/annualTerms';
 import { backupStatusForPlatformAdmin } from '@/test/fixtures/backupStatus';
 import {
@@ -17,7 +18,9 @@ import { sectionEnrollment } from '@/test/fixtures/studentHome';
 import { signatoryDetail, signatoryList } from '@/test/fixtures/signatories';
 import { constanciasHandlers } from '@/test/mocks/constanciasHandlers';
 import { subjectEquivalenceHandlers } from '@/test/mocks/subjectEquivalenceHandlers';
+import { termClosureHandlers } from '@/test/mocks/termClosureHandlers';
 import { invitationWaveHandlers } from '@/test/mocks/invitationWaveHandlers';
+import { informativeSessionHandlers } from '@/test/mocks/informativeSessionHandlers';
 
 import { permissionCatalog, permissionDiscrepancy, permissionDiscrepancySummary, permissionGrid } from '@/test/fixtures/permissions';
 
@@ -99,10 +102,10 @@ const curriculumProgress = (programEnrollmentId) => ({
       finalScore: null,
       attempts: 0,
       blockedBy: [
-        { subjectId: 12, subjectCode: 'MAT100', subjectName: 'Álgebra', requirementType: 'APPROVED', standing: 'NOT_TAKEN' },
+        { subjectId: 12, subjectCode: 'MAT100', subjectName: 'Álgebra', requirementType: 'APPROVED', standing: 'NOT_TAKEN', minGrade: null, approvedScore: null },
       ],
       prerequisites: [
-        { subjectId: 12, subjectCode: 'MAT100', subjectName: 'Álgebra', requirementType: 'APPROVED', standing: 'NOT_TAKEN' },
+        { subjectId: 12, subjectCode: 'MAT100', subjectName: 'Álgebra', requirementType: 'APPROVED', standing: 'NOT_TAKEN', minGrade: null, approvedScore: null },
       ],
       currentEnrollmentId: null,
       corequisites: [],
@@ -196,6 +199,22 @@ export const handlers = [
     HttpResponse.json(graduationCertificateDetail({ id: Number(params.id) })),
   ),
   http.get(`${API}/graduation-certificates/:id/pdf`, () => pdfResponse()),
+  http.post(`${API}/programs/:programId/terms/:termId/cohorts`, ({ params }) =>
+    HttpResponse.json(
+      {
+        id: 1,
+        programId: Number(params.programId),
+        termId: Number(params.termId),
+        planId: 21,
+        intake: 'FIRST',
+        admissionStart: '2027-01-01',
+        admissionEnd: '2027-02-01',
+        cursadaStart: '2027-03-01',
+        createdAt: '2027-01-05T10:00:00',
+      },
+      { status: 201 },
+    ),
+  ),
   http.post(`${API}/graduation-certificates/preview`, () => pdfResponse()),
   http.post(`${API}/graduation-certificates/batch`, () => HttpResponse.json(graduationCertificateBatch())),
   http.post(`${API}/graduation-certificates/:id/revoke`, ({ params }) =>
@@ -307,6 +326,9 @@ export const handlers = [
   http.post(`${API}/certificate-templates/:kind/preview`, () => pdfResponse()),
   http.get(`${API}/regular-certificates`, () => HttpResponse.json([])),
   http.get(`${API}/me/attendance-change-requests`, () => HttpResponse.json([])),
+  http.get(`${API}/attendance/change-requests/resolved`, () =>
+    HttpResponse.json({ items: [], page: 0, size: 20, totalElements: 0 }),
+  ),
   http.get(`${API}/institution/academic-settings`, () =>
     HttpResponse.json({
       announcementEmailEnabled: false,
@@ -469,14 +491,57 @@ export const handlers = [
   ),
   http.get(`${API}/programs/:id/cohorts`, ({ params }) =>
     HttpResponse.json([
-      { id: 1, programId: Number(params.id), label: 'Marzo 2026', ordenEnAnio: 1, cursadaStart: '2026-03-01', admissionOpen: true },
-      { id: 2, programId: Number(params.id), label: 'Agosto 2026', ordenEnAnio: 2, cursadaStart: '2026-08-01', admissionOpen: true },
+      { id: 1, programId: Number(params.id), label: 'Marzo 2026', ordenEnAnio: 1, cursadaStart: '2026-03-01', admissionOpen: true, intake: 'FIRST', planId: 1, planName: 'Plan 2026', openedAt: '2026-01-10T09:00:00', responsiblePreceptors: [{ id: 7, name: 'Paula Preceptora' }] },
+      { id: 2, programId: Number(params.id), label: 'Agosto 2026', ordenEnAnio: 2, cursadaStart: '2026-08-01', admissionOpen: true, intake: 'SECOND', planId: 1, planName: 'Plan 2026', openedAt: null, responsiblePreceptors: [] },
     ]),
+  ),
+  http.post(`${API}/cohorts/:id/open`, ({ params }) =>
+    HttpResponse.json({
+      id: Number(params.id),
+      programId: 1,
+      termId: 1,
+      planId: 1,
+      intake: 'FIRST',
+      admissionStart: '2026-02-01',
+      admissionEnd: '2026-03-31',
+      cursadaStart: '2026-03-15',
+      createdAt: '2026-01-10T12:00:00Z',
+      openedAt: '2026-11-28T12:00:00Z',
+    }),
+  ),
+  http.get(`${API}/staff`, () =>
+    HttpResponse.json([
+      { id: 31, nombre: 'Marcela', apellido: 'Quiroga', dni: '20111222', email: 'marcela.quiroga@demo.test', role: 'PRECEPTOR', status: 'ACTIVE', telefono: null, username: 'mquiroga' },
+      { id: 32, nombre: 'Julián', apellido: 'Ferreyra', dni: '20111223', email: 'julian.ferreyra@demo.test', role: 'PRECEPTOR', status: 'ACTIVE', telefono: null, username: 'jferreyra' },
+      { id: 33, nombre: 'Sofía', apellido: 'Paredes', dni: '20111224', email: 'sofia.paredes@demo.test', role: 'PRECEPTOR', status: 'ACTIVE', telefono: null, username: 'sparedes' },
+      { id: 34, nombre: 'Tomás', apellido: 'Aguirre', dni: '20111225', email: 'tomas.aguirre@demo.test', role: 'PRECEPTOR', status: 'ACTIVE', telefono: null, username: 'taguirre' },
+      { id: 35, nombre: 'Lucía', apellido: 'Benítez', dni: '20111226', email: 'lucia.benitez@demo.test', role: 'PRECEPTOR', status: 'ACTIVE', telefono: null, username: 'lbenitez' },
+      { id: 36, nombre: 'Nicolás', apellido: 'Ramos', dni: '20111227', email: 'nicolas.ramos@demo.test', role: 'PRECEPTOR', status: 'ACTIVE', telefono: null, username: 'nramos' },
+    ]),
+  ),
+  http.put(`${API}/cohorts/:id/responsible-preceptors`, async ({ request }) => {
+    const body = await request.json().catch(() => ({ responsiblePreceptorIds: [] }));
+    return HttpResponse.json(body.responsiblePreceptorIds.map((id) => ({ id, name: `Preceptor ${id}` })));
+  }),
+  http.get(`${API}/cohorts/:id/readiness`, ({ params }) =>
+    HttpResponse.json({ cohortId: Number(params.id), open: false, openedAt: null, ready: false, commissionsTotal: 4, commissionsWithoutPreceptor: 1, items: [] }),
   ),
   http.get(`${API}/programs`, () => HttpResponse.json([])),
   http.get(`${API}/academic-offering-cycles`, () => HttpResponse.json([])),
   http.get(`${API}/academic-offering-cycles/:id/occupancy`, ({ params }) => HttpResponse.json({ cycleId: Number(params.id), sections: [] })),
   http.get(`${API}/course-subjects/:id/sections`, () => HttpResponse.json([])),
+  http.put(`${API}/students/:id`, async ({ params, request }) => {
+    const body = await request.json().catch(() => ({}));
+    return HttpResponse.json(
+      studentFixture({
+        id: Number(params.id),
+        ...(body.firstName && { nombre: body.firstName }),
+        ...(body.lastName && { apellido: body.lastName }),
+        ...(body.documentNumber && { dni: body.documentNumber }),
+        ...(body.email && { email: body.email }),
+      }),
+    );
+  }),
   http.post(`${API}/students/:id/program-enrollments`, ({ params }) =>
     HttpResponse.json(
       { id: 1, studentId: Number(params.id), programId: 1, programName: 'Carrera de prueba', status: 'ACTIVE', enrollmentDate: '2026-11-05T12:00:00', completionDate: null },
@@ -490,13 +555,24 @@ export const handlers = [
     ),
   ),
   http.get(`${API}/programs/:id/subjects`, () => HttpResponse.json([])),
+  http.get(`${API}/programs/:id/curriculum-plans`, () => HttpResponse.json([])),
+  http.get(`${API}/curriculum-plans/:id`, ({ params }) =>
+    HttpResponse.json({
+      id: Number(params.id), programId: 1, versionNumber: 1, name: 'Plan v1', status: 'ACTIVE',
+      validFrom: '2026-03-01', validUntil: null, graduationDeadline: null,
+      totalYears: 3, totalCreditsRequired: 0, totalHoursRequired: null,
+    }),
+  ),
+  http.get(`${API}/curriculum-plans/:id/subjects`, () => HttpResponse.json([])),
   http.get(`${API}/courses`, () => HttpResponse.json([])),
+  http.get(`${API}/informative-sessions`, () => HttpResponse.json([])),
   http.get(`${API}/courses/:id`, ({ params }) =>
     HttpResponse.json({ id: Number(params.id), name: 'Curso de prueba', durationMonths: 3, registrationOpen: true, full: false }),
   ),
   http.get(`${API}/courses/:id/pricing`, ({ params }) => HttpResponse.json({ courseId: Number(params.id), cuotaMensual: { amount: '8000.00', currency: 'ARS' } })),
   http.get(`${API}/courses/:id/subjects`, () => HttpResponse.json([])),
   http.get(`${API}/me/program-enrollment-applications`, () => HttpResponse.json([])),
+  http.get(`${API}/me/waitlist-positions`, () => HttpResponse.json([])),
   http.get(`${API}/waitlists`, () => HttpResponse.json({ items: [], page: 0, size: 20, totalElements: 0 })),
   http.get(`${API}/waitlists/:kind/:id`, () => HttpResponse.json({ code: 'WAITLIST_QUEUE_NOT_FOUND', requestId: 'req-test-0001', retryable: false, violations: [] }, { status: 404 })),
   http.post(`${API}/waitlists/:kind/entries/:enrollmentId/promote`, () => HttpResponse.json({})),
@@ -638,6 +714,8 @@ export const handlers = [
   http.get(`${API}/programs/:id/year-billing-templates`, () => HttpResponse.json([])),
   http.get(`${API}/me/section-evaluation-configs`, () => HttpResponse.json([])),
   http.get(`${API}/section-evaluation-configs`, () => HttpResponse.json([])),
+  http.get(`${API}/me/course-section-evaluation-configs`, () => HttpResponse.json([])),
+  http.get(`${API}/course-section-evaluation-configs`, () => HttpResponse.json([])),
   http.get(`${API}/me/section-enrollments`, () => HttpResponse.json([])),
   http.post(`${API}/me/section-enrollments/:id/change-section`, async ({ params, request }) => {
     const { newSectionId } = await request.json().catch(() => ({}));
@@ -664,5 +742,7 @@ export const handlers = [
   ),
   ...constanciasHandlers,
   ...subjectEquivalenceHandlers,
+  ...termClosureHandlers,
   ...invitationWaveHandlers,
+  ...informativeSessionHandlers,
 ];

@@ -8,7 +8,7 @@ import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.config.TestSubjectCodes;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
-import com.red_escuela.backend.billing.exception.PendingDebtException;
+import com.red_escuela.backend.graduation.exception.PendingDebtException;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.support.BillingTestFixtures;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
@@ -120,6 +120,7 @@ class GraduationTransactionBoundaryIT extends AbstractIntegrationTest {
             entityManager.persist(subject);
             ProgramSubject programSubject = new ProgramSubject();
             programSubject.setProgram(program);
+            programSubject.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
             programSubject.setSubject(subject);
             programSubject.setCredits(10);
             programSubject.setStatus(StatusType.ACTIVE);

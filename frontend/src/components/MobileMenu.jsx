@@ -1,41 +1,19 @@
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Dialog as DialogPrimitive } from 'radix-ui';
-import { NavLink, useLocation } from 'react-router-dom';
-import { Moon, Sun, X } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
+import { ChevronRight, LogOut, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Button } from '@/components/ui/button';
 import { InstitutionBrand } from '@/components/InstitutionBrand';
-import { NavGroups } from '@/components/NavGroups';
-import { useAuth } from '@/context/AuthContext';
 import { RoleSwitcher } from '@/components/RoleSwitcher';
+import { DRAWER_ROW, DrawerBackRow, DrawerEntryList } from '@/components/MobileDrawerLevel';
+import { buildDrawerEntries, findCurrentTarget, resolveLevelNodes } from '@/routes/navModel';
+import { useAuth } from '@/context/AuthContext';
 import { useActiveRole } from '@/hooks/useActiveRole';
-import { useTheme } from '@/context/ThemeContext';
+import { roleLabel } from '@/lib/activeRole';
 
-// Mismo tratamiento del ítem activo que Sidebar.jsx (degradé + blanco, no el
-// pill pálido de antes) — ver comentario ahí.
-const NAV_ITEM_ACTIVO =
-  "bg-(--nav-indicator-bg) text-(--nav-active-fg) relative font-bold before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:rounded-r-[3px] before:bg-(color:--accent) before:content-['']";
-const NAV_ITEM_BASE =
-  'flex min-h-11 shrink-0 items-center gap-2.5 rounded-control px-3 py-0 text-sm font-medium text-ink-soft transition-colors hover:bg-(--row-hover) hover:text-ink';
-
-// Entrada escalonada (index * 40ms) al abrir el drawer, en vez de que todos
-// los ítems aparezcan juntos — animate-in/fade-in/slide-in-from-left son de
-// tw-animate-css (ya en uso en el Overlay/Content de este mismo Dialog).
-function ItemNav({ to, label, icon: Icon, onNavigate, index }) {
-  return (
-    <NavLink
-      key={to}
-      to={to}
-      onClick={onNavigate}
-      style={{ animationDelay: `${index * 40}ms` }}
-      className={({ isActive }) =>
-        cn(NAV_ITEM_BASE, 'animate-in fade-in slide-in-from-left-2 fill-mode-both', isActive && NAV_ITEM_ACTIVO)
-      }
-    >
-      {Icon && <Icon className="h-4 w-4 shrink-0" />}
-      <span className="truncate">{label}</span>
-    </NavLink>
-  );
-}
+const ROLES_LEVEL_ID = 'role-switch';
+const LEVEL_MOTION = 'animate-in fade-in-0 duration-150 motion-reduce:animate-none';
 
 // Botón hamburguesa cuyas 3 líneas giran y forman una X, en vez de cambiar de
 // ícono (Menu → X) en seco.
@@ -61,29 +39,64 @@ function HamburgerIcon({ open }) {
   );
 }
 
-// Colapso del Sidebar en mobile/tablet (base/md) — decisión revisada con el
-// usuario: un menú hamburguesa que abre un drawer lateral, no una bottom tab
-// bar (esa era la convención documentada originalmente en
-// docs/context/frontend.md, reemplazada acá a pedido explícito). El drawer
-// reusa radix-ui Dialog directo (no el wrapper de components/ui/dialog.jsx,
-// que centra el contenido) para poder posicionarlo pegado al borde izquierdo.
-export function MobileMenu({ titulo, items, groups }) {
+export function MobileMenu({ titulo, items, groups, hiddenFrom = 'lg:hidden' }) {
   const [open, setOpen] = useState(false);
-  const { usuario, logout } = useAuth();
-  const { tema, alternarTema } = useTheme();
+  const [path, setPath] = useState([]);
+  const [direction, setDirection] = useState('forward');
+  const { logout } = useAuth();
   const { pathname } = useLocation();
-  const { canSwitch } = useActiveRole();
+  const { canSwitch, activeRole } = useActiveRole();
+  const contentRef = useRef(null);
+  const pendingFocus = useRef(null);
 
-  const principales = items.filter((item) => item.label !== 'Opciones');
-  const dark = tema === 'dark';
+  const entries = useMemo(() => buildDrawerEntries(items, groups), [items, groups]);
+  const target = findCurrentTarget(entries, pathname);
+  const inRolesLevel = path[0] === ROLES_LEVEL_ID;
+  const levelNodes = inRolesLevel ? [] : resolveLevelNodes(entries, path);
+  const currentNode = levelNodes[levelNodes.length - 1];
+  const atRoot = path.length === 0;
+  const levelEntries = currentNode ? currentNode.children : entries;
+  const levelTitle = inRolesLevel ? 'Cambiar de rol' : currentNode ? currentNode.label : `Menú de ${titulo}`;
+
+  useEffect(() => {
+    const pending = pendingFocus.current;
+    if (!open || !pending) return;
+    pendingFocus.current = null;
+    const scope = contentRef.current;
+    if (!scope) return;
+    const returnRow = pending.rowId ? [...scope.querySelectorAll('[data-row-id]')].find((row) => row.dataset.rowId === pending.rowId) : null;
+    const next = returnRow ?? scope.querySelector('[data-drawer-back]') ?? scope.querySelector('[data-row-id]');
+    next?.focus();
+  }, [open, path]);
+
+  function changeOpen(nextOpen) {
+    setOpen(nextOpen);
+    if (!nextOpen) setPath([]);
+  }
+
+  function enterLevel(id) {
+    pendingFocus.current = {};
+    setDirection('forward');
+    setPath((current) => [...current, id]);
+  }
+
+  function goBack() {
+    pendingFocus.current = { rowId: path[path.length - 1] };
+    setDirection('back');
+    setPath((current) => current.slice(0, -1));
+  }
+
+  function closeDrawer() {
+    changeOpen(false);
+  }
 
   return (
-    <DialogPrimitive.Root open={open} onOpenChange={setOpen}>
+    <DialogPrimitive.Root open={open} onOpenChange={changeOpen}>
       <DialogPrimitive.Trigger asChild>
         <button
           type="button"
           aria-label={open ? 'Cerrar menú' : 'Abrir menú'}
-          className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-surface text-ink lg:hidden"
+          className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-border bg-surface text-ink', hiddenFrom)}
         >
           <HamburgerIcon open={open} />
         </button>
@@ -91,61 +104,70 @@ export function MobileMenu({ titulo, items, groups }) {
       <DialogPrimitive.Portal>
         <DialogPrimitive.Overlay className="fixed inset-0 z-50 bg-(--overlay-bg-menu) duration-150 data-open:animate-in data-open:fade-in-0 data-closed:animate-out data-closed:fade-out-0" />
         <DialogPrimitive.Content
+          ref={contentRef}
           aria-describedby={undefined}
-          className="fixed inset-y-0 left-0 z-50 flex w-72 max-w-[80vw] flex-col gap-6 border-r border-border bg-surface p-5 shadow-overlay duration-200 data-open:animate-in data-open:slide-in-from-left data-closed:animate-out data-closed:slide-out-to-left"
+          onOpenAutoFocus={(event) => {
+            event.preventDefault();
+            contentRef.current?.querySelector('[data-row-id]')?.focus();
+          }}
+          className="fixed inset-y-0 left-0 z-50 flex h-dvh w-[min(340px,88vw)] flex-col border-r border-border bg-surface shadow-overlay duration-200 data-open:animate-in data-open:slide-in-from-left data-closed:animate-out data-closed:slide-out-to-left"
         >
-          <div className="flex items-start justify-between">
-            <DialogPrimitive.Title asChild>
-              <div>
-                <InstitutionBrand layout="horizontal" />
-                {!canSwitch && <div className="mt-4 text-sm font-semibold text-ink-faint">{titulo}</div>}
-                {usuario && (
-                  <div className="mt-1 truncate font-heading text-base font-semibold text-ink">
-                    {usuario.nombre} {usuario.apellido}
-                  </div>
-                )}
-              </div>
-            </DialogPrimitive.Title>
+          <div className="flex shrink-0 items-center justify-between gap-3 border-b border-border px-4 py-3">
+            <InstitutionBrand layout="horizontal" />
             <DialogPrimitive.Close asChild>
-              <button type="button" aria-label="Cerrar menú" className="flex h-11 w-11 items-center justify-center rounded-control p-0 text-ink-faint hover:text-ink">
-                <X className="h-5 w-5" />
+              <button type="button" aria-label="Cerrar menú" className="flex h-11 w-11 shrink-0 items-center justify-center rounded-control p-0 text-ink-faint hover:text-ink focus-visible:outline-none focus-visible:ring-3 focus-visible:ring-ring">
+                <X aria-hidden="true" className="h-5 w-5" />
               </button>
             </DialogPrimitive.Close>
           </div>
 
-          <RoleSwitcher variant="inline" onNavigate={() => setOpen(false)} />
-
-          <nav className="flex min-h-0 flex-1 flex-col gap-1 overflow-y-auto">
-            {groups ? (
-              <NavGroups
-                groups={groups}
-                collapsible
-                pathname={pathname}
-                renderItem={(item, index) => <ItemNav {...item} index={index} onNavigate={() => setOpen(false)} />}
-              />
-            ) : (
-              principales.map((item, index) => (
-                <ItemNav key={item.to} {...item} index={index} onNavigate={() => setOpen(false)} />
-              ))
-            )}
-          </nav>
-
-          <div className="shrink-0 border-t border-border pt-3">
-              <button type="button" onClick={alternarTema} className={cn(NAV_ITEM_BASE, 'w-full text-left')}>
-              {dark ? <Sun aria-hidden="true" className="h-4 w-4 shrink-0" /> : <Moon aria-hidden="true" className="h-4 w-4 shrink-0" />}
-              {dark ? 'Tema claro' : 'Tema oscuro'}
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false);
-                logout();
-              }}
-              className="mt-1 flex min-h-11 w-full shrink-0 items-center gap-2.5 rounded-control px-3 py-0 text-left text-sm font-medium text-ink-faint transition-colors hover:text-danger"
+          <nav aria-label="Menú" className="min-h-0 flex-1 overflow-y-auto overscroll-contain p-3">
+            <div
+              key={path.join('>')}
+              className={cn(LEVEL_MOTION, direction === 'forward' ? 'slide-in-from-right-4' : 'slide-in-from-left-4')}
             >
-              Cerrar sesión
-            </button>
-          </div>
+              {!atRoot && <DrawerBackRow onBack={goBack} />}
+              <DialogPrimitive.Title
+                className={cn(
+                  atRoot ? 'sr-only' : 'px-3 pb-2 pt-1 text-size-11 font-bold uppercase tracking-[0.08em] text-ink-faint',
+                )}
+              >
+                {levelTitle}
+              </DialogPrimitive.Title>
+              {inRolesLevel ? (
+                <RoleSwitcher variant="list" onNavigate={closeDrawer} />
+              ) : (
+                <DrawerEntryList entries={levelEntries} target={target} onOpen={enterLevel} onNavigate={closeDrawer} />
+              )}
+            </div>
+          </nav>
+          <p role="status" className="sr-only">
+            {levelTitle}
+          </p>
+
+          {atRoot && (
+            <div className="shrink-0 border-t border-border p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+              {canSwitch && (
+                <button type="button" onClick={() => enterLevel(ROLES_LEVEL_ID)} className={cn(DRAWER_ROW, 'mb-1')}>
+                  <span className="min-w-0 flex-1 truncate">Cambiar de rol</span>
+                  <span className="shrink-0 text-size-13 font-normal text-ink-faint">{roleLabel(activeRole)}</span>
+                  <ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0" />
+                </button>
+              )}
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => {
+                  closeDrawer();
+                  logout();
+                }}
+                className="h-12 w-full justify-start gap-3 px-3 text-sm font-medium text-ink-soft hover:text-danger"
+              >
+                <LogOut aria-hidden="true" className="h-4 w-4 shrink-0" />
+                Cerrar sesión
+              </Button>
+            </div>
+          )}
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>

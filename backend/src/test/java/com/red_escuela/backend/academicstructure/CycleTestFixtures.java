@@ -1,9 +1,11 @@
 package com.red_escuela.backend.academicstructure;
 
+import com.red_escuela.backend.testsupport.HolidayFixtures;
 import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycle;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus;
 import com.red_escuela.backend.academicstructure.entity.Classroom;
+import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.academicstructure.entity.Program;
@@ -21,6 +23,7 @@ import jakarta.persistence.EntityManager;
 
 import java.time.DayOfWeek;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.time.LocalTime;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicLong;
@@ -66,6 +69,7 @@ public class CycleTestFixtures {
         term.setEndDate(LocalDateTime.of(year, 12, 15, 0, 0));
         term.setStatus(StatusType.ACTIVE);
         entityManager.persist(term);
+        HolidayFixtures.ensureHolidaysLoaded(entityManager, year, year);
         return term;
     }
 
@@ -94,7 +98,34 @@ public class CycleTestFixtures {
         return subject;
     }
 
+    public Subject subjectInPlanOf(Program program) {
+        Subject subject = subject();
+        ProgramSubject entry = new ProgramSubject();
+        entry.setProgram(program);
+        entry.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
+        entry.setSubject(subject);
+        entry.setCredits(4);
+        entry.setCurricularYear(1);
+        entry.setStatus(StatusType.ACTIVE);
+        entityManager.persist(entry);
+        return subject;
+    }
+
+    public Subject subjectInPlanOf(AcademicOfferingCycle cycle) {
+        return subjectInPlanOf(cycle.getProgram());
+    }
+
     public AcademicOfferingCycle programCycle(Program program, Term term, AcademicOfferingCycleStatus status) {
+        List<AcademicOfferingCycle> existing = entityManager.createQuery(
+                        "select c from AcademicOfferingCycle c where c.program = :program and c.term = :term and c.status = :status",
+                        AcademicOfferingCycle.class)
+                .setParameter("program", program)
+                .setParameter("term", term)
+                .setParameter("status", status)
+                .getResultList();
+        if (!existing.isEmpty()) {
+            return existing.get(0);
+        }
         AcademicOfferingCycle cycle = new AcademicOfferingCycle();
         cycle.setProgram(program);
         cycle.setTerm(term);

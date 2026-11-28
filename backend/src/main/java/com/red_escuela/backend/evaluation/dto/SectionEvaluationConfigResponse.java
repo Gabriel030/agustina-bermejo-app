@@ -4,6 +4,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import java.math.BigDecimal;
 import com.red_escuela.backend.shared.domain.Grade;
 
+import com.red_escuela.backend.academicstructure.domain.SectionKind;
+import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
 
 import java.time.LocalDate;
@@ -11,7 +13,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record SectionEvaluationConfigResponse(
-        Long id, Long subjectSectionId, String subjectName, String sectionName, String status,
+        Long id, @Schema(nullable = true) Long subjectSectionId, String subjectName, String sectionName, String status,
         Integer tpCount,
         LocalDate tp1DueDate, LocalDate tp2DueDate, LocalDate tp3DueDate,
         LocalDate exam1Date, LocalDate exam2Date, LocalDate exam3Date, LocalDate exam4Date,
@@ -19,21 +21,46 @@ public record SectionEvaluationConfigResponse(
         @Schema(nullable = true) String rejectionReason, LocalDateTime submittedAt,
         String reviewedByName, LocalDateTime reviewedAt,
         LocalDateTime termStartDate, LocalDateTime termEndDate, LocalDateTime termEnrollmentStart,
+        @Schema(nullable = true) LocalDate evaluationConfigDeadline,
         String evaluationSchemeName, Integer examCountExpected, Boolean hasFinal,
         BigDecimal minRegularGrade, BigDecimal minApprovalGrade, BigDecimal promotionMinGrade,
-        List<SectionInstructorSummary> instructors, boolean canEdit, boolean canSubmit) {
+        List<SectionInstructorSummary> instructors, boolean canEdit, boolean canSubmit,
+        @Schema(nullable = true) Long courseSectionId, String sectionKind) {
 
-    public static SectionEvaluationConfigResponse from(SectionEvaluationConfig config, List<SectionInstructorSummary> instructors) {
-        return from(config, instructors, false, false);
+    public SectionEvaluationConfigResponse(
+            Long id, Long subjectSectionId, String subjectName, String sectionName, String status,
+            Integer tpCount,
+            LocalDate tp1DueDate, LocalDate tp2DueDate, LocalDate tp3DueDate,
+            LocalDate exam1Date, LocalDate exam2Date, LocalDate exam3Date, LocalDate exam4Date,
+            LocalDate finalCall1Date, LocalDate finalCall2Date,
+            String rejectionReason, LocalDateTime submittedAt,
+            String reviewedByName, LocalDateTime reviewedAt,
+            LocalDateTime termStartDate, LocalDateTime termEndDate, LocalDateTime termEnrollmentStart,
+            LocalDate evaluationConfigDeadline,
+            String evaluationSchemeName, Integer examCountExpected, Boolean hasFinal,
+            BigDecimal minRegularGrade, BigDecimal minApprovalGrade, BigDecimal promotionMinGrade,
+            List<SectionInstructorSummary> instructors, boolean canEdit, boolean canSubmit) {
+        this(id, subjectSectionId, subjectName, sectionName, status, tpCount,
+                tp1DueDate, tp2DueDate, tp3DueDate, exam1Date, exam2Date, exam3Date, exam4Date,
+                finalCall1Date, finalCall2Date, rejectionReason, submittedAt, reviewedByName, reviewedAt,
+                termStartDate, termEndDate, termEnrollmentStart, evaluationConfigDeadline,
+                evaluationSchemeName, examCountExpected, hasFinal,
+                minRegularGrade, minApprovalGrade, promotionMinGrade,
+                instructors, canEdit, canSubmit, null, SectionKind.PROGRAM.name());
     }
 
-    public static SectionEvaluationConfigResponse from(SectionEvaluationConfig config, List<SectionInstructorSummary> instructors,
+    public static SectionEvaluationConfigResponse from(SectionEvaluationConfig config, EvaluationScheme scheme,
+                                                       List<SectionInstructorSummary> instructors) {
+        return from(config, scheme, instructors, false, false);
+    }
+
+    public static SectionEvaluationConfigResponse from(SectionEvaluationConfig config, EvaluationScheme scheme,
+                                                       List<SectionInstructorSummary> instructors,
                                                        boolean canEdit, boolean canSubmit) {
-        var section = config.getSubjectSection();
-        var term = section.getTerm();
-        var scheme = section.getEvaluationScheme();
+        boolean courseOwned = config.isOwnedByCourseSection();
+        var term = config.term();
         return new SectionEvaluationConfigResponse(
-                config.getId(), section.getId(), section.getSubject().getName(), section.getName(),
+                config.getId(), courseOwned ? null : config.ownerSectionId(), config.subjectName(), config.sectionName(),
                 config.getStatus().name(),
                 config.getTpCount(),
                 config.getTp1DueDate(), config.getTp2DueDate(), config.getTp3DueDate(),
@@ -43,12 +70,28 @@ public record SectionEvaluationConfigResponse(
                 config.getReviewedBy() == null ? null : config.getReviewedBy().getName() + " " + config.getReviewedBy().getLastname(),
                 config.getReviewedAt(),
                 term.getStartDate(), term.getEndDate(), term.getEnrollmentStart(),
+                null,
                 scheme == null ? null : scheme.getName(),
                 scheme == null ? null : scheme.getExamCountExpected(),
                 scheme == null ? null : scheme.getHasFinal(),
                 scheme == null ? null : Grade.valueOrNull(scheme.getMinRegularGrade()),
                 scheme == null ? null : Grade.valueOrNull(scheme.getMinApprovalGrade()),
                 scheme == null ? null : Grade.valueOrNull(scheme.getPromotionMinGrade()),
-                instructors, canEdit, canSubmit);
+                instructors, canEdit, canSubmit,
+                courseOwned ? config.ownerSectionId() : null,
+                (courseOwned ? SectionKind.COURSE : SectionKind.PROGRAM).name());
+    }
+
+    public SectionEvaluationConfigResponse withEvaluationConfigDueDays(int dueDays) {
+        LocalDate deadline = termStartDate == null ? null : termStartDate.toLocalDate().plusDays(dueDays);
+        return new SectionEvaluationConfigResponse(
+                id, subjectSectionId, subjectName, sectionName, status,
+                tpCount, tp1DueDate, tp2DueDate, tp3DueDate,
+                exam1Date, exam2Date, exam3Date, exam4Date, finalCall1Date, finalCall2Date,
+                rejectionReason, submittedAt, reviewedByName, reviewedAt,
+                termStartDate, termEndDate, termEnrollmentStart, deadline,
+                evaluationSchemeName, examCountExpected, hasFinal,
+                minRegularGrade, minApprovalGrade, promotionMinGrade,
+                instructors, canEdit, canSubmit, courseSectionId, sectionKind);
     }
 }

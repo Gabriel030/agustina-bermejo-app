@@ -1,6 +1,9 @@
 package com.red_escuela.backend.enrollment.service;
 
 import com.red_escuela.backend.academicstructure.api.CourseCatalogFinder;
+import com.red_escuela.backend.academicstructure.api.SectionClosureGuard;
+import com.red_escuela.backend.academicstructure.domain.SectionKind;
+import com.red_escuela.backend.academicstructure.exception.SectionClosureClosedException;
 import com.red_escuela.backend.academicstructure.api.CourseModuleView;
 import com.red_escuela.backend.academicstructure.api.CourseRegistrationView;
 import com.red_escuela.backend.academicstructure.api.CourseSectionView;
@@ -22,9 +25,9 @@ import com.red_escuela.backend.enrollment.exception.AdmissionWindowClosedExcepti
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInCourseException;
 import com.red_escuela.backend.enrollment.exception.AmbiguousSectionException;
 import com.red_escuela.backend.enrollment.exception.CannotWithdrawException;
-import com.red_escuela.backend.enrollment.exception.CourseEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.CourseEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.exception.IncompleteSectionSetupException;
-import com.red_escuela.backend.enrollment.exception.InvalidWindowConfigurationException;
+import com.red_escuela.backend.enrollment.api.InvalidWindowConfigurationException;
 import com.red_escuela.backend.enrollment.repository.CourseEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.CourseSubjectSectionEnrollmentRepository;
 import com.red_escuela.backend.identity.api.StudentEnrollmentEligibility;
@@ -92,6 +95,8 @@ class CourseEnrollmentRulesTest {
     private EnrollmentWithdrawalBillingPort withdrawalBillingPort;
     @Mock
     private WaitlistPromoter waitlistPromoter;
+    @Mock
+    private SectionClosureGuard sectionClosureGuard;
 
     private CourseEnrollmentService service;
     private Student student;
@@ -101,7 +106,7 @@ class CourseEnrollmentRulesTest {
     void setUp() {
         service = new CourseEnrollmentService(courseEnrollmentRepository, studentFinder, studentEnrollmentEligibility, courseCatalogFinder,
                 sectionFinder, subEnrollmentRepository, studentRoleGranter, enrollmentDebtGuard, withdrawalDateResolver,
-                withdrawalBillingPort, new CatalogAvailabilityGuard(), CLOCK, waitlistPromoter);
+                withdrawalBillingPort, new CatalogAvailabilityGuard(), sectionClosureGuard, CLOCK, waitlistPromoter);
         Person person = new Person();
         person.setId(70L);
         student = new Student();
@@ -203,7 +208,7 @@ class CourseEnrollmentRulesTest {
         givenStudentWithOpenWindow();
         when(courseEnrollmentRepository.findByStudentIdAndCourseIdAndStatusIn(any(), any(), any())).thenReturn(List.of());
         when(courseCatalogFinder.findActiveModules(COURSE_ID)).thenReturn(List.of(new CourseModuleView(21L, "Modulo 1")));
-        when(courseCatalogFinder.findActiveSectionsOfModule(21L)).thenReturn(List.of(
+        when(courseCatalogFinder.findSectionsOpenForEnrollmentOfModule(21L)).thenReturn(List.of(
                 new CourseSectionView(31L, 21L, COURSE_ID, 99L, 30, "Otro ciclo")));
 
         assertThatThrownBy(() -> service.enroll(7L, new CreateCourseEnrollmentRequest(COURSE_ID, null)))
@@ -212,11 +217,24 @@ class CourseEnrollmentRulesTest {
     }
 
     @Test
+    void enrollFailsWhenTheResolvedSectionHasItsClosureClosed() {
+        givenStudentWithOpenWindow();
+        when(courseEnrollmentRepository.findByStudentIdAndCourseIdAndStatusIn(any(), any(), any())).thenReturn(List.of());
+        when(courseCatalogFinder.findActiveModules(COURSE_ID)).thenReturn(List.of(new CourseModuleView(21L, "Modulo 1")));
+        when(courseCatalogFinder.findSectionsOpenForEnrollmentOfModule(21L)).thenReturn(List.of(sectionView(31L, 21L)));
+        doThrow(new SectionClosureClosedException(31L)).when(sectionClosureGuard).requireNotClosed(SectionKind.COURSE, 31L);
+
+        assertThatThrownBy(() -> service.enroll(7L, new CreateCourseEnrollmentRequest(COURSE_ID, null)))
+                .isInstanceOf(SectionClosureClosedException.class);
+        verify(courseEnrollmentRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
     void enrollFailsWhenAModuleHasSeveralSectionsAndNoneWasChosen() {
         givenStudentWithOpenWindow();
         when(courseEnrollmentRepository.findByStudentIdAndCourseIdAndStatusIn(any(), any(), any())).thenReturn(List.of());
         when(courseCatalogFinder.findActiveModules(COURSE_ID)).thenReturn(List.of(new CourseModuleView(21L, "Modulo 1")));
-        when(courseCatalogFinder.findActiveSectionsOfModule(21L)).thenReturn(List.of(sectionView(31L, 21L), sectionView(32L, 21L)));
+        when(courseCatalogFinder.findSectionsOpenForEnrollmentOfModule(21L)).thenReturn(List.of(sectionView(31L, 21L), sectionView(32L, 21L)));
 
         assertThatThrownBy(() -> service.enroll(7L, new CreateCourseEnrollmentRequest(COURSE_ID, null)))
                 .isInstanceOf(AmbiguousSectionException.class);
@@ -229,7 +247,7 @@ class CourseEnrollmentRulesTest {
         givenStudentWithOpenWindow();
         when(courseEnrollmentRepository.findByStudentIdAndCourseIdAndStatusIn(any(), any(), any())).thenReturn(List.of());
         when(courseCatalogFinder.findActiveModules(COURSE_ID)).thenReturn(List.of(new CourseModuleView(21L, "Modulo 1")));
-        when(courseCatalogFinder.findActiveSectionsOfModule(21L)).thenReturn(List.of(sectionView(31L, 21L), sectionView(32L, 21L)));
+        when(courseCatalogFinder.findSectionsOpenForEnrollmentOfModule(21L)).thenReturn(List.of(sectionView(31L, 21L), sectionView(32L, 21L)));
 
         assertThatThrownBy(() -> service.enroll(7L, new CreateCourseEnrollmentRequest(COURSE_ID, Map.of(21L, 999L))))
                 .isInstanceOf(AmbiguousSectionException.class);
@@ -412,7 +430,7 @@ class CourseEnrollmentRulesTest {
         givenStudentWithOpenWindow();
         when(courseEnrollmentRepository.findByStudentIdAndCourseIdAndStatusIn(any(), any(), any())).thenReturn(List.of());
         when(courseCatalogFinder.findActiveModules(COURSE_ID)).thenReturn(List.of(new CourseModuleView(21L, "Modulo 1")));
-        when(courseCatalogFinder.findActiveSectionsOfModule(21L)).thenReturn(List.of(sectionView(31L, 21L)));
+        when(courseCatalogFinder.findSectionsOpenForEnrollmentOfModule(21L)).thenReturn(List.of(sectionView(31L, 21L)));
         when(courseCatalogFinder.findCourseEntity(COURSE_ID)).thenReturn(course);
         when(courseCatalogFinder.hasCapacityFor(COURSE_ID, 0L)).thenReturn(true);
         when(courseEnrollmentRepository.saveAndFlush(any(CourseEnrollment.class))).thenAnswer(inv -> inv.getArgument(0));

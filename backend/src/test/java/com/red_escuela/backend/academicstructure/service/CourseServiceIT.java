@@ -1,15 +1,16 @@
 package com.red_escuela.backend.academicstructure.service;
 
+import com.red_escuela.backend.testsupport.PreceptorTestFactory;
 import com.red_escuela.backend.academicstructure.CycleTestFixtures;
 import com.red_escuela.backend.academicstructure.dto.CreateCourseRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateCourseRequest;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.TeachingMode;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.academicstructure.exception.CourseNotFoundException;
+import com.red_escuela.backend.academicstructure.domain.CourseNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.InvalidRegistrationWindowException;
 import com.red_escuela.backend.academicstructure.exception.OfferingListPriceNotPositiveException;
-import com.red_escuela.backend.academicstructure.exception.TermNotFoundException;
+import com.red_escuela.backend.academicstructure.api.TermNotFoundException;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.Currency;
@@ -39,6 +40,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @ActiveProfiles("test")
 @Transactional
 class CourseServiceIT extends AbstractIntegrationTest {
+    @org.springframework.beans.factory.annotation.Autowired
+    private PreceptorTestFactory preceptors;
+
 
     private static final long MISSING_ID = 987_654_321L;
     private static final LocalDateTime OPENING = LocalDateTime.of(2040, 2, 1, 9, 0);
@@ -76,7 +80,7 @@ class CourseServiceIT extends AbstractIntegrationTest {
     }
 
     private CreateCourseRequest request(String name, Money price, Currency currency, LocalDateTime start, LocalDateTime end) {
-        return new CreateCourseRequest(name, term.getId(), "Lunes 18hs", 30, price, 6, TeachingMode.ONLINE, start, end, currency);
+        return new CreateCourseRequest(name, term.getId(), "Lunes 18hs", 30, price, 6, TeachingMode.ONLINE, start, end, currency, null, java.util.List.of(preceptors.createPreceptorId()));
     }
 
     private Course createCourse(String name) {
@@ -146,7 +150,7 @@ class CourseServiceIT extends AbstractIntegrationTest {
 
     @Test
     void creatingACourseInAMissingTermFailsWithNotFound() {
-        CreateCourseRequest request = new CreateCourseRequest("Sin ciclo", MISSING_ID, null, 10, ars("100"), 3, null, null, null, null);
+        CreateCourseRequest request = new CreateCourseRequest("Sin ciclo", MISSING_ID, null, 10, ars("100"), 3, null, null, null, null, null, java.util.List.of(preceptors.createPreceptorId()));
 
         assertThatThrownBy(() -> courseService.create(request)).isInstanceOf(TermNotFoundException.class);
     }
@@ -248,6 +252,20 @@ class CourseServiceIT extends AbstractIntegrationTest {
     void deactivatingOrReactivatingAMissingCourseFailsWithNotFound() {
         assertThatThrownBy(() -> courseService.deactivate(MISSING_ID)).isInstanceOf(CourseNotFoundException.class);
         assertThatThrownBy(() -> courseService.reactivate(MISSING_ID)).isInstanceOf(CourseNotFoundException.class);
+    }
+
+    @Test
+    void listFiltersByCatalogArea() {
+        Course technology = createCourse("Area tecnologia");
+        technology.setCatalogArea(com.red_escuela.backend.academicstructure.domain.CatalogArea.TECHNOLOGY);
+        Course health = createCourse("Area salud");
+        health.setCatalogArea(com.red_escuela.backend.academicstructure.domain.CatalogArea.HEALTH);
+        Course withoutArea = createCourse("Area ninguna");
+        entityManager.flush();
+
+        List<Long> onlyTechnology = ids(courseService.list(null, null, com.red_escuela.backend.academicstructure.domain.CatalogArea.TECHNOLOGY));
+
+        assertThat(onlyTechnology).contains(technology.getId()).doesNotContain(health.getId(), withoutArea.getId());
     }
 
     @Test

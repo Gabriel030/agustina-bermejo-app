@@ -16,9 +16,15 @@ import java.util.Optional;
 @Repository
 public interface SubjectSectionRepository extends JpaRepository<SubjectSection, Long> {
 
+    @Query("select new com.red_escuela.backend.academicstructure.repository.EndedSection(s.id, s.term.endDate) from SubjectSection s where s.status = :status and s.term.endDate >= :from and s.term.endDate < :until")
+    List<EndedSection> findEndedByStatus(@Param("status") StatusType status, @Param("from") java.time.LocalDateTime from, @Param("until") java.time.LocalDateTime until);
+
+
     boolean existsByCode(String code);
 
     List<SubjectSection> findBySubjectId(Long subjectId);
+
+    boolean existsBySubjectId(Long subjectId);
 
     List<SubjectSection> findByAcademicOfferingCycleId(Long cycleId);
 
@@ -31,14 +37,14 @@ public interface SubjectSectionRepository extends JpaRepository<SubjectSection, 
 
     boolean existsByEvaluationSchemeId(Long evaluationSchemeId);
 
-    @Query("select s.evaluationScheme.id from SubjectSection s where s.id = :id")
+    @Query("select s.evaluationSchemeId from SubjectSection s where s.id = :id")
     Optional<Long> findEvaluationSchemeIdById(@Param("id") Long id);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select s from SubjectSection s where s.id = :id")
     Optional<SubjectSection> findByIdForUpdate(@Param("id") Long id);
 
-    @Query("select s from SubjectSection s left join fetch s.evaluationScheme left join fetch s.term "
+    @Query("select s from SubjectSection s left join fetch s.term "
             + "left join fetch s.academicOfferingCycle c left join fetch c.term where s.id = :id")
     Optional<SubjectSection> findByIdWithSchemeAndTerms(@Param("id") Long id);
 

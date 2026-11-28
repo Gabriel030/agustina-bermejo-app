@@ -1,12 +1,14 @@
 package com.red_escuela.backend.enrollment.service;
 
-import com.red_escuela.backend.billing.entity.ProgramCohort;
-import com.red_escuela.backend.billing.service.ProgramCohortService;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.api.ProgramCohortFinder;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplicationStatus;
 import com.red_escuela.backend.enrollment.exception.AdmissionFeeAwaitingPaymentException;
 import com.red_escuela.backend.enrollment.exception.AlreadyHasPendingApplicationException;
 import com.red_escuela.backend.enrollment.exception.DniRequiredException;
+import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentCohortProgramMismatchException;
+import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentCohortRequiredException;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentApplicationRepository;
 import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.enrollment.events.ProgramApplicationReceivedEvent;
@@ -24,7 +26,7 @@ public class ProgramApplicationRegistrar {
     private final ProgramEnrollmentApplicationRepository applicationRepository;
     private final ProgramSubjectReferenceFinder programSubjectReferenceFinder;
     private final ProgramEnrollmentService programEnrollmentService;
-    private final ProgramCohortService programCohortService;
+    private final ProgramCohortFinder programCohortFinder;
     private final CatalogAvailabilityGuard catalogAvailabilityGuard;
     private final Clock clock;
     private final ApplicationEventPublisher eventPublisher;
@@ -32,14 +34,14 @@ public class ProgramApplicationRegistrar {
     public ProgramApplicationRegistrar(ProgramEnrollmentApplicationRepository applicationRepository,
                                        ProgramSubjectReferenceFinder programSubjectReferenceFinder,
                                        ProgramEnrollmentService programEnrollmentService,
-                                       ProgramCohortService programCohortService,
+                                       ProgramCohortFinder programCohortFinder,
                                        CatalogAvailabilityGuard catalogAvailabilityGuard,
                                        Clock clock,
                                        ApplicationEventPublisher eventPublisher) {
         this.applicationRepository = applicationRepository;
         this.programSubjectReferenceFinder = programSubjectReferenceFinder;
         this.programEnrollmentService = programEnrollmentService;
-        this.programCohortService = programCohortService;
+        this.programCohortFinder = programCohortFinder;
         this.catalogAvailabilityGuard = catalogAvailabilityGuard;
         this.clock = clock;
         this.eventPublisher = eventPublisher;
@@ -47,9 +49,15 @@ public class ProgramApplicationRegistrar {
 
     @Transactional
     public ProgramEnrollmentApplication register(Student student, Long programId, Long cohortId) {
+        if (cohortId == null) {
+            throw new ProgramEnrollmentCohortRequiredException(programId);
+        }
         var program = programSubjectReferenceFinder.findProgram(programId);
         catalogAvailabilityGuard.requireProgramListed(program);
-        ProgramCohort cohort = programCohortService.findOrThrow(cohortId);
+        ProgramCohort cohort = programCohortFinder.findOrThrow(cohortId);
+        if (!programId.equals(cohort.getProgramId())) {
+            throw new ProgramEnrollmentCohortProgramMismatchException(cohort.getId(), programId);
+        }
         programEnrollmentService.validateAdmissionWindow(cohort);
 
         applicationRepository

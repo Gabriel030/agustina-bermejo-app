@@ -24,6 +24,7 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [specs.md](context/specs.md) | Dónde viven las specs y el roadmap (Obsidian) | vigente |
 | [cell.md](context/cell.md) | Célula de agentes: roles, arranque de sesiones, flujo de un ticket, local vs nube | vigente |
 | [plans/TEMPLATE.md](cell/plans/TEMPLATE.md) | Plantilla de plan de la célula (`docs/cell/plans/<ticket>.md`) | vigente |
+| [handoffs/1643-P7.md](cell/handoffs/1643-P7.md) | Handoff de E34-B P7: hallazgos pendientes de la revisión independiente | vigente |
 | [plans/920.md](cell/plans/920.md) | Cierre de la Fase 1 de comunicación masiva: residual derivado | vigente |
 | [plans/921.md](cell/plans/921.md) | Residual de la lista de espera: vencimiento de colas de materias y auditoría de promoción automática | vigente |
 | [plans/932.md](cell/plans/932.md) | Residual de la Fase 2: variables faltantes en la vista previa, contrato y OR por clave | vigente |
@@ -34,9 +35,15 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [plans/955.md](cell/plans/955.md) | Cierre de 24-B: el dueño aprueba el cambio de email pedido por el personal | vigente |
 | [plans/956.md](cell/plans/956.md) | Cierre de 24-D: límites de tamaño de subidas probados con servidor real | vigente |
 | [plans/1196.md](cell/plans/1196.md) | E29-D11: invitaciones por oleadas a alumnos importados | vigente |
+| [plans/1103-piloto.md](cell/plans/1103-piloto.md) | Piloto por capas de #1103: constancia de materias aprobadas (M1-b), plantilla publicada en todos los documentos (T1d) y excepción por deuda (D1c) | vigente |
+| [plans/1103.md](cell/plans/1103.md) | Lo entregado de #1103: M1-b, plantilla publicada en los documentos (T1d) y excepción por deuda (D1c), con cobertura y pendientes | vigente |
+| [handoffs/1103-piloto.md](cell/handoffs/1103-piloto.md) | Handoff del piloto por capas de #1103: horas de merge de P0 a P15, denegaciones del clasificador, choques y qué queda | vigente |
 | [plans/e22-11-12.md](cell/plans/e22-11-12.md) | E22 22.11 y 22.12: eventos síncronos entre módulos (síncronos a propósito, probados; billing con compuerta) | vigente |
 | [reports/e18-violaciones.md](cell/reports/e18-violaciones.md) | E18 M0: violaciones de Modulith medidas, ciclos, dependencias hacia arriba y procesos a cortar | vigente |
+| [reports/e18-m5-billing.md](cell/reports/e18-m5-billing.md) | E18 M5: plan por etapas para bajar billing→enrollment y billing→academicstructure, con medición y primera rebanada | vigente |
 | [reports/e25-b2-invariantes.md](cell/reports/e25-b2-invariantes.md) | E25 B2 S1: invariantes que solo protege el código, candidatas a único parcial o CHECK, con queries de verificación | vigente |
+| [progress/1643-P3.md](cell/progress/1643-P3.md) | Estado de E34-B P3: fin de término con 14 días de gracia | vigente |
+| [handoffs/1643-P3.md](cell/handoffs/1643-P3.md) | Handoff de E34-B P3 parte 2: cierre automático de matrículas por notas | vigente |
 | `cell/progress/` | Estado de cada subtarea de la célula; se genera por rama y no se lista uno por uno | vigente |
 | [progress/921-1.md](cell/progress/921-1.md) | Estado de la subtarea 921#1 (listas de espera, consulta del personal) | vigente |
 | [progress/e2-2-4a.md](cell/progress/e2-2-4a.md) | Estado de E2 2.4a (mapa curricular del alumno: correlativas completas e inscripción vigente) | vigente |
@@ -51,13 +58,28 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [release/institution-sms-credential.md](release/institution-sms-credential.md) | Qué hacer si `institution.sms_password` tenía una credencial cargada antes de V214 | vigente |
 | [release/permission-modes-runbook.md](release/permission-modes-runbook.md) | Modos LEGACY/SHADOW/ENFORCE de la grilla de permisos: rollback sin deploy, lectura de discrepancias y criterio para salir de SHADOW | vigente |
 | [deploy/README.md](deploy/README.md) | Runbook de despliegue de producción: primer despliegue, actualización con migraciones, rollback, secretos y logs | vigente |
+| [deploy/local-con-dominio-y-seed.md](deploy/local-con-dominio-y-seed.md) | Runbook para levantar local con dominio (`escuela.localhost`) y datos demo sembrados: variables, Flyway V1 a V484, seed, qué se ejecutó y qué no, y qué depende de Gabriel | vigente |
 | [security/plan-produccion.md](security/plan-produccion.md) | Seguridad de producción (Épica 29, bloque G): diagnóstico de sesión, CSP, auditoría y matriz de autorización; planes de cookie HttpOnly, CSP con nonce y audit log | vigente |
+| [security/csp-estilos-inventario.md](security/csp-estilos-inventario.md) | Inventario de estilos inline para una CSP estricta (#919): política actual del Caddyfile, orígenes de `style` con conteos reproducibles, qué librerías inyectan `<style>` y propuesta de etapas | vigente |
 | [security/audit-2026-11-03-status.md](security/audit-2026-11-03-status.md) | Estado de los hallazgos de la auditoría del 3-nov-2026: 12 cerrados y 4 abiertos (parciales) | vigente |
+| [security/audit-24-4-batch-3b-authz.md](security/audit-24-4-batch-3b-authz.md) | Auditoría 24.4 lote 3b: ownership de los `{id}` de `/me`, hallazgo H-3b-1 (rutas de alumno sobre personal con ficha de alumno) y corte hacia 3c | vigente |
+| [security/audit-24-4-batch-3c-authz.md](security/audit-24-4-batch-3c-authz.md) | Auditoría 24.4 lote 3c: rutas de personal de `billing`, `graduation`, `notification` e `identity`; verificado sin cambio y un IT de ownership nuevo | vigente |
+| [security/audit-24-4b-me-coverage.md](security/audit-24-4b-me-coverage.md) | Auditoría 24.4b (#1697 S1): inventario de las 66 rutas `/me/**` sin id con su test de aislamiento real (17 con aislamiento, 36 solo funcional, 13 sin test) y los «6 endpoints» con tres lecturas posibles | vigente |
+| [cell/handoffs/1108-w18.md](cell/handoffs/1108-w18.md) | Handoff de W18 (#1108, 24.4 lote 3c): qué se verificó del lote 3b, qué faltaba y qué buscar | histórico |
+| [cell/handoffs/1638-S9b.md](cell/handoffs/1638-S9b.md) | Handoff de E34-A S9b (#1638): motor de simulación de cinco años, causa del 409 de billing en la segunda corrida y expectativas débiles que quedan | vigente |
+| [cell/handoffs/1638-S9c.md](cell/handoffs/1638-S9c.md) | Handoff de E34-A S9c (#1638): invariantes SQL y reporte de la simulación de cinco años, sabotaje por invariante y el hallazgo de egreso aceptado sin materias aprobadas | vigente |
+| [cell/handoffs/1643-p1b-1.md](cell/handoffs/1643-p1b-1.md) | Handoff de E34-B P1b parte 1 (#1643): matrícula y cohorte apuntan al plan, fixtures que fallaban y qué faltaba correr | histórico |
+| [cell/handoffs/1643-p1b-2.md](cell/handoffs/1643-p1b-2.md) | Handoff de E34-B P1b parte 2 (#1643): fixtures corregidos con cohorte y plan, suites corridas y quién depende de `LegacyFixturePlanFiller` | vigente |
 | [security/pentest-interno.md](security/pentest-interno.md) | Plan de pentest interno (E29 G7 / 24.6a): reglas de juego, casos por flujo, criterio de aprobación, perfiles ZAP, plantilla de hallazgos y qué queda para el externo | vigente |
+| [security/pentest-informe-2026-11.md](security/pentest-informe-2026-11.md) | Informe final del pentest interno (E29 G7-d): alcance, método, resultados L1 a L6, hallazgos con su remediación (#1400, #1403) y riesgos abiertos | vigente |
 | [security/secrets-rotation.md](security/secrets-rotation.md) | Procedimiento de rotación de secretos de producción (JWT, base, backups, proveedores): impacto, pasos, verificación, rollback y checklist de ensayo en staging | vigente |
+| [security/audit-24-4-batch-1-auth.md](security/audit-24-4-batch-1-auth.md) | Auditoría 24.4 lote 1 (identidad: H6 login, H7 JWT, H20 registro): qué se verificó sin cambio y qué se corrigió (audiencia del JWT, clave con caracteres distintos) | vigente |
+| [security/audit-24-4-batch-2-inputs.md](security/audit-24-4-batch-2-inputs.md) | Auditoría 24.4 lote 2 (H8 subidas, H17 LIKE, H18 webhook de Mercado Pago): un hallazgo corregido en la búsqueda de firmantes y el resto verificado sin cambio | vigente |
+| [security/audit-24-4-batch-3a-authz.md](security/audit-24-4-batch-3a-authz.md) | Auditoría 24.4 lote 3a (H14 autorización y ownership): filas `ownership` de comisión, mesa, recovery, configuración de evaluación y facturas del alumno; todo verificado sin cambio de producción | vigente |
 | [legal/derechos-de-las-personas.md](legal/derechos-de-las-personas.md) | Procedimiento para pedidos de acceso, rectificación y supresión de datos personales (Épica 29, C5): inventario de datos, qué no se puede borrar, plantillas y paquetes futuros; pendiente de abogado | borrador |
 | [deploy/backup-and-restore.md](deploy/backup-and-restore.md) | Backups de Postgres, runbook de restauración, prueba automática de restauración, RPO/RTO y variables | vigente |
 | [deploy/monitoring.md](deploy/monitoring.md) | Alerta de caída (uptime-check), perfil Prometheus/Alertmanager/Grafana y qué hacer ante una caída | vigente |
+| [deploy/glitchtip.md](deploy/glitchtip.md) | Overlay de GlitchTip autoalojado: versión y fuente de los nombres, acceso solo por loopback, primer arranque, retención, actualización, privacidad y recursos (no medidos) | vigente |
 | [deploy/sentry.md](deploy/sentry.md) | Reporte de errores 5xx del backend a Sentry: cómo activarlo, qué se depura y advertencia de privacidad | vigente |
 | [deploy/backup-status.schema.json](deploy/backup-status.schema.json) | JSON Schema (draft 2020-12, `schemaVersion` 1) del archivo de estado que escriben los scripts de backup y lee `GET /backups/status` | vigente |
 | [deploy/backup-and-restore.md](deploy/backup-and-restore.md) | Backups de Postgres, runbook de restauración, prueba automática de restauración, RPO/RTO y variables | vigente |
@@ -75,6 +97,7 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [adr/0005-venta-por-instituto-y-modulos-activables.md](adr/0005-venta-por-instituto-y-modulos-activables.md) | Venta por instituto, módulo `platform`, `PLATFORM_ADMIN` | aceptado, sin implementar |
 | [adr/0006-modo-espejo-de-facturacion.md](adr/0006-modo-espejo-de-facturacion.md) | Modo espejo de facturación | propuesto |
 | [adr/0007-vocabulario-de-roles-y-migracion-de-carpetas.md](adr/0007-vocabulario-de-roles-y-migracion-de-carpetas.md) | Vocabulario de roles (`service` a `specialist`) y migración de carpetas | aceptado |
+| [adr/0008-vistas-materializadas.md](adr/0008-vistas-materializadas.md) | Vistas materializadas: no por ahora; qué medición reabre el tema | aceptado |
 
 ## Arquitectura de módulos (`docs/architecture/`)
 

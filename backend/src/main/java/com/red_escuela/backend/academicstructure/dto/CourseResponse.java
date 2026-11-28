@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.dto;
 
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.shared.domain.Money;
 import com.red_escuela.backend.shared.module.CatalogPriced;
@@ -18,8 +19,11 @@ public class CourseResponse implements CatalogPriced<CourseResponse> {
     private final Integer capacity;
     private final Money price;
     private final Integer durationMonths;
+    private final Integer durationHours;
     private final String status;
     private final boolean visibleInCatalog;
+    private final String area;
+    private final LocalDateTime catalogPublishedAt;
     private final String teachingMode;
     private final LocalDateTime registrationStart;
     private final LocalDateTime registrationEnd;
@@ -56,11 +60,14 @@ public class CourseResponse implements CatalogPriced<CourseResponse> {
                 .capacity(course.getCapacity())
                 .price(price)
                 .durationMonths(course.getDurationMonths())
+                .durationHours(course.getDurationHours())
                 .status(course.getIsActive() == null ? null : course.getIsActive().name())
                 .visibleInCatalog(course.isVisibleInCatalog())
+                .area(course.getCatalogArea() == null ? null : course.getCatalogArea().name())
+                .catalogPublishedAt(course.getCatalogPublishedAt())
                 .teachingMode(course.getTeachingMode() == null ? null : course.getTeachingMode().name())
                 .registrationStart(course.getRegistrationStart())
                 .registrationEnd(course.getRegistrationEnd())
-                .registrationOpen(course.isRegistrationOpenAt(LocalDateTime.now()));
+                .registrationOpen(course.isRegistrationOpenAt(ApplicationTime.now()));
     }
 }

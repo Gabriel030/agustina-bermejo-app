@@ -21,7 +21,7 @@ import com.red_escuela.backend.billing.invoice.domain.InvoiceFactory;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceIssuingReason;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceLineDraft;
 import com.red_escuela.backend.billing.invoice.domain.InvoiceType;
-import com.red_escuela.backend.billing.entity.CohortIntake;
+import com.red_escuela.backend.academicstructure.domain.CohortIntake;
 import com.red_escuela.backend.billing.invoice.domain.StudentSnapshot;
 import com.red_escuela.backend.billing.invoice.operation.IssuingScenarioFactory;
 import com.red_escuela.backend.billing.invoice.service.InvoiceNumberGenerator;
@@ -363,7 +363,7 @@ class AnnualUpfrontQuoteControllerIT extends AbstractStudentDiscountIssuingIT {
         PaymentStandingSeed.seedProgramEnrollmentStanding(jdbc, learner.programEnrollmentId(), EnrollmentPaymentStatus.UP_TO_DATE);
         assertThat(studentQuote().get("eligible").asBoolean()).isTrue();
         for (String status : List.of("PAUSED", "COMPLETED", "WITHDRAWN")) {
-            jdbc.update("update program_enrollment set status = ? where id = ?", status, learner.programEnrollmentId());
+            jdbc.update("update program_enrollment set status = ?, withdrawal_effective_date = case when ? = 'WITHDRAWN' then date '2000-01-01' end, completion_date = case when ? = 'COMPLETED' then timestamp '2000-01-01 00:00:00' end where id = ?", status, status, status, learner.programEnrollmentId());
             assertThat(studentQuote().get("reasonCode").asString("")).as(status).isEqualTo("ENROLLMENT_NOT_ACTIVE");
         }
     }

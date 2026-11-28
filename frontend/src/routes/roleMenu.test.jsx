@@ -4,7 +4,7 @@ import { ROLE_MENU, groupMenuItems, menuGroupSlugs, menuItemsFor, pagesFor } fro
 import { roleRoutesFor } from '@/routes/featureRoutes';
 import { hasRealScreen } from '@/routes/menuAccess';
 
-const LEGACY_REDIRECT_PATHS = ['listas-de-espera'];
+const LEGACY_REDIRECT_PATHS = ['listas-de-espera', 'opciones'];
 const PENDING_SCREENS = { alumno: [], administrativo: [], director: [] };
 
 describe('role menu manifest', () => {
@@ -63,7 +63,7 @@ describe('role menu manifest', () => {
 
   it('drops groups left without visible items', () => {
     const withoutAcademic = menuItemsFor('director').filter(
-      (item) => !['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'mesas-de-examen', 'cierres-de-comision', 'periodos', 'constancias', 'constancias-por-excepcion', 'egresos', 'plantilla-de-certificados', 'firmantes'].some((slug) => item.to.endsWith(slug)),
+      (item) => !['oferta-academica', 'gestion-academica', 'esquemas-evaluacion', 'mesas-de-examen', 'cierres-de-comision', 'solicitudes-de-asistencia', 'periodos', 'constancias', 'constancias-por-excepcion', 'egresos', 'plantilla-de-certificados', 'firmantes'].some((slug) => item.to.endsWith(slug)),
     );
     expect(groupMenuItems('director', withoutAcademic).map((group) => group.id)).not.toContain('academic');
   });
@@ -76,7 +76,80 @@ describe('role menu manifest', () => {
   });
 
   it('has no grouping for roles without a definition', () => {
-    expect(groupMenuItems('alumno', menuItemsFor('alumno'))).toBeNull();
+    expect(groupMenuItems('docente', menuItemsFor('docente'))).toBeNull();
+  });
+
+  it.each(Object.keys(ROLE_MENU))('never lists an options entry in the menu of %s', (role) => {
+    const items = menuItemsFor(role);
+    const groups = groupMenuItems(role, items) ?? [];
+    const labels = [...items, ...groups.flatMap((group) => group.items)].map((item) => item.label);
+    expect(labels).not.toContain('Opciones');
+    expect([...items, ...groups.flatMap((group) => group.items)].map((item) => item.to)).not.toContain(`/${role}/opciones`);
+    expect(pagesFor(role)).not.toContain('opciones');
+  });
+
+  it('groups the student menu keeping order and the catalog link without any options entry', () => {
+    const groups = groupMenuItems('alumno', menuItemsFor('alumno'));
+    expect(groups.map((group) => group.label)).toEqual([null, 'Estudios', null, null, null]);
+    expect(groups.flatMap((group) => group.items.map((item) => item.label))).toEqual([
+      'Inicio', 'Calendario', 'Mis cursos', 'Mis carreras', 'Mis certificados', 'Pagos', 'Oferta académica', 'Reuniones informativas',
+    ]);
+  });
+
+  it('marksTheStudentOfferingEntryAsAPanelPointingAtTheCatalog', () => {
+    const groups = groupMenuItems('alumno', menuItemsFor('alumno'));
+    const catalog = groups.find((group) => group.id === 'catalog');
+    expect(catalog.panel).toBe('catalog');
+    expect(catalog.items.map((item) => item.to)).toEqual(['/catalogo']);
+    expect(groups.filter((group) => group.panel)).toHaveLength(1);
+  });
+
+  it('gives the informative sessions entry its own group right after the catalog and as the last group', () => {
+    const groups = groupMenuItems('alumno', menuItemsFor('alumno'));
+    const ids = groups.map((group) => group.id);
+    const own = groups.find((group) => group.id === 'informative-sessions');
+    expect(own.items.map((item) => item.to)).toEqual(['/alumno/reuniones-informativas']);
+    expect(ids.indexOf('informative-sessions')).toBe(ids.indexOf('catalog') + 1);
+    expect(ids).not.toContain('account');
+    expect(ids.at(-1)).toBe('informative-sessions');
+  });
+
+  it('orders the director groups as defined with the approvals entry after the institution group', () => {
+    const groups = groupMenuItems('director', menuItemsFor('director'));
+    expect(groups.map((group) => group.id)).toEqual(['main', 'people', 'waitlists', 'academic', 'billing', 'institution', 'approvals']);
+    expect(groups.find((group) => group.id === 'people').items.map((item) => item.label)).toEqual(['Alumnos', 'Personal', 'Comunicaciones', 'Invitaciones']);
+  });
+
+  it('builds the director academic grid with its three sections in order', () => {
+    const academic = groupMenuItems('director', menuItemsFor('director')).find((group) => group.id === 'academic');
+    expect(academic.sections.map((section) => [section.label, section.items.map((item) => item.label)])).toEqual([
+      ['Oferta y períodos', ['Oferta académica', 'Gestión académica', 'Esquemas de evaluación', 'Períodos']],
+      ['Cursada', ['Mesas de examen', 'Cierres de comisión', 'Solicitudes de asistencia']],
+      ['Egresos y certificados', ['Egresos', 'Plantilla de certificados', 'Firmantes', 'Constancias', 'Emitir por excepción']],
+    ]);
+    expect(academic.items).toHaveLength(12);
+  });
+
+  it('keeps the director billing and institution menus as plain ordered lists', () => {
+    const groups = groupMenuItems('director', menuItemsFor('director'));
+    const billing = groups.find((group) => group.id === 'billing');
+    expect(billing.sections).toBeUndefined();
+    expect(billing.items.map((item) => item.to.replace('/director/', ''))).toEqual([
+      'facturacion', 'emision-mensual', 'recordatorios-de-pago', 'medios-de-pago', 'terminos-del-pago-anual', 'precios', 'descuentos', 'financiero',
+    ]);
+    const institution = groups.find((group) => group.id === 'institution');
+    expect(institution.sections).toBeUndefined();
+    expect(institution.items.map((item) => item.to.replace('/director/', ''))).toEqual([
+      'ajustes-del-instituto', 'importacion-inicial', 'auditoria', 'permisos', 'backups',
+    ]);
+  });
+
+  it('lists every visible director slug exactly once in the menu groups', () => {
+    const visible = ROLE_MENU.director.filter((entry) => entry.slug && !entry.hidden).map((entry) => entry.slug);
+    const grouped = groupMenuItems('director', menuItemsFor('director')).flatMap((group) => group.items.map((item) => item.to.replace('/director/', '')));
+    expect([...grouped].sort()).toEqual([...visible].sort());
+    expect(new Set(grouped).size).toBe(grouped.length);
+    expect(menuGroupSlugs('director').filter((slug) => !visible.includes(slug))).toEqual([]);
   });
 
   it.each(['docente', 'preceptor', 'administrativo', 'director'])('exposes the exam boards screen to %s with its route', (role) => {
@@ -107,11 +180,85 @@ describe('role menu manifest', () => {
     expect(academic.items.map((item) => item.to)).toContain('/director/cierres-de-comision');
   });
 
-  it('menu entry lives under Enrollments', () => {
-    const enrollment = groupMenuItems('director', menuItemsFor('director')).find((group) => group.id === 'enrollment');
-    expect(enrollment.label).toBe('Inscripciones');
+  it('lists the attendance requests of the director under the academic group', () => {
+    const academic = groupMenuItems('director', menuItemsFor('director')).find((group) => group.id === 'academic');
+    expect(academic.items.map((item) => item.to)).toContain('/director/solicitudes-de-asistencia');
+  });
+
+  it('menu entry is a standalone link for the director', () => {
+    const enrollment = groupMenuItems('director', menuItemsFor('director')).find((group) => group.id === 'waitlists');
+    expect(enrollment.label).toBeNull();
     expect(enrollment.items.map((item) => item.to)).toEqual(['/director/inscripciones/listas-de-espera']);
     expect(roleRoutesFor('director').map((route) => route.path)).toContain('inscripciones/listas-de-espera');
     expect(pagesFor('director')).not.toContain('listas-de-espera');
+  });
+
+  it.each(['administrativo', 'subdirector'])('lists every visible %s slug exactly once in the menu groups', (role) => {
+    const visible = ROLE_MENU[role].filter((entry) => entry.slug && !entry.hidden).map((entry) => entry.slug);
+    const grouped = groupMenuItems(role, menuItemsFor(role)).flatMap((group) => group.items.map((item) => item.to.replace(`/${role}/`, '')));
+    expect([...grouped].sort()).toEqual([...visible].sort());
+    expect(new Set(grouped).size).toBe(grouped.length);
+    expect(menuGroupSlugs(role).filter((slug) => !visible.includes(slug))).toEqual([]);
+  });
+
+  it('orders the administrative groups with the academic grid in the middle', () => {
+    const groups = groupMenuItems('administrativo', menuItemsFor('administrativo'));
+    expect(groups.map((group) => group.id)).toEqual(['main', 'people', 'enrollment', 'academic', 'billing', 'approvals']);
+    expect(groups.find((group) => group.id === 'billing').items).toHaveLength(7);
+    expect(groups.find((group) => group.id === 'billing').sections).toBeUndefined();
+    expect(groups.find((group) => group.id === 'enrollment').items.map((item) => item.label)).toEqual(['Solicitudes de ingreso', 'Listas de espera']);
+  });
+
+  it('builds the academic sections of the administrative role', () => {
+    const academic = groupMenuItems('administrativo', menuItemsFor('administrativo')).find((group) => group.id === 'academic');
+    expect(academic.sections.map((section) => [section.label, section.items.length])).toEqual([
+      ['Oferta y períodos', 3],
+      ['Cursada', 3],
+      ['Egresos y certificados', 6],
+    ]);
+    expect(academic.items).toHaveLength(12);
+    expect(academic.items.map((item) => item.to)).toEqual(academic.sections.flatMap((section) => section.items.map((item) => item.to)));
+  });
+
+  it('keeps the exception certificates out of the subdirector and adds the permissions link last', () => {
+    const groups = groupMenuItems('subdirector', menuItemsFor('subdirector'));
+    const academic = groups.find((group) => group.id === 'academic');
+    expect(academic.items).toHaveLength(11);
+    expect(academic.items.map((item) => item.to)).not.toContain('/subdirector/constancias-por-excepcion');
+    expect(groups.at(-1).items.map((item) => item.to)).toEqual(['/subdirector/permisos']);
+  });
+
+  it('drops academic sections left without visible items and the group when none remain', () => {
+    const without = (slugs) => menuItemsFor('administrativo').filter((item) => !slugs.some((slug) => item.to.endsWith(`/${slug}`)));
+    const noCoursework = groupMenuItems('administrativo', without(['mesas-de-examen', 'cierres-de-comision', 'solicitudes-de-asistencia']));
+    expect(noCoursework.find((group) => group.id === 'academic').sections.map((section) => section.label)).toEqual(['Oferta y períodos', 'Egresos y certificados']);
+
+    const allAcademic = menuGroupSlugs('administrativo').filter((slug) => !['inicio', 'aprobaciones'].includes(slug));
+    const noAcademic = groupMenuItems('administrativo', without(allAcademic));
+    expect(noAcademic.map((group) => group.id)).toEqual(['main', 'approvals']);
+  });
+
+  it.each(['docente', 'preceptor', 'platform_admin'])('keeps %s as a flat list without groups and with unique entries', (role) => {
+    const items = menuItemsFor(role);
+
+    expect(groupMenuItems(role, items)).toBeNull();
+    expect(new Set(items.map((item) => item.to)).size).toBe(items.length);
+  });
+
+  it('keeps the preceptor entries in the agreed order', () => {
+    expect(menuItemsFor('preceptor').map((item) => item.label)).toEqual([
+      'Inicio',
+      'Alumnos',
+      'Solicitudes de ingreso',
+      'Listas de espera',
+      'Oferta académica',
+      'Mesas de examen',
+      'Solicitudes de asistencia',
+      'Períodos',
+    ]);
+  });
+
+  it('hides the platform admin home from the menu', () => {
+    expect(menuItemsFor('platform_admin').map((item) => item.label)).toEqual(['Módulos', 'Primer director', 'Auditoría', 'Backups']);
   });
 });

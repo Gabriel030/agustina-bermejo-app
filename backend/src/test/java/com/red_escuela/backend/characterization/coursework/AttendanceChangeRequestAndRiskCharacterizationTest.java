@@ -43,7 +43,7 @@ class AttendanceChangeRequestAndRiskCharacterizationTest extends CourseworkChara
     @Test
     void riskReportsLibreWhenAbsencePercentageExceedsTheConfiguredMaximum() throws Exception {
         Classroom classroom = classroomWithMaxAbsence("risk1", "7600001", Percentage.ofPoints(new BigDecimal("25")));
-        Person preceptor = persistPerson("risk1.preceptor", "76000017", "PRECEPTOR");
+        Person preceptor = persistPreceptorAssignedToEverySection("risk1.preceptor", "76000017");
         loadFourDays(classroom, AttendanceStatus.PRESENT, AttendanceStatus.PRESENT, AttendanceStatus.ABSENT, AttendanceStatus.ABSENT);
 
         getAs(preceptor, "/section-enrollments/" + classroom.enrollment().getId() + "/attendance/risk")
@@ -57,7 +57,7 @@ class AttendanceChangeRequestAndRiskCharacterizationTest extends CourseworkChara
     @Test
     void riskIsNotLibreWhenAbsencesEqualTheMaximumAndLateCountsAsPresence() throws Exception {
         Classroom classroom = classroomWithMaxAbsence("risk2", "7600002", Percentage.ofPoints(new BigDecimal("25")));
-        Person preceptor = persistPerson("risk2.preceptor", "76000027", "PRECEPTOR");
+        Person preceptor = persistPreceptorAssignedToEverySection("risk2.preceptor", "76000027");
         loadFourDays(classroom, AttendanceStatus.PRESENT, AttendanceStatus.LATE, AttendanceStatus.LATE, AttendanceStatus.ABSENT);
 
         getAs(preceptor, "/section-enrollments/" + classroom.enrollment().getId() + "/attendance/risk")
@@ -70,7 +70,7 @@ class AttendanceChangeRequestAndRiskCharacterizationTest extends CourseworkChara
     void riskWithoutClassesIsCalculableButNotLibreAndWithoutConfiguredMaximumIsNotCalculable() throws Exception {
         Classroom withMax = classroomWithMaxAbsence("risk3", "7600003", Percentage.ofPoints(new BigDecimal("25")));
         Classroom withoutMax = classroomWithMaxAbsence("risk3b", "7600004", null);
-        Person preceptor = persistPerson("risk3.preceptor", "76000037", "PRECEPTOR");
+        Person preceptor = persistPreceptorAssignedToEverySection("risk3.preceptor", "76000037");
 
         getAs(preceptor, "/section-enrollments/" + withMax.enrollment().getId() + "/attendance/risk")
                 .andExpect(jsonPath("$.calculable").value(true))
@@ -84,7 +84,7 @@ class AttendanceChangeRequestAndRiskCharacterizationTest extends CourseworkChara
     @Test
     void approvedChangeRequestUpdatesTheAttendanceRecalculatesRiskAndNotifiesTheTeacher() throws Exception {
         Classroom classroom = classroomWithMaxAbsence("chg1", "7600005", Percentage.ofPoints(new BigDecimal("25")));
-        Person preceptor = persistPerson("chg1.preceptor", "76000057", "PRECEPTOR");
+        Person preceptor = persistPreceptorAssignedToEverySection("chg1.preceptor", "76000057");
         loadFourDays(classroom, AttendanceStatus.PRESENT, AttendanceStatus.PRESENT, AttendanceStatus.ABSENT, AttendanceStatus.ABSENT);
         long absentAttendanceId = loadDay(classroom, 5, AttendanceStatus.ABSENT).get("id").asLong();
         String riskPath = "/section-enrollments/" + classroom.enrollment().getId() + "/attendance/risk";
@@ -119,7 +119,7 @@ class AttendanceChangeRequestAndRiskCharacterizationTest extends CourseworkChara
     @Test
     void approvingTheChangeThatBringsAbsencesUnderTheMaximumClearsTheLibreCondition() throws Exception {
         Classroom classroom = classroomWithMaxAbsence("chg2", "7600006", Percentage.ofPoints(new BigDecimal("30")));
-        Person preceptor = persistPerson("chg2.preceptor", "76000067", "PRECEPTOR");
+        Person preceptor = persistPreceptorAssignedToEverySection("chg2.preceptor", "76000067");
         loadFourDays(classroom, AttendanceStatus.PRESENT, AttendanceStatus.PRESENT, AttendanceStatus.PRESENT);
         long absentAttendanceId = loadDay(classroom, 5, AttendanceStatus.ABSENT).get("id").asLong();
         String riskPath = "/section-enrollments/" + classroom.enrollment().getId() + "/attendance/risk";
@@ -136,7 +136,7 @@ class AttendanceChangeRequestAndRiskCharacterizationTest extends CourseworkChara
     @Test
     void rejectedChangeRequestLeavesTheAttendanceUntouchedAndNotifiesTheTeacher() throws Exception {
         Classroom classroom = classroomWithMaxAbsence("chg3", "7600007", Percentage.ofPoints(new BigDecimal("25")));
-        Person preceptor = persistPerson("chg3.preceptor", "76000077", "PRECEPTOR");
+        Person preceptor = persistPreceptorAssignedToEverySection("chg3.preceptor", "76000077");
         long attendanceId = loadDay(classroom, 2, AttendanceStatus.ABSENT).get("id").asLong();
         long requestId = bodyOf(postJson(classroom.teacher(), "/attendance/" + attendanceId + "/change-requests",
                 new CreateAttendanceChangeRequestRequest(AttendanceStatus.PRESENT, "Reclamo"))
@@ -194,7 +194,7 @@ class AttendanceChangeRequestAndRiskCharacterizationTest extends CourseworkChara
     @Test
     void settingTheSectionMaximumAbsenceMakesTheRiskCalculableAndLibreFollowsTheNewLimit() throws Exception {
         Classroom classroom = classroomWithMaxAbsence("setmax1", "7600010", null);
-        Person preceptor = persistPerson("setmax1.preceptor", "76000107", "PRECEPTOR");
+        Person preceptor = persistPreceptorAssignedToEverySection("setmax1.preceptor", "76000107");
         loadFourDays(classroom, AttendanceStatus.PRESENT, AttendanceStatus.PRESENT, AttendanceStatus.ABSENT, AttendanceStatus.ABSENT);
         String riskPath = "/section-enrollments/" + classroom.enrollment().getId() + "/attendance/risk";
         String sectionPath = "/program-sections/" + classroom.section().getId();
@@ -217,7 +217,7 @@ class AttendanceChangeRequestAndRiskCharacterizationTest extends CourseworkChara
     @Test
     void updatingASectionWithoutTheMaximumKeepsTheConfiguredOne() throws Exception {
         Classroom classroom = classroomWithMaxAbsence("setmax2", "7600011", Percentage.ofPoints(new BigDecimal("30")));
-        Person preceptor = persistPerson("setmax2.preceptor", "76000117", "PRECEPTOR");
+        Person preceptor = persistPreceptorAssignedToEverySection("setmax2.preceptor", "76000117");
 
         putJson(preceptor, "/program-sections/" + classroom.section().getId(), java.util.Map.of("capacity", 12))
                 .andExpect(status().isOk())
@@ -227,7 +227,7 @@ class AttendanceChangeRequestAndRiskCharacterizationTest extends CourseworkChara
     @Test
     void settingTheMaximumAbsenceRejectsOutOfRangeValuesAndRolesWithoutPermission() throws Exception {
         Classroom classroom = classroomWithMaxAbsence("setmax3", "7600012", null);
-        Person preceptor = persistPerson("setmax3.preceptor", "76000127", "PRECEPTOR");
+        Person preceptor = persistPreceptorAssignedToEverySection("setmax3.preceptor", "76000127");
         String sectionPath = "/program-sections/" + classroom.section().getId();
 
         putJson(preceptor, sectionPath, java.util.Map.of("maxAbsencePercent", 101)).andExpect(status().isBadRequest());

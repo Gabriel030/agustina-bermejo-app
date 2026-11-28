@@ -1,0 +1,415 @@
+{
+  "board_label": "cell:epic-board",
+  "board_title": "Tablero de épicas",
+  "baseline_date": "2026-11-14",
+  "since": "2026-11-24T21:00:00Z",
+  "ignored_head_prefixes": [
+    "backport/",
+    "release/",
+    "dependabot/"
+  ],
+  "epics": [
+    {
+      "id": "E1",
+      "name": "E1",
+      "total": 4,
+      "done_at_baseline": 4,
+      "done_at_seed": 4,
+      "next_step": ""
+    },
+    {
+      "id": "E2",
+      "name": "E2",
+      "total": 11,
+      "done_at_baseline": 2,
+      "done_at_seed": 7,
+      "total_estimated": true,
+      "next_step": ""
+    },
+    {
+      "id": "E3",
+      "name": "E3",
+      "total": 6,
+      "done_at_baseline": 5,
+      "done_at_seed": 5,
+      "next_step": ""
+    },
+    {
+      "id": "E4",
+      "name": "E4",
+      "total": 4,
+      "done_at_baseline": 4,
+      "done_at_seed": 4,
+      "next_step": ""
+    },
+    {
+      "id": "E5",
+      "name": "E5",
+      "total": 8,
+      "done_at_baseline": 6,
+      "done_at_seed": 7,
+      "next_step": ""
+    },
+    {
+      "id": "E6",
+      "name": "E6",
+      "total": 2,
+      "done_at_baseline": 2,
+      "done_at_seed": 2,
+      "next_step": ""
+    },
+    {
+      "id": "E7",
+      "name": "E7",
+      "total": 4,
+      "done_at_baseline": 3,
+      "done_at_seed": 3,
+      "next_step": ""
+    },
+    {
+      "id": "E9",
+      "name": "E9",
+      "total": 5,
+      "done_at_baseline": 5,
+      "done_at_seed": 5,
+      "next_step": ""
+    },
+    {
+      "id": "E10",
+      "name": "E10",
+      "total": 8,
+      "done_at_baseline": 7,
+      "done_at_seed": 8,
+      "next_step": ""
+    },
+    {
+      "id": "E12",
+      "name": "E12",
+      "total": null,
+      "done_at_baseline": 0,
+      "done_at_seed": 0,
+      "next_step": ""
+    },
+    {
+      "id": "E13",
+      "name": "E13",
+      "total": null,
+      "done_at_baseline": 0,
+      "done_at_seed": 0,
+      "next_step": ""
+    },
+    {
+      "id": "E14",
+      "name": "E14",
+      "total": null,
+      "done_at_baseline": 0,
+      "done_at_seed": 0,
+      "next_step": ""
+    },
+    {
+      "id": "E15",
+      "name": "E15",
+      "total": null,
+      "done_at_baseline": 0,
+      "done_at_seed": 0,
+      "next_step": ""
+    },
+    {
+      "id": "E16",
+      "name": "E16",
+      "total": null,
+      "done_at_baseline": 0,
+      "done_at_seed": 0,
+      "next_step": ""
+    },
+    {
+      "id": "E17",
+      "name": "E17",
+      "total": 6,
+      "done_at_baseline": 3,
+      "done_at_seed": 3,
+      "next_step": ""
+    },
+    {
+      "id": "E18",
+      "name": "E18",
+      "total": 172,
+      "done_at_baseline": 139,
+      "done_at_seed": 144,
+      "next_step": ""
+    },
+    {
+      "id": "E19",
+      "name": "E19",
+      "total": 11,
+      "done_at_baseline": 6,
+      "done_at_seed": 7,
+      "next_step": ""
+    },
+    {
+      "id": "E20",
+      "name": "E20",
+      "total": 4,
+      "done_at_baseline": 0,
+      "done_at_seed": 0,
+      "next_step": ""
+    },
+    {
+      "id": "E21",
+      "name": "E21",
+      "total": 14,
+      "done_at_baseline": 3,
+      "done_at_seed": 13,
+      "total_estimated": true,
+      "next_step": ""
+    },
+    {
+      "id": "E22",
+      "name": "E22",
+      "total": 15,
+      "done_at_baseline": 7,
+      "done_at_seed": 10,
+      "next_step": ""
+    },
+    {
+      "id": "E23",
+      "name": "E23",
+      "total": 11,
+      "done_at_baseline": 5,
+      "done_at_seed": 6,
+      "total_estimated": true,
+      "next_step": ""
+    },
+    {
+      "id": "E24",
+      "name": "E24",
+      "total": 11,
+      "done_at_baseline": 5,
+      "done_at_seed": 9,
+      "total_estimated": true,
+      "next_step": ""
+    },
+    {
+      "id": "E25",
+      "name": "E25",
+      "total": 20,
+      "done_at_baseline": 4,
+      "done_at_seed": 6,
+      "total_estimated": true,
+      "next_step": ""
+    },
+    {
+      "id": "E26",
+      "name": "E26",
+      "total": 32,
+      "done_at_baseline": 6,
+      "done_at_seed": 25,
+      "total_estimated": true,
+      "next_step": ""
+    },
+    {
+      "id": "E27",
+      "name": "E27",
+      "total": 9,
+      "done_at_baseline": 7,
+      "done_at_seed": 7,
+      "next_step": ""
+    },
+    {
+      "id": "E28",
+      "name": "E28",
+      "total": 11,
+      "done_at_baseline": 8,
+      "done_at_seed": 10,
+      "next_step": ""
+    },
+    {
+      "id": "E29",
+      "name": "E29",
+      "total": 71,
+      "done_at_baseline": 30,
+      "done_at_seed": 44,
+      "next_step": ""
+    },
+    {
+      "id": "E30",
+      "name": "E30",
+      "total": null,
+      "done_at_baseline": 0,
+      "done_at_seed": 0,
+      "next_step": ""
+    },
+    {
+      "id": "E31",
+      "name": "E31",
+      "total": 3,
+      "done_at_baseline": 0,
+      "done_at_seed": 1,
+      "next_step": ""
+    },
+    {
+      "id": "E32",
+      "name": "E32",
+      "total": null,
+      "done_at_baseline": 0,
+      "done_at_seed": 0,
+      "next_step": ""
+    },
+    {
+      "id": "E33",
+      "name": "E33",
+      "total": 6,
+      "done_at_baseline": 0,
+      "done_at_seed": 5,
+      "next_step": ""
+    },
+    {
+      "id": "E34-A",
+      "name": "E34-A integridad académica #1638",
+      "total": 12,
+      "done_at_baseline": null,
+      "done_at_seed": 12,
+      "next_step": "Cerrar el Issue #1638; billing en FULL queda como rebanada posterior",
+      "refs": [
+        "e34-a"
+      ],
+      "issues": [
+        1638
+      ]
+    },
+    {
+      "id": "E34-B",
+      "name": "E34-B planes versionados #1643",
+      "total": 10,
+      "done_at_baseline": null,
+      "done_at_seed": 10,
+      "next_step": "Cerrar el Issue #1643 (P0 a P8 y aviso D7 en develop)",
+      "refs": [
+        "e34-b"
+      ],
+      "issues": [
+        1643
+      ]
+    },
+    {
+      "id": "E34-C",
+      "name": "E34-C preceptor y checklist #1650",
+      "total": 9,
+      "done_at_baseline": null,
+      "done_at_seed": 8,
+      "total_estimated": true,
+      "next_step": "F2: terminar pantallas (cohorte y curso mergeadas) y cerrar el Issue #1650",
+      "refs": [
+        "e34-c"
+      ],
+      "issues": [
+        1650
+      ]
+    },
+    {
+      "id": "E19-A",
+      "name": "E19-A cohortes sin facturación #1606",
+      "total": 5,
+      "done_at_baseline": null,
+      "done_at_seed": 4,
+      "next_step": "S5: eventos, job de espera de pago y regla ArchUnit",
+      "refs": [
+        "e19-a"
+      ],
+      "issues": [
+        1606
+      ]
+    },
+    {
+      "id": "E28-F",
+      "name": "E28-F cierre de la épica 28 #1607",
+      "total": 8,
+      "done_at_baseline": null,
+      "done_at_seed": 7,
+      "total_estimated": true,
+      "next_step": "Confirmar S0 (verificación, solo comentario) y cerrar el Issue #1607",
+      "refs": [
+        "e28-f"
+      ],
+      "issues": [
+        1607
+      ]
+    },
+    {
+      "id": "E18-S6",
+      "name": "E18-S6 módulos academicstructure→evaluation #1696",
+      "total": 2,
+      "done_at_baseline": null,
+      "done_at_seed": 2,
+      "next_step": "Cerrar el Issue #1696 (S6-1 y S6-2 en develop)",
+      "refs": [
+        "e18-s6"
+      ],
+      "issues": [
+        1696
+      ]
+    },
+    {
+      "id": "E24-4b",
+      "name": "E24-4b cobertura /me/** #1697",
+      "total": 2,
+      "done_at_baseline": null,
+      "done_at_seed": 2,
+      "next_step": "Cerrar el Issue #1697 (S3 solo si hubiera hallazgo)",
+      "refs": [
+        "e24-4b"
+      ],
+      "issues": [
+        1697
+      ]
+    },
+    {
+      "id": "E35",
+      "name": "E35 Manual de usuario dentro de la app #1721",
+      "total": 11,
+      "done_at_baseline": null,
+      "done_at_seed": 0,
+      "total_estimated": true,
+      "next_step": "Mockup /ayuda v2 en revisión de Gabriel; esqueleto en PR #1723 (borrador)",
+      "refs": [
+        "e35",
+        "help-manual",
+        "ayuda"
+      ],
+      "issues": [
+        1721
+      ]
+    },
+    {
+      "id": "E36",
+      "name": "E36 Re-styling de toda la app #1724",
+      "total": 10,
+      "done_at_baseline": null,
+      "done_at_seed": 0,
+      "total_estimated": true,
+      "next_step": "Auditoría de pantallas y definición de la paleta cerrada (decisiones de Gabriel pendientes)",
+      "refs": [
+        "e36",
+        "restyling"
+      ],
+      "issues": [
+        1724
+      ]
+    },
+    {
+      "id": "P1108",
+      "name": "Roles y permisos #1108",
+      "total": 42,
+      "done_at_baseline": null,
+      "done_at_seed": 31,
+      "next_step": "",
+      "refs": [
+        "p1108"
+      ],
+      "issues": [
+        1108
+      ]
+    }
+  ],
+  "seed_date": "2026-11-24"
+}

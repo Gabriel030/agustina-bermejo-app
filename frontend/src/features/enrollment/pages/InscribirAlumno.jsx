@@ -393,7 +393,7 @@ export function InscribirAlumno() {
           <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
             <GlassCard className="flex flex-col gap-3 p-5">
               <Tabs value={tab} onValueChange={changeTab}>
-                <TabsList variant="segmented" className="w-full">
+                <TabsList variant="line">
                   <TabsTrigger value="career" className="flex-1">Carrera</TabsTrigger>
                   <TabsTrigger value="course" className="flex-1">Curso</TabsTrigger>
                 </TabsList>

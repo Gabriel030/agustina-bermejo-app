@@ -7,8 +7,8 @@ import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.entity.EnrollmentFeeExemption;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
-import com.red_escuela.backend.billing.entity.CohortIntake;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.domain.CohortIntake;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentApplication;
 import com.red_escuela.backend.enrollment.events.EnrollmentFeeExemptionRevokedEvent;
@@ -123,7 +123,7 @@ class EnrollmentTransactionBoundaryIT extends AbstractIntegrationTest {
 
             EnrollmentFeeExemption exemption = new EnrollmentFeeExemption();
             exemption.setProgramEnrollment(programEnrollment);
-            exemption.setTemplate(template);
+            exemption.setTemplateId(template.getId());
             exemption.setSlot(1);
             exemption.setReason("Habilitacion por situacion socioeconomica");
             exemption.setGrantedBy(staff);
@@ -209,7 +209,10 @@ class EnrollmentTransactionBoundaryIT extends AbstractIntegrationTest {
             entityManager.persist(template);
             com.red_escuela.backend.billing.planning.TestTemplateTerms.publish(entityManager, template);
             ProgramCohort cohort = new ProgramCohort();
-            cohort.setTemplate(template);
+            cohort.markOpened(java.time.LocalDateTime.of(2000, 1, 1, 0, 0));
+            cohort.setTemplateId(template.getId());
+        cohort.setProgramId(template.programId());
+        cohort.setTermId(template.termId());
             cohort.setIntake(CohortIntake.FIRST);
             cohort.setAdmissionStart(LocalDate.now().minusDays(30));
             cohort.setAdmissionEnd(LocalDate.now().plusDays(5));

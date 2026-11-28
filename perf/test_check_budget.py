@@ -8,7 +8,8 @@ import unittest
 HERE = os.path.dirname(os.path.abspath(__file__))
 SCRIPT = os.path.join(HERE, "check_budget.py")
 BUDGET = {
-    "/students": {"p95": 200, "queries": 3},
+    "/students": {"p50": 84, "p95": 200, "p99": 400, "queries": 3},
+    "pool:db": {"peakConnections": 25},
     "screen:/director/financiero": {"requests": 20, "duplicates": 0},
 }
 
@@ -44,12 +45,40 @@ class CheckBudgetTest(unittest.TestCase):
         self.assertIn("no measured", result.stdout)
 
     def test_endpoint_scope_ignores_screen_budgets(self):
-        result = run_check("endpoint", {"/students": {"p95": 100, "queries": 3}})
+        result = run_check("endpoint", {"/students": {"p50": 30, "p95": 100, "p99": 150, "queries": 3}})
         self.assertEqual(result.returncode, 0, result.stdout)
 
     def test_endpoint_over_budget_fails(self):
-        result = run_check("endpoint", {"/students": {"p95": 300, "queries": 3}})
+        result = run_check("endpoint", {"/students": {"p50": 30, "p95": 300, "p99": 350, "queries": 3}})
         self.assertEqual(result.returncode, 1)
+
+    def test_endpoint_over_p50_budget_fails(self):
+        result = run_check("endpoint", {"/students": {"p50": 85, "p95": 100, "p99": 150, "queries": 3}})
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("p50=85 > 84", result.stdout)
+
+    def test_endpoint_over_p99_budget_fails(self):
+        result = run_check("endpoint", {"/students": {"p50": 30, "p95": 100, "p99": 401, "queries": 3}})
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("p99=401 > 400", result.stdout)
+
+    def test_endpoint_without_p99_measured_fails(self):
+        result = run_check("endpoint", {"/students": {"p50": 30, "p95": 100, "queries": 3}})
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("p99 no measured", result.stdout)
+
+    def test_pool_within_budget_passes(self):
+        result = run_check("pool", {"pool:db": {"peakConnections": 25}})
+        self.assertEqual(result.returncode, 0, result.stdout)
+
+    def test_pool_over_budget_fails(self):
+        result = run_check("pool", {"pool:db": {"peakConnections": 26}})
+        self.assertEqual(result.returncode, 1)
+        self.assertIn("peakConnections=26 > 25", result.stdout)
+
+    def test_pool_scope_ignores_endpoint_budgets(self):
+        result = run_check("pool", {"pool:db": {"peakConnections": 20}})
+        self.assertNotIn("/students", result.stdout)
 
 
 if __name__ == "__main__":

@@ -17,6 +17,8 @@ import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.enrollment.dto.WaitlistKind;
 import com.red_escuela.backend.enrollment.dto.WaitlistQueueSummaryResponse;
 import com.red_escuela.backend.enrollment.dto.WaitlistVerdict;
+import com.red_escuela.backend.enrollment.dto.WaitlistVerdictReason;
+import com.red_escuela.backend.enrollment.events.WaitlistEntryPausedEvent;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
@@ -35,6 +37,8 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.authentication.TestingAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,6 +48,7 @@ import com.red_escuela.backend.shared.audit.AuditLogRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
@@ -52,6 +57,7 @@ import static org.mockito.Mockito.when;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
+@RecordApplicationEvents
 class WaitlistAutomaticPromotionAuditIT extends AbstractIntegrationTest {
 
     private static final LocalDateTime NOW = LocalDateTime.of(2071, 4, 10, 9, 0);
@@ -59,6 +65,8 @@ class WaitlistAutomaticPromotionAuditIT extends AbstractIntegrationTest {
     @MockitoBean
     private WaitlistCandidateEligibility eligibility;
 
+    @Autowired
+    private ApplicationEvents applicationEvents;
     @Autowired
     private EntityManager entityManager;
     @Autowired
@@ -90,6 +98,33 @@ class WaitlistAutomaticPromotionAuditIT extends AbstractIntegrationTest {
         AuditLogEntry entry = entriesOf(waiting.getId()).get(0);
         assertThat(entry.getBeforeValue()).isEqualTo("WAITLISTED");
         assertThat(entry.getAfterValue()).isEqualTo("ENROLLED");
+    }
+
+    @Test
+    void entrySkippedByScheduleOverlapIsAnnouncedAsPausedWhenTheOneBehindIsPromoted() {
+        SubjectSectionEnrollment paused = programWaiting(2074, NOW.plusDays(5));
+        SubjectSection section = paused.getSubjectSection();
+        SubjectSectionEnrollment promoted = programEntry(section, paused.getProgramEnrollment().getProgram(), EnrollmentStatus.WAITLISTED);
+        promoted.setEnrolledAt(NOW.minusDays(4));
+        section.setCapacity(2);
+        entityManager.flush();
+        when(eligibility.evaluate(any())).thenAnswer(invocation -> {
+            WaitlistCandidate candidate = invocation.getArgument(0);
+            return candidate.enrollmentId().equals(paused.getId())
+                    ? WaitlistVerdict.skippedBecause(WaitlistVerdictReason.SCHEDULE_OVERLAP)
+                    : WaitlistVerdict.passing();
+        });
+        when(eligibility.findConflictingSectionName(any())).thenReturn(Optional.of("Historia II"));
+
+        capacityChangeEvents.programSectionChanged(section.getId(), 1, 2);
+        entityManager.flush();
+
+        assertThat(promoted.getStatus()).isEqualTo(EnrollmentStatus.ENROLLED);
+        assertThat(paused.getStatus()).isEqualTo(EnrollmentStatus.WAITLISTED);
+        List<WaitlistEntryPausedEvent> pausedEvents = applicationEvents.stream(WaitlistEntryPausedEvent.class).toList();
+        assertThat(pausedEvents).hasSize(1);
+        assertThat(pausedEvents.get(0).enrollmentId()).isEqualTo(paused.getId());
+        assertThat(pausedEvents.get(0).conflictingSectionName()).isEqualTo("Historia II");
     }
 
     @Test
@@ -221,7 +256,7 @@ class WaitlistAutomaticPromotionAuditIT extends AbstractIntegrationTest {
 
     private CourseSubjectSectionEnrollment moduleEnrollment(CourseSubjectSection section, CourseEnrollment parent, EnrollmentStatus status) {
         CourseSubjectSectionEnrollment enrollment = new CourseSubjectSectionEnrollment();
-        enrollment.setStudent(student());
+        enrollment.setStudent(parent.getStudent());
         enrollment.setCourseEnrollment(parent);
         enrollment.setCourseSubjectSection(section);
         enrollment.setStatus(status);

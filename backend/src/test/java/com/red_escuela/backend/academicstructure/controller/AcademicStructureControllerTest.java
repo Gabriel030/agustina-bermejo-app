@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.controller;
 
+import com.red_escuela.backend.testsupport.PreceptorTestFactory;
 import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.domain.TermType;
 import java.math.BigDecimal;
@@ -55,6 +56,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @ActiveProfiles("test")
 @Transactional
 class AcademicStructureControllerTest extends AbstractIntegrationTest {
+    @org.springframework.beans.factory.annotation.Autowired
+    private PreceptorTestFactory preceptors;
+
     @Autowired
     private MockMvc mockMvc;
 
@@ -251,6 +255,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
 
         ProgramSubject entradaA = new ProgramSubject();
         entradaA.setProgram(program);
+        entradaA.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
         entradaA.setSubject(subjectA);
         entradaA.setCurricularYear(1);
         entradaA.setCurricularTerm(CurricularTerm.SECOND);
@@ -260,6 +265,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
 
         ProgramSubject entradaB = new ProgramSubject();
         entradaB.setProgram(program);
+        entradaB.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
         entradaB.setSubject(subjectB);
         entradaB.setCurricularYear(1);
         entradaB.setCurricularTerm(CurricularTerm.FIRST);
@@ -353,7 +359,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         entityManager.flush();
 
         CreateCourseRequest request = new CreateCourseRequest(
-                "Curso Baja", term.getId(), null, 20, com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), 3, null, null, null);
+                "Curso Baja", term.getId(), null, 20, com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), 3, null, null, null, null, null, java.util.List.of(preceptors.createPreceptorId()));
         String body = mockMvc.perform(post("/courses")
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
@@ -376,7 +382,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     void creatingCourseWithNonExistentTermReturns404() throws Exception {
         String token = tokenWithRole("admin-curso2", "ADMINISTRATIVO");
         CreateCourseRequest request = new CreateCourseRequest(
-                "Curso sin term", 999999L, null, 10, com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), 3, null, null, null);
+                "Curso sin term", 999999L, null, 10, com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), 3, null, null, null, null, null, java.util.List.of(preceptors.createPreceptorId()));
 
         mockMvc.perform(post("/courses")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -389,7 +395,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     void creatingCourseWithoutAdministrativeRoleReturns403() throws Exception {
         String token = tokenWithRole("preceptor-curso1", "PRECEPTOR");
         CreateCourseRequest request = new CreateCourseRequest(
-                "Curso sin permiso", 1L, null, 10, com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), 3, null, null, null);
+                "Curso sin permiso", 1L, null, 10, com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), 3, null, null, null, null, null, java.util.List.of(preceptors.createPreceptorId()));
 
         mockMvc.perform(post("/courses")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -441,13 +447,15 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
     }
 
     private void seedHoliday(int year) {
-        java.time.LocalDate date = java.time.LocalDate.of(year, 1, 1);
-        if (!holidayRepository.existsByDate(date)) {
-            var holiday = new com.red_escuela.backend.academicstructure.entity.Holiday();
-            holiday.setDate(date);
-            holiday.setName("Año Nuevo");
-            holiday.setType(com.red_escuela.backend.academicstructure.domain.HolidayType.NATIONAL);
-            holidayRepository.save(holiday);
+        for (int day = 1; day <= 5; day++) {
+            java.time.LocalDate date = java.time.LocalDate.of(year, 1, day);
+            if (!holidayRepository.existsByDate(date)) {
+                var holiday = new com.red_escuela.backend.academicstructure.entity.Holiday();
+                holiday.setDate(date);
+                holiday.setName("Año Nuevo");
+                holiday.setType(com.red_escuela.backend.academicstructure.domain.HolidayType.NATIONAL);
+                holidayRepository.save(holiday);
+            }
         }
     }
 
@@ -473,11 +481,9 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
         String admin = tokenWithRole("admin-holiday-abm", "ADMINISTRATIVO");
         String preceptor = tokenWithRole("preceptor-holiday-abm", "PRECEPTOR");
 
-        mockMvc.perform(post("/holidays")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("Authorization", "Bearer " + admin)
-                        .content("{\"date\":\"2078-01-01\",\"name\":\"Año Nuevo\",\"type\":\"NATIONAL\"}"))
-                .andExpect(status().isCreated());
+        for (int day = 1; day <= 5; day++) {
+            createHolidayAs(admin, "2078-01-0" + day, "Año Nuevo", "NATIONAL");
+        }
 
         mockMvc.perform(post("/terms")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -847,7 +853,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
                         .content(objectMapper.writeValueAsString(new CreateCourseRequest(
-                                "Curso con módulos", term.getId(), null, 15, com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), 3, null, null, null))))
+                                "Curso con módulos", term.getId(), null, 15, com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), 3, null, null, null, null, null, java.util.List.of(preceptors.createPreceptorId())))))
                 .andReturn().getResponse().getContentAsString();
         Long courseId = objectMapper.readTree(courseBody).get("id").asLong();
 
@@ -890,7 +896,7 @@ class AcademicStructureControllerTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .header("Authorization", "Bearer " + token)
                         .content(objectMapper.writeValueAsString(new CreateCourseRequest(
-                                "Curso con módulo baja", term.getId(), null, 15, com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), 3, null, null, null))))
+                                "Curso con módulo baja", term.getId(), null, 15, com.red_escuela.backend.shared.domain.TestMoney.ars("1000"), 3, null, null, null, null, null, java.util.List.of(preceptors.createPreceptorId())))))
                 .andReturn().getResponse().getContentAsString();
         Long courseId = objectMapper.readTree(courseBody).get("id").asLong();
 

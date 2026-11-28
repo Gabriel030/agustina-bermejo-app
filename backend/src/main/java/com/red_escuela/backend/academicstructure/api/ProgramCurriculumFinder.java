@@ -41,13 +41,47 @@ public class ProgramCurriculumFinder {
                 .toList();
     }
 
-    public Optional<ProgramSubjectView> findProgramSubject(Long programId, Long subjectId) {
-        return programSubjectRepository.findByProgramIdAndSubjectId(programId, subjectId)
+    public List<ProgramSubjectView> findProgramSubjectsOfPlan(Long planId) {
+        return programSubjectRepository.findByPlanIdOrderById(planId).stream()
+                .map(this::toProgramSubjectView)
+                .toList();
+    }
+
+    public Optional<ProgramSubjectView> findProgramSubjectOfPlan(Long planId, Long subjectId) {
+        return programSubjectRepository.findByPlanIdAndSubjectId(planId, subjectId)
                 .map(this::toProgramSubjectView);
     }
 
-    public boolean subjectBelongsToProgram(Long programId, Long subjectId) {
-        return programSubjectRepository.findByProgramIdAndSubjectId(programId, subjectId).isPresent();
+    public List<ProgramCurriculumEntryView> findActiveCurriculumEntriesOfPlan(Long planId) {
+        return programSubjectRepository.findActiveByPlanId(planId).stream()
+                .map(this::toCurriculumEntryView)
+                .toList();
+    }
+
+    public List<ProgramSubjectView> findActiveProgramSubjectsOfPlan(Long planId) {
+        return programSubjectRepository.findActiveByPlanId(planId).stream()
+                .map(this::toProgramSubjectView)
+                .toList();
+    }
+
+    public Map<Long, List<PrerequisiteView>> findPrerequisitesOfPlan(Long planId) {
+        return prerequisiteRepository.findAllOfPlan(planId).stream()
+                .collect(Collectors.groupingBy(prerequisite -> prerequisite.getProgramSubject().getId(),
+                        Collectors.mapping(this::toPrerequisiteView, Collectors.toList())));
+    }
+
+    public Map<Long, List<ProgramCorequisiteView>> findCorequisitesOfPlan(Long planId) {
+        return corequisiteRepository.findAllOfPlan(planId).stream()
+                .collect(Collectors.groupingBy(corequisite -> corequisite.getProgramSubject().getId(),
+                        Collectors.mapping(this::toCorequisiteView, Collectors.toList())));
+    }
+
+    public boolean subjectBelongsToPlan(Long planId, Long subjectId) {
+        return programSubjectRepository.findByPlanIdAndSubjectId(planId, subjectId).isPresent();
+    }
+
+    public boolean subjectIsActiveInPlan(Long planId, Long subjectId) {
+        return programSubjectRepository.existsActiveByPlanIdAndSubjectId(planId, subjectId);
     }
 
     public List<PrerequisiteView> findPrerequisites(Long programSubjectId) {
@@ -60,18 +94,6 @@ public class ProgramCurriculumFinder {
         return programSubjectRepository.findActiveByProgramId(programId).stream()
                 .map(this::toCurriculumEntryView)
                 .toList();
-    }
-
-    public Map<Long, List<PrerequisiteView>> findProgramPrerequisites(Long programId) {
-        return prerequisiteRepository.findAllOfProgram(programId).stream()
-                .collect(Collectors.groupingBy(prerequisite -> prerequisite.getProgramSubject().getId(),
-                        Collectors.mapping(this::toPrerequisiteView, Collectors.toList())));
-    }
-
-    public Map<Long, List<ProgramCorequisiteView>> findProgramCorequisites(Long programId) {
-        return corequisiteRepository.findAllOfProgram(programId).stream()
-                .collect(Collectors.groupingBy(corequisite -> corequisite.getProgramSubject().getId(),
-                        Collectors.mapping(this::toCorequisiteView, Collectors.toList())));
     }
 
     public List<ElectiveGroupRequirementView> findElectiveGroupRequirements(Long programId) {
@@ -101,7 +123,7 @@ public class ProgramCurriculumFinder {
     private PrerequisiteView toPrerequisiteView(ProgramSubjectPrerequisite prerequisite) {
         var subject = prerequisite.getPrerequisiteProgramSubject().getSubject();
         return new PrerequisiteView(subject.getId(), subject.getName(), prerequisite.getRequirementType(),
-                subject.getCode());
+                subject.getCode(), prerequisite.getMinGrade());
     }
 
     private ElectiveGroupRequirementView toElectiveGroupRequirementView(ProgramElectiveGroup group) {

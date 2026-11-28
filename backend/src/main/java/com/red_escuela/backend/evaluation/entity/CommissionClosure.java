@@ -71,6 +71,9 @@ public class CommissionClosure {
     @Column(name = "closed_without_teacher_confirmation", nullable = false)
     private boolean closedWithoutTeacherConfirmation;
 
+    @Column(name = "closed_automatically", nullable = false)
+    private boolean closedAutomatically;
+
     @Version
     @Column(name = "lock_version", nullable = false)
     private Long lockVersion;
@@ -87,6 +90,21 @@ public class CommissionClosure {
         this.book = book;
         this.folio = folio;
         this.closedWithoutTeacherConfirmation = withoutTeacherConfirmation;
+        this.closedAutomatically = false;
+        if (this.reportNumber == null) {
+            this.reportNumber = reportNumber;
+        }
+    }
+
+    public void closeAutomatically(LocalDateTime at, String reportNumber) {
+        boolean withoutTeacherConfirmation = this.status != ClosureStatus.TEACHER_CONFIRMED;
+        this.status = ClosureStatus.CLOSED;
+        this.closedById = null;
+        this.closedAt = at;
+        this.book = null;
+        this.folio = null;
+        this.closedWithoutTeacherConfirmation = withoutTeacherConfirmation;
+        this.closedAutomatically = true;
         if (this.reportNumber == null) {
             this.reportNumber = reportNumber;
         }
@@ -94,6 +112,7 @@ public class CommissionClosure {
 
     public void reopen() {
         this.status = ClosureStatus.REOPENED;
+        this.closedAutomatically = false;
         this.reportVersion = reportVersion + 1;
         this.confirmedById = null;
         this.confirmedAt = null;

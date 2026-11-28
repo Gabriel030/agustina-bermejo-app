@@ -368,14 +368,15 @@ function SeccionFormInline({ subjectId, subjectStatus, courseSubjectId, subjectN
 
   if (!abierto) {
     return (
-      <button
+      <Button
         type="button"
+        variant="ghost"
         onClick={() => setAbierto(true)}
-        className="flex items-center gap-1.5 rounded-xl px-3 py-2 text-size-13 text-brand hover:bg-accent-soft/50 transition-colors"
+        className="h-auto rounded-xl px-3 py-2 text-size-13 text-brand hover:bg-accent-soft/50 hover:text-brand"
       >
         <Plus className="h-3.5 w-3.5" />
         Agregar comisión para {subjectName}
-      </button>
+      </Button>
     );
   }
 

@@ -40,17 +40,37 @@ class WaitlistCandidateEligibilityTest {
     private CourseEnrollmentApplicationRepository courseApplicationRepository;
     @Mock
     private AdmissionInvoiceReceiptFinder admissionInvoiceReceiptFinder;
+    @Mock
+    private com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository programEnrollmentRepository;
 
     private WaitlistCandidateEligibility eligibility;
 
     @BeforeEach
     void setUp() {
         eligibility = new WaitlistCandidateEligibility(subjectRetakeGuard, prerequisiteEvaluator, scheduleOverlapGuard,
-                courseApplicationRepository, admissionInvoiceReceiptFinder);
+                courseApplicationRepository, admissionInvoiceReceiptFinder, programEnrollmentRepository);
+        lenient().when(programEnrollmentRepository.findById(PROGRAM_ENROLLMENT_ID)).thenReturn(Optional.of(programEnrollmentWith(com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus.ENROLLED)));
         lenient().when(subjectRetakeGuard.isAlreadyPassed(anyLong(), anyLong(), anyLong())).thenReturn(false);
         lenient().when(prerequisiteEvaluator.areAllMetOrSubjectOutsidePlan(anyLong(), anyLong())).thenReturn(true);
         lenient().when(scheduleOverlapGuard.findOverlapForProgramSection(anyLong(), anyLong(), anyLong(), anyLong()))
                 .thenReturn(Optional.empty());
+    }
+
+    private com.red_escuela.backend.enrollment.entity.ProgramEnrollment programEnrollmentWith(com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus status) {
+        com.red_escuela.backend.enrollment.entity.ProgramEnrollment programEnrollment = new com.red_escuela.backend.enrollment.entity.ProgramEnrollment();
+        programEnrollment.setStatus(status);
+        return programEnrollment;
+    }
+
+    @Test
+    void candidateWithPausedProgramEnrollmentIsSkipped() {
+        when(programEnrollmentRepository.findById(PROGRAM_ENROLLMENT_ID))
+                .thenReturn(Optional.of(programEnrollmentWith(com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus.PAUSED)));
+
+        WaitlistVerdict verdict = eligibility.evaluate(programCandidate());
+
+        assertThat(verdict.eligible()).isFalse();
+        assertThat(verdict.reason()).isEqualTo(WaitlistVerdictReason.PROGRAM_ENROLLMENT_NOT_ACTIVE);
     }
 
     @Test
@@ -73,6 +93,19 @@ class WaitlistCandidateEligibilityTest {
         when(prerequisiteEvaluator.areAllMetOrSubjectOutsidePlan(PROGRAM_ENROLLMENT_ID, SUBJECT_ID)).thenReturn(false);
 
         assertSkippedBecause(eligibility.evaluate(programCandidate()), WaitlistVerdictReason.PREREQUISITES_NOT_MET);
+    }
+
+    @Test
+    void conflictingSectionNameComesFromTheScheduleOverlap() {
+        when(scheduleOverlapGuard.findOverlapForProgramSection(1L, 2L, 3L, ENROLLMENT_ID))
+                .thenReturn(Optional.of(new SectionScheduleOverlapException("Historia II", "lunes", "08:00", "10:00")));
+
+        assertThat(eligibility.findConflictingSectionName(programCandidate())).contains("Historia II");
+    }
+
+    @Test
+    void thereIsNoConflictingSectionNameWithoutScheduleOverlap() {
+        assertThat(eligibility.findConflictingSectionName(programCandidate())).isEmpty();
     }
 
     @Test

@@ -1,5 +1,6 @@
 package com.red_escuela.backend.testsupport.system;
 
+import com.red_escuela.backend.identity.api.CohortResponsibleAssigner;
 import tools.jackson.databind.JsonNode;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.config.infrastructure.DemoApiClient;
@@ -40,6 +41,8 @@ class DemoEducationalSeedIT extends AbstractIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
     @Autowired
+    private CohortResponsibleAssigner preceptorAssigner;
+    @Autowired
     private PersonRepository personRepository;
     @Autowired
     private RoleRepository roleRepository;
@@ -62,7 +65,7 @@ class DemoEducationalSeedIT extends AbstractIntegrationTest {
         LocalSeedRunner localSeedRunner = new LocalSeedRunner(personRepository, roleRepository, personFactory, passwordEncoder);
         new DemoLearnerAccountsSeeder(localSeedRunner, personRepository, roleRepository, personFactory, passwordEncoder,
                 institutionRepository, studentRepository, instructorProfileCreationPort).run(arguments);
-        new DemoEducationalSeedRunner(environment, jdbcTemplate).seedThroughPort(port);
+        new DemoEducationalSeedRunner(environment, jdbcTemplate, preceptorAssigner).seedThroughPort(port);
         api = new DemoApiClient(port);
     }
 

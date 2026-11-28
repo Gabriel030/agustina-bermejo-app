@@ -12,7 +12,7 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.StudentDocument;
 import com.red_escuela.backend.enrollment.entity.SubjectEquivalence;
 import com.red_escuela.backend.enrollment.entity.SubjectEquivalenceStatus;
-import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.exception.SubjectEquivalenceNotFoundException;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.StudentDocumentRepository;
@@ -143,10 +143,10 @@ public class SubjectEquivalenceReader {
     }
 
     private SubjectLabels labelsOf(ProgramEnrollment enrollment) {
-        Long programId = enrollment.getProgram().getId();
-        Map<Long, ProgramCurriculumEntryView> activeEntries = programCurriculumFinder.findActiveCurriculumEntries(programId).stream()
+        Long planId = enrollment.getPlan().getId();
+        Map<Long, ProgramCurriculumEntryView> activeEntries = programCurriculumFinder.findActiveCurriculumEntriesOfPlan(planId).stream()
                 .collect(Collectors.toMap(ProgramCurriculumEntryView::subjectId, Function.identity(), (first, second) -> first));
-        Map<Long, ProgramSubjectView> planEntries = programCurriculumFinder.findProgramSubjects(programId).stream()
+        Map<Long, ProgramSubjectView> planEntries = programCurriculumFinder.findProgramSubjectsOfPlan(planId).stream()
                 .collect(Collectors.toMap(ProgramSubjectView::subjectId, Function.identity(), (first, second) -> first));
         return new SubjectLabels(activeEntries, planEntries);
     }

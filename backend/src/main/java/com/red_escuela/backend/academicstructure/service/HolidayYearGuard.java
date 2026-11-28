@@ -11,6 +11,9 @@ import java.time.LocalDate;
 @Component
 public class HolidayYearGuard {
 
+    public static final int MINIMUM_HOLIDAYS_PER_YEAR = 5;
+    public static final int YEARS_AHEAD_REQUIRED = 2;
+
     private final HolidayRepository holidayRepository;
     private final Clock clock;
 
@@ -20,7 +23,13 @@ public class HolidayYearGuard {
     }
 
     public void ensureHolidaysLoadedForTerm(Term term) {
-        if (term.getYear() != null) {
+        if (term.getStartDate() != null && term.getEndDate() != null) {
+            int startYear = term.getStartDate().getYear();
+            int lastRequiredYear = Math.max(startYear, Math.min(term.getEndDate().getYear(), LocalDate.now(clock).getYear() + YEARS_AHEAD_REQUIRED));
+            for (int year = startYear; year <= lastRequiredYear; year++) {
+                ensureHolidaysLoaded(year);
+            }
+        } else if (term.getYear() != null) {
             ensureHolidaysLoaded(term.getYear());
         }
     }
@@ -29,8 +38,8 @@ public class HolidayYearGuard {
         if (year < LocalDate.now(clock).getYear()) {
             return;
         }
-        boolean loaded = holidayRepository.existsByDateBetween(LocalDate.of(year, 1, 1), LocalDate.of(year, 12, 31));
-        if (!loaded) {
+        long loaded = holidayRepository.countByDateBetween(LocalDate.of(year, 1, 1), LocalDate.of(year, 12, 31));
+        if (loaded < MINIMUM_HOLIDAYS_PER_YEAR) {
             throw new HolidaysNotLoadedForYearException(year);
         }
     }

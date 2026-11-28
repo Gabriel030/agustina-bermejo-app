@@ -22,7 +22,7 @@ class CourseSectionDeactivationGuardTest {
     private final CourseSubjectSectionRepository repository = Mockito.mock(CourseSubjectSectionRepository.class);
     private final SectionEnrollmentActivityPort activityPort = Mockito.mock(SectionEnrollmentActivityPort.class);
     private final CourseSectionService service = new CourseSectionService(
-            repository, null, null, null, null, null, null, null, null, null, null, activityPort, null);
+            repository, null, null, null, null, null, null, null, activityPort, null);
 
     @Test
     void deactivatingACourseSectionWithLiveEnrollmentsIsRejectedAndNothingIsSaved() {
@@ -34,7 +34,7 @@ class CourseSectionDeactivationGuardTest {
         assertThatThrownBy(() -> service.deactivate(5L)).isInstanceOf(SectionHasActiveEnrollmentsException.class);
 
         assertThat(section.getStatus()).isEqualTo(StatusType.ACTIVE);
-        verify(repository, never()).save(any());
+        verify(repository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -47,6 +47,6 @@ class CourseSectionDeactivationGuardTest {
         service.deactivate(5L);
 
         assertThat(section.getStatus()).isEqualTo(StatusType.INACTIVE);
-        verify(repository).save(section);
+        verify(repository).saveAndFlush(section);
     }
 }

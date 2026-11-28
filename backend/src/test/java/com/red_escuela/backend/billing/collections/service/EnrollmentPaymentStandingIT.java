@@ -529,7 +529,7 @@ class EnrollmentPaymentStandingIT extends AbstractLateFeeScenarioIT {
         evaluate(d(NONPAYMENT_NET_YEAR, 6, 1));
         assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
         Long personId = jdbc.queryForObject("select min(id) from person", Long.class);
-        jdbc.update("update course_enrollment set status = 'WITHDRAWN', withdrawn_by_person_id = ? where id = ?", personId, enrollment.getId());
+        jdbc.update("update course_enrollment set status = 'WITHDRAWN', withdrawal_effective_date = date '2000-01-01', withdrawn_by_person_id = ? where id = ?", personId, enrollment.getId());
 
         runStepFor(d(NONPAYMENT_NET_YEAR, 6, 3));
 
@@ -551,7 +551,7 @@ class EnrollmentPaymentStandingIT extends AbstractLateFeeScenarioIT {
         evaluate(d(NONPAYMENT_NET_YEAR, 5, 20));
         evaluate(d(NONPAYMENT_NET_YEAR, 6, 1));
         assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
-        jdbc.update("update course_enrollment set status = 'WITHDRAWN' where id = ?", enrollment.getId());
+        jdbc.update("update course_enrollment set status = 'WITHDRAWN', withdrawal_effective_date = date '2000-01-01' where id = ?", enrollment.getId());
 
         runStepFor(d(NONPAYMENT_NET_YEAR, 6, 3));
 
@@ -572,7 +572,7 @@ class EnrollmentPaymentStandingIT extends AbstractLateFeeScenarioIT {
         evaluate(d(NONPAYMENT_PAYMENT_YEAR, 5, 20));
         evaluate(d(NONPAYMENT_PAYMENT_YEAR, 6, 1));
         assertThat(statusOf(enrollment.getId())).isEqualTo(EnrollmentPaymentStatus.SUSPENDED);
-        jdbc.update("update course_enrollment set status = 'WITHDRAWN' where id = ?", enrollment.getId());
+        jdbc.update("update course_enrollment set status = 'WITHDRAWN', withdrawal_effective_date = date '2000-01-01' where id = ?", enrollment.getId());
 
         receiveMoney(installment, "100000.00", d(NONPAYMENT_PAYMENT_YEAR, 6, 2));
         allocateOn(installment, d(NONPAYMENT_PAYMENT_YEAR, 6, 2));

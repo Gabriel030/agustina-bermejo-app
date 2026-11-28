@@ -20,6 +20,7 @@ import { DatosPersonalesTab } from './tabs/DatosPersonalesTab';
 import { AcademicoTab } from './tabs/AcademicoTab';
 import { EvaluacionTab } from './tabs/EvaluacionTab';
 import { FinancieroTab } from './tabs/FinancieroTab';
+import { PlanDeEstudioTab } from './tabs/PlanDeEstudioTab';
 
 const ESTADO_STATUS_BADGE = {
   ACTIVE: { label: 'Activo', tone: 'success' },
@@ -35,7 +36,7 @@ export function LegajoAlumno() {
   const [bajaOpen, setBajaOpen] = useState(false);
   const [resetOpen, setResetOpen] = useState(false);
   const [reactivarOpen, setReactivarOpen] = useState(false);
-  const [activeTab, setActiveTab] = useState(['financiero', 'academico'].includes(searchParams.get('view')) ? searchParams.get('view') : 'datos-personales');
+  const [activeTab, setActiveTab] = useState(['financiero', 'academico', 'plan-de-estudio'].includes(searchParams.get('view')) ? searchParams.get('view') : 'datos-personales');
   const [enrollmentKey, setEnrollmentKey] = useState(null);
   const [sectionEnrollmentId, setSectionEnrollmentId] = useState(null);
 
@@ -112,7 +113,7 @@ export function LegajoAlumno() {
 
           {!isError && (
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList variant="segmented" className="w-full">
+            <TabsList variant="line">
               <TabsTrigger value="datos-personales" className="flex-1">
                 Datos personales
               </TabsTrigger>
@@ -121,6 +122,9 @@ export function LegajoAlumno() {
               </TabsTrigger>
               <TabsTrigger value="evaluacion" className="flex-1">
                 Evaluación
+              </TabsTrigger>
+              <TabsTrigger value="plan-de-estudio" className="flex-1">
+                Plan de estudio
               </TabsTrigger>
               <TabsTrigger value="financiero" className="flex-1">
                 Financiero
@@ -133,6 +137,7 @@ export function LegajoAlumno() {
                 puedeAccionar={puedeAccionar}
                 puedeDarDeBaja={puededarDeBaja}
                 puedeReactivar={puedeReactivar}
+                puedeEditar={puededarDeBaja}
                 onReactivar={() => setReactivarOpen(true)}
                 onReset={() => setResetOpen(true)}
                 onBaja={() => setBajaOpen(true)}
@@ -154,6 +159,14 @@ export function LegajoAlumno() {
                 onEnrollmentChange={handleEnrollmentChange}
                 sectionEnrollmentId={sectionEnrollmentId}
                 onSectionChange={setSectionEnrollmentId}
+              />
+            </TabsContent>
+            <TabsContent value="plan-de-estudio" className="mt-4">
+              <PlanDeEstudioTab
+                studentId={id}
+                enrollmentKey={enrollmentKey}
+                onEnrollmentChange={handleEnrollmentChange}
+                onViewGrades={handleViewGrades}
               />
             </TabsContent>
             <TabsContent value="financiero" className="mt-4">

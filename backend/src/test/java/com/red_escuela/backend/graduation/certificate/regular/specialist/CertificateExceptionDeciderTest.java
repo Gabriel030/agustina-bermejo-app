@@ -1,5 +1,6 @@
 package com.red_escuela.backend.graduation.certificate.regular.specialist;
 
+import com.red_escuela.backend.enrollment.api.EnrollmentNameFinder;
 import com.red_escuela.backend.graduation.certificate.regular.entity.CertificateExceptionApproval;
 import com.red_escuela.backend.graduation.certificate.regular.entity.OrganismKind;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateSettings;
@@ -9,6 +10,7 @@ import com.red_escuela.backend.graduation.certificate.regular.exception.OwnExcep
 import com.red_escuela.backend.graduation.certificate.regular.repository.CertificateExceptionApprovalRepository;
 import com.red_escuela.backend.graduation.events.CertificateExceptionDecidedEvent;
 import com.red_escuela.backend.identity.api.CurrentActorFinder;
+import com.red_escuela.backend.identity.api.PersonNameFinder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -43,7 +45,7 @@ class CertificateExceptionDeciderTest {
     private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
     private final Clock clock = Clock.fixed(Instant.parse("2026-11-05T12:00:00Z"), ZoneOffset.UTC);
     private final CertificateExceptionDecider decider = new CertificateExceptionDecider(repository, settingsFinder, currentActorFinder,
-            eventPublisher, clock);
+            eventPublisher, clock, new CertificateExceptionResponses(mock(PersonNameFinder.class), mock(EnrollmentNameFinder.class)));
 
     @BeforeEach
     void givenPendingExceptionAndDirectorActing() {

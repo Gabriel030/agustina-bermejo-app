@@ -1,5 +1,5 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import { fireEvent, render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { DataTable } from './DataTable';
 
@@ -23,6 +23,11 @@ const data = [
 
 function bodyNames() {
   return screen.getAllByRole('row').slice(1).map((row) => within(row).getAllByRole('cell')[0].textContent);
+}
+
+function stubElementWidths({ scrollWidth, clientWidth }) {
+  vi.spyOn(Element.prototype, 'scrollWidth', 'get').mockReturnValue(scrollWidth);
+  vi.spyOn(Element.prototype, 'clientWidth', 'get').mockReturnValue(clientWidth);
 }
 
 function renderTable(props = {}) {
@@ -148,6 +153,15 @@ describe('DataTable', () => {
     expect(screen.getByText('Beta')).toBeInTheDocument();
   });
 
+  it('raises the sort select, the filter trigger and the expand toggle to a 44px touch target on mobile', () => {
+    vi.spyOn(window, 'matchMedia').mockImplementation(() => ({ matches: true, addEventListener() {}, removeEventListener() {} }));
+    renderTable({ renderExpanded: () => <p>Detalle</p>, expandLabel: 'Ver partes' });
+
+    expect(screen.getByRole('combobox', { name: 'Ordenar por' })).toHaveClass('max-md:data-[size=default]:h-11');
+    expect(screen.getByRole('button', { name: 'Filtrar por estado' })).toHaveClass('max-md:after:-inset-2.5');
+    expect(screen.getAllByRole('button', { name: 'Ver partes' })[0]).toHaveClass('max-md:size-11');
+  });
+
   it('renders header-less columns as a full width footer of the card', () => {
     vi.spyOn(window, 'matchMedia').mockImplementation(() => ({ matches: true, addEventListener() {}, removeEventListener() {} }));
     const withAction = [...columns, { id: 'action', header: '', enableSorting: false, cell: () => <a href="/x">Abrir</a> }];
@@ -202,6 +216,42 @@ describe('DataTable', () => {
     });
 
     it('renders the overflow indicator hidden while nothing overflows', () => {
+      renderTable({ compact: true, columns: stickyColumns });
+
+      expect(screen.getByTestId('overflow-indicator')).toHaveClass('opacity-0');
+    });
+
+    it('shows the overflow indicator while the rows are wider than the table container', () => {
+      stubElementWidths({ scrollWidth: 640, clientWidth: 320 });
+      renderTable({ compact: true, columns: stickyColumns });
+
+      expect(screen.getByTestId('overflow-indicator')).toHaveClass('opacity-100');
+    });
+
+    it('shows the more columns pill at the bottom right instead of a centered arrow', () => {
+      stubElementWidths({ scrollWidth: 640, clientWidth: 320 });
+      renderTable({ compact: true, columns: stickyColumns });
+
+      const indicator = screen.getByTestId('overflow-indicator');
+      expect(indicator).toHaveTextContent('Más columnas');
+      expect(indicator).toHaveClass('bottom-2', 'right-2', 'pointer-events-none');
+      expect(indicator).not.toHaveClass('inset-y-0');
+    });
+
+    it('hides the overflow indicator once the scroll reaches the end', () => {
+      stubElementWidths({ scrollWidth: 640, clientWidth: 320 });
+      const { container } = renderTable({ compact: true, columns: stickyColumns });
+      expect(screen.getByTestId('overflow-indicator')).toHaveClass('opacity-100');
+
+      const scroller = container.querySelector('.overflow-auto');
+      scroller.scrollLeft = 320;
+      fireEvent.scroll(scroller);
+
+      expect(screen.getByTestId('overflow-indicator')).toHaveClass('opacity-0');
+    });
+
+    it('hides the overflow indicator when the rows fit the table container', () => {
+      stubElementWidths({ scrollWidth: 320, clientWidth: 320 });
       renderTable({ compact: true, columns: stickyColumns });
 
       expect(screen.getByTestId('overflow-indicator')).toHaveClass('opacity-0');

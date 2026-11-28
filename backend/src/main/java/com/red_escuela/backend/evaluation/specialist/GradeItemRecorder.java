@@ -1,7 +1,12 @@
 package com.red_escuela.backend.evaluation.specialist;
 
+import com.red_escuela.backend.academicstructure.api.SectionClosureGuard;
 import com.red_escuela.backend.evaluation.domain.CourseworkOutcome;
+import com.red_escuela.backend.evaluation.entity.SectionGradeItemPublication;
+import com.red_escuela.backend.evaluation.events.GradeCorrectedEvent;
+import com.red_escuela.backend.evaluation.events.GradesPublishedEvent;
 import com.red_escuela.backend.evaluation.events.SubjectApprovalRevertedEvent;
+import com.red_escuela.backend.evaluation.events.SubjectApprovalStandingChangedEvent;
 import com.red_escuela.backend.identity.entity.Person;
 import org.springframework.context.ApplicationEventPublisher;
 import com.red_escuela.backend.evaluation.domain.PrerequisiteGatedOutcome;
@@ -49,6 +54,7 @@ import com.red_escuela.backend.evaluation.api.GraduationRequestTriggerPort;
 @Service
 public class GradeItemRecorder {
 
+    private final SectionEvaluationSchemeLoader schemeLoader;
     private final CourseworkOutcomeCalculator outcomeCalculator = new CourseworkOutcomeCalculator();
 
     private final GradeItemRepository gradeItemRepository;
@@ -70,6 +76,9 @@ public class GradeItemRecorder {
     private final ExamBoardTakenChecker examBoardTakenChecker;
     private final CourseworkApprovalChecker courseworkApprovalChecker;
     private final ProgramPrerequisiteEvaluator programPrerequisiteEvaluator;
+    private final SectionClosureGuard sectionClosureGuard;
+    private final ApprovedCourseworkCountFinder courseworkCountFinder;
+    private final GradeItemSlotValidator slotValidator;
 
     public GradeItemRecorder(
             GradeItemRepository gradeItemRepository,
@@ -90,7 +99,11 @@ public class GradeItemRecorder {
             AcademicReferenceFinder academicReferenceFinder,
             ExamBoardTakenChecker examBoardTakenChecker,
             CourseworkApprovalChecker courseworkApprovalChecker,
-            ProgramPrerequisiteEvaluator programPrerequisiteEvaluator) {
+            ProgramPrerequisiteEvaluator programPrerequisiteEvaluator,
+            SectionClosureGuard sectionClosureGuard,
+            ApprovedCourseworkCountFinder courseworkCountFinder,
+            GradeItemSlotValidator slotValidator, SectionEvaluationSchemeLoader schemeLoader) {
+        this.schemeLoader = schemeLoader;
         this.gradeItemRepository = gradeItemRepository;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
         this.sectionEnrollmentOutcomeRecorder = sectionEnrollmentOutcomeRecorder;
@@ -110,6 +123,15 @@ public class GradeItemRecorder {
         this.examBoardTakenChecker = examBoardTakenChecker;
         this.courseworkApprovalChecker = courseworkApprovalChecker;
         this.programPrerequisiteEvaluator = programPrerequisiteEvaluator;
+        this.sectionClosureGuard = sectionClosureGuard;
+        this.courseworkCountFinder = courseworkCountFinder;
+        this.slotValidator = slotValidator;
+    }
+
+    private void requireSectionNotClosedUnlessFinal(CreateGradeItemRequest request, SectionKind kind, Long sectionId) {
+        if (request.type() != GradeItemType.FINAL) {
+            sectionClosureGuard.requireNotClosed(kind, sectionId);
+        }
     }
 
     @Transactional
@@ -118,7 +140,9 @@ public class GradeItemRecorder {
         requireFinalFromExamBoard(request);
         sectionEnrollmentFinder.lockProgramEnrollment(enrollmentId);
         SubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findProgramEnrollment(enrollmentId);
-        EvaluationScheme scheme = enrollment.getSubjectSection().getEvaluationScheme();
+        enrollment.getProgramEnrollment().requireActive();
+        requireSectionNotClosedUnlessFinal(request, SectionKind.PROGRAM, enrollment.getSubjectSection().getId());
+        EvaluationScheme scheme = schemeLoader.ofProgramSection(enrollment.getSubjectSection());
         ExamBoard examBoard = validateGradeSource(
                 request.examBoardId(), instructorId,
                 () -> sectionTeachingFinder
@@ -132,6 +156,8 @@ public class GradeItemRecorder {
         if (scheme == null) {
             throw new NoEvaluationSchemeException(enrollment.getSubjectSection().getId());
         }
+        slotValidator.requireWithinConfiguredSlots(
+                SectionKind.PROGRAM, enrollment.getSubjectSection().getId(), scheme, request.type(), request.sequenceNumber());
         publicationLock.requireUnlocked(
                 SectionKind.PROGRAM, enrollment.getSubjectSection().getId(), request.type(), request.sequenceNumber());
         if (request.type() == GradeItemType.EXAM) {
@@ -148,10 +174,14 @@ public class GradeItemRecorder {
         requirePrerequisitesApprovedForFinalExam(request, enrollment, correction);
         auditFinalRevert(gradeItem, request, correction, instructorId, SectionKind.PROGRAM,
                 enrollment.getSubjectSection().getId(), enrollmentId);
+        Grade previousScore = gradeItem.getScore();
         gradeItem.setProgramSubjectSectionEnrollment(enrollment);
         applyData(gradeItem, request, examBoard);
         gradeItem = gradeItemRepository.save(gradeItem);
         applyProgramEnrollmentCondition(enrollment, correction, false);
+        announceFinalSaved(gradeItem, previousScore, correction, request.reason(),
+                enrollment.getSubjectSection().getId(), enrollment.getSubjectSection().getName(),
+                enrollment.getStudent().getPerson().getId());
         return gradeItem;
     }
 
@@ -202,7 +232,7 @@ public class GradeItemRecorder {
     @Transactional
     public void recalculateProgramEnrollmentCondition(Long enrollmentId) {
         sectionEnrollmentFinder.findProgramEnrollmentIfPresent(enrollmentId)
-                .filter(enrollment -> enrollment.getSubjectSection().getEvaluationScheme() != null)
+                .filter(enrollment -> schemeLoader.ofProgramSection(enrollment.getSubjectSection()) != null)
                 .ifPresent(enrollment -> {
                     sectionEnrollmentFinder.lockProgramEnrollment(enrollmentId);
                     applyProgramEnrollmentCondition(enrollment, false, true);
@@ -212,7 +242,7 @@ public class GradeItemRecorder {
     @Transactional
     public void recalculateCourseEnrollmentCondition(Long enrollmentId) {
         sectionEnrollmentFinder.findCourseEnrollmentIfPresent(enrollmentId)
-                .filter(enrollment -> enrollment.getCourseSubjectSection().getEvaluationScheme() != null)
+                .filter(enrollment -> schemeLoader.ofCourseSection(enrollment.getCourseSubjectSection()) != null)
                 .ifPresent(enrollment -> {
                     sectionEnrollmentFinder.lockCourseEnrollment(enrollmentId);
                     applyCourseEnrollmentCondition(enrollment, false, true);
@@ -222,7 +252,7 @@ public class GradeItemRecorder {
     private void applyProgramEnrollmentCondition(
             SubjectSectionEnrollment enrollment, boolean finalCorrection, boolean rebuildFromItems) {
         Long enrollmentId = enrollment.getId();
-        EvaluationScheme scheme = enrollment.getSubjectSection().getEvaluationScheme();
+        EvaluationScheme scheme = schemeLoader.ofProgramSection(enrollment.getSubjectSection());
         List<GradeItem> items = publishedGradeItemSelector.selectPublished(
                 SectionKind.PROGRAM, enrollment.getSubjectSection().getId(),
                 gradeItemRepository.findByProgramSubjectSectionEnrollmentId(enrollmentId));
@@ -232,17 +262,19 @@ public class GradeItemRecorder {
         BooleanSupplier prerequisitesMet = () -> programPrerequisiteEvaluator.areAllApprovedOrWaivedOrSubjectOutsidePlan(
                 enrollment.getProgramEnrollment().getId(), enrollment.subjectId());
         Long programEnrollmentId = enrollment.getProgramEnrollment().getId();
+        int courseworkCount = courseworkCountFinder.findExpectedCount(SectionKind.PROGRAM, enrollment.getSubjectSection().getId());
         boolean wasApproved = enrollment.getStatus() == EnrollmentStatus.APPROVED;
         if (rebuildFromItems && isApprovedByFinalExam(enrollment)) {
             PrerequisiteGatedOutcome gated = outcomeCalculator.promotionPolicy().restrictApprovalWhenPrerequisitesUnmet(
-                    outcomeCalculator.calculate(scheme, items, EnrollmentStatus.REGULAR, maxFinalExamAttempts), prerequisitesMet);
+                    outcomeCalculator.calculate(scheme, courseworkCount, items, EnrollmentStatus.REGULAR, maxFinalExamAttempts),
+                    prerequisitesMet);
             if (gated.forcedFinalCondition().isPresent()) {
                 revertApprovalLosingPrerequisites(enrollment);
             }
             return;
         }
         Optional<CourseworkOutcome> calculated = outcomeCalculator.promotionPolicy().restrictApprovalWhenPrerequisitesUnmet(
-                outcomeCalculator.calculate(scheme, items, current, maxFinalExamAttempts), prerequisitesMet)
+                outcomeCalculator.calculate(scheme, courseworkCount, items, current, maxFinalExamAttempts), prerequisitesMet)
                 .outcome();
         CourseworkOutcome result = outcomeCalculator.regularityPolicy().holdWhileFree(
                 calculated,
@@ -263,7 +295,16 @@ public class GradeItemRecorder {
             } else if (losesApproval) {
                 graduationRequestTrigger.flagGraduationRequestOutdated(programEnrollmentId);
             }
+            if (wasApproved != (result.status() == EnrollmentStatus.APPROVED)) {
+                publishApprovalStandingChanged(enrollment, result.status() == EnrollmentStatus.APPROVED);
+            }
         }
+    }
+
+    private void publishApprovalStandingChanged(SubjectSectionEnrollment enrollment, boolean approved) {
+        eventPublisher.publishEvent(SubjectApprovalStandingChangedEvent.changedFor(
+                enrollment.getProgramEnrollment().getId(), enrollment.getProgramEnrollment().getPlan().getId(),
+                enrollment.subjectId(), approved));
     }
 
     private void revertApprovalLosingPrerequisites(SubjectSectionEnrollment enrollment) {
@@ -286,6 +327,7 @@ public class GradeItemRecorder {
                 enrollment.getSubjectSection().getId(), enrollment.getId());
         sectionEnrollmentOutcomeRecorder.recordProgramOutcome(enrollment.getId(), EnrollmentStatus.REGULAR, null, null, true);
         graduationRequestTrigger.flagGraduationRequestOutdated(programEnrollmentId);
+        publishApprovalStandingChanged(enrollment, false);
         Person student = enrollment.getStudent().getPerson();
         eventPublisher.publishEvent(SubjectApprovalRevertedEvent.revertedFor(
                 student.getId(), enrollment.getSubjectSection().getSubject().getName(), unmetNames));
@@ -297,7 +339,8 @@ public class GradeItemRecorder {
         requireFinalFromExamBoard(request);
         sectionEnrollmentFinder.lockCourseEnrollment(enrollmentId);
         CourseSubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findCourseEnrollment(enrollmentId);
-        EvaluationScheme scheme = enrollment.getCourseSubjectSection().getEvaluationScheme();
+        requireSectionNotClosedUnlessFinal(request, SectionKind.COURSE, enrollment.getCourseSubjectSection().getId());
+        EvaluationScheme scheme = schemeLoader.ofCourseSection(enrollment.getCourseSubjectSection());
         ExamBoard examBoard = validateGradeSource(
                 request.examBoardId(), instructorId,
                 () -> sectionTeachingFinder
@@ -312,6 +355,8 @@ public class GradeItemRecorder {
         if (scheme == null) {
             throw new NoEvaluationSchemeException(enrollment.getCourseSubjectSection().getId());
         }
+        slotValidator.requireWithinConfiguredSlots(
+                SectionKind.COURSE, enrollment.getCourseSubjectSection().getId(), scheme, request.type(), request.sequenceNumber());
         publicationLock.requireUnlocked(
                 SectionKind.COURSE, enrollment.getCourseSubjectSection().getId(), request.type(), request.sequenceNumber());
         if (request.type() == GradeItemType.EXAM) {
@@ -327,17 +372,21 @@ public class GradeItemRecorder {
         requireEligibleForFinalExam(request, correction, () -> finalExamEligibilityEvaluator.requireEligibleToLoad(enrollment));
         auditFinalRevert(gradeItem, request, correction, instructorId, SectionKind.COURSE,
                 enrollment.getCourseSubjectSection().getId(), enrollmentId);
+        Grade previousScore = gradeItem.getScore();
         gradeItem.setCourseSubjectSectionEnrollment(enrollment);
         applyData(gradeItem, request, examBoard);
         gradeItem = gradeItemRepository.save(gradeItem);
         applyCourseEnrollmentCondition(enrollment, correction, false);
+        announceFinalSaved(gradeItem, previousScore, correction, request.reason(),
+                enrollment.getCourseSubjectSection().getId(), enrollment.getCourseSubjectSection().getName(),
+                enrollment.getStudent().getPerson().getId());
         return gradeItem;
     }
 
     private void applyCourseEnrollmentCondition(
             CourseSubjectSectionEnrollment enrollment, boolean finalCorrection, boolean rebuildFromItems) {
         Long enrollmentId = enrollment.getId();
-        EvaluationScheme scheme = enrollment.getCourseSubjectSection().getEvaluationScheme();
+        EvaluationScheme scheme = schemeLoader.ofCourseSection(enrollment.getCourseSubjectSection());
         List<GradeItem> items = publishedGradeItemSelector.selectPublished(
                 SectionKind.COURSE, enrollment.getCourseSubjectSection().getId(),
                 gradeItemRepository.findByCourseSubjectSectionEnrollmentId(enrollmentId));
@@ -345,7 +394,7 @@ public class GradeItemRecorder {
         boolean rebuild = rebuildFromItems && isRebuildable(enrollment.getStatus(), enrollment.getFinalGradeType());
         var current = rebuild ? EnrollmentStatus.ENROLLED : enrollment.statusAssumingRegularWhen(finalCorrection);
         CourseworkOutcome result = outcomeCalculator.regularityPolicy().holdWhileFree(
-                outcomeCalculator.calculate(scheme, items, current, maxFinalExamAttempts),
+                outcomeCalculator.calculate(scheme, 0, items, current, maxFinalExamAttempts),
                 current, () -> absenceFreeStatusChecker.isCourseEnrollmentFreeByAbsences(enrollmentId)).orElse(null);
         if (result == null && (finalCorrection || rebuild)) {
             result = new CourseworkOutcome(current, null, null);
@@ -464,6 +513,23 @@ public class GradeItemRecorder {
     private void requireEligibleForFinalExam(CreateGradeItemRequest request, boolean correction, Runnable eligibilityCheck) {
         if (request.type() == GradeItemType.FINAL && !correction) {
             eligibilityCheck.run();
+        }
+    }
+
+    private void announceFinalSaved(GradeItem gradeItem, Grade previousScore, boolean correction, String reason,
+                                    Long sectionId, String sectionName, Long studentPersonId) {
+        if (gradeItem.getType() != GradeItemType.FINAL) {
+            return;
+        }
+        int sequence = SectionGradeItemPublication.sequenceKey(gradeItem.getSequenceNumber());
+        if (!correction) {
+            eventPublisher.publishEvent(GradesPublishedEvent.publishedFor(
+                    sectionId, sectionName, gradeItem.getType().displayName(), sequence, List.of(studentPersonId)));
+            return;
+        }
+        if (!gradeItem.getScore().equals(previousScore)) {
+            eventPublisher.publishEvent(GradeCorrectedEvent.correctedFor(
+                    gradeItem.getId(), studentPersonId, sectionName, gradeItem.getType().displayName(), sequence, reason));
         }
     }
 

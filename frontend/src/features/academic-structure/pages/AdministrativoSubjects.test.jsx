@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
@@ -44,7 +44,7 @@ describe('AdministrativoSubjects', () => {
     renderWithProviders(<AdministrativoSubjects />, { route: '/administrativo/gestion-academica' });
 
     expect(await screen.findByText('No pudimos cargar las materias')).toBeInTheDocument();
-    await user.click(screen.getByRole('button', { name: 'Reintentar' }));
+    await user.click(within(screen.getByRole('tabpanel')).getByRole('button', { name: 'Reintentar' }));
 
     await waitFor(() => expect(screen.queryByText('No pudimos cargar las materias')).not.toBeInTheDocument());
   });

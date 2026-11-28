@@ -4,11 +4,11 @@ import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.identity.entity.Institution;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.billing.entity.CohortIntake;
+import com.red_escuela.backend.academicstructure.domain.CohortIntake;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.billing.entity.PaymentPlanSelection;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.discount.DiscountDraftBuilder;
 import com.red_escuela.backend.billing.discount.domain.CohortPromotionAcquisition;
@@ -132,7 +132,11 @@ public class IssuingScenarioFactory {
     public Long newCohort(Long templateId, CohortIntake intake, LocalDate cursadaStart, Percentage entryDiscount) {
         return transactionTemplate.execute(status -> {
             ProgramCohort cohort = new ProgramCohort();
-            cohort.setTemplate(entityManager.getReference(ProgramYearBillingTemplate.class, templateId));
+            cohort.markOpened(java.time.LocalDateTime.of(2000, 1, 1, 0, 0));
+            cohort.setTemplateId(templateId);
+            ProgramYearBillingTemplate cohortTemplate = entityManager.find(ProgramYearBillingTemplate.class, templateId);
+            cohort.setProgramId(cohortTemplate.programId());
+            cohort.setTermId(cohortTemplate.termId());
             cohort.setIntake(intake);
             cohort.setAdmissionStart(cursadaStart.minusMonths(2));
             cohort.setAdmissionEnd(cursadaStart.minusDays(1));

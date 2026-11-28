@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.specialist;
 
+import com.red_escuela.backend.testsupport.ApprovedSectionConfigFixture;
 import com.red_escuela.backend.evaluation.api.ClosureReportNumberAllocator;
 import com.jayway.jsonpath.JsonPath;
 import com.red_escuela.backend.academicstructure.domain.InstructorRole;
@@ -236,6 +237,7 @@ class CommissionClosureQaIT extends AbstractIntegrationTest {
         entityManager.persist(subject);
         ProgramSubject entry = new ProgramSubject();
         entry.setProgram(program);
+        entry.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
         entry.setSubject(subject);
         entry.setCredits(4);
         entry.setStatus(StatusType.ACTIVE);
@@ -262,8 +264,9 @@ class CommissionClosureQaIT extends AbstractIntegrationTest {
         section.setTerm(term);
         section.setMaxAbsenceRate(Percentage.ofPoints(BigDecimal.valueOf(25)));
         section.setStatus(StatusType.ACTIVE);
-        section.setEvaluationScheme(scheme);
+        section.setEvaluationSchemeId(scheme == null ? null : scheme.getId());
         entityManager.persist(section);
+        ApprovedSectionConfigFixture.persistWhenSchemeExpectsCoursework(entityManager, section);
         Person teacherPerson = persistPerson("Docente", "Zoé", "DOCENTE");
         Instructor teacher = new Instructor();
         teacher.setPerson(teacherPerson);
@@ -473,6 +476,7 @@ class CommissionClosureQaIT extends AbstractIntegrationTest {
         entityManager.persist(prerequisite);
         ProgramSubject prerequisiteEntry = new ProgramSubject();
         prerequisiteEntry.setProgram(commission.program());
+        prerequisiteEntry.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(commission.program()));
         prerequisiteEntry.setSubject(prerequisite);
         prerequisiteEntry.setCredits(4);
         prerequisiteEntry.setStatus(StatusType.ACTIVE);
@@ -498,7 +502,7 @@ class CommissionClosureQaIT extends AbstractIntegrationTest {
         pastSection.setTerm(past);
         pastSection.setMaxAbsenceRate(Percentage.ofPoints(BigDecimal.valueOf(25)));
         pastSection.setStatus(StatusType.ACTIVE);
-        pastSection.setEvaluationScheme(commission.scheme());
+        pastSection.setEvaluationSchemeId(commission.scheme().getId());
         entityManager.persist(pastSection);
         SubjectSectionEnrollment enrollment = new SubjectSectionEnrollment();
         enrollment.setStudent(commission.students().get(studentIndex));

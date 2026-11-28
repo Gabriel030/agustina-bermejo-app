@@ -1,5 +1,6 @@
 package com.red_escuela.backend.notification.broadcast.audience;
 
+import com.red_escuela.backend.identity.api.MinorGuardianEmailCollisionFinder;
 import com.red_escuela.backend.notification.broadcast.domain.BroadcastCategory;
 import com.red_escuela.backend.notification.broadcast.domain.ChannelType;
 import com.red_escuela.backend.notification.broadcast.domain.ConsentDecision;
@@ -10,6 +11,8 @@ import com.red_escuela.backend.notification.broadcast.audience.domain.ExclusionR
 import com.red_escuela.backend.notification.broadcast.audience.specialist.RecipientEligibilityEvaluator;
 import org.junit.jupiter.api.Test;
 
+import java.util.Set;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -19,7 +22,8 @@ import static org.mockito.Mockito.when;
 class RecipientEligibilityEvaluatorTest {
 
     private final ContactConsentLedger ledger = mock(ContactConsentLedger.class);
-    private final RecipientEligibilityEvaluator evaluator = new RecipientEligibilityEvaluator(ledger);
+    private final MinorGuardianEmailCollisionFinder minorGuardianEmailCollisionFinder = mock(MinorGuardianEmailCollisionFinder.class);
+    private final RecipientEligibilityEvaluator evaluator = new RecipientEligibilityEvaluator(ledger, minorGuardianEmailCollisionFinder);
 
     private static AudienceRecipient recipient(String email, boolean verified, String phone) {
         return new AudienceRecipient(1L, "Ana Pérez", email, verified, phone);
@@ -69,5 +73,22 @@ class RecipientEligibilityEvaluatorTest {
 
         assertThat(evaluator.findExclusionReason(recipient("a@x.com", true, null), ChannelType.EMAIL, BroadcastCategory.INSTITUTIONAL)).isEmpty();
         assertThat(evaluator.findExclusionReason(recipient(null, false, "+5491155551234"), ChannelType.WHATSAPP_LINK, BroadcastCategory.INSTITUTIONAL)).isEmpty();
+    }
+
+    @Test
+    void minorSharingEmailWithGuardianIsExcludedBeforeConsentIsConsulted() {
+        when(minorGuardianEmailCollisionFinder.findMinorPersonIdsWithEmailSharedWithGuardian(any())).thenReturn(Set.of(1L));
+
+        assertThat(evaluator.findExclusionReason(recipient("a@x.com", true, null), ChannelType.EMAIL, BroadcastCategory.INSTITUTIONAL))
+                .contains(ExclusionReason.NO_CHANNEL_ADDRESS);
+        verifyNoInteractions(ledger);
+    }
+
+    @Test
+    void guardianEmailCollisionIsNotLookedUpForWhatsapp() {
+        consent(ConsentDecision.permitted());
+
+        assertThat(evaluator.findExclusionReason(recipient(null, false, "+5491155551234"), ChannelType.WHATSAPP_LINK, BroadcastCategory.INSTITUTIONAL)).isEmpty();
+        verifyNoInteractions(minorGuardianEmailCollisionFinder);
     }
 }

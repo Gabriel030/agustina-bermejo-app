@@ -4,7 +4,6 @@ import { AlertTriangle, CheckCircle2, CircleAlert, Clock, RefreshCw, WifiOff, XC
 import { CircuitOpenError, NetworkError, RateLimitedError } from '@/api/client';
 import { ERROR_MESSAGES, describeError } from '@/api/describeError';
 import { GlassCard } from '@/components/GlassCard';
-import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { Notice } from '@/components/Notice';
 import { Skeleton } from '@/components/Skeleton';
 import { Button } from '@/components/ui/button';
@@ -382,7 +381,6 @@ export function ActivateAccount() {
 
   return (
     <div className="mx-auto flex min-h-screen w-full max-w-[460px] flex-col justify-center gap-4 px-4 py-6">
-      <InstitutionBrand layout="horizontal" size="sm" titulo={INSTITUTION_TITLE} className="justify-center" />
       {content}
       <p className="text-center text-size-12-5 text-ink-faint">{INSTITUTION_TITLE} · Activación de cuenta</p>
     </div>

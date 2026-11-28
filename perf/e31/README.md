@@ -21,7 +21,7 @@ Genera `report.md` (tablas y las 10 pantallas más pesadas) y `out/latest.json` 
 
 ## Variables
 
-`E31_FRONT` (default `http://localhost:5173`), `E31_API` (`http://localhost:8461`), `E31_PASSWORD` (`Test1234`), `E31_ROLES` (lista separada por comas: `Director,Administrativo,Docente,Alumno`), `E31_OUT` (directorio del JSON), `E31_DIRECTOR`, `E31_ADMIN`, `E31_TEACHER` (`perft12`, docente del seed grande) y `E31_STUDENT` (`alumno.demo`).
+`E31_FRONT` (default `http://localhost:5173`), `E31_API` (`http://localhost:8461`), `E31_PASSWORD` (`Test1234`), `E31_ROLES` (lista separada por comas: `Director,Administrativo,Preceptor,Docente,Alumno,Plataforma`), `E31_OUT` (directorio del JSON), `E31_DIRECTOR`, `E31_ADMIN`, `E31_TEACHER` (`perft12`, docente del seed grande) y `E31_PRECEPTOR` (`preceptor.demo`), `E31_PLATFORM` (sin valor por defecto: no hay usuario de plataforma en `docs/context/test-users.md`; sin esta variable el rol se informa como no medido con su motivo) y `E31_STUDENT` (`alumno.demo`).
 
 ## Cómo se mide
 
@@ -33,4 +33,22 @@ Genera `report.md` (tablas y las 10 pantallas más pesadas) y `out/latest.json` 
 
 ## Pantallas y acciones
 
-Las rutas y las acciones de lectura segura están en `screens.mjs`.
+Las rutas, los detalles muestreados y las acciones de lectura segura están en `screens.mjs`. `coverage.test.mjs` compara ese catálogo con las rutas de `frontend/src/features/*/routes.jsx`: una ruta nueva sin listar, o una pantalla listada que ya no existe, rompe `npm test`. Las rutas con parámetro de id se miden solo en los detalles de `details` (se llega con un clic desde la lista y se mide la URL resultante); si el seed no tiene datos o el selector no coincide, el informe lo dice en «No medido». `inicio` se mide en su destino final y se informa en la sección «Redirecciones».
+
+## Acciones: clic → resultado
+
+`measureAction` solo considera peticiones iniciadas después del clic (las anteriores se descartan por identificador) y trata como colgada toda petición a la API que lleve más de 10 s sin `loadingFinished` ni `loadingFailed`: no bloquea la medición y se lista en la columna «Peticiones colgadas». Si el elemento no está visible, la acción se informa como no medida con el selector probado; si llega al tope de 45 s con peticiones activas, se informa como no medible, nunca como un tiempo.
+
+## Comparar contra la línea base
+
+`baseline.json` guarda por pantalla `requests`, `duplicates`, `cascadeDepth` y `errors` (sin tiempos: no son reproducibles). Detalles muestreados se guardan como `<Rol> detalle <ruta>`.
+
+```
+cd perf/e31 && npm run measure && npm run compare
+```
+
+`compare.mjs` sale 0 si ninguna pantalla supera la línea base y 1 si alguna sube peticiones, duplicadas, niveles o errores, listando cuál. Las pantallas sin línea base o no medidas en la corrida (por ejemplo con `E31_ROLES` parcial) se informan sin fallar. No corre en la CI de los PR: necesita el stack local con el seed grande.
+
+Cuando una mejora es intencional (o se suma una pantalla), correr la medición completa y `npm run compare:update`: fusiona lo medido sobre `baseline.json` y se commitea junto con el cambio que lo motiva. La línea base inicial se sembró desde el `report.md` del 17-nov, anterior a 31.2: es una cota holgada hasta la primera actualización con una corrida real.
+
+Tests de los scripts (sin navegador ni stack): `cd perf/e31 && npm test`.

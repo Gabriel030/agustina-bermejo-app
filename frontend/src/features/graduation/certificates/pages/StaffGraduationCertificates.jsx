@@ -4,13 +4,17 @@ import { GlassCard } from '@/components/GlassCard';
 import { Paginador } from '@/components/Paginador';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { TabCount } from '@/components/TabCount';
+import { useAuth } from '@/context/AuthContext';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { describeError } from '@/api/describeError';
 import { EligibleBatchConfirmDialog } from '@/features/graduation/certificates/components/EligibleBatchConfirmDialog';
+import { ImportedReviewPanel } from '@/features/graduation/certificates/components/ImportedReviewPanel';
 import { EligibleBatchResult } from '@/features/graduation/certificates/components/EligibleBatchResult';
 import { EligibleGraduatesTable } from '@/features/graduation/certificates/components/EligibleGraduatesTable';
 import { IssuedCertificatesTable } from '@/features/graduation/certificates/components/IssuedCertificatesTable';
 import { EligiblePreviewDialog } from '@/features/graduation/certificates/components/EligiblePreviewDialog';
+import { usePendingImportedReviewCount } from '@/features/graduation/certificates/hooks/useImportedReview';
 import {
   useEligibleGraduates,
   useIssueGraduationBatch,
@@ -25,6 +29,9 @@ import {
 } from '@/features/graduation/certificates/lib/staffGraduationCertificates';
 
 export function StaffGraduationCertificates() {
+  const { usuario } = useAuth();
+  const isDirector = (usuario?.roles ?? []).includes('DIRECTOR');
+  const pendingReviews = usePendingImportedReviewCount({ enabled: isDirector });
   const [view, setView] = useState('eligible');
   const [kind, setKind] = useState('PROGRAM');
   const [query, setQuery] = useState('');
@@ -155,13 +162,24 @@ export function StaffGraduationCertificates() {
   return (
     <PageContainer title="Egresos" description="Certificados de egreso">
       <Tabs value={view} onValueChange={setView} className="gap-4">
-        <TabsList variant="segmented">
+        <TabsList variant="line">
           <TabsTrigger value="eligible">Por emitir</TabsTrigger>
           <TabsTrigger value="issued">Emitidos</TabsTrigger>
+          {isDirector && (
+            <TabsTrigger
+              value="review"
+              aria-label={pendingReviews.data > 0 ? `Revisión de importados, ${pendingReviews.data} pendientes` : 'Revisión de importados'}
+            >
+              Revisión de importados
+              <span aria-hidden="true">
+                <TabCount count={pendingReviews.data} />
+              </span>
+            </TabsTrigger>
+          )}
         </TabsList>
         <TabsContent value="eligible" className="mt-0 flex flex-col gap-4">
           <Tabs value={kind} onValueChange={changeKind} className="gap-4">
-            <TabsList variant="segmented">
+            <TabsList variant="line">
               {KIND_TABS.map((tab) => (
                 <TabsTrigger key={tab.value} value={tab.value}>
                   {tab.label}
@@ -177,6 +195,11 @@ export function StaffGraduationCertificates() {
         <TabsContent value="issued" className="mt-0">
           <IssuedCertificatesTable />
         </TabsContent>
+        {isDirector && (
+          <TabsContent value="review" className="mt-0">
+            <ImportedReviewPanel />
+          </TabsContent>
+        )}
       </Tabs>
 
       <EligibleBatchConfirmDialog

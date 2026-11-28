@@ -7,6 +7,7 @@ import com.red_escuela.backend.graduation.certificate.engine.SignatorySnapshot;
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificateKind;
 import com.red_escuela.backend.graduation.certificate.template.dto.CertificateTemplateContent;
 import com.red_escuela.backend.graduation.certificate.template.dto.CertificateTemplateSigner;
+import com.red_escuela.backend.graduation.certificate.template.dto.DocumentTemplateType;
 import com.red_escuela.backend.graduation.certificate.template.dto.TemplatePreviewSource;
 import com.red_escuela.backend.graduation.certificate.template.dto.TemplateVersionStatus;
 import com.red_escuela.backend.graduation.certificate.template.entity.CertificateTemplate;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Component
 @Transactional(readOnly = true)
@@ -44,6 +46,26 @@ public class CertificateTemplateRenderSource {
                 .orElseThrow(TemplateVersionNotFoundException::new);
     }
 
+    public CertificateTemplateVersion currentPublished(DocumentTemplateType type) {
+        CertificateTemplate template = templateFinder.find(type);
+        return versionRepository.findFirstByTemplateIdAndStatusOrderByVersionNumberDesc(template.getId(), TemplateVersionStatus.PUBLISHED)
+                .orElseThrow(TemplateVersionNotFoundException::new);
+    }
+
+    public Optional<CertificateTemplateVersion> findCurrentPublished(DocumentTemplateType type) {
+        CertificateTemplate template = templateFinder.find(type);
+        return versionRepository.findFirstByTemplateIdAndStatusOrderByVersionNumberDesc(template.getId(), TemplateVersionStatus.PUBLISHED);
+    }
+
+    public CertificateTemplateVersion forPreview(DocumentTemplateType type, TemplatePreviewSource source) {
+        if (source == TemplatePreviewSource.PUBLISHED) {
+            return currentPublished(type);
+        }
+        CertificateTemplate template = templateFinder.find(type);
+        return versionRepository.findByTemplateIdAndStatus(template.getId(), TemplateVersionStatus.DRAFT)
+                .orElseThrow(TemplateVersionNotFoundException::new);
+    }
+
     public CertificateTemplateVersion byId(Long versionId) {
         return versionRepository.findById(versionId).orElseThrow(TemplateVersionNotFoundException::new);
     }
@@ -64,7 +86,8 @@ public class CertificateTemplateRenderSource {
                 snapshot.titleKind(), snapshot.titleName(), snapshot.programLevel(), snapshot.hours(), snapshot.graduationDate(),
                 snapshot.issuedOn(),
                 content.instituteName() == null ? snapshot.institutionName() : content.instituteName(),
-                List.of(signatoryOf(content.firstSigner()), signatoryOf(content.secondSigner())), templateRef, null);
+                List.of(signatoryOf(content.firstSigner()), signatoryOf(content.secondSigner())), templateRef, null,
+                snapshot.extraMarkers());
     }
 
     public CertificateAssets assetsOf(CertificateTemplateVersion version, String registryNumber) {

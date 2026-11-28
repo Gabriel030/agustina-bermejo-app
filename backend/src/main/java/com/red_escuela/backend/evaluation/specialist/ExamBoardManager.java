@@ -11,6 +11,7 @@ import com.red_escuela.backend.evaluation.entity.GradeItemType;
 import com.red_escuela.backend.evaluation.exception.ExamBoardCanceledException;
 import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
 import com.red_escuela.backend.evaluation.exception.ExamBoardNotFoundException;
+import com.red_escuela.backend.evaluation.exception.ExamBoardWithoutTribunalException;
 import com.red_escuela.backend.evaluation.repository.ExamBoardInstructorRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRegistrationRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRepository;
@@ -36,6 +37,7 @@ public class ExamBoardManager {
     private final HolidayFinder holidayFinder;
     private final GradeItemRepository gradeItemRepository;
     private final ExamBoardRegistrationSummaryBuilder summaryBuilder;
+    private final ExamBoardWindowValidator windowValidator;
     private final Clock clock;
 
     public ExamBoardManager(ExamBoardRepository examBoardRepository,
@@ -45,6 +47,7 @@ public class ExamBoardManager {
             HolidayFinder holidayFinder,
             GradeItemRepository gradeItemRepository,
             ExamBoardRegistrationSummaryBuilder summaryBuilder,
+            ExamBoardWindowValidator windowValidator,
             Clock clock) {
         this.holidayFinder = holidayFinder;
         this.gradeItemRepository = gradeItemRepository;
@@ -53,6 +56,7 @@ public class ExamBoardManager {
         this.examBoardRegistrationRepository = examBoardRegistrationRepository;
         this.academicReferenceFinder = academicReferenceFinder;
         this.summaryBuilder = summaryBuilder;
+        this.windowValidator = windowValidator;
         this.clock = clock;
     }
 
@@ -64,6 +68,7 @@ public class ExamBoardManager {
             throw new IllegalArgumentException(
                     "La mesa de examen tiene que referenciar exactamente una materia: subjectId O courseSubjectId");
         }
+        windowValidator.require(request.examDate(), request.registrationStart(), request.registrationEnd());
         var term = academicReferenceFinder.findTerm(request.termId());
         if (holidayFinder.isHoliday(request.examDate().toLocalDate())) {
             throw new ExamDateOnHolidayException(request.examDate().toLocalDate());
@@ -108,7 +113,11 @@ public class ExamBoardManager {
         if (examBoard.getStatus() == ExamBoardStatus.CANCELED) {
             throw new ExamBoardCanceledException(examBoardId);
         }
+        boolean alreadyClosed = examBoard.getStatus() == ExamBoardStatus.CLOSED;
         examBoard.close(LocalDateTime.now(clock));
+        if (!alreadyClosed && !examBoardInstructorRepository.existsByExamBoardId(examBoardId)) {
+            throw new ExamBoardWithoutTribunalException(examBoardId);
+        }
         settleRegistrations(examBoardId);
         return examBoardRepository.save(examBoard);
     }

@@ -56,3 +56,18 @@ export function formatearFecha(fechaIso) {
   if (!fechaIso) return null;
   return parsearFecha(fechaIso).toLocaleDateString('es-AR', { day: 'numeric', month: 'short', year: 'numeric' });
 }
+
+export function formatearDiaMes(fechaIso) {
+  if (!fechaIso) return null;
+  const fecha = parsearFecha(fechaIso);
+  const dia = String(fecha.getDate()).padStart(2, '0');
+  const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+  return `${dia}/${mes}`;
+}
+
+export function plazoConfiguracionVencido(fechaIso) {
+  const limite = parsearFecha(fechaIso);
+  const ahora = hoy();
+  const inicioDeHoy = new Date(ahora.getFullYear(), ahora.getMonth(), ahora.getDate());
+  return inicioDeHoy > limite;
+}

@@ -6,8 +6,8 @@ import com.red_escuela.backend.billing.authorization.usecase.ApproveAuthorizatio
 import com.red_escuela.backend.billing.configuration.domain.ConfigurationVersionStatus;
 import com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository;
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
-import com.red_escuela.backend.billing.entity.CohortIntake;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.domain.CohortIntake;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.billing.operation.AuthorizationPendingException;
 import com.red_escuela.backend.billing.planning.TestTemplateTerms;
 import com.red_escuela.backend.billing.dto.CreateProgramCohortRequest;
@@ -25,10 +25,12 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class VersionedCohortEntryDiscountIntegrationTest extends AbstractInvoiceSequenceTest {
+    @org.springframework.beans.factory.annotation.Autowired private com.red_escuela.backend.testsupport.PreceptorTestFactory preceptorTestFactory;
     private static final Percentage TEN_PERCENT = Percentage.ofFraction(new BigDecimal("0.10"));
     private static final Percentage FIFTEEN_PERCENT = Percentage.ofFraction(new BigDecimal("0.15"));
     private static final LocalDate TODAY = LocalDate.of(2027, 1, 10);
@@ -122,7 +124,7 @@ class VersionedCohortEntryDiscountIntegrationTest extends AbstractInvoiceSequenc
         Year year = newYear(career, 2027, 10, 2, 2, 7);
         today(TODAY);
         LocalDate start = LocalDate.of(2027, 3, 1);
-        return createCohort.create(year.templateId(), new CreateProgramCohortRequest(CohortIntake.FIRST, start.minusMonths(2), start.minusDays(1), start, discount)).getId();
+        return createCohort.create(year.templateId(), new CreateProgramCohortRequest(CohortIntake.FIRST, start.minusMonths(2), start.minusDays(1), start, List.of(preceptorTestFactory.createPreceptorId()), discount)).getId();
     }
 
     private long versionsOf(Long cohortId) {

@@ -61,6 +61,14 @@ describe('SimulatedMailsPage', () => {
     expect(screen.getByText('Simulado')).toBeInTheDocument();
   });
 
+  it('extends the touch area of the subject link and the status pill to 44px on mobile', async () => {
+    server.use(http.get(`${API}/notification-deliveries/simulated`, () => HttpResponse.json({ items: [mail], page: 0, size: 20, totalElements: 1 })));
+    renderWithProviders(<SimulatedMailsPage />);
+
+    expect(await screen.findByRole('button', { name: 'Tu cuota de octubre vence pronto' })).toHaveClass('max-md:after:-inset-y-3');
+    expect(screen.getByRole('button', { name: /ver el motivo/ })).toHaveClass('max-md:after:-inset-y-2.5');
+  });
+
   it('opens the status reason with a tap on the status', async () => {
     server.use(http.get(`${API}/notification-deliveries/simulated`, () => HttpResponse.json({ items: [mail], page: 0, size: 20, totalElements: 1 })));
     const user = userEvent.setup();

@@ -14,6 +14,7 @@ import {
   sortByClassDateDescending,
   summarizeAttendance,
 } from '@/features/enrollment/lib/courseSubjectDetail';
+import { OwnWaitlistPosition } from '@/features/enrollment/components/WaitlistPositionCard';
 import { smoothScrollBehavior } from '@/lib/scrollBehavior';
 
 const RECENT_ATTENDANCE_LIMIT = 5;
@@ -179,6 +180,9 @@ export function CourseSubjectPanel({ subject, open, onOpenChange }) {
         </h2>
         <CollapsibleContent>
           <div className="flex flex-col gap-5 border-t border-border p-4 sm:p-5">
+            {sectionEnrollment.status === 'WAITLISTED' && (
+              <OwnWaitlistPosition kind="COURSE_SECTION" enrollmentId={sectionEnrollment.id} showName={false} />
+            )}
             <dl className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <Detail label="Docente titular" value={sectionEnrollment.instructorTitular ?? 'A confirmar'} />
               {sectionEnrollment.instructorAdjunto && <Detail label="Docente adjunto" value={sectionEnrollment.instructorAdjunto} />}

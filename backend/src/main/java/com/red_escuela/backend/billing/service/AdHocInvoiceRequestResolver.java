@@ -1,16 +1,14 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.academicstructure.api.AcademicReferenceFinder;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.collections.service.ExamFeeOverdueDebtGuard;
 import com.red_escuela.backend.billing.exception.InvalidAdHocFeeTypeException;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
-import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
 import com.red_escuela.backend.academicstructure.entity.Subject;
-import com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationNotFoundException;
-import com.red_escuela.backend.academicstructure.exception.SubjectNotFoundException;
-import com.red_escuela.backend.evaluation.repository.ExamBoardRegistrationRepository;
-import com.red_escuela.backend.academicstructure.repository.SubjectRepository;
+import com.red_escuela.backend.evaluation.api.ExamBoardRegistrationFinder;
+import com.red_escuela.backend.evaluation.api.ExamBoardRegistrationView;
 import org.springframework.stereotype.Service;
 
 import java.util.EnumSet;
@@ -22,14 +20,14 @@ public class AdHocInvoiceRequestResolver {
     private static final Set<FeeType> AD_HOC_FEE_TYPES = EnumSet.of(
             FeeType.EXAM_FEE, FeeType.RETAKEN_SUBJECT_FEE, FeeType.DEGREE_ISSUANCE_FEE, FeeType.ADMINISTRATIVE_FEE);
 
-    private final SubjectRepository subjectRepository;
-    private final ExamBoardRegistrationRepository examBoardRegistrationRepository;
+    private final AcademicReferenceFinder academicReferenceFinder;
+    private final ExamBoardRegistrationFinder examBoardRegistrationFinder;
     private final ExamFeeOverdueDebtGuard examFeeDebtGuard;
 
-    public AdHocInvoiceRequestResolver(SubjectRepository subjectRepository, ExamBoardRegistrationRepository examBoardRegistrationRepository,
+    public AdHocInvoiceRequestResolver(AcademicReferenceFinder academicReferenceFinder, ExamBoardRegistrationFinder examBoardRegistrationFinder,
                                      ExamFeeOverdueDebtGuard examFeeDebtGuard) {
-        this.subjectRepository = subjectRepository;
-        this.examBoardRegistrationRepository = examBoardRegistrationRepository;
+        this.academicReferenceFinder = academicReferenceFinder;
+        this.examBoardRegistrationFinder = examBoardRegistrationFinder;
         this.examFeeDebtGuard = examFeeDebtGuard;
     }
 
@@ -51,14 +49,13 @@ public class AdHocInvoiceRequestResolver {
         if (subjectId == null) {
             return null;
         }
-        return subjectRepository.findById(subjectId).orElseThrow(() -> new SubjectNotFoundException(subjectId));
+        return academicReferenceFinder.findSubject(subjectId);
     }
 
-    public ExamBoardRegistration resolveExamBoardRegistration(Long examBoardRegistrationId) {
+    public ExamBoardRegistrationView resolveExamBoardRegistration(Long examBoardRegistrationId) {
         if (examBoardRegistrationId == null) {
             return null;
         }
-        return examBoardRegistrationRepository.findById(examBoardRegistrationId)
-                .orElseThrow(() -> new ExamBoardRegistrationNotFoundException(examBoardRegistrationId));
+        return examBoardRegistrationFinder.requireById(examBoardRegistrationId);
     }
 }

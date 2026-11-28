@@ -1,9 +1,9 @@
 package com.red_escuela.backend.billing.service;
 
+import com.red_escuela.backend.academicstructure.api.AcademicReferenceFinder;
 import com.red_escuela.backend.billing.configuration.service.YearCycleFactory;
 import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.billing.configuration.service.BillingConfigurationReader;
 import com.red_escuela.backend.billing.api.EnrollmentPaymentStandingQuery;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
@@ -24,10 +24,10 @@ import com.red_escuela.backend.billing.note.repository.CreditNoteRepository;
 import com.red_escuela.backend.billing.repository.PaymentPlanSelectionRepository;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
-import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
-import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
+import com.red_escuela.backend.enrollment.api.ProgramProgressReader;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -42,20 +42,20 @@ import java.util.stream.Collectors;
 @Service
 public class InvoicePlanningContextLoader {
     private final ProgramYearBillingTemplateRepository templateRepository;
-    private final TermRepository termRepository;
+    private final AcademicReferenceFinder academicReferenceFinder;
     private final InvoiceRepository invoiceRepository;
     private final CreditNoteRepository creditNoteRepository;
     private final PaymentPlanSelectionRepository selectionRepository;
-    private final ProgramEnrollmentService programEnrollmentService;
+    private final ProgramProgressReader programProgressReader;
     private final ProgramEnrollmentRepository programEnrollmentRepository;
     private final YearCycleFactory cycleFactory;
     private final BillingConfigurationReader configurationReader;
 
     private final EnrollmentPaymentStandingQuery standingQuery;
 
-    public InvoicePlanningContextLoader(ProgramYearBillingTemplateRepository templateRepository, TermRepository termRepository,
+    public InvoicePlanningContextLoader(ProgramYearBillingTemplateRepository templateRepository, AcademicReferenceFinder academicReferenceFinder,
                                        InvoiceRepository invoiceRepository, CreditNoteRepository creditNoteRepository, PaymentPlanSelectionRepository selectionRepository,
-                                       ProgramEnrollmentService programEnrollmentService,
+                                       ProgramProgressReader programProgressReader,
                                        ProgramEnrollmentRepository programEnrollmentRepository,
                                        YearCycleFactory cycleFactory, BillingConfigurationReader configurationReader,
                                        EnrollmentPaymentStandingQuery standingQuery) {
@@ -64,11 +64,11 @@ public class InvoicePlanningContextLoader {
         this.configurationReader = configurationReader;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.templateRepository = templateRepository;
-        this.termRepository = termRepository;
+        this.academicReferenceFinder = academicReferenceFinder;
         this.invoiceRepository = invoiceRepository;
         this.creditNoteRepository = creditNoteRepository;
         this.selectionRepository = selectionRepository;
-        this.programEnrollmentService = programEnrollmentService;
+        this.programProgressReader = programProgressReader;
     }
 
     public record PlanningContext(ProgramInvoicePlanningFacts facts, PaymentPlanSelection selection) {
@@ -89,8 +89,8 @@ public class InvoicePlanningContextLoader {
         boolean completed = false;
         boolean onlyFinals = false;
         if (active && !suspended) {
-            completed = programEnrollmentService.calculateProgress(enrollmentId).elegibleParaCompletar();
-            onlyFinals = programEnrollmentService.hasOnlyFinalExamsLeft(enrollmentId);
+            completed = programProgressReader.calculateProgress(enrollmentId).eligibleToComplete();
+            onlyFinals = programProgressReader.hasOnlyFinalExamsLeft(enrollmentId);
         }
         List<PaymentPlanSelection> selections = selectionRepository.findByProgramEnrollmentIdOrderByEffectiveFrom(enrollmentId);
         PaymentPlanSelection selectionAtMonth = selectionRepository.findActiveForProgramEnrollment(enrollmentId, month).orElse(null);
@@ -122,8 +122,10 @@ public class InvoicePlanningContextLoader {
         Integer entrySlot = null;
         java.time.LocalDate cursadaStart = null;
         if (cohort != null) {
-            entryTemplateId = cohort.getTemplate().getId();
-            entrySlot = cycleFactory.cycleOf(cohort.getTemplate(), YearMonth.from(cohort.getCursadaStart()).getYear(), today).slotOf(YearMonth.from(cohort.getCursadaStart()));
+            if (cohort.getTemplateId() != null) {
+                entryTemplateId = cohort.getTemplateId();
+                entrySlot = cycleFactory.cycleOf(templateRepository.getReferenceById(cohort.getTemplateId()), YearMonth.from(cohort.getCursadaStart()).getYear(), today).slotOf(YearMonth.from(cohort.getCursadaStart()));
+            }
             cursadaStart = cohort.getCursadaStart();
         }
         ProgramInvoicePlanningFacts facts = new ProgramInvoicePlanningFacts(enrollmentId, month, today, active, suspended, completed, paused, onlyFinals, entryMonth,
@@ -147,7 +149,7 @@ public class InvoicePlanningContextLoader {
             return windows;
         }
         Set<TermType> irregularTypes = Set.copyOf(configurationReader.irregularTermTypesEffectiveOn(today).types());
-        List<Term> terms = SlotWindowResolver.regularTerms(termRepository.findTermsOfProgram(programId), irregularTypes);
+        List<Term> terms = SlotWindowResolver.regularTerms(academicReferenceFinder.findTermsOfProgram(programId), irregularTypes);
         for (YearCycle cycle : cycles) {
             for (int slot = 1; slot <= cycle.slotCount(); slot++) {
                 final int currentSlot = slot;

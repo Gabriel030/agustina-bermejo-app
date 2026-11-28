@@ -97,6 +97,30 @@ class SectionFinalCallCreatorTest {
     }
 
     @Test
+    void approvingLessThanTwoDaysBeforeTheExamKeepsTheWindowOrdered() {
+        when(sectionScheduleFinder.findProgramSectionSlots(33L)).thenReturn(List.of());
+        LocalDateTime lateApproval = TUESDAY.minusDays(1).atTime(10, 0);
+
+        creator.createFinalCalls(config(TUESDAY, null, lateApproval));
+
+        CreateExamBoardRequest request = capturedRequest(1);
+        assertThat(request.registrationStart()).isEqualTo(lateApproval);
+        assertThat(request.registrationEnd()).isEqualTo(TUESDAY.atStartOfDay());
+        assertThat(request.registrationStart()).isBeforeOrEqualTo(request.registrationEnd());
+    }
+
+    @Test
+    void approvingAfterTheExamClampsTheWindowToTheExamDate() {
+        when(sectionScheduleFinder.findProgramSectionSlots(33L)).thenReturn(List.of());
+
+        creator.createFinalCalls(config(TUESDAY, null, TUESDAY.plusDays(3).atTime(10, 0)));
+
+        CreateExamBoardRequest request = capturedRequest(1);
+        assertThat(request.registrationStart()).isEqualTo(TUESDAY.atStartOfDay());
+        assertThat(request.registrationEnd()).isEqualTo(TUESDAY.atStartOfDay());
+    }
+
+    @Test
     void createsNoExamBoardForAMissingCallDate() {
         when(sectionScheduleFinder.findProgramSectionSlots(33L)).thenReturn(List.of());
 
@@ -106,11 +130,15 @@ class SectionFinalCallCreatorTest {
     }
 
     private SectionEvaluationConfig config(LocalDate firstCall, LocalDate secondCall) {
+        return config(firstCall, secondCall, APPROVED_AT);
+    }
+
+    private SectionEvaluationConfig config(LocalDate firstCall, LocalDate secondCall, LocalDateTime approvedAt) {
         SectionEvaluationConfig config = new SectionEvaluationConfig();
         config.setSubjectSection(section);
         config.setFinalCall1Date(firstCall);
         config.setFinalCall2Date(secondCall);
-        config.setReviewedAt(APPROVED_AT);
+        config.setReviewedAt(approvedAt);
         return config;
     }
 

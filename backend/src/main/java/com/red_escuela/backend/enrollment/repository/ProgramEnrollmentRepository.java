@@ -16,10 +16,10 @@ import java.util.List;
 
 @Repository
 public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnrollment, Long> {
-    interface ProgramIdOfEnrollment {
+    interface PlanIdOfEnrollment {
         Long getEnrollmentId();
 
-        Long getProgramId();
+        Long getPlanId();
     }
 
     interface GraduationCandidateRow {
@@ -51,12 +51,16 @@ public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnroll
             """)
     List<GraduationCandidateRow> findGraduationCandidates(@Param("pattern") String pattern);
 
-    @Query("select e.id as enrollmentId, e.program.id as programId from ProgramEnrollment e where e.id in :ids")
-    List<ProgramIdOfEnrollment> findProgramIdsByIdIn(@Param("ids") Collection<Long> ids);
+    @Query("select e.id as enrollmentId, e.plan.id as planId from ProgramEnrollment e where e.id in :ids")
+    List<PlanIdOfEnrollment> findPlanIdsByIdIn(@Param("ids") Collection<Long> ids);
 
     @Modifying(flushAutomatically = true)
     @Query("delete from ProgramEnrollment e where e.id in :ids")
     int deleteByIdIn(@Param("ids") Collection<Long> ids);
+
+    boolean existsByProgramIdAndStatusIn(Long programId, Collection<ProgramEnrollmentStatus> statuses);
+
+    boolean existsByPlanIdAndStatusIn(Long planId, Collection<ProgramEnrollmentStatus> statuses);
 
     boolean existsByStudentIdAndStatusIn(Long studentId, Collection<ProgramEnrollmentStatus> statuses);
 
@@ -98,11 +102,10 @@ public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnroll
     }
 
     @Query("""
-            select e.program.id as programId, coalesce(current.id, cohortTemplate.id) as templateId
+            select e.program.id as programId, coalesce(current.id, cohort.templateId) as templateId
             from ProgramEnrollment e
             left join e.currentBillingTemplate current
             left join e.programCohort cohort
-            left join cohort.template cohortTemplate
             where e.id = :id
             """)
     java.util.Optional<BillingTemplateRef> findBillingTemplateRef(@Param("id") Long id);

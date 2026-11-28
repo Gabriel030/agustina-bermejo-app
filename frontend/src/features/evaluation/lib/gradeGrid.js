@@ -99,8 +99,27 @@ export function buildGradePayload({ column, draft, saved, now }) {
   };
 }
 
+const gradeIndexByStudentGrades = new WeakMap();
+
+function gradeCellKey(type, sequenceNumber) {
+  return `${type}|${sequenceNumber}`;
+}
+
+function gradeIndexOf(grades) {
+  let index = gradeIndexByStudentGrades.get(grades);
+  if (!index) {
+    index = new Map();
+    for (const grade of grades) {
+      const key = gradeCellKey(grade.type, grade.sequenceNumber);
+      if (!index.has(key)) index.set(key, grade);
+    }
+    gradeIndexByStudentGrades.set(grades, index);
+  }
+  return index;
+}
+
 export function findSavedCell(student, column) {
-  return student.grades.find((grade) => grade.type === column.type && grade.sequenceNumber === column.sequenceNumber);
+  return gradeIndexOf(student.grades).get(gradeCellKey(column.type, column.sequenceNumber));
 }
 
 export function collectPendingJobs({ students, columns, drafts, statuses, now }) {

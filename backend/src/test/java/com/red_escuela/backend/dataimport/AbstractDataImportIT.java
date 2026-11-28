@@ -122,11 +122,15 @@ abstract class AbstractDataImportIT extends AbstractIntegrationTest {
     }
 
     protected void importBaseStructure(long batchId, HistoricalDatasetCsv csv, String programEnrollmentsCsv) throws Exception {
+        importBaseStructure(batchId, csv, programEnrollmentsCsv, csv.termsWithAnnualCycle());
+    }
+
+    protected void importBaseStructure(long batchId, HistoricalDatasetCsv csv, String programEnrollmentsCsv, String termsCsv) throws Exception {
         upload(batchId, "PERSONS", csv.persons());
         upload(batchId, "PROGRAMS", csv.programs());
         upload(batchId, "SUBJECTS", csv.subjects());
         upload(batchId, "CURRICULUM", csv.curriculum());
-        upload(batchId, "TERMS", csv.terms());
+        upload(batchId, "TERMS", termsCsv);
         upload(batchId, "SECTIONS", csv.sections());
         upload(batchId, "PROGRAM_ENROLLMENTS", programEnrollmentsCsv);
         validate(batchId);

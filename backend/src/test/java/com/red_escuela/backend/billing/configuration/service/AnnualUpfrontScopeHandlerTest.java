@@ -55,7 +55,7 @@ class AnnualUpfrontScopeHandlerTest {
     }
 
     @ParameterizedTest(name = "inicio {0} con {1} dias de vencimiento vence {2}")
-    @CsvSource({"2027-03-01,10,2027-03-11", "2027-02-01,10,2027-02-11", "2027-03-01,0,2027-03-01", "2027-02-01,30,2027-03-03", "2027-03-15,5,2027-03-06"})
+    @CsvSource({"2027-03-01,10,2027-03-11", "2027-02-01,10,2027-02-11", "2027-03-01,0,2027-03-01", "2027-02-01,30,2027-03-03", "2027-03-15,5,2027-03-08"})
     void theFirstInstallmentDueDateIsTheFirstOfTheStartMonthPlusTheEffectiveDueDays(LocalDate termStart, int dueDays, LocalDate expected) {
         AnnualUpfrontCheck check = validate(termStart, Optional.of(termsWithDueDays(dueDays)), LocalDate.of(2027, 2, 1));
 

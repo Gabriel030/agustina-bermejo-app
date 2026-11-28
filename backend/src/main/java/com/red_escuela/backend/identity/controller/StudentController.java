@@ -3,6 +3,7 @@ package com.red_escuela.backend.identity.controller;
 import com.red_escuela.backend.identity.dto.ReactivateStudentRequest;
 import com.red_escuela.backend.identity.dto.StudentRecordResponse;
 import com.red_escuela.backend.identity.dto.StudentResponse;
+import com.red_escuela.backend.identity.dto.UpdateStudentRequest;
 import com.red_escuela.backend.identity.dto.WithdrawStudentRequest;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.shared.pagination.PageResponse;
@@ -13,6 +14,8 @@ import com.red_escuela.backend.identity.usecase.student.ListStudentsUseCase;
 import com.red_escuela.backend.identity.usecase.student.ReactivateStudentCommand;
 import com.red_escuela.backend.identity.usecase.student.ReactivateStudentUseCase;
 import com.red_escuela.backend.identity.usecase.student.ResetStudentPasswordUseCase;
+import com.red_escuela.backend.identity.usecase.student.UpdateStudentCommand;
+import com.red_escuela.backend.identity.usecase.student.UpdateStudentUseCase;
 import com.red_escuela.backend.identity.usecase.student.WithdrawStudentCommand;
 import com.red_escuela.backend.identity.usecase.student.WithdrawStudentUseCase;
 import jakarta.validation.Valid;
@@ -22,6 +25,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -36,15 +40,17 @@ public class StudentController {
     private final WithdrawStudentUseCase withdrawStudentUseCase;
     private final ResetStudentPasswordUseCase resetStudentPasswordUseCase;
     private final ReactivateStudentUseCase reactivateStudentUseCase;
+    private final UpdateStudentUseCase updateStudentUseCase;
 
     public StudentController(ListStudentsUseCase listStudentsUseCase, GetStudentRecordUseCase getStudentRecordUseCase,
                               WithdrawStudentUseCase withdrawStudentUseCase, ResetStudentPasswordUseCase resetStudentPasswordUseCase,
-                              ReactivateStudentUseCase reactivateStudentUseCase) {
+                              ReactivateStudentUseCase reactivateStudentUseCase, UpdateStudentUseCase updateStudentUseCase) {
         this.listStudentsUseCase = listStudentsUseCase;
         this.getStudentRecordUseCase = getStudentRecordUseCase;
         this.withdrawStudentUseCase = withdrawStudentUseCase;
         this.resetStudentPasswordUseCase = resetStudentPasswordUseCase;
         this.reactivateStudentUseCase = reactivateStudentUseCase;
+        this.updateStudentUseCase = updateStudentUseCase;
     }
 
     @GetMapping
@@ -62,6 +68,12 @@ public class StudentController {
     @RequiresPermission(code = "identity.read_students", legacyRoles = "ROLE_PRECEPTOR,ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public StudentRecordResponse getRecord(@PathVariable Long id) {
         return StudentRecordResponse.from(getStudentRecordUseCase.getRecord(id), seesWithdrawalReason());
+    }
+
+    @PutMapping("/{id}")
+    @RequiresPermission(code = "identity.withdraw_student", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
+    public StudentRecordResponse update(@PathVariable Long id, @Valid @RequestBody UpdateStudentRequest request) {
+        return updateStudentUseCase.update(new UpdateStudentCommand(id, request, seesWithdrawalReason()));
     }
 
     @PostMapping("/{id}/withdraw")
@@ -86,8 +98,10 @@ public class StudentController {
     }
 
     private boolean seesWithdrawalReason() {
-        return SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
-                .anyMatch(authority -> "ROLE_DIRECTOR".equals(authority.getAuthority())
-                        || "ROLE_ADMINISTRATIVO".equals(authority.getAuthority()));
+        var authorities = SecurityContextHolder.getContext().getAuthentication().getAuthorities();
+        boolean isDirector = authorities.stream().anyMatch(authority -> "ROLE_DIRECTOR".equals(authority.getAuthority()));
+        boolean isAdministrative = authorities.stream().anyMatch(authority -> "ROLE_ADMINISTRATIVO".equals(authority.getAuthority()));
+        boolean isDeputyDirector = authorities.stream().anyMatch(authority -> "ROLE_SUBDIRECTOR".equals(authority.getAuthority()));
+        return isDirector || (isAdministrative && !isDeputyDirector);
     }
 }

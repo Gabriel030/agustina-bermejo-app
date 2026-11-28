@@ -3,8 +3,9 @@ package com.red_escuela.backend.identity.specialist;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.events.EmailVerificationIssuedEvent;
 import com.red_escuela.backend.identity.events.PasswordResetCodeIssuedEvent;
+import com.red_escuela.backend.identity.events.StudentEmailChangedEvent;
 import com.red_escuela.backend.identity.repository.PersonRepository;
-import com.red_escuela.backend.shared.event.ProcessedEffectGuard;
+import com.red_escuela.backend.shared.event.service.ProcessedEffectGuard;
 import com.red_escuela.backend.shared.mail.EmailService;
 import com.red_escuela.backend.shared.mail.MailRecipient;
 import org.junit.jupiter.api.BeforeEach;
@@ -161,5 +162,22 @@ class IdentityEmailDispatcherRecipientTest {
         verify(emailService).sendEmailChangeVerification("Ana", "new@example.com",
                 "https://app.test/verificar-email?token=v");
         verifyNoMoreInteractions(emailService);
+    }
+
+    @Test
+    void studentEmailChangeSendsVerificationToTheNewAddressAndNoticeToThePreviousOne() {
+        Person person = mock(Person.class);
+        when(person.getId()).thenReturn(8L);
+        when(person.getName()).thenReturn("Ana");
+        when(personRepository.findById(8L)).thenReturn(Optional.of(person));
+
+        dispatcher.onStudentEmailChanged(StudentEmailChangedEvent.changedFor(8L, "vieja@example.com",
+                "nueva@example.com", "https://example.test/verificar-email?token=abc"));
+
+        ArgumentCaptor<MailRecipient> recipient = ArgumentCaptor.forClass(MailRecipient.class);
+        verify(emailService).sendEmailVerification(recipient.capture(), anyString(),
+                org.mockito.ArgumentMatchers.eq("https://example.test/verificar-email?token=abc"));
+        assertThat(recipient.getValue().email()).isEqualTo("nueva@example.com");
+        verify(emailService).sendEmailChangedNotice("Ana", "vieja@example.com", "nueva@example.com");
     }
 }

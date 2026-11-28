@@ -43,13 +43,22 @@ describe('notificationDestination', () => {
 
   it.each([
     ['SUBJECT_WITHDRAWN', 'ALUMNO', '/alumno/mis-carreras?tab=materias'],
+    ['WAITLIST_PAUSED_BY_SCHEDULE_OVERLAP', 'ALUMNO', '/alumno/mis-carreras?tab=materias'],
+    ['WAITLIST_EXPIRING_SOON', 'ALUMNO', '/alumno/mis-carreras?tab=materias'],
+    ['WAITLIST_REMOVED_BY_STAFF', 'ALUMNO', '/alumno/mis-carreras?tab=materias'],
+    ['WAITLIST_ENTRY_EXPIRED', 'ALUMNO', '/alumno/mis-carreras?tab=materias'],
     ['REGULAR_CERTIFICATE_READY', 'ALUMNO', '/alumno/mis-carreras?tab=tramites'],
     ['ATTENDANCE_JUSTIFICATION_REJECTED', 'ALUMNO', '/alumno/mis-carreras?tab=asistencia'],
     ['SUBJECT_WITHDRAWN_TEACHER', 'DOCENTE', '/docente/mis-comisiones'],
     ['PAYMENT_RECEIPT_REJECTED', 'ALUMNO', '/alumno/pagos'],
     ['PAYMENT_CHARGED_BACK', 'ADMINISTRATIVO', '/administrativo/facturacion'],
     ['CLOSURE_REOPENED', 'DIRECTOR', '/director/cierres-de-comision'],
+    ['TERM_CLOSURE_OVERDUE', 'DIRECTOR', '/director/cierres-de-comision'],
+    ['EXAM_BOARD_AUTO_CLOSED', 'DIRECTOR', '/director/mesas-de-examen'],
+    ['CERTIFICATE_INVALIDATED', 'ALUMNO', '/alumno/mis-carreras?tab=tramites'],
     ['EXAM_BOARD_CANCELED', 'DOCENTE', '/docente/mesas-de-examen'],
+    ['SUBJECT_EQUIVALENCE_RECORDED', 'ALUMNO', '/alumno/mis-carreras?tab=plan-de-estudio'],
+    ['SUBJECT_EQUIVALENCE_VOIDED', 'ALUMNO', '/alumno/mis-carreras?tab=plan-de-estudio'],
   ])('sends %s to the right screen for %s', (type, role, expected) => {
     expect(notificationDestination({ type, relatedEntityId: null }, role)).toBe(expected);
   });

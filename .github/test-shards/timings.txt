@@ -923,8 +923,6 @@
 42.01 com/red_escuela/backend/graduation/certificate/verification/CertificateVerificationCodeMigrationTest
 0.00 com/red_escuela/backend/graduation/certificate/verification/DocumentMaskerTest
 0.29 com/red_escuela/backend/graduation/certificate/verification/PdfProviderLogsTest
-0.40 com/red_escuela/backend/graduation/certificate/verification/PublicCertificateControllerIT
-0.01 com/red_escuela/backend/graduation/certificate/verification/PublicCertificateLookupTest
 0.23 com/red_escuela/backend/graduation/certificate/verification/VerificationSourcesTest
 4.43 com/red_escuela/backend/graduation/controller/GraduationDebtBlockedIT
 0.09 com/red_escuela/backend/graduation/specialist/GraduationDebtGateTest

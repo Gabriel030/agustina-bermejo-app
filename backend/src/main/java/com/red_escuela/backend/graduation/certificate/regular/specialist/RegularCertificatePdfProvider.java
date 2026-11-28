@@ -3,6 +3,8 @@ package com.red_escuela.backend.graduation.certificate.regular.specialist;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateCode;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateFileStore;
 import com.red_escuela.backend.graduation.certificate.engine.CertificatePdfRenderer;
+import com.red_escuela.backend.graduation.certificate.engine.CertificateTemplateDefinition;
+import com.red_escuela.backend.graduation.certificate.template.specialist.CertificateTemplateRenderSource;
 import com.red_escuela.backend.graduation.certificate.exception.CertificatePdfIntegrityMismatchException;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertificatePdf;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularStudentCertificate;
@@ -30,11 +32,13 @@ public class RegularCertificatePdfProvider {
     private final CertificateVerificationUrl verificationUrl;
     private final CertificateDigest digest;
     private final CertificateDocumentAuditRecorder auditRecorder;
+    private final CertificateTemplateRenderSource templateSource;
 
     public RegularCertificatePdfProvider(RegularStudentCertificateRepository repository, CertificateFileStore fileStore,
                                          CertificatePdfRenderer renderer, RegularCertificateTemplate template,
                                          CertificateVerificationUrl verificationUrl, CertificateDigest digest,
-                                         CertificateDocumentAuditRecorder auditRecorder) {
+                                         CertificateDocumentAuditRecorder auditRecorder,
+                                         CertificateTemplateRenderSource templateSource) {
         this.repository = repository;
         this.fileStore = fileStore;
         this.renderer = renderer;
@@ -42,6 +46,7 @@ public class RegularCertificatePdfProvider {
         this.verificationUrl = verificationUrl;
         this.digest = digest;
         this.auditRecorder = auditRecorder;
+        this.templateSource = templateSource;
     }
 
     @Transactional
@@ -56,8 +61,11 @@ public class RegularCertificatePdfProvider {
         }
         log.warn("El PDF de la constancia {} falta o no coincide con su hash; se regenera desde el snapshot", certificate.getId());
         CertificateCode code = certificate.certificateCode();
-        byte[] regenerated = renderer.render(template.definitionFor(certificate.getSnapshot(), certificate.getExpiresAt().toLocalDate()),
-                certificate.getSnapshot(), code, verificationUrl.of(code));
+        CertificateTemplateDefinition definition = template.definitionFor(certificate.getSnapshot(), certificate.getExpiresAt().toLocalDate());
+        byte[] regenerated = certificate.getTemplateVersionId() == null
+                ? renderer.render(definition, certificate.getSnapshot(), code, verificationUrl.of(code))
+                : renderer.render(definition, certificate.getSnapshot(), code, verificationUrl.of(code),
+                        templateSource.assetsOf(templateSource.byId(certificate.getTemplateVersionId()), certificate.getRegistryNumber()));
         String regeneratedSha256 = digest.sha256(regenerated);
         if (certificate.isPdfRegenerationVerifiable() && !regeneratedSha256.equals(certificate.getPdfSha256())) {
             log.error("El PDF regenerado de la constancia {} no coincide con el hash registrado", certificate.getId());

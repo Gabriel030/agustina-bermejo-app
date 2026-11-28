@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Profile;
 import java.time.Clock;
 
 @Configuration
-@Profile("test")
+@Profile("test & !demo")
 public class TestClockConfiguration {
 
     @Bean

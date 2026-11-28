@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { m } from 'motion/react';
 import { GlassCard } from '@/components/GlassCard';
-import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { PasswordInput } from '@/components/ui/password-input';
@@ -93,8 +92,9 @@ export function ForgotPassword() {
   return (
     <div className="flex min-h-screen items-center justify-center px-4 py-8">
       <GlassCard className="w-full max-w-[436px] p-6 pb-7 sm:p-10 sm:pb-9">
-        <div className="mb-7">
-          <InstitutionBrand titulo={titulo} subtitulo={subtitulo} />
+        <div className="mb-7 text-center">
+          <h1 className="font-heading text-lg font-bold tracking-tight text-ink">{titulo}</h1>
+          {subtitulo && <p className="mt-0.5 text-sm text-ink-faint">{subtitulo}</p>}
         </div>
 
         {resetToken ? (

@@ -1,5 +1,8 @@
 package com.red_escuela.backend.enrollment.controller;
 
+import com.red_escuela.backend.graduation.entity.GraduationRequestStatus;
+import com.red_escuela.backend.graduation.events.GraduationRequestOutdatedEvent;
+import com.red_escuela.backend.graduation.repository.GraduationRequestRepository;
 import com.red_escuela.backend.academicstructure.domain.CurricularTerm;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
@@ -76,6 +79,8 @@ class SubjectEquivalenceControllerIT extends AbstractIntegrationTest {
     @Autowired
     private JdbcTemplate jdbc;
     @Autowired
+    private GraduationRequestRepository graduationRequestRepository;
+    @Autowired
     private ApplicationEvents events;
 
     private Student student;
@@ -137,6 +142,7 @@ class SubjectEquivalenceControllerIT extends AbstractIntegrationTest {
                 .satisfies(event -> {
                     assertThat(event.subjectEquivalenceId()).isEqualTo(saved.getId());
                     assertThat(event.studentPersonId()).isEqualTo(student.getPerson().getId());
+                    assertThat(event.subjectName()).isEqualTo("Materia A");
                 });
     }
 
@@ -179,10 +185,11 @@ class SubjectEquivalenceControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void regularSubjectCanReceiveEquivalence() throws Exception {
+    void regularSubjectReturnsSubjectRegular() throws Exception {
         persistSectionEnrollment(subject, EnrollmentStatus.REGULAR);
         record(token("ADMINISTRATIVO"), body(subject.getId(), null, LocalDate.now(), REASON))
-                .andExpect(status().isCreated());
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("SUBJECT_REGULAR"));
     }
 
     @Test
@@ -255,13 +262,53 @@ class SubjectEquivalenceControllerIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void voidIsAllowedEvenWhenEnrollmentIsNoLongerEnrolled() throws Exception {
+    void voidingOnACompletedEnrollmentReturnsEnrollmentNotActive() throws Exception {
         String token = token("ADMINISTRATIVO");
         record(token, body(subject.getId(), null, LocalDate.now(), REASON)).andExpect(status().isCreated());
         Long id = equivalenceRepository.findByProgramEnrollmentIdOrderByRecognizedOnDescIdDesc(enrollment.getId()).get(0).getId();
         enrollment.setStatus(ProgramEnrollmentStatus.COMPLETED);
+        enrollment.setCompletionDate(LocalDateTime.now());
         entityManager.flush();
-        voidEquivalence(token, id, REASON).andExpect(status().isOk());
+        voidEquivalence(token, id, REASON)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("ENROLLMENT_NOT_ACTIVE"));
+        entityManager.clear();
+        assertThat(equivalenceRepository.findById(id).orElseThrow().getStatus()).isEqualTo(SubjectEquivalenceStatus.ACTIVE);
+    }
+
+    @Test
+    void recordingTheEquivalenceThatCompletesThePlanCreatesTheGraduationRequest() throws Exception {
+        Subject other = persistSubjectInPlan(program, "Materia B");
+        entityManager.flush();
+        String token = token("ADMINISTRATIVO");
+        record(token, body(subject.getId(), "8", LocalDate.now(), REASON)).andExpect(status().isCreated());
+        assertThat(graduationRequestRepository.findByProgramEnrollmentIdAndStatusNot(enrollment.getId(), GraduationRequestStatus.REJECTED))
+                .isEmpty();
+
+        record(token, body(other.getId(), "9", LocalDate.now(), REASON)).andExpect(status().isCreated());
+
+        assertThat(graduationRequestRepository.findByProgramEnrollmentIdAndStatusNot(enrollment.getId(), GraduationRequestStatus.REJECTED))
+                .singleElement()
+                .satisfies(request -> assertThat(request.getOutdatedAt()).isNull());
+    }
+
+    @Test
+    void voidingAnEquivalenceMarksTheOpenGraduationRequestAsOutdated() throws Exception {
+        Subject other = persistSubjectInPlan(program, "Materia B");
+        entityManager.flush();
+        String token = token("ADMINISTRATIVO");
+        record(token, body(subject.getId(), "8", LocalDate.now(), REASON)).andExpect(status().isCreated());
+        record(token, body(other.getId(), "9", LocalDate.now(), REASON)).andExpect(status().isCreated());
+        Long equivalenceId = equivalenceRepository.findByProgramEnrollmentIdAndSubjectIdAndStatus(
+                enrollment.getId(), other.getId(), SubjectEquivalenceStatus.ACTIVE).orElseThrow().getId();
+
+        voidEquivalence(token, equivalenceId, REASON).andExpect(status().isOk());
+
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(graduationRequestRepository.findByProgramEnrollmentIdAndStatusNot(enrollment.getId(), GraduationRequestStatus.REJECTED))
+                .singleElement()
+                .satisfies(request -> assertThat(request.getOutdatedAt()).isNotNull());
     }
 
     @Test
@@ -291,6 +338,44 @@ class SubjectEquivalenceControllerIT extends AbstractIntegrationTest {
                 Integer.class, AuditAction.SUBJECT_EQUIVALENCE_VOIDED.name(), saved.getId(),
                 "Se cargó sobre la materia equivocada")).isEqualTo(1);
         assertThat(events.stream(SubjectEquivalenceVoidedEvent.class).count()).isEqualTo(1);
+    }
+
+    @Test
+    void voidingASecondEquivalenceDoesNotPublishTheOutdatedEventAgain() throws Exception {
+        Subject other = persistSubjectInPlan(program, "Materia B");
+        entityManager.flush();
+        String token = token("ADMINISTRATIVO");
+        record(token, body(subject.getId(), "8", LocalDate.now(), REASON)).andExpect(status().isCreated());
+        record(token, body(other.getId(), "9", LocalDate.now(), REASON)).andExpect(status().isCreated());
+        Long firstId = equivalenceRepository.findByProgramEnrollmentIdAndSubjectIdAndStatus(
+                enrollment.getId(), subject.getId(), SubjectEquivalenceStatus.ACTIVE).orElseThrow().getId();
+        Long secondId = equivalenceRepository.findByProgramEnrollmentIdAndSubjectIdAndStatus(
+                enrollment.getId(), other.getId(), SubjectEquivalenceStatus.ACTIVE).orElseThrow().getId();
+
+        voidEquivalence(token, secondId, REASON).andExpect(status().isOk());
+        voidEquivalence(token, firstId, REASON).andExpect(status().isOk());
+
+        assertThat(events.stream(GraduationRequestOutdatedEvent.class).count()).isEqualTo(1);
+    }
+
+    @Test
+    void recordingTheVoidedEquivalenceAgainClearsTheOutdatedMarker() throws Exception {
+        Subject other = persistSubjectInPlan(program, "Materia B");
+        entityManager.flush();
+        String token = token("ADMINISTRATIVO");
+        record(token, body(subject.getId(), "8", LocalDate.now(), REASON)).andExpect(status().isCreated());
+        record(token, body(other.getId(), "9", LocalDate.now(), REASON)).andExpect(status().isCreated());
+        Long equivalenceId = equivalenceRepository.findByProgramEnrollmentIdAndSubjectIdAndStatus(
+                enrollment.getId(), other.getId(), SubjectEquivalenceStatus.ACTIVE).orElseThrow().getId();
+        voidEquivalence(token, equivalenceId, REASON).andExpect(status().isOk());
+
+        record(token, body(other.getId(), "9", LocalDate.now(), REASON)).andExpect(status().isCreated());
+
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(graduationRequestRepository.findByProgramEnrollmentIdAndStatusNot(enrollment.getId(), GraduationRequestStatus.REJECTED))
+                .singleElement()
+                .satisfies(request -> assertThat(request.getOutdatedAt()).isNull());
     }
 
     @Test
@@ -326,7 +411,7 @@ class SubjectEquivalenceControllerIT extends AbstractIntegrationTest {
     void voidingUnknownEquivalenceOrFromAnotherEnrollmentReturns404() throws Exception {
         String token = token("ADMINISTRATIVO");
         voidEquivalence(token, 987654321L, REASON).andExpect(status().isNotFound());
-        ProgramEnrollment otherEnrollment = persistEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
+        ProgramEnrollment otherEnrollment = persistEnrollment(student, program, ProgramEnrollmentStatus.COMPLETED);
         entityManager.flush();
         record(token, body(subject.getId(), null, LocalDate.now(), REASON)).andExpect(status().isCreated());
         Long id = equivalenceRepository.findByProgramEnrollmentIdOrderByRecognizedOnDescIdDesc(enrollment.getId()).get(0).getId();
@@ -499,6 +584,7 @@ class SubjectEquivalenceControllerIT extends AbstractIntegrationTest {
         Subject created = persistSubject(name);
         ProgramSubject planEntry = new ProgramSubject();
         planEntry.setProgram(target);
+        planEntry.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(target));
         planEntry.setSubject(created);
         planEntry.setCredits(5);
         planEntry.setCurricularYear(1);
@@ -514,6 +600,9 @@ class SubjectEquivalenceControllerIT extends AbstractIntegrationTest {
         created.setProgram(target);
         created.setStatus(status);
         created.setEnrollmentDate(LocalDateTime.now());
+        if (status == ProgramEnrollmentStatus.COMPLETED) {
+            created.setCompletionDate(LocalDateTime.now());
+        }
         entityManager.persist(created);
         return created;
     }

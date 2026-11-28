@@ -4,6 +4,7 @@ import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequest;
 import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequestStatus;
 import com.red_escuela.backend.enrollment.entity.ExceptionType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -40,6 +41,28 @@ public interface DirectorApprovalRequestRepository extends JpaRepository<Directo
     List<Long> findSubjectIdsWithRequest(
             @Param("programEnrollmentId") Long programEnrollmentId,
             @Param("type") ExceptionType type, @Param("status") DirectorApprovalRequestStatus status);
+
+    List<DirectorApprovalRequest> findByProgramEnrollmentIdAndSubjectIdAndTypeAndStatusAndConsumedAtIsNullOrderByDecidedAtAscIdAsc(
+            Long programEnrollmentId, Long subjectId, ExceptionType type, DirectorApprovalRequestStatus status);
+
+    @Modifying(flushAutomatically = true)
+    @Query("update DirectorApprovalRequest r set r.consumedAt = :consumedAt where r.id = :id and r.consumedAt is null")
+    int markConsumed(@Param("id") Long id, @Param("consumedAt") java.time.LocalDateTime consumedAt);
+
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            update DirectorApprovalRequest r set r.consumedAt = :consumedAt
+            where r.programEnrollment.id = :programEnrollmentId and r.type = :type
+              and r.status = com.red_escuela.backend.enrollment.entity.DirectorApprovalRequestStatus.APPROVED
+              and r.consumedAt is null
+            """)
+    int markAllApprovedConsumed(@Param("programEnrollmentId") Long programEnrollmentId, @Param("type") ExceptionType type,
+                                @Param("consumedAt") java.time.LocalDateTime consumedAt);
+
+    default boolean hasUnconsumedApproved(Long programEnrollmentId, Long subjectId, ExceptionType type) {
+        return !findByProgramEnrollmentIdAndSubjectIdAndTypeAndStatusAndConsumedAtIsNullOrderByDecidedAtAscIdAsc(
+                programEnrollmentId, subjectId, type, DirectorApprovalRequestStatus.APPROVED).isEmpty();
+    }
 
     default boolean hasApproved(Long programEnrollmentId, Long subjectId, ExceptionType type) {
         return existsByProgramEnrollmentIdAndSubjectIdAndTypeAndStatus(

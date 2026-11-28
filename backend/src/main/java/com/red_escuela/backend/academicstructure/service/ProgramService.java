@@ -1,13 +1,17 @@
 package com.red_escuela.backend.academicstructure.service;
+import com.red_escuela.backend.academicstructure.api.CurrentCurriculumPlanProvider;
 import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 
 import com.red_escuela.backend.academicstructure.dto.CreateProgramRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateProgramRequest;
 import com.red_escuela.backend.identity.entity.Person;
+import com.red_escuela.backend.academicstructure.domain.CatalogArea;
+import com.red_escuela.backend.academicstructure.entity.CurriculumPlan;
 import com.red_escuela.backend.academicstructure.entity.Program;
+import com.red_escuela.backend.academicstructure.entity.ProgramLevel;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.exception.OfferingListPriceNotPositiveException;
-import com.red_escuela.backend.academicstructure.exception.ProgramNotFoundException;
+import com.red_escuela.backend.academicstructure.domain.ProgramNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.ProgramRepository;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -31,13 +35,18 @@ public class ProgramService {
     private final OfferingPriceCatalog offeringPriceCatalog;
     private final OfferingListPriceReader listPriceReader;
     private final CurrentPersonService currentPersonService;
+    private final CurrentCurriculumPlanProvider currentPlanProvider;
+    private final CurriculumPlanEditPolicy editPolicy;
 
     public ProgramService(ProgramRepository programRepository, OfferingPriceCatalog offeringPriceCatalog, OfferingListPriceReader listPriceReader,
-                          CurrentPersonService currentPersonService) {
+                          CurrentPersonService currentPersonService, CurrentCurriculumPlanProvider currentPlanProvider,
+                          CurriculumPlanEditPolicy editPolicy) {
         this.programRepository = programRepository;
         this.offeringPriceCatalog = offeringPriceCatalog;
         this.listPriceReader = listPriceReader;
         this.currentPersonService = currentPersonService;
+        this.currentPlanProvider = currentPlanProvider;
+        this.editPolicy = editPolicy;
     }
 
     @Transactional
@@ -58,6 +67,7 @@ public class ProgramService {
                 .currency(currency)
                 .build();
         program = programRepository.save(program);
+        currentPlanProvider.createInitialPlanOf(program);
         registerInitialOfferingPrices(program, request.price(), request.enrollmentFeeAmount());
         return withListPrices(program);
     }
@@ -69,11 +79,20 @@ public class ProgramService {
         requirePositiveWhenPresent(request.getEnrollmentFeeAmount(), "la matrícula");
         Person actor = currentPersonService.resolveCurrentPerson();
         Optional.ofNullable(request.getName()).ifPresent(program::setName);
+        boolean changesTotals = request.getTotalYears() != null || request.getTotalCreditsRequired() != null
+                || request.getTotalHoursRequired() != null;
+        CurriculumPlan currentPlan = changesTotals ? currentPlanProvider.currentPlanOf(program) : null;
+        if (currentPlan != null) {
+            currentPlan = editPolicy.lockEditableStructureOf(currentPlan.getId());
+        }
         Optional.ofNullable(request.getTotalYears()).ifPresent(program::setTotalYears);
         adjustIfChanged(program, OfferingFee.MONTHLY_INSTALLMENT, request.getPrice(), actor, listPriceReader.findProgramTuition(program.getId()));
         adjustIfChanged(program, OfferingFee.ENROLLMENT_FEE, request.getEnrollmentFeeAmount(), actor, listPriceReader.findProgramEnrollmentFee(program.getId()));
         Optional.ofNullable(request.getTotalCreditsRequired()).ifPresent(program::setTotalCreditsRequired);
         applyClearable(request.getTotalHoursRequired(), program::setTotalHoursRequired);
+        if (currentPlan != null) {
+            currentPlan.changeTotals(program.getTotalYears(), program.getTotalCreditsRequired(), program.getTotalHoursRequired());
+        }
         applyClearable(request.getTeachingMode(), program::setTeachingMode);
         applyClearable(request.getLevel(), program::setLevel);
         applyClearable(blankAsEmpty(request.getGraduationProfile()), program::setGraduationProfile);
@@ -92,9 +111,19 @@ public class ProgramService {
     }
 
     public List<Program> list(StatusType status, Boolean visibleInCatalog) {
+        return list(status, visibleInCatalog, null, null);
+    }
+
+    public List<Program> list(StatusType status, Boolean visibleInCatalog, CatalogArea area) {
+        return list(status, visibleInCatalog, area, null);
+    }
+
+    public List<Program> list(StatusType status, Boolean visibleInCatalog, CatalogArea area, ProgramLevel level) {
         List<Program> programs = programRepository.findAll(Sort.by("name", "id")).stream()
                 .filter(program -> status == null || program.getStatus() == status)
                 .filter(program -> visibleInCatalog == null || program.isVisibleInCatalog() == visibleInCatalog)
+                .filter(program -> area == null || program.getCatalogArea() == area)
+                .filter(program -> level == null || program.getLevel() == level)
                 .toList();
         List<Long> ids = programs.stream().map(Program::getId).toList();
         Map<Long, Money> tuitions = listPriceReader.findProgramTuitions(ids);

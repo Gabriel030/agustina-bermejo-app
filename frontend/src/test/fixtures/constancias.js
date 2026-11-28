@@ -311,6 +311,10 @@ export function certificateException(overrides = {}) {
     createdByDirector: false,
     debtTotalAtRequest: { amount: '45000.00', currency: 'ARS' },
     overdueInstallmentsAtRequest: 2,
+    studentName: 'Ana Alumna',
+    programName: 'Tecnicatura en Administración',
+    requestedByName: 'Beto Administrativo',
+    decidedByName: null,
     ...overrides,
   };
 }

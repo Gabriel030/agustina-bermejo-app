@@ -3,13 +3,15 @@ import com.red_escuela.backend.identity.specialist.CurrentPersonService;
 
 import com.red_escuela.backend.academicstructure.dto.CreateCourseRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateCourseRequest;
+import com.red_escuela.backend.academicstructure.domain.CatalogArea;
 import com.red_escuela.backend.academicstructure.entity.Course;
+import com.red_escuela.backend.identity.api.CohortResponsibleAssigner;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.academicstructure.exception.CourseNotFoundException;
+import com.red_escuela.backend.academicstructure.domain.CourseNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.OfferingListPriceNotPositiveException;
-import com.red_escuela.backend.academicstructure.exception.TermNotFoundException;
+import com.red_escuela.backend.academicstructure.api.TermNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import org.springframework.data.domain.Sort;
@@ -35,11 +37,13 @@ public class CourseService {
     private final OfferingListPriceReader listPriceReader;
     private final CurrentPersonService currentPersonService;
     private final CapacityChangeEvents capacityChangeEvents;
+    private final CohortResponsibleAssigner responsibleAssigner;
 
     public CourseService(CourseRepository courseRepository, TermRepository termRepository,
                           OfferingPriceCatalog offeringPriceCatalog, OfferingListPriceReader listPriceReader, CurrentPersonService currentPersonService,
-                          CapacityChangeEvents capacityChangeEvents) {
+                          CapacityChangeEvents capacityChangeEvents, CohortResponsibleAssigner responsibleAssigner) {
         this.capacityChangeEvents = capacityChangeEvents;
+        this.responsibleAssigner = responsibleAssigner;
         this.courseRepository = courseRepository;
         this.termRepository = termRepository;
         this.offeringPriceCatalog = offeringPriceCatalog;
@@ -60,6 +64,7 @@ public class CourseService {
                 .schedule(request.schedule())
                 .capacity(request.capacity())
                 .durationMonths(request.durationMonths())
+                .durationHours(request.durationHours())
                 .teachingMode(request.teachingMode())
                 .registrationStart(request.registrationStart())
                 .registrationEnd(request.registrationEnd())
@@ -70,6 +75,7 @@ public class CourseService {
         Course saved = courseRepository.save(course);
 
         Person actor = currentPersonService.resolveCurrentPerson();
+        responsibleAssigner.assignToCourse(saved.getId(), request.responsiblePreceptorIds(), actor.getId());
         offeringPriceCatalog.registerInitialOfferingPrice(OfferingReference.ofCourse(saved.getId()), OfferingFee.MONTHLY_INSTALLMENT, request.price(), actor.getId());
         return withListPrice(saved);
     }
@@ -86,6 +92,7 @@ public class CourseService {
         Optional.ofNullable(request.capacity()).ifPresent(course::setCapacity);
         adjustPriceIfChanged(course, request.price());
         Optional.ofNullable(request.durationMonths()).ifPresent(course::setDurationMonths);
+        Optional.ofNullable(request.durationHours()).ifPresent(course::setDurationHours);
         Optional.ofNullable(request.teachingMode()).ifPresent(course::setTeachingMode);
         Optional.ofNullable(request.registrationStart()).ifPresent(course::setRegistrationStart);
         Optional.ofNullable(request.registrationEnd()).ifPresent(course::setRegistrationEnd);
@@ -108,9 +115,14 @@ public class CourseService {
     }
 
     public List<Course> list(StatusType status, Boolean visibleInCatalog) {
+        return list(status, visibleInCatalog, null);
+    }
+
+    public List<Course> list(StatusType status, Boolean visibleInCatalog, CatalogArea area) {
         List<Course> courses = courseRepository.findAll(Sort.by("name", "id")).stream()
                 .filter(course -> status == null || course.getIsActive() == status)
                 .filter(course -> visibleInCatalog == null || course.isVisibleInCatalog() == visibleInCatalog)
+                .filter(course -> area == null || course.getCatalogArea() == area)
                 .toList();
         Map<Long, Money> tuitions = listPriceReader.findCourseTuitions(courses.stream().map(Course::getId).toList());
         courses.forEach(course -> course.showListPrice(tuitions.get(course.getId())));

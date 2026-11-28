@@ -32,6 +32,9 @@ describe('CursoWizard — stepper and exit protection', () => {
     await user.type(screen.getByPlaceholderText('Ej. Curso de Excel Avanzado'), 'Excel');
     await user.selectOptions(screen.getByLabelText(/Período/), '4');
     await user.type(screen.getByPlaceholderText('Ej. 30'), '20');
+    await user.click(screen.getByRole('button', { name: 'Buscar preceptor' }));
+    await user.click(await screen.findByRole('option', { name: /Marcela Quiroga/ }));
+    await user.click(screen.getByRole('button', { name: 'Listo' }));
     await user.click(screen.getByRole('button', { name: 'Continuar' }));
     await user.click(await screen.findByRole('button', { name: 'Datos básicos' }));
     await user.clear(screen.getByPlaceholderText('Ej. Curso de Excel Avanzado'));

@@ -164,7 +164,7 @@ class SectionModificationRequestsPendingListIT extends AbstractIntegrationTest {
         var requester = fixtures.person();
         for (int index = 0; index < 5; index++) {
             var section = sectionIn(approvedCycle);
-            fixtures.slot(section, classroom, DayOfWeek.MONDAY, LocalTime.of(18, 0), LocalTime.of(20, 0));
+            fixtures.slot(section, fixtures.classroom(30), DayOfWeek.MONDAY, LocalTime.of(18, 0), LocalTime.of(20, 0));
             persistPending(section, requester, LocalDateTime.of(2026, 11, 1 + index, 10, 0), true);
         }
         fixtures.flushAndClear();

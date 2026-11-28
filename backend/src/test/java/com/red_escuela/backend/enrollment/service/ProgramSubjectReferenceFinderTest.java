@@ -4,6 +4,7 @@ import com.red_escuela.backend.academicstructure.api.AcademicReferenceFinder;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.enrollment.exception.SubjectNotInProgramPlanException;
+import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -22,6 +23,8 @@ class ProgramSubjectReferenceFinderTest {
     private AcademicReferenceFinder academicReferenceFinder;
     @Mock
     private ProgramPlanSubjectGuard programPlanSubjectGuard;
+    @Mock
+    private ProgramEnrollment enrollment;
     @InjectMocks
     private ProgramSubjectReferenceFinder finder;
 
@@ -39,7 +42,7 @@ class ProgramSubjectReferenceFinderTest {
         subject.setId(7L);
         when(academicReferenceFinder.findSubject(7L)).thenReturn(subject);
 
-        assertThat(finder.findSubjectInProgramPlan(5L, 7L)).isSameAs(subject);
+        assertThat(finder.findSubjectInProgramPlan(enrollment, 7L)).isSameAs(subject);
     }
 
     @Test
@@ -47,9 +50,9 @@ class ProgramSubjectReferenceFinderTest {
         Subject subject = new Subject();
         subject.setId(7L);
         when(academicReferenceFinder.findSubject(7L)).thenReturn(subject);
-        doThrow(new SubjectNotInProgramPlanException(7L, 5L)).when(programPlanSubjectGuard).requireSubjectInPlan(5L, 7L);
+        doThrow(new SubjectNotInProgramPlanException(7L, 5L)).when(programPlanSubjectGuard).requireSubjectInPlan(enrollment, 7L);
 
-        assertThatThrownBy(() -> finder.findSubjectInProgramPlan(5L, 7L))
+        assertThatThrownBy(() -> finder.findSubjectInProgramPlan(enrollment, 7L))
                 .isInstanceOf(SubjectNotInProgramPlanException.class);
     }
 }

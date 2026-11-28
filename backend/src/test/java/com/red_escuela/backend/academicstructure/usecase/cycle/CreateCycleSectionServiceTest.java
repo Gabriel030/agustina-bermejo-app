@@ -2,6 +2,7 @@ package com.red_escuela.backend.academicstructure.usecase.cycle;
 
 import com.red_escuela.backend.shared.domain.Percentage;
 import com.red_escuela.backend.testsupport.TermFixtures;
+import com.red_escuela.backend.academicstructure.api.SectionEvaluationSetupPort;
 import com.red_escuela.backend.academicstructure.domain.SectionShift;
 import com.red_escuela.backend.academicstructure.exception.SectionShiftRequiredException;
 import com.red_escuela.backend.academicstructure.exception.SlotOutsideShiftException;
@@ -25,7 +26,7 @@ import com.red_escuela.backend.academicstructure.exception.CourseSubjectNotFound
 import com.red_escuela.backend.academicstructure.exception.CycleNotEditableException;
 import com.red_escuela.backend.academicstructure.exception.CycleNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.SectionCapacityExceedsClassroomException;
-import com.red_escuela.backend.academicstructure.exception.SubjectNotFoundException;
+import com.red_escuela.backend.academicstructure.api.SubjectNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.SubjectNotOpenableForSectionsException;
 import com.red_escuela.backend.academicstructure.repository.AcademicOfferingCycleRepository;
 import com.red_escuela.backend.academicstructure.repository.ClassroomRepository;
@@ -75,6 +76,8 @@ class CreateCycleSectionServiceTest {
     @Mock
     private SubjectRepository subjectRepository;
     @Mock
+    private com.red_escuela.backend.academicstructure.repository.ProgramSubjectRepository programSubjectRepository;
+    @Mock
     private CourseSubjectRepository courseSubjectRepository;
     @Mock
     private SubjectSectionRepository subjectSectionRepository;
@@ -90,6 +93,8 @@ class CreateCycleSectionServiceTest {
     private SectionIdentityAssigner identityAssigner;
     @Mock
     private SectionShiftSlotGuard shiftSlotGuard;
+    @Mock
+    private SectionEvaluationSetupPort evaluationSetupPort;
 
     private CreateCycleSectionService service;
     private Term term;
@@ -100,8 +105,13 @@ class CreateCycleSectionServiceTest {
     void setUp() {
         service = new CreateCycleSectionService(new CreateCycleSectionTransaction(cycleRepository, subjectRepository, courseSubjectRepository,
                 subjectSectionRepository, courseSectionRepository, classroomRepository, slotRepository, conflictChecker,
-                new CycleSectionAbsenceLimitAssigner(), identityAssigner, shiftSlotGuard));
+                new CycleSectionAbsenceLimitAssigner(), identityAssigner, shiftSlotGuard,
+                new com.red_escuela.backend.academicstructure.service.TermOfferingGuard(java.time.Clock.systemDefaultZone()), evaluationSetupPort,
+                new com.red_escuela.backend.academicstructure.service.SubjectOfferingGuard(programSubjectRepository)));
+        org.mockito.Mockito.lenient().when(programSubjectRepository.findByProgramIdAndSubjectId(any(), any()))
+                .thenReturn(Optional.of(new com.red_escuela.backend.academicstructure.entity.ProgramSubject()));
         term = TermFixtures.newTerm();
+        term.setStatus(com.red_escuela.backend.shared.domain.StatusType.ACTIVE);
         term.setId(2L);
         programCycle = new AcademicOfferingCycle();
         programCycle.setTerm(term);
@@ -199,6 +209,19 @@ class CreateCycleSectionServiceTest {
     }
 
     @Test
+    void programCycleSectionCreatesItsEvaluationConfigDraft() {
+        when(cycleRepository.findById(CYCLE_ID)).thenReturn(Optional.of(programCycle));
+        when(subjectRepository.findById(1L)).thenReturn(Optional.of(subject(SubjectStatus.ACTIVE)));
+        persistSubjectSections();
+
+        service.createSection(CYCLE_ID, request("Commission A", 1L, null, 25, null));
+
+        var captor = ArgumentCaptor.forClass(SubjectSection.class);
+        verify(evaluationSetupPort).createInitialEvaluationDraft(captor.capture());
+        assertThat(captor.getValue().getId()).isEqualTo(100L);
+    }
+
+    @Test
     void programCycleSectionPersistsTheRequestedMaxAbsencePercent() {
         when(cycleRepository.findById(CYCLE_ID)).thenReturn(Optional.of(programCycle));
         when(subjectRepository.findById(1L)).thenReturn(Optional.of(subject(SubjectStatus.ACTIVE)));
@@ -237,7 +260,7 @@ class CreateCycleSectionServiceTest {
         verify(conflictChecker).checkClassroomAvailability(term, CLASSROOM_ID, DayOfWeek.MONDAY, LocalTime.of(8, 0), LocalTime.of(12, 0));
         verify(conflictChecker).checkClassroomAvailability(term, CLASSROOM_ID, DayOfWeek.TUESDAY, LocalTime.of(8, 0), LocalTime.of(12, 0));
         var captor = ArgumentCaptor.forClass(SectionScheduleSlot.class);
-        verify(slotRepository, times(2)).save(captor.capture());
+        verify(slotRepository, times(2)).saveAndFlush(captor.capture());
         assertThat(captor.getAllValues()).extracting(SectionScheduleSlot::getDayOfWeek)
                 .containsExactly(DayOfWeek.MONDAY, DayOfWeek.TUESDAY);
         assertThat(captor.getAllValues()).allSatisfy(saved -> {
@@ -282,7 +305,7 @@ class CreateCycleSectionServiceTest {
                 request("A", 1L, null, 10, List.of(slot(DayOfWeek.MONDAY)))))
                 .isInstanceOf(ClassroomNotFoundException.class);
 
-        verify(slotRepository, never()).save(any());
+        verify(slotRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -296,7 +319,7 @@ class CreateCycleSectionServiceTest {
                 request("A", 1L, null, 10, List.of(slot(DayOfWeek.MONDAY)))))
                 .isInstanceOf(SectionCapacityExceedsClassroomException.class);
 
-        verify(slotRepository, never()).save(any());
+        verify(slotRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -312,7 +335,20 @@ class CreateCycleSectionServiceTest {
                 request("A", 1L, null, 10, List.of(slot(DayOfWeek.MONDAY)))))
                 .isInstanceOf(IllegalStateException.class);
 
-        verify(slotRepository, never()).save(any());
+        verify(slotRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void courseCycleSectionCreatesItsEvaluationConfigDraft() {
+        when(cycleRepository.findById(CYCLE_ID)).thenReturn(Optional.of(courseCycle));
+        when(courseSubjectRepository.findById(3L)).thenReturn(Optional.of(new CourseSubject()));
+        persistCourseSections();
+
+        service.createSection(CYCLE_ID, request("Commission B", null, 3L, 18, null));
+
+        var captor = ArgumentCaptor.forClass(CourseSubjectSection.class);
+        verify(evaluationSetupPort).createInitialEvaluationDraftForCourseSection(captor.capture());
+        assertThat(captor.getValue().getId()).isEqualTo(200L);
     }
 
     @Test
@@ -362,7 +398,7 @@ class CreateCycleSectionServiceTest {
 
         verify(conflictChecker).checkClassroomAvailability(term, CLASSROOM_ID, DayOfWeek.FRIDAY, LocalTime.of(8, 0), LocalTime.of(12, 0));
         var captor = ArgumentCaptor.forClass(SectionScheduleSlot.class);
-        verify(slotRepository).save(captor.capture());
+        verify(slotRepository).saveAndFlush(captor.capture());
         var saved = captor.getValue();
         assertThat(saved.getCourseSection().getId()).isEqualTo(200L);
         assertThat(saved.getSubjectSection()).isNull();
@@ -393,7 +429,7 @@ class CreateCycleSectionServiceTest {
                 request("B", null, 3L, 18, List.of(slot(DayOfWeek.FRIDAY)))))
                 .isInstanceOf(SectionCapacityExceedsClassroomException.class);
 
-        verify(slotRepository, never()).save(any());
+        verify(slotRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -468,7 +504,7 @@ class CreateCycleSectionServiceTest {
                 .isInstanceOf(SlotOutsideShiftException.class);
 
         verify(conflictChecker, never()).checkClassroomAvailability(any(), any(), any(), any(), any());
-        verify(slotRepository, never()).save(any());
+        verify(slotRepository, never()).saveAndFlush(any());
     }
 
     private static CreateCycleSectionRequest request(String name, Long subjectId, Long courseSubjectId, Integer capacity,

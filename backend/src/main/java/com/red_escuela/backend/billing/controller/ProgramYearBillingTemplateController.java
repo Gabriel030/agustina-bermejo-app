@@ -9,7 +9,7 @@ import com.red_escuela.backend.billing.advanceenrollmentfee.usecase.FindAdvanceE
 import com.red_escuela.backend.billing.dto.ProgramYearBillingTemplateResponse;
 import com.red_escuela.backend.billing.dto.UpdateEntryFeeDiscountRequest;
 import com.red_escuela.backend.billing.dto.YearBillingConfigurationRequest;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.configuration.usecase.FindProgramBillingConfigurationUseCase;
 import com.red_escuela.backend.billing.usecase.cohort.UpdateCohortEntryFeeDiscountUseCase;
@@ -32,8 +32,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.Clock;
-import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -48,7 +46,6 @@ public class ProgramYearBillingTemplateController {
     private final UpdateYearBillingConfigurationUseCase updateYearConfigurationUseCase;
     private final UpdateCohortEntryFeeDiscountUseCase updateEntryFeeDiscountUseCase;
     private final FindAdvanceEnrollmentFeeAlertsUseCase findAdvanceAlertsUseCase;
-    private final Clock clock;
 
     public ProgramYearBillingTemplateController(CreateProgramYearBillingTemplateUseCase createTemplateUseCase,
                                                   CreateProgramCohortUseCase createCohortUseCase,
@@ -57,7 +54,7 @@ public class ProgramYearBillingTemplateController {
                                                   ListProgramBillingTemplatesUseCase listBillingTemplatesUseCase,
                                                   UpdateYearBillingConfigurationUseCase updateYearConfigurationUseCase,
                                                   UpdateCohortEntryFeeDiscountUseCase updateEntryFeeDiscountUseCase,
-                                                  FindAdvanceEnrollmentFeeAlertsUseCase findAdvanceAlertsUseCase, Clock clock) {
+                                                  FindAdvanceEnrollmentFeeAlertsUseCase findAdvanceAlertsUseCase) {
         this.updateYearConfigurationUseCase = updateYearConfigurationUseCase;
         this.updateEntryFeeDiscountUseCase = updateEntryFeeDiscountUseCase;
         this.createTemplateUseCase = createTemplateUseCase;
@@ -66,7 +63,6 @@ public class ProgramYearBillingTemplateController {
         this.listCohortsForProgramUseCase = listCohortsForProgramUseCase;
         this.listBillingTemplatesUseCase = listBillingTemplatesUseCase;
         this.findAdvanceAlertsUseCase = findAdvanceAlertsUseCase;
-        this.clock = clock;
         this.findConfigurationUseCase = findConfigurationUseCase;
     }
 
@@ -124,6 +120,6 @@ public class ProgramYearBillingTemplateController {
     @GetMapping("/programs/{id}/cohorts")
     @PreAuthorize("isAuthenticated()")
     public List<ProgramCohortCatalogResponse> listProgramCohorts(@PathVariable Long id) {
-        return listCohortsForProgramUseCase.list(id).stream().map(c -> ProgramCohortCatalogResponse.from(c, id, LocalDate.now(clock))).toList();
+        return listCohortsForProgramUseCase.list(id);
     }
 }

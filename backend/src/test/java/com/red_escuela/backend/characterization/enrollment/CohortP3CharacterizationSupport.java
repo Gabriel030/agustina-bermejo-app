@@ -4,11 +4,11 @@ import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.repository.TermRepository;
 import com.red_escuela.backend.billing.configuration.repository.ConfigurationVersionRepository;
-import com.red_escuela.backend.billing.entity.CohortIntake;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.domain.CohortIntake;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
 import com.red_escuela.backend.billing.planning.TestTemplateTerms;
-import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
+import com.red_escuela.backend.academicstructure.repository.ProgramCohortRepository;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.StatusType;
@@ -56,7 +56,10 @@ abstract class CohortP3CharacterizationSupport extends WithdrawalP2Characterizat
 
     protected ProgramCohort persistCohort(ProgramYearBillingTemplate template, LocalDate admissionStart, LocalDate admissionEnd) {
         ProgramCohort cohort = new ProgramCohort();
-        cohort.setTemplate(template);
+        cohort.markOpened(java.time.LocalDateTime.of(2000, 1, 1, 0, 0));
+        cohort.setTemplateId(template.getId());
+        cohort.setProgramId(template.programId());
+        cohort.setTermId(template.termId());
         cohort.setIntake(CohortIntake.FIRST);
         cohort.setAdmissionStart(admissionStart);
         cohort.setAdmissionEnd(admissionEnd);

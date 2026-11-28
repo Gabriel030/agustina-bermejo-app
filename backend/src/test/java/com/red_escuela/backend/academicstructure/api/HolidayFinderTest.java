@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.api;
 
+import com.red_escuela.backend.academicstructure.domain.HolidayScope;
 import com.red_escuela.backend.academicstructure.repository.HolidayRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,8 +23,8 @@ class HolidayFinderTest {
 
     @Test
     void isHolidayDelegatesToTheDateLookup() {
-        when(holidayRepository.existsByDate(LocalDate.of(2027, 5, 25))).thenReturn(true);
-        when(holidayRepository.existsByDate(LocalDate.of(2027, 5, 26))).thenReturn(false);
+        when(holidayRepository.existsByDateAndScopeIn(LocalDate.of(2027, 5, 25), HolidayScope.AFFECTING_CLASSES)).thenReturn(true);
+        when(holidayRepository.existsByDateAndScopeIn(LocalDate.of(2027, 5, 26), HolidayScope.AFFECTING_CLASSES)).thenReturn(false);
 
         assertThat(queries.isHoliday(LocalDate.of(2027, 5, 25))).isTrue();
         assertThat(queries.isHoliday(LocalDate.of(2027, 5, 26))).isFalse();

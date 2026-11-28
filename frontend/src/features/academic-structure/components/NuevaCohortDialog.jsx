@@ -12,6 +12,7 @@ import { useProgramBillingTemplates, useCreateCohort } from '@/features/academic
 import { useTerminos } from '@/features/academic-structure/hooks/useTerminos';
 import { NativeSelect } from '@/components/ui/native-select';
 import { Input } from '@/components/ui/input';
+import { PreceptorMultiSelect } from '@/components/PreceptorMultiSelect';
 
 const INTAKE_LABELS = {
   FIRST: '1er semestre',
@@ -35,6 +36,8 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
   const [admissionEnd, setAdmissionEnd] = useState('');
   const [cursadaStart, setCursadaStart] = useState('');
   const [entryFeeDiscount, setEntryFeeDiscount] = useState('');
+  const [responsiblePreceptorIds, setResponsiblePreceptorIds] = useState([]);
+  const [responsibleError, setResponsibleError] = useState(false);
 
   function getTemplateLabel(template) {
     const term = (terminos ?? []).find((t) => String(t.id) === String(template.termId));
@@ -49,14 +52,19 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
     setAdmissionEnd('');
     setCursadaStart('');
     setEntryFeeDiscount('');
+    setResponsiblePreceptorIds([]);
+    setResponsibleError(false);
   }
 
   async function handleSubmit(e) {
     e.preventDefault();
+    const missingResponsible = responsiblePreceptorIds.length === 0;
+    setResponsibleError(missingResponsible);
     if (!selectedTemplateId || !intake || !admissionStart || !admissionEnd || !cursadaStart) {
       toast.error('Completá todos los campos.');
       return;
     }
+    if (missingResponsible) return;
     try {
       await createCohort.mutateAsync({
         templateId: Number(selectedTemplateId),
@@ -64,6 +72,7 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
         admissionStart,
         admissionEnd,
         cursadaStart,
+        responsiblePreceptorIds,
         ...(entryFeeDiscount !== '' ? { entryFeeDiscountPoints: Number(entryFeeDiscount) } : {}),
       });
       toast.success('Cohorte creada.');
@@ -168,6 +177,19 @@ export function NuevaCohortDialog({ open, onClose, programId }) {
               required
             />
           </div>
+
+          <PreceptorMultiSelect
+            label="Responsable"
+            required
+            value={responsiblePreceptorIds}
+            onChange={(ids) => {
+              setResponsiblePreceptorIds(ids);
+              if (ids.length > 0) setResponsibleError(false);
+            }}
+            disabled={createCohort.isPending}
+            error={responsibleError ? 'Elegí al menos un preceptor.' : undefined}
+            hint="Preceptor de toda la cohorte"
+          />
 
           <div className="flex flex-col gap-1">
             <label

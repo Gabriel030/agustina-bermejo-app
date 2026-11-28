@@ -3,7 +3,10 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "measure": "node measure.mjs"
+    "measure": "node measure.mjs",
+    "compare": "node compare.mjs out/latest.json",
+    "compare:update": "node compare.mjs out/latest.json --update",
+    "test": "node --test"
   },
   "dependencies": {
     "playwright": "1.55.0"

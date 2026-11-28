@@ -1,6 +1,6 @@
 package com.red_escuela.backend.billing.advanceenrollmentfee.service;
 
-import com.red_escuela.backend.billing.api.AdvanceEnrollmentFeeView;
+import com.red_escuela.backend.enrollment.api.AdvanceEnrollmentFeeView;
 import com.red_escuela.backend.billing.advanceenrollmentfee.policy.AdvanceEnrollmentFeeFacts;
 import com.red_escuela.backend.billing.configuration.domain.AdvanceEnrollmentFeeCalendar;
 import com.red_escuela.backend.billing.configuration.service.AdvanceEnrollmentFeeCalendarReader;

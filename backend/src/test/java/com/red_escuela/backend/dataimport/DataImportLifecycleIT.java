@@ -79,6 +79,8 @@ class DataImportLifecycleIT extends AbstractIntegrationTest {
 
     private String directorToken;
     private String suffix;
+    private String partialSubjectCode;
+    private String importedSubjectCode;
     private String studentDni;
     private String teacherDni;
 
@@ -88,6 +90,8 @@ class DataImportLifecycleIT extends AbstractIntegrationTest {
         snapshotHolder.refresh();
         cleanImportTables();
         suffix = UUID.randomUUID().toString().substring(0, 8);
+        partialSubjectCode = freeSubjectCode("P");
+        importedSubjectCode = freeSubjectCode("H");
         studentDni = uniqueDni();
         teacherDni = uniqueDni();
         transactions.executeWithoutResult(status -> {
@@ -267,14 +271,14 @@ class DataImportLifecycleIT extends AbstractIntegrationTest {
         upload(batchId, "PERSONS", PERSON_HEADER + student(blockerDni, "Ana", "ana." + suffix)
                 + student(teacherDni, "Beto", "beto." + suffix));
         upload(batchId, "SUBJECTS", "subjectCode,name,weeklyHours,gradeMode,maxFinalExamAttempts,status\n"
-                + "P" + suffix.substring(0, 3) + ",Materia parcial " + suffix + ",4,NUMERIC,3,ACTIVE\n");
+                + partialSubjectCode + ",Materia parcial " + suffix + ",4,NUMERIC,3,ACTIVE\n");
         validate(batchId).andExpect(jsonPath("$.status").value("VALIDATED"));
         commit(blocker).andExpect(jsonPath("$.status").value("COMMITTED"));
 
         commit(batchId).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("PARTIAL"));
         assertThat(rowStatuses(batchId, "PERSONS")).containsExactly("FAILED", "FAILED");
         assertThat(rowStatuses(batchId, "SUBJECTS")).containsExactly("COMMITTED");
-        assertThat(subjectCount("P" + suffix.substring(0, 3))).isEqualTo(1);
+        assertThat(subjectCount(partialSubjectCode)).isEqualTo(1);
 
         mockMvc.perform(get("/data-imports/" + batchId + "/report.csv").header("Authorization", bearer()))
                 .andExpect(status().isOk()).andExpect(content().contentTypeCompatibleWith("text/csv"))
@@ -286,13 +290,13 @@ class DataImportLifecycleIT extends AbstractIntegrationTest {
         mockMvc.perform(post("/data-imports/" + batchId + "/retry").header("Authorization", bearer()))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("PARTIAL"));
         assertThat(rowStatuses(batchId, "PERSONS")).containsExactly("FAILED", "FAILED");
-        assertThat(subjectCount("P" + suffix.substring(0, 3))).isEqualTo(1);
+        assertThat(subjectCount(partialSubjectCode)).isEqualTo(1);
 
         postWithConfirmation(blocker, "rollback", "DESHACER").andExpect(status().isOk());
         mockMvc.perform(post("/data-imports/" + batchId + "/retry").header("Authorization", bearer()))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.status").value("COMMITTED"));
         assertThat(rowStatuses(batchId, "PERSONS")).containsExactly("COMMITTED", "COMMITTED");
-        assertThat(subjectCount("P" + suffix.substring(0, 3))).isEqualTo(1);
+        assertThat(subjectCount(partialSubjectCode)).isEqualTo(1);
         assertThat(jdbc.queryForObject("select count(*) from person where dni in (?, ?)", Integer.class, blockerDni, teacherDni)).isEqualTo(2);
         assertThat(jdbc.queryForObject("select count(*) from import_batch_event where batch_id = ? and type = 'RETRIED'", Integer.class, batchId)).isEqualTo(2);
 
@@ -474,7 +478,7 @@ class DataImportLifecycleIT extends AbstractIntegrationTest {
         upload(batchId, "PERSONS", PERSON_HEADER + student(studentDni, "Ana", "ana." + suffix)
                 + "DNI," + teacherDni + ",Marta,Ríos,INSTRUCTOR,F,1978-11-30,marta." + suffix + "@example.com,3511112233,Argentina,Belgrano 77,Carlos Paz,Córdoba,5152,,,ACTIVE,,,,,,,,,,,,\n");
         upload(batchId, "SUBJECTS", "subjectCode,name,weeklyHours,gradeMode,maxFinalExamAttempts,status\n"
-                + "H" + suffix.substring(0, 3) + ",Materia " + suffix + ",4,NUMERIC,3,ACTIVE\n");
+                + importedSubjectCode + ",Materia " + suffix + ",4,NUMERIC,3,ACTIVE\n");
         validate(batchId).andExpect(jsonPath("$.status").value("VALIDATED"));
         commit(batchId).andExpect(status().isOk()).andExpect(jsonPath("$.status").value("COMMITTED"));
         return batchId;
@@ -510,8 +514,8 @@ class DataImportLifecycleIT extends AbstractIntegrationTest {
 
     private long importFullHistory(String key, String studentDocument, String teacherDocument, int year) throws Exception {
         String program = "Tecnicatura " + key;
-        String subject = "H" + key.substring(0, 3);
-        String second = "J" + key.substring(0, 3);
+        String subject = freeSubjectCode("H");
+        String second = freeSubjectCode("J");
         String section = "SEC-" + key;
         long batchId = createBatch();
         upload(batchId, "PERSONS", PERSON_HEADER + student(studentDocument, "Ana", "ana." + key)
@@ -561,6 +565,14 @@ class DataImportLifecycleIT extends AbstractIntegrationTest {
 
     private List<String> rowStatuses(long batchId, String type) {
         return jdbc.queryForList("select status from import_row where batch_id = ? and entity_type = ? order by row_number", String.class, batchId, type);
+    }
+
+    private String freeSubjectCode(String prefix) {
+        String code;
+        do {
+            code = prefix + UUID.randomUUID().toString().substring(0, 3);
+        } while (subjectCount(code) > 0);
+        return code;
     }
 
     private int subjectCount(String code) {

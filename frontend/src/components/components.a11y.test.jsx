@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { render } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { axe } from '@/test/axe';
 import { Button } from '@/components/ui/button';
 import { ChoiceChip } from '@/components/ChoiceChip';
@@ -10,6 +10,11 @@ import { Notice } from '@/components/Notice';
 import { Paginador } from '@/components/Paginador';
 import { DataTable } from '@/components/table/DataTable';
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from '@/components/ui/sheet';
+import { Switch } from '@/components/ui/switch';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 
 const columns = [
@@ -118,5 +123,32 @@ describe('shared components accessibility (jsdom does not measure color contrast
       </Dialog>,
     );
     expect(await axe(document.body)).toHaveNoViolations();
+  });
+
+  it('formControlsHaveNoAxeViolations', async () => {
+    const { container } = render(
+      <form>
+        <Switch aria-label="Modo oscuro" />
+        <Switch aria-label="Recordatorios" defaultChecked />
+        <Switch aria-label="Bloqueado" disabled />
+        <Checkbox aria-label="Acepto" />
+        <Input aria-label="Nombre" />
+        <Textarea aria-label="Observaciones" />
+      </form>,
+    );
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('openDropdownMenuHasNoAxeViolations', async () => {
+    render(
+      <DropdownMenu open>
+        <DropdownMenuTrigger>Exportar</DropdownMenuTrigger>
+        <DropdownMenuContent>
+          <DropdownMenuItem>Excel</DropdownMenuItem>
+          <DropdownMenuItem disabled>PDF del acta (al cerrar)</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>,
+    );
+    expect(await axe(await screen.findByRole('menu'))).toHaveNoViolations();
   });
 });

@@ -55,8 +55,32 @@ public class AttendanceChangeRequest {
     @Column(name = "approved_at")
     private LocalDateTime approvedAt;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reverted_by_id")
+    private Person revertedBy;
+
+    @Column(name = "reverted_at")
+    private LocalDateTime revertedAt;
+
+    @Column(name = "revert_reason", length = 500)
+    private String revertReason;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
+
+    public void reopenReverted(Person actor, String reason, LocalDateTime at) {
+        reopen();
+        this.revertedBy = actor;
+        this.revertedAt = at;
+        this.revertReason = reason;
+    }
+
+    public void reopen() {
+        this.status = AttendanceChangeRequestStatus.PENDING;
+        this.approvedBy = null;
+        this.approvedAt = null;
+        this.rejectionReason = null;
+    }
 
     @PrePersist
     private void onCreate() {

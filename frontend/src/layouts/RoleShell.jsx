@@ -2,6 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useLocation, useOutlet } from 'react-router-dom';
 import { AnimatePresence, m } from 'motion/react';
 import { Sidebar } from '@/components/Sidebar';
+import { topNavBreakpointFor } from '@/components/topNavBreakpoint';
+import { TopNav } from '@/components/TopNav';
+import { cn } from '@/lib/utils';
 import { Breadcrumb } from '@/components/Breadcrumb';
 import { TopHeader } from '@/components/TopHeader';
 import { useBreadcrumb } from '@/hooks/useBreadcrumb';
@@ -47,7 +50,7 @@ function useFocusHeadingOnNavigation(mainRef, pathname, focusOnMount) {
 
 // Estructura compartida por los 5 layouts de rol: sidebar + área de contenido.
 // Lo que varía por rol (título, ítems de nav) lo define cada *Layout.jsx.
-export function RoleShell({ titulo, items, groups }) {
+export function RoleShell({ titulo, items, groups, topNav = false }) {
   const location = useLocation();
   // useOutlet() (no <Outlet /> directo): captura el elemento ya resuelto de la
   // ruta actual en esta pasada de render. Con <Outlet /> puesto directo dentro
@@ -57,6 +60,7 @@ export function RoleShell({ titulo, items, groups }) {
   // motion.div terminan mostrando el mismo contenido en vez de que uno muestre
   // la pantalla vieja saliendo y el otro la nueva entrando.
   const element = useOutlet();
+  const breakpoint = topNavBreakpointFor(topNav);
   const breadcrumbItems = useBreadcrumb();
   const mainRef = useRef(null);
   const { usuario } = useAuth();
@@ -76,16 +80,16 @@ export function RoleShell({ titulo, items, groups }) {
     // flex-col en base/md, flex-row recién en lg: — el Sidebar fijo (hidden lg:flex)
     // colapsa a un menú hamburguesa (MobileMenu, drawer lateral) en pantallas chicas,
     // no a una bottom tab bar — decisión revisada con el usuario (ver docs/context/frontend.md).
-    <div className="flex h-screen flex-col gap-(--shell-gap) overflow-hidden p-(--shell-pad) lg:flex-row">
+    <div className={cn('flex h-screen flex-col gap-(--shell-gap) overflow-hidden p-(--shell-pad)', !topNav && 'lg:flex-row')}>
       <SkipToContent />
-      <Sidebar titulo={titulo} items={items} groups={groups} />
+      {topNav ? <TopNav titulo={titulo} items={items} groups={groups} breakpoint={breakpoint} /> : <Sidebar titulo={titulo} items={items} groups={groups} />}
       {/* Columna de contenido junto al Sidebar, en mobile y desktop por igual —
           apila TopHeader arriba de <main>. Antes este wrapper colapsaba con
           lg:contents porque solo contenía <main>; con TopHeader también
           persistiendo en desktop, colapsarlo lo deja como columna angosta
           suelta en el flex-row de arriba en vez de ocupar el resto del ancho. */}
       <div className="flex min-w-0 flex-1 flex-col gap-(--shell-gap) overflow-hidden">
-        <TopHeader titulo={titulo} items={items} groups={groups} />
+        <TopHeader titulo={titulo} items={items} groups={groups} breakpoint={breakpoint} className={topNav ? breakpoint.mobileHidden : undefined} />
         <SystemBar />
         <LegalNoticeBanner />
         {/* min-w-0: sin esto, un flex item no se achica más allá del ancho
@@ -98,18 +102,18 @@ export function RoleShell({ titulo, items, groups }) {
           ref={mainRef}
           id="main-content"
           tabIndex={-1}
-          className="flex min-w-0 flex-1 flex-col overflow-y-auto focus:outline-none px-4 py-5 sm:px-8 sm:py-6"
+          className="flex min-w-0 flex-1 flex-col overflow-y-auto scroll-pb-32 focus:outline-none px-4 py-5 sm:py-6"
         >
           {/* Breadcrumb: vive acá (no en cada página) porque es el único lugar que
               todas las rutas de rol comparten — ver useBreadcrumb.js para el mapeo
               ruta→items. No forma parte de la animación de entrada/salida de abajo
               (es chrome de navegación, no contenido de la pantalla) y devuelve null
               para cualquier ruta sin un patrón conocido, así que no aparece en
-              pantallas de un solo nivel (Inicio, placeholders, etc). max-w-[1200px]
+              pantallas de un solo nivel (Inicio, placeholders, etc). max-w-[1248px]
               replica el ancho de PageContainer para que quede alineado con el
               contenido de abajo. */}
           {breadcrumbItems.length > 0 && (
-            <div className="mx-auto w-full max-w-[1200px] pb-3">
+            <div className="mx-auto w-full max-w-[1248px] pb-3">
               <Breadcrumb items={breadcrumbItems} />
             </div>
           )}

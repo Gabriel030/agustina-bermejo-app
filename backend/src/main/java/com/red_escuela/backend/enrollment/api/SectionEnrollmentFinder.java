@@ -73,9 +73,27 @@ public class SectionEnrollmentFinder {
         courseEnrollmentRepository.findByIdForUpdate(id).orElseThrow(() -> new SectionEnrollmentNotFoundException(id));
     }
 
+    public List<ActiveEnrollmentLimitView> findActiveProgramLimitsByStudents(java.util.Collection<Long> studentIds) {
+        return programEnrollmentRepository.findActiveLimitRowsByStudentIdIn(studentIds, ACTIVE_STATUSES).stream()
+                .map(row -> new ActiveEnrollmentLimitView(row.enrollmentId(), row.studentId(), row.maxAbsenceRate()))
+                .toList();
+    }
+
+    public List<ActiveEnrollmentLimitView> findActiveCourseLimitsByStudents(java.util.Collection<Long> studentIds) {
+        return courseEnrollmentRepository.findActiveLimitRowsByStudentIdIn(studentIds, ACTIVE_STATUSES).stream()
+                .map(row -> new ActiveEnrollmentLimitView(row.enrollmentId(), row.studentId(), row.maxAbsenceRate()))
+                .toList();
+    }
+
     public SubjectSectionEnrollment findProgramEnrollment(Long id) {
         return programEnrollmentRepository.findById(id)
                 .orElseThrow(() -> new SectionEnrollmentNotFoundException(id));
+    }
+
+    public java.util.List<SubjectSectionEnrollment> findProgramEnrollmentsOfSubject(
+            Long programEnrollmentId, Long subjectId, java.util.List<com.red_escuela.backend.enrollment.entity.EnrollmentStatus> statuses) {
+        return programEnrollmentRepository.findByProgramEnrollmentIdAndSubjectSection_Subject_IdAndStatusIn(
+                programEnrollmentId, subjectId, statuses);
     }
 
     public java.util.List<SubjectSectionEnrollment> findProgramEnrollmentsWithSection(java.util.Collection<Long> ids) {

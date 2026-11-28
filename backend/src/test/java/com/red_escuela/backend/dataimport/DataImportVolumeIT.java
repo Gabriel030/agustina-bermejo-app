@@ -117,12 +117,12 @@ class DataImportVolumeIT extends AbstractIntegrationTest {
         upload(batchId, "SUBJECTS", csv.subjects());
         upload(batchId, "CURRICULUM", csv.curriculum());
         upload(batchId, "PREREQUISITES", csv.prerequisites());
-        upload(batchId, "TERMS", csv.terms());
+        upload(batchId, "TERMS", csv.termsWithAnnualCycle());
         upload(batchId, "SECTIONS", csv.sections());
         upload(batchId, "PROGRAM_ENROLLMENTS", HistoricalDatasetCsv.PROGRAM_ENROLLMENT_HEADER
-                + "DNI," + csv.studentDni(0) + "," + csv.program() + "," + year + "-03-01,ENROLLED,,,,\n"
-                + "DNI," + csv.studentDni(1) + "," + csv.program() + "," + year + "-03-01,ENROLLED,,,,\n"
-                + "DNI," + completedStudent + "," + csv.program() + "," + year + "-03-01,COMPLETED," + year + "-12-10,,,\n");
+                + "DNI," + csv.studentDni(0) + "," + csv.program() + "," + year + "-03-01,ENROLLED,,," + year + ",FIRST\n"
+                + "DNI," + csv.studentDni(1) + "," + csv.program() + "," + year + "-03-01,ENROLLED,,," + year + ",FIRST\n"
+                + "DNI," + completedStudent + "," + csv.program() + "," + year + "-03-01,COMPLETED," + year + "-12-10,," + year + ",FIRST\n");
         upload(batchId, "SECTION_ENROLLMENTS", csv.sectionEnrollments(0, 2));
         upload(batchId, "GRADE_ITEMS", HistoricalDatasetCsv.GRADE_HEADER
                 + "DNI," + csv.studentDni(0) + "," + csv.sectionCode(0) + ",EXAM,1," + year + "-05-12,8\n"
@@ -168,7 +168,7 @@ class DataImportVolumeIT extends AbstractIntegrationTest {
             upload(baseBatch, "PROGRAMS", csv.programs());
             upload(baseBatch, "SUBJECTS", csv.subjects());
             upload(baseBatch, "CURRICULUM", csv.curriculum());
-            upload(baseBatch, "TERMS", csv.terms());
+            upload(baseBatch, "TERMS", csv.termsWithAnnualCycle());
             upload(baseBatch, "SECTIONS", csv.sections());
             upload(baseBatch, "PROGRAM_ENROLLMENTS", csv.programEnrollments());
         });

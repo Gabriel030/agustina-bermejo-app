@@ -43,6 +43,16 @@ import org.apache.pdfbox.rendering.PDFRenderer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import com.red_escuela.backend.graduation.certificate.engine.CertificateCode;
+import com.red_escuela.backend.graduation.certificate.engine.CertificatePdfRenderer;
+import com.red_escuela.backend.graduation.certificate.engine.CertificateSnapshot;
+import com.red_escuela.backend.graduation.certificate.exam.entity.ExamCertificate;
+import com.red_escuela.backend.graduation.certificate.exam.repository.ExamCertificateRepository;
+import com.red_escuela.backend.graduation.certificate.exam.specialist.ExamCertificateTemplate;
+import com.red_escuela.backend.graduation.certificate.specialist.CertificateVerificationUrl;
+import com.red_escuela.backend.graduation.certificate.template.PublishedTemplateFixtures;
+import java.util.Map;
+import org.apache.pdfbox.text.PDFTextStripper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -95,6 +105,14 @@ class ExamCertificateHttpIT extends AbstractIntegrationTest {
     private CertificateFileStore fileStore;
     @Autowired
     private CertificateDigest digest;
+    @Autowired
+    private CertificatePdfRenderer renderer;
+    @Autowired
+    private ExamCertificateTemplate examTemplate;
+    @Autowired
+    private CertificateVerificationUrl verificationUrl;
+    @Autowired
+    private ExamCertificateRepository certificateRepository;
     @Value("${app.frontend.base-url}")
     private String frontendBaseUrl;
 
@@ -306,6 +324,52 @@ class ExamCertificateHttpIT extends AbstractIntegrationTest {
         assertThat(regenerated).isEqualTo(first);
         assertThat(digest.sha256(first)).isEqualTo(storedSha);
         assertThat(decodeQr(first)).isEqualTo(frontendBaseUrl.replaceAll("/$", "") + "/verificar/" + code);
+    }
+
+    @Test
+    void issuanceWithPublishedVersionStoresItsIdAndTemplateReference() throws Exception {
+        Long certificateId = issueOne(presentRegistrationId);
+
+        Map<String, Object> row = jdbc.queryForMap("select template_version_id, template_ref from exam_certificate where id = ?", certificateId);
+        assertThat(((Number) row.get("template_version_id")).longValue())
+                .isEqualTo(PublishedTemplateFixtures.currentPublishedId(jdbc, "EXAM_CERTIFICATE"));
+        assertThat(row.get("template_ref")).isEqualTo(PublishedTemplateFixtures.currentPublishedRef(jdbc, "EXAM_CERTIFICATE"));
+    }
+
+    @Test
+    void republishingTheTemplateDoesNotChangeTheRegeneratedPdfNorItsHash() throws Exception {
+        Long certificateId = issueOne(presentRegistrationId);
+        String issuedSha = jdbc.queryForObject("select pdf_sha256 from exam_certificate where id = ?", String.class, certificateId);
+        PublishedTemplateFixtures.publishRebrandedVersion(jdbc, "EXAM_CERTIFICATE");
+        jdbc.update("update exam_certificate set pdf_path = 'missing/file.pdf' where id = ?", certificateId);
+
+        byte[] regenerated = download(certificateId, teacherToken);
+
+        assertThat(digest.sha256(regenerated)).isEqualTo(issuedSha);
+        assertThat(jdbc.queryForObject("select pdf_sha256 from exam_certificate where id = ?", String.class, certificateId)).isEqualTo(issuedSha);
+        try (PDDocument document = Loader.loadPDF(regenerated)) {
+            assertThat(new PDFTextStripper().getText(document)).doesNotContain("INSTITUTO REPUBLICADO");
+        }
+    }
+
+    @Test
+    void certificateWithoutTemplateVersionRegeneratesTheBuiltInDesignWithTheSameHash() throws Exception {
+        Long certificateId = issueOne(presentRegistrationId);
+        ExamCertificate stored = certificateRepository.findById(certificateId).orElseThrow();
+        CertificateSnapshot builtIn = PublishedTemplateFixtures.withBuiltInRef(stored.getSnapshot(), ExamCertificateTemplate.EXAM_BUILT_IN_V1);
+        CertificateCode code = stored.certificateCode();
+        byte[] legacy = renderer.render(examTemplate.definitionFor(builtIn, stored.getExpiresAt().toLocalDate(), stored.getRecipientType(),
+                stored.getRecipientText()), builtIn, code, verificationUrl.of(code));
+        jdbc.update("update exam_certificate set template_version_id = null, template_ref = ?, pdf_sha256 = ?, pdf_path = 'missing/file.pdf', "
+                + "snapshot = jsonb_set(snapshot - 'extraMarkers', '{templateRef}', to_jsonb(?::text)) where id = ?",
+                ExamCertificateTemplate.EXAM_BUILT_IN_V1, digest.sha256(legacy), ExamCertificateTemplate.EXAM_BUILT_IN_V1, certificateId);
+
+        byte[] regenerated = download(certificateId, teacherToken);
+
+        assertThat(regenerated).isEqualTo(legacy);
+        try (PDDocument document = Loader.loadPDF(regenerated)) {
+            assertThat(new PDFTextStripper().getText(document)).contains("CONSTANCIA DE EXAMEN RENDIDO");
+        }
     }
 
     @Test

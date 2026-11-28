@@ -384,9 +384,9 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(d.minusDays(3), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null)));
         loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(section.getId(), instructor.getId(),
-                new CargarAsistenciaRequest(d.minusDays(2), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null)));
+                new CargarAsistenciaRequest(d.minusDays(4), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null)));
         loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(section.getId(), instructor.getId(),
-                new CargarAsistenciaRequest(d.minusDays(1), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.LATE)), null, null)));
+                new CargarAsistenciaRequest(d.plusDays(1), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.LATE)), null, null)));
         loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(d, List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT)), null, null)));
 
@@ -519,9 +519,9 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(d.minusDays(3), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null)));
         loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(section.getId(), instructor.getId(),
-                new CargarAsistenciaRequest(d.minusDays(2), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT)), null, null)));
+                new CargarAsistenciaRequest(d.minusDays(4), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT)), null, null)));
         loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(section.getId(), instructor.getId(),
-                new CargarAsistenciaRequest(d.minusDays(1), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT)), null, null)));
+                new CargarAsistenciaRequest(d.plusDays(1), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT)), null, null)));
         loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(section.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(d, List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT)), null, null)));
         Attendance ausente = listProgramEnrollmentAttendanceUseCase.list(enrollment.getId()).stream()
@@ -549,7 +549,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
                 new CargarAsistenciaRequest(d.minusDays(3), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null)));
         for (int i = 0; i < 3; i++) {
             loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(section.getId(), instructor.getId(),
-                    new CargarAsistenciaRequest(d.minusDays(i), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT)), null, null)));
+                    new CargarAsistenciaRequest((i == 0 ? d.plusDays(1) : d.minusDays(3L + i)), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT)), null, null)));
         }
 
         AttendanceRiskResponse riesgo = calculateProgramEnrollmentAttendanceRiskUseCase.calculate(enrollment.getId());
@@ -573,7 +573,7 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
 
         LocalDate d = CLASS_DAY;
         loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(conClases.getId(), instructor.getId(),
-                new CargarAsistenciaRequest(d.minusDays(1), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null)));
+                new CargarAsistenciaRequest(d.minusDays(3), List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.ABSENT)), null, null)));
         loadProgramSectionAttendanceUseCase.load(new LoadProgramSectionAttendanceCommand(conClases.getId(), instructor.getId(),
                 new CargarAsistenciaRequest(d, List.of(new AttendanceEntry(enrollment.getId(), AttendanceStatus.PRESENT)), null, null)));
 
@@ -737,6 +737,10 @@ class AttendanceUseCaseTest extends AbstractIntegrationTest {
         Person preceptor = persistPersonBase("80000047");
         SecurityContextHolder.getContext().setAuthentication(new TestingAuthenticationToken(preceptor.getId().toString(), null));
         entityManager.flush();
+        entityManager.createNativeQuery("insert into preceptor_assignment (person_id, subject_section_id, created_by) values (?1, ?2, ?1)")
+                .setParameter(1, preceptor.getId())
+                .setParameter(2, attendance.getProgramSubjectSectionEnrollment().getSubjectSection().getId())
+                .executeUpdate();
 
         assertThatThrownBy(() -> approveAttendanceChangeRequestUseCase.approve(pending.getId()))
                 .isInstanceOf(AttendanceStatusNotRecordableException.class);

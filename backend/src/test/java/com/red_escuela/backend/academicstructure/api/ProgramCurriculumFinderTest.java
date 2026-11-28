@@ -10,12 +10,14 @@ import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.repository.ProgramElectiveGroupRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramSubjectPrerequisiteRepository;
 import com.red_escuela.backend.academicstructure.repository.ProgramSubjectRepository;
+import com.red_escuela.backend.shared.domain.Grade;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
 
@@ -52,21 +54,13 @@ class ProgramCurriculumFinderTest {
     }
 
     @Test
-    void programSubjectLookupIsEmptyWhenSubjectIsNotInThePlan() {
-        when(programSubjectRepository.findByProgramIdAndSubjectId(5L, 99L)).thenReturn(Optional.empty());
-
-        assertThat(finder.findProgramSubject(5L, 99L)).isEmpty();
-        assertThat(finder.subjectBelongsToProgram(5L, 99L)).isFalse();
-    }
-
-    @Test
-    void subjectBelongsToProgramWhenPlanEntryExists() {
-        when(programSubjectRepository.findByProgramIdAndSubjectId(5L, 10L))
+    void subjectBelongsToPlanOnlyWhenThePlanHasAnEntryForIt() {
+        when(programSubjectRepository.findByPlanIdAndSubjectId(17L, 99L)).thenReturn(Optional.empty());
+        when(programSubjectRepository.findByPlanIdAndSubjectId(17L, 10L))
                 .thenReturn(Optional.of(entry(1L, 10L, "Algebra", 6, null)));
 
-        assertThat(finder.subjectBelongsToProgram(5L, 10L)).isTrue();
-        assertThat(finder.findProgramSubject(5L, 10L)).get().extracting(ProgramSubjectView::subjectName)
-                .isEqualTo("Algebra");
+        assertThat(finder.subjectBelongsToPlan(17L, 99L)).isFalse();
+        assertThat(finder.subjectBelongsToPlan(17L, 10L)).isTrue();
     }
 
     @Test
@@ -77,7 +71,19 @@ class ProgramCurriculumFinderTest {
         when(prerequisiteRepository.findByProgramSubjectId(1L)).thenReturn(List.of(link));
 
         assertThat(finder.findPrerequisites(1L))
-                .containsExactly(new PrerequisiteView(12L, "Analisis", RequirementType.values()[0], "AN12"));
+                .containsExactly(new PrerequisiteView(12L, "Analisis", RequirementType.values()[0], "AN12", null));
+    }
+
+    @Test
+    void prerequisitesCarryTheConfiguredMinimumGrade() {
+        var link = new ProgramSubjectPrerequisite();
+        link.setPrerequisiteProgramSubject(entry(3L, 12L, "Analisis", 8, null));
+        link.setRequirementType(RequirementType.APPROVED);
+        link.setMinGrade(Grade.of(new BigDecimal("6")));
+        when(prerequisiteRepository.findByProgramSubjectId(1L)).thenReturn(List.of(link));
+
+        assertThat(finder.findPrerequisites(1L)).extracting(PrerequisiteView::minGrade)
+                .containsExactly(Grade.of(new BigDecimal("6")));
     }
 
     @Test

@@ -29,7 +29,8 @@ Internet --443/80--> Caddy (imagen "frontend") --/api/*--> backend:8080 --> post
 - Rate limit: lo hace el backend (Bucket4j). Caddy solo limita el tamaño del pedido (12 MB).
 
 Archivos: `docker-compose.prod.yml`, `backend/Dockerfile`, `frontend/Dockerfile`,
-`frontend/Caddyfile`, `deploy/.env.example`; para staging, `deploy/staging/`.
+`frontend/Caddyfile`, `deploy/.env.example`; para staging, `deploy/staging/`; overlay de
+GlitchTip: `deploy/glitchtip/docker-compose.glitchtip.yml`.
 
 ## Antes de empezar (una sola vez por instituto)
 
@@ -59,6 +60,8 @@ Editar `deploy/.env`. Las que no se pueden dejar con el valor de ejemplo:
 | `BACKEND_BASE_URL` | `https://<dominio>/api` |
 | `POSTGRES_PASSWORD` | `openssl rand -base64 32 \| tr -d '/+='` |
 | `JWT_SECRET` | `openssl rand -base64 48 \| tr -d '\n'` |
+| `JWT_SECRET` (paso previo al release 24.4) | Antes de desplegar, verificar que el valor actual tenga al menos 32 caracteres y al menos 10 distintos (`printf %s "$JWT_SECRET" \| fold -w1 \| sort -u \| wc -l`). Si no, el backend no arranca y el log dice `jwt.secret debe tener al menos 10 caracteres distintos`; rotarlo con el procedimiento de `docs/security/secrets-rotation.md` |
+| `JWT_ACCEPT_MISSING_AUDIENCE` | Opcional, `true` por defecto. Acepta los access tokens emitidos antes de que existiera `aud` (duran 15 min). Dejarlo en `true` en el release 24.4 y pasarlo a `false` en el siguiente |
 | `BROADCAST_UNSUBSCRIBE_SECRET` | `openssl rand -base64 48 \| tr -d '\n'`, distinta de `JWT_SECRET`; sin ella el backend no arranca en prod ni en staging |
 | `BREVO_SMTP_USERNAME`, `BREVO_SMTP_KEY`, `MAIL_FROM_ADDRESS` | Los de Brevo |
 | `RESILIENCE_ENABLED` | Opcional. Circuit breakers y bulkheads de las integraciones externas; en `prod` y staging es `true` por defecto. Poner `false` solo para apagarlos ante un incidente. Límites en `docs/context/overload-protection.md` |
@@ -72,7 +75,7 @@ docker compose --env-file deploy/.env -f docker-compose.prod.yml ps
 ```
 
 La primera vez construye las imágenes (varios minutos) y Flyway crea todas las tablas en la base
-vacía. Cuando `ps` muestre los tres servicios `healthy`, verificar:
+vacía (330 migraciones hasta la V484 en `develop`). Cuando `ps` muestre los tres servicios `healthy`, verificar:
 
 ```bash
 curl -fsS https://<dominio>/api/actuator/health       # {"status":"UP",...}
@@ -185,6 +188,7 @@ Todos viven en `deploy/.env`. Después de cambiar uno: `dc up -d` (recrea solo l
 | `BREVO_SMTP_KEY` | Sin efecto si se cambia a la vez en Brevo | Crear la clave nueva en Brevo, editar `.env`, `dc up -d backend`, revocar la vieja |
 | `MP_ACCESS_TOKEN`, `MP_WEBHOOK_SECRET` | Los cobros online usan el nuevo apenas reinicia | Cambiarlos en el panel de Mercado Pago y en `.env`, `dc up -d backend` |
 | `ACTUATOR_PASSWORD` | Solo afecta al monitoreo | Cambiar en `.env` y en el monitoreo |
+| `GLITCHTIP_SECRET_KEY` | Cierra las sesiones de la interfaz de GlitchTip; no afecta los DSN | Cambiar en `.env` y recrear `glitchtip` con el overlay (`docs/deploy/glitchtip.md`) |
 
 `GOOGLE_OAUTH_CLIENT_ID` / `VITE_GOOGLE_CLIENT_ID` no son secretos, pero el segundo se fija al
 construir: si cambia, `dc up -d --build`.
@@ -284,7 +288,12 @@ Elegir una de las dos:
 
 Con el perfil `demo` el reloj de la app es el `DemoClock`, que sin ninguna orden de viaje en el tiempo
 (`travelTo`: no hay llamadas en el código principal) devuelve la hora real. Esto se verificó leyendo el
-código, no corriendo el seed en un servidor; al terminar mirar `sc logs backend` antes de ensayar.
+código. El seed `full` sí se corrió (27-nov-2026, Postgres 16 y jar de `develop` fuera de Docker): Flyway
+aplica 330 migraciones hasta la V484 en unos 4 s y el seed tarda unos 9 minutos, y el backend queda
+`healthy` **antes** de que termine; esperar `Seed demo listo` en `sc logs backend` antes de ensayar.
+Con `TRANSACTIONAL_MAIL_PROVIDER=mock` los mails de autenticación igual intentan salir por SMTP: dejar
+`BREVO_SMTP_*` vacías en un staging de prueba. Paso a paso, con la salida medida y lo que no se ejecutó:
+[local-con-dominio-y-seed.md](local-con-dominio-y-seed.md).
 
 ### Correr la prueba posterior al despliegue
 
@@ -335,8 +344,155 @@ Parametrizado y sin definir: `SITE_ADDRESS` y las URLs del front y del backend d
 servidor donde corre (y si comparte máquina con producción), y el registro DNS. Mientras A2 no se
 resuelva el ejemplo usa `staging.escuela.example.com`.
 
+## Prueba de envío masivo con Brevo (punta a punta)
+
+Ensayo en **staging** de un masivo real: dos personas adultas, cada una con una casilla propia,
+reciben el mismo envío con `TRANSACTIONAL_MAIL_PROVIDER=brevo`. Sirve para comprobar, con mails
+que llegan de verdad, el remitente, la autenticación del dominio, la cabecera `List-Unsubscribe`,
+el enlace `/baja`, el cupo diario y que el correo no caiga en spam. Antes de esto no se manda
+ningún masivo a personas reales.
+
+Alcance: solo correo masivo institucional. No prueba WhatsApp, no prueba avisos promocionales
+(con `app.consent.promotional-enabled=false` no hay consentimiento promocional) y no prueba el
+tratamiento automático de rebotes y quejas (no existe; los rebotes se miran en el panel de Brevo).
+
+### Antes de empezar (lo prepara Gabriel, en Brevo)
+
+- Remitente verificado (la misma dirección que `MAIL_FROM_ADDRESS`) y dominio autenticado con
+  SPF y DKIM en estado verificado. Desde el repo no se puede saber si está hecho: **sin verificar**.
+- Una API key v3 y una clave SMTP de la cuenta. Son secretas: no se pegan en chats, issues ni commits.
+- Límite diario real del plan. El código asume **300 mails por día con 100 reservados** para
+  transaccionales (`BROADCAST_BREVO_DAILY_LIMIT=300`, `BROADCAST_BREVO_RESERVED_FOR_TRANSACTIONAL=100`).
+  Ese número es un supuesto: **el límite real lo informa Gabriel** y reemplaza a los valores de
+  abajo antes de ensayar.
+- Dos casillas propias de personas adultas, distintas de cualquier cuenta de producción.
+
+### Variables a cargar en `deploy/.env.staging`
+
+Los valores reales no van en este documento ni en el repo. Nombres verificados contra
+`backend/src/main/resources/application.properties` y `deploy/.env.example`.
+
+| Variable | Qué poner | Para qué |
+|---|---|---|
+| `TRANSACTIONAL_MAIL_PROVIDER` | `brevo` (en el ensayo; al final vuelve a `mock`) | Elige el gateway HTTP de Brevo para masivos e invitaciones |
+| `BREVO_API_KEY` | API key v3 (secreta) | Sin ella el backend no arranca con `brevo` |
+| `BREVO_SMTP_USERNAME` | Usuario SMTP de Brevo | Mails de autenticación por SMTP (`spring.mail`) |
+| `BREVO_SMTP_KEY` | Clave SMTP (secreta) | Idem |
+| `BREVO_SENDER_NAME` | Nombre visible del remitente (opcional) | Se envía como `sender.name` |
+| `MAIL_FROM_ADDRESS` | El remitente verificado en Brevo | Se envía como `sender.email` en cada mail |
+| `BROADCAST_UNSUBSCRIBE_SECRET` | Valor nuevo, distinto de `JWT_SECRET` (`openssl rand -base64 48 \| tr -d '\n'`) | Firma los enlaces de baja. Staging corre con perfil `prod`: sin ella no arranca |
+| `FRONTEND_BASE_URL` | URL pública de staging, por ejemplo `https://staging.escuela.example.com` | Arma el enlace `<FRONTEND_BASE_URL>/baja?token=...`. Si queda en `localhost` el enlace no funciona |
+| `BROADCAST_BREVO_DAILY_LIMIT` | El límite real del plan (por defecto 300) | Tope diario de la cuenta |
+| `BROADCAST_BREVO_RESERVED_FOR_TRANSACTIONAL` | Reserva para transaccionales (por defecto 100) | Lo que los masivos no pueden tocar |
+| `BROADCAST_DISPATCH_MAX_PER_RUN` | 100 (por defecto) | Máximo de mails por corrida del job (corre cada minuto) |
+| `BROADCAST_DISPATCH_WINDOW_START` / `_END` | `09:00` / `20:00` (por defecto) | Franja de envío, en `APP_TIMEZONE` (por defecto `America/Argentina/Buenos_Aires`) |
+
+Cupo: el código calcula lo que queda del día como
+`límite − máximo(transaccionales_de_hoy, reserva) − masivos_de_hoy`, con piso en 0
+(`BroadcastDailyQuota`). Las invitaciones cuentan como transaccionales. Con los supuestos de arriba
+y sin transaccionales ese día, un masivo puede usar hasta 200 mails por día (300 − 100).
+
+### Orden de pasos
+
+Cada paso dice qué hacer y qué tiene que pasar antes de seguir. Si un paso no da el resultado
+esperado, no se sigue: ver `docs/context/debugging.md`, sección de correo masivo.
+
+1. **Verificar remitente y dominio en Brevo.** Resultado: el remitente figura verificado y SPF y
+   DKIM del dominio están en verificado. (Los nombres exactos de las pantallas de Brevo: sin verificar.)
+2. **Cargar las variables** de la tabla en `deploy/.env.staging` y `chmod 600 deploy/.env.staging`.
+   Resultado: `sc config > /dev/null` termina sin error.
+3. **Levantar staging con la nueva configuración:** `sc up -d` y luego `sc logs backend | tail -n 100`.
+   Resultado: el backend queda `healthy` (`sc ps`), no aparece ningún error por `BREVO_API_KEY` ni por
+   `BROADCAST_UNSUBSCRIBE_SECRET`.
+4. **Prueba posterior al despliegue:** la de «Correr la prueba posterior al despliegue», contra la
+   URL de staging. Resultado: pasa. Si los chequeos de HTTPS fallan por ser staging sin dominio, es
+   esperable (ver esa sección).
+5. **Crear dos personas de prueba** con sus casillas propias, en la base de staging (vacía o con demo,
+   según «Cargar datos de prueba»). Verificar el mail de cada una por el flujo de activación de la app (el paso exacto en pantalla: sin verificar).
+   Resultado: las dos personas aparecen con mail verificado. Si no, el masivo las excluye con
+   `NO_VERIFIED_EMAIL` (es el resultado correcto del filtro, no un error del envío).
+6. **Crear el masivo** en `comunicaciones/nuevo` (roles administrativo y director) con un segmento que
+   incluya solo esas dos personas, categoría institucional y una plantilla corta que use `{{nombre}}`
+   y `{{linkBaja}}`. No usar `{{carrera}}`, `{{materia}}` ni `{{comision}}`: hoy no tienen fuente por
+   persona y dejan a la persona como SKIPPED con `MISSING_TEMPLATE_VARIABLE`.
+   Resultado: la vista previa muestra 2 destinatarios y 0 excluidos.
+7. **Confirmar el masivo.** Resultado: queda confirmado. Si se confirma fuera de 09:00–20:00 (hora de
+   Buenos Aires), los mails quedan en cola hasta la próxima apertura de la franja.
+8. **Esperar uno o dos minutos y mirar el envío.**
+   - `sc logs backend | grep "Mail enviado por Brevo"`: una línea por destinatario, con la casilla
+     enmascarada.
+   - En la base, abrir psql dentro del contenedor y correr la consulta:
+     ```bash
+     sc exec postgres sh -c 'psql -U "$POSTGRES_USER" -d "$POSTGRES_DB"'
+     ```
+     ```sql
+     select kind, status, count(*) from notification_delivery
+     where scheduled_for = (now() at time zone 'America/Argentina/Buenos_Aires')::date
+     group by kind, status;
+     ```
+     Resultado: los mails del masivo en `SENT` (no `SENT_SIMULATED`, que es lo que deja el modo `mock`),
+     con `provider_message_id` no vacío (el id de Brevo, que no empieza con `mock-`).
+9. **Recibir en las dos casillas.** Resultado: llegan con el asunto y el cuerpo con el nombre de cada
+   una, no con `{{nombre}}` literal. Si un mail no llega, ver el paso 12 (spam) y el panel de Brevo
+   (sección «Eventos» o registro de transaccionales, nombre sin verificar).
+10. **Ver la cabecera `List-Unsubscribe`.** Ver la sección de abajo. Resultado: está presente y
+    apunta a `<URL de staging>/baja?token=...`.
+11. **Probar el enlace de baja** desde la casilla A: abrir el enlace del cuerpo, confirmar la baja.
+    Resultado: la página `/baja` confirma la baja y la URL es la de staging, no `localhost`.
+12. **Probar que la baja se respeta.** Crear otro masivo solo con A y B. Resultado: A queda SKIPPED con
+    motivo `OPTED_OUT` y B recibe el mail. Después de este paso A queda sin consentimiento institucional:
+    para seguir probando con A, usar una tercera casilla propia o restablecer el consentimiento desde
+    la matriz de consentimiento (sin verificar la pantalla exacta).
+13. **Revisar el cupo.** Con los dos envíos hechos, el cupo restante del día baja en 2 respecto de lo
+    que había antes del ensayo, según la fórmula de arriba. Resultado: el número coincide con
+    `límite − máximo(transaccionales, reserva) − masivos` (medido con el SQL del paso 8 y el panel de
+    Brevo). Si no coincide, no se ensaya más hasta entender la diferencia.
+14. **Volver a `mock` y cerrar el ensayo.** En `deploy/.env.staging`: `TRANSACTIONAL_MAIL_PROVIDER=mock`,
+    luego `sc up -d`. Resultado: los envíos siguientes quedan como `SENT_SIMULATED` y no sale ningún mail.
+    Se deja una nota en el Issue con fecha, resultado de cada paso y las casillas usadas enmascaradas.
+
+### Autenticación del dominio: SPF, DKIM y spam
+
+- **Panel de Brevo:** el dominio figura autenticado (SPF y DKIM verificados). Sin eso el mail sale
+  con firma de Brevo y cae en spam con más frecuencia. (Brevo no se consulta desde el repo: sin verificar.)
+- **Casilla de destino:** en Gmail, abrir el mail, «Mostrar original». Buscar `spf=pass`,
+  `dkim=pass` y `dmarc=pass` en `Authentication-Results`. Resultado: los tres en `pass`.
+- **Spam:** el mail tiene que aparecer en «Recibidos», no en «Spam» ni «Promociones» de la casilla
+  de prueba. Si aparece en spam con SPF y DKIM en `pass`, anotarlo y revisar el contenido de la
+  plantilla antes del siguiente ensayo (no hay forma de medirlo desde el repo: sin verificar).
+
+### Cómo comprobar que Brevo respeta `List-Unsubscribe`
+
+El backend manda el enlace en la cabecera `List-Unsubscribe` de cada masivo (el gateway lo pasa como
+`headers` de la API v3). Lo que no está verificado es que Brevo lo reenvíe tal cual al destinatario
+(ver `docs/cell/progress/933-3f.md`, «Pendiente de verificar a mano»). Para verificarlo:
+
+1. En la casilla de prueba, abrir el mail del masivo y elegir «Mostrar original».
+2. Buscar la línea `List-Unsubscribe:`. Resultado esperado: `<https://<staging>/baja?token=...>`.
+   El backend manda solo esa URL (sin `List-Unsubscribe-Post`), así que **no** hay garantía de que
+   aparezca el botón de baja en un clic de Gmail: si aparece, es comportamiento de Gmail, no del envío.
+3. Comparar el token de la cabecera con el del enlace del cuerpo. Ambos son válidos (el del cuerpo se
+   firma al confirmar, el de la cabecera al enviar), pero no tienen que ser iguales.
+4. Abrir el enlace de la cabecera y comprobar que llega a `/baja`.
+
+Si la cabecera no aparece en el mail recibido, Brevo la está quitando o la cuenta no la permite: no se
+pasa a masivos reales hasta resolverlo, y se anota en el Issue de #933.
+
+### Menores
+
+Decisión de Gabriel (D2): un masivo a una persona menor de edad va **solo a su casilla propia**. Si no
+tiene casilla propia, o si la casilla coincide con la del tutor, esa persona queda SKIPPED. Hoy el código
+**no aplica esta regla**: en `notification/broadcast` no hay lógica de edad ni de tutor (la implementación
+es la rebanada R6 de #933; sin verificar en el momento de escribir esto). Por eso el ensayo usa solo
+personas adultas. No se incluye a ningún menor en el segmento de prueba.
+
+### Si algo sale mal
+
+Ver «Síntomas típicos de correo masivo» en `docs/context/debugging.md`.
+
 ## Qué NO hace este paquete
 
 - No publica imágenes en ningún registro (el CI solo las construye para validar).
 - No incluye backups ni monitoreo (viven en `deploy/backup/` y `deploy/monitoring/`).
+- No levanta GlitchTip (el reporte de errores autoalojado vive en el overlay `deploy/glitchtip/`, apagado hasta tener servidor; ver `docs/deploy/glitchtip.md`).
 - No define el proveedor de hosting ni el dominio.

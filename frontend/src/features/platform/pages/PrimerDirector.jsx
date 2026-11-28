@@ -93,8 +93,7 @@ export function PrimerDirector() {
     title: 'Primer Director',
     description: 'Da de alta la institución y a su primer Director.',
     action: (
-      <StatusPill tone="warning">
-        <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
+      <StatusPill tone="warning" icon={AlertTriangle}>
         Se hace una sola vez
       </StatusPill>
     ),

@@ -74,6 +74,10 @@ public class ExamBoard {
         status = ExamBoardStatus.CLOSED;
     }
 
+    public void reopen() {
+        status = ExamBoardStatus.SCHEDULED;
+    }
+
     public void reschedule(LocalDateTime newExamDate, LocalDateTime newRegistrationStart, LocalDateTime newRegistrationEnd, String newClassroom) {
         rescheduledFrom = examDate;
         examDate = newExamDate;

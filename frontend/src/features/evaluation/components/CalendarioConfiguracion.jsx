@@ -78,7 +78,7 @@ export function CalendarioConfiguracion({ config, form, feriados }) {
               type="button"
               onClick={() => setPagina((p) => Math.max(0, p - 1))}
               disabled={paginaActual === 0}
-              className="size-11 md:size-7 text-ink-faint disabled:opacity-40">
+              className="size-11 md:size-7 text-ink-faint disabled:text-(--disabled-fg)">
               <ChevronLeft className="h-3.5 w-3.5" />
             </Button>
             <span className="text-size-11 font-semibold text-ink-faint">
@@ -90,7 +90,7 @@ export function CalendarioConfiguracion({ config, form, feriados }) {
               type="button"
               onClick={() => setPagina((p) => Math.min(totalPaginas - 1, p + 1))}
               disabled={paginaActual === totalPaginas - 1}
-              className="size-11 md:size-7 text-ink-faint disabled:opacity-40">
+              className="size-11 md:size-7 text-ink-faint disabled:text-(--disabled-fg)">
               <ChevronRight className="h-3.5 w-3.5" />
             </Button>
           </div>

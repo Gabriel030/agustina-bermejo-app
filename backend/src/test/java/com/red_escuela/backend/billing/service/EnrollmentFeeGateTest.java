@@ -4,7 +4,7 @@ import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.red_escuela.backend.testsupport.AsyncNotifications;
 import com.red_escuela.backend.billing.planning.domain.EnrollmentFeeRequirementScope;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.billing.entity.CohortIntake;
+import com.red_escuela.backend.academicstructure.domain.CohortIntake;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.invoice.domain.InvoicePaymentStatus;
@@ -17,9 +17,8 @@ import com.red_escuela.backend.notification.repository.NotificationRepository;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.exception.EnrollmentFeeNotPaidException;
-import com.red_escuela.backend.enrollment.exception.EnrollmentFeeNotPaidForTermException;
+import com.red_escuela.backend.enrollment.api.EnrollmentFeeNotPaidForTermException;
 import com.red_escuela.backend.enrollment.service.SubjectSectionEnrollmentService;
-import com.red_escuela.backend.graduation.specialist.ProgramCertificateIssuer;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.identity.infrastructure.JwtService;
@@ -52,8 +51,6 @@ class EnrollmentFeeGateTest extends AbstractInvoiceSequenceTest {
     private SubjectSectionEnrollmentService enrollmentService;
     @Autowired
     private EnrollmentFeeRequirementService requirementService;
-    @Autowired
-    private ProgramCertificateIssuer certificateService;
     @Autowired
     private MockMvc mockMvc;
     @Autowired
@@ -286,13 +283,14 @@ class EnrollmentFeeGateTest extends AbstractInvoiceSequenceTest {
 
         assertThatThrownBy(() -> requirementService.requireForCurrentPeriod(load(world.enrollment()), EnrollmentFeeRequirementScope.EXAM_REGISTRATION))
                 .isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
-        assertThatThrownBy(() -> certificateService.issueApprovedSubjectsCertificate(world.enrollment()))
+        assertThatThrownBy(() -> requirementService.requireForCurrentPeriod(load(world.enrollment()), EnrollmentFeeRequirementScope.CERTIFICATE))
                 .isInstanceOf(EnrollmentFeeNotPaidForTermException.class);
 
         markAllEnrollmentFees(world.enrollment(), InvoicePaymentStatus.PAID);
         assertThatCode(() -> requirementService.requireForCurrentPeriod(load(world.enrollment()), EnrollmentFeeRequirementScope.EXAM_REGISTRATION))
                 .doesNotThrowAnyException();
-        assertThat(certificateService.issueApprovedSubjectsCertificate(world.enrollment())).isNotEmpty();
+        assertThatCode(() -> requirementService.requireForCurrentPeriod(load(world.enrollment()), EnrollmentFeeRequirementScope.CERTIFICATE))
+                .doesNotThrowAnyException();
     }
 
     @Test
@@ -308,7 +306,8 @@ class EnrollmentFeeGateTest extends AbstractInvoiceSequenceTest {
 
         assertThatCode(() -> requirementService.requireForCurrentPeriod(load(world.enrollment()), EnrollmentFeeRequirementScope.EXAM_REGISTRATION))
                 .doesNotThrowAnyException();
-        assertThat(certificateService.issueApprovedSubjectsCertificate(world.enrollment())).isNotEmpty();
+        assertThatCode(() -> requirementService.requireForCurrentPeriod(load(world.enrollment()), EnrollmentFeeRequirementScope.CERTIFICATE))
+                .doesNotThrowAnyException();
     }
 
     @Test

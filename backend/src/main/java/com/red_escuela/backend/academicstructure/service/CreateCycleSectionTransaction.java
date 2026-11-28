@@ -1,5 +1,8 @@
 package com.red_escuela.backend.academicstructure.service;
 
+import org.springframework.dao.DataIntegrityViolationException;
+import com.red_escuela.backend.academicstructure.exception.SectionScheduleConflictException;
+import com.red_escuela.backend.academicstructure.api.SectionEvaluationSetupPort;
 import com.red_escuela.backend.academicstructure.domain.SectionShift;
 import com.red_escuela.backend.academicstructure.dto.ScheduleSlotRequest;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycle;
@@ -11,7 +14,7 @@ import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.academicstructure.exception.ClassroomNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.CourseSubjectNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.CycleNotFoundException;
-import com.red_escuela.backend.academicstructure.exception.SubjectNotFoundException;
+import com.red_escuela.backend.academicstructure.api.SubjectNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.AcademicOfferingCycleRepository;
 import com.red_escuela.backend.academicstructure.repository.ClassroomRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectRepository;
@@ -42,6 +45,9 @@ public class CreateCycleSectionTransaction {
     private final CycleSectionAbsenceLimitAssigner absenceLimitAssigner;
     private final SectionIdentityAssigner identityAssigner;
     private final SectionShiftSlotGuard shiftSlotGuard;
+    private final TermOfferingGuard termOfferingGuard;
+    private final SectionEvaluationSetupPort evaluationSetupPort;
+    private final SubjectOfferingGuard subjectOfferingGuard;
 
     public CreateCycleSectionTransaction(
             AcademicOfferingCycleRepository cycleRepository,
@@ -54,7 +60,10 @@ public class CreateCycleSectionTransaction {
             SectionConflictChecker conflictChecker,
             CycleSectionAbsenceLimitAssigner absenceLimitAssigner,
             SectionIdentityAssigner identityAssigner,
-            SectionShiftSlotGuard shiftSlotGuard
+            SectionShiftSlotGuard shiftSlotGuard,
+            TermOfferingGuard termOfferingGuard,
+            SectionEvaluationSetupPort evaluationSetupPort,
+            SubjectOfferingGuard subjectOfferingGuard
     ) {
         this.cycleRepository = cycleRepository;
         this.subjectRepository = subjectRepository;
@@ -67,6 +76,9 @@ public class CreateCycleSectionTransaction {
         this.absenceLimitAssigner = absenceLimitAssigner;
         this.identityAssigner = identityAssigner;
         this.shiftSlotGuard = shiftSlotGuard;
+        this.termOfferingGuard = termOfferingGuard;
+        this.evaluationSetupPort = evaluationSetupPort;
+        this.subjectOfferingGuard = subjectOfferingGuard;
     }
 
     @Transactional
@@ -76,6 +88,7 @@ public class CreateCycleSectionTransaction {
         var cycle = cycleRepository.findById(cycleId)
                 .orElseThrow(() -> new CycleNotFoundException(cycleId));
         cycle.ensureEditable();
+        termOfferingGuard.requireTermOpenForOffering(cycle.getTerm());
         identityAssigner.requireShift(shift);
         lockRequestedClassrooms(slots);
         if (cycle.getProgram() != null) {
@@ -97,7 +110,7 @@ public class CreateCycleSectionTransaction {
                                       SectionShift shift, String description, LocalDateTime createdAt) {
         var subject = subjectRepository.findById(subjectId)
                 .orElseThrow(() -> new SubjectNotFoundException(subjectId));
-        subject.requireOpenableForSections();
+        subjectOfferingGuard.requireOfferableInProgram(cycle.getProgram().getId(), subject, cycle.getTerm());
         var section = new SubjectSection();
         section.setName(name);
         section.setSubject(subject);
@@ -109,6 +122,7 @@ public class CreateCycleSectionTransaction {
         section.setAcademicOfferingCycle(cycle);
         identityAssigner.identifyNewSubjectSection(section, shift, description);
         var saved = subjectSectionRepository.save(section);
+        evaluationSetupPort.createInitialEvaluationDraft(saved);
         saveSubjectSlots(saved, slots, shift, capacity);
         return saved.getId();
     }
@@ -129,6 +143,7 @@ public class CreateCycleSectionTransaction {
         section.setAcademicOfferingCycle(cycle);
         identityAssigner.identifyNewCourseSection(section, shift, description);
         var saved = courseSectionRepository.save(section);
+        evaluationSetupPort.createInitialEvaluationDraftForCourseSection(saved);
         saveCourseSlots(saved, slots, shift, capacity);
         return saved.getId();
     }
@@ -152,7 +167,7 @@ public class CreateCycleSectionTransaction {
             slot.setDayOfWeek(slotReq.dayOfWeek());
             slot.setStartTime(slotReq.startTime());
             slot.setEndTime(slotReq.endTime());
-            slotRepository.save(slot);
+            saveSlot(slot, slotReq);
         }
     }
 
@@ -167,7 +182,19 @@ public class CreateCycleSectionTransaction {
             slot.setDayOfWeek(slotReq.dayOfWeek());
             slot.setStartTime(slotReq.startTime());
             slot.setEndTime(slotReq.endTime());
-            slotRepository.save(slot);
+            saveSlot(slot, slotReq);
+        }
+    }
+
+    private void saveSlot(SectionScheduleSlot slot, ScheduleSlotRequest slotReq) {
+        try {
+            slotRepository.saveAndFlush(slot);
+        } catch (DataIntegrityViolationException e) {
+            if (ScheduleExclusionViolation.isClassroomOverlap(e)) {
+                throw new SectionScheduleConflictException(
+                        slotReq.classroomId(), slotReq.dayOfWeek(), slotReq.startTime(), slotReq.endTime());
+            }
+            throw e;
         }
     }
 }

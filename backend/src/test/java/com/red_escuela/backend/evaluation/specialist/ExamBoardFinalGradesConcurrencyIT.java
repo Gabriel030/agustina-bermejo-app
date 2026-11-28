@@ -10,6 +10,7 @@ import com.red_escuela.backend.evaluation.entity.ExamBoard;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
 import com.red_escuela.backend.evaluation.entity.GradeAggregationMethod;
 import com.red_escuela.backend.evaluation.exception.ExamBoardFinalGradeRowRejectedException;
+import com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationNotWithdrawableException;
 import com.red_escuela.backend.shared.domain.Grade;
 import com.red_escuela.backend.testsupport.SlowTest;
 import org.junit.jupiter.api.Test;
@@ -81,7 +82,7 @@ class ExamBoardFinalGradesConcurrencyIT extends ExamBoardChangeFixture {
                 scheme.setMinRegularGrade(Grade.of(BigDecimal.valueOf(4.0)));
                 scheme.setMinApprovalGrade(Grade.of(BigDecimal.valueOf(6.0)));
                 entityManager.persist(scheme);
-                enrollment.getSubjectSection().setEvaluationScheme(scheme);
+                enrollment.getSubjectSection().setEvaluationSchemeId(scheme == null ? null : scheme.getId());
                 ExamBoardRegistration registration = registration(board, enrollment);
                 entityManager.flush();
                 registrations.add(registration.getId());
@@ -143,27 +144,17 @@ class ExamBoardFinalGradesConcurrencyIT extends ExamBoardChangeFixture {
     }
 
     @Test
-    void theBatchAndTheWithdrawalOfTheSameRegistrationEndInOneOfTheTwoSerialOutcomes() throws Exception {
-        for (int round = 0; round < 3; round++) {
-            Fixture fixture = fixture(1);
-            Long registrationId = fixture.registrationIds().get(0);
+    void withdrawingAfterTheExamDateIsRejectedAndTheFinalGradesBatchStillSucceeds() {
+        Fixture fixture = fixture(1);
+        Long registrationId = fixture.registrationIds().get(0);
 
-            Throwable batchFailure = runTogether(
-                    () -> finalGradesRecorder.record(fixture.boardId(), fixture.instructorId(), List.of(score(registrationId, "7"))),
-                    () -> {
-                        registrationManager.withdraw(registrationId);
-                        return null;
-                    });
+        assertThatThrownBy(() -> registrationManager.withdraw(registrationId))
+                .isInstanceOf(ExamBoardRegistrationNotWithdrawableException.class);
+        finalGradesRecorder.record(fixture.boardId(), fixture.instructorId(), List.of(score(registrationId, "7")));
 
-            String status = jdbc.queryForObject("select status from exam_board_registration where id = ?", String.class, registrationId);
-            if (batchFailure == null) {
-                assertThat(gradeItemsOfBoard(fixture.boardId())).as("round " + round).isEqualTo(1L);
-            } else {
-                assertThat(batchFailure).as("round " + round).isInstanceOf(ExamBoardFinalGradeRowRejectedException.class);
-                assertThat(gradeItemsOfBoard(fixture.boardId())).isZero();
-                assertThat(status).isEqualTo("WITHDRAWN");
-            }
-        }
+        assertThat(gradeItemsOfBoard(fixture.boardId())).isEqualTo(1L);
+        assertThat(jdbc.queryForObject("select status from exam_board_registration where id = ?", String.class, registrationId))
+                .isEqualTo("REGISTERED");
     }
 
     @Test

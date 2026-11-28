@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.dto;
 
+import com.red_escuela.backend.academicstructure.domain.HolidayScope;
 import com.red_escuela.backend.academicstructure.domain.HolidayType;
 import com.red_escuela.backend.shared.validation.RequestLimits;
 import com.red_escuela.backend.shared.validation.SelfValidatingRequest;
@@ -10,7 +11,12 @@ import java.time.LocalDate;
 
 public record UpdateHolidayRequest(@NotNull LocalDate date, @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) String name,
                                    @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) HolidayType type,
-                                   @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) String description) implements SelfValidatingRequest {
+                                   @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) String description,
+                                   @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) HolidayScope scope) implements SelfValidatingRequest {
+    public UpdateHolidayRequest(LocalDate date, String name, HolidayType type, String description) {
+        this(date, name, type, description, null);
+    }
+
     public UpdateHolidayRequest {
         RequestLimits.requireText("name", name);
         RequestLimits.requireValue("type", type);

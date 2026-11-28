@@ -28,11 +28,34 @@ export function useBillingConfigurationAlerts() {
   });
 }
 
-export function useProgramCohorts(programId) {
-  return useQuery({
+export function programCohortsQueryOptions(programId) {
+  return {
     queryKey: ['program-cohorts', programId],
     queryFn: () => apiFetch(`/programs/${programId}/cohorts`),
     enabled: !!programId,
+  };
+}
+
+export function useProgramCohorts(programId) {
+  return useQuery(programCohortsQueryOptions(programId));
+}
+
+export function useCohortReadiness(cohortId) {
+  return useQuery({
+    queryKey: ['cohort-readiness', cohortId],
+    queryFn: () => apiFetch(`/cohorts/${cohortId}/readiness`),
+    enabled: !!cohortId,
+  });
+}
+
+export function useOpenCohort() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (cohortId) => apiFetch(`/cohorts/${cohortId}/open`, { method: 'POST' }),
+    onSuccess: (_data, cohortId) => {
+      queryClient.invalidateQueries({ queryKey: ['cohort-readiness', cohortId] });
+      queryClient.invalidateQueries({ queryKey: ['program-cohorts'] });
+    },
   });
 }
 
@@ -47,6 +70,21 @@ export function useCreateCohort() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['program-cohorts'] });
       queryClient.invalidateQueries({ queryKey: ['program-billing-templates'] });
+    },
+  });
+}
+
+export function useReplaceCohortResponsibles(cohortId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (responsiblePreceptorIds) =>
+      apiFetch(`/cohorts/${cohortId}/responsible-preceptors`, {
+        method: 'PUT',
+        body: JSON.stringify({ responsiblePreceptorIds }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cohort-readiness', cohortId] });
+      queryClient.invalidateQueries({ queryKey: ['program-cohorts'] });
     },
   });
 }

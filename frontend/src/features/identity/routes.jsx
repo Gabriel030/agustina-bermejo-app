@@ -1,3 +1,4 @@
+import { Navigate } from 'react-router-dom';
 import { Login } from '@/features/identity/pages/Login';
 import { Registrarse } from '@/features/identity/pages/Registrarse';
 import { ForgotPassword } from '@/features/identity/pages/ForgotPassword';
@@ -14,7 +15,6 @@ const LegajoAlumno = lazyPage(() => import('@/features/identity/pages/LegajoAlum
 const NuevoAlumno = lazyPage(() => import('@/features/identity/pages/NuevoAlumno'), 'NuevoAlumno');
 const GestionPersonal = lazyPage(() => import('@/features/identity/pages/GestionPersonal'), 'GestionPersonal');
 const LegajoPersonal = lazyPage(() => import('@/features/identity/pages/LegajoPersonal'), 'LegajoPersonal');
-const StudentOptions = lazyPage(() => import('@/features/identity/pages/StudentOptions'), 'StudentOptions');
 
 export const routes = {
   public: [
@@ -37,6 +37,6 @@ export const routes = {
     { roles: ['administrativo', 'director'], path: 'personal/:id', element: <LegajoPersonal /> },
     { roles: ['preceptor', 'administrativo', 'director'], path: 'alumnos/:id', element: <LegajoAlumno /> },
     { roles: ['preceptor', 'administrativo', 'director'], path: 'alumnos/nuevo', element: <NuevoAlumno /> },
-    { roles: ['alumno'], path: 'opciones', element: <StudentOptions /> },
+    { roles: ['alumno'], path: 'opciones', element: <Navigate to="/perfil" replace /> },
   ],
 };

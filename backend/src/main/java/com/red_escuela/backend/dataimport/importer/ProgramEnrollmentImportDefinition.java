@@ -105,8 +105,8 @@ public class ProgramEnrollmentImportDefinition implements ImportEntityDefinition
         ProgramEnrollmentStatus status = reader.enumValue("status", ProgramEnrollmentStatus.class, true).orElse(null);
         LocalDate completionDate = reader.date("completionDate", false);
         LocalDate withdrawalDate = reader.date("withdrawalDate", false);
-        Integer cohortYear = reader.integer("cohortYear", false, 1990, 2100);
-        Optional<HistoricalCohortIntake> intake = reader.enumValue("intake", HistoricalCohortIntake.class, cohortYear != null);
+        Integer cohortYear = reader.integer("cohortYear", true, 1990, 2100);
+        Optional<HistoricalCohortIntake> intake = reader.enumValue("intake", HistoricalCohortIntake.class, true);
         LocalDate today = ApplicationTime.today();
         if (enrollmentDate != null && enrollmentDate.isAfter(today)) {
             reader.errors().add(new ImportRowError("enrollmentDate", "ENROLLMENT_DATE_IN_FUTURE", "La fecha de inscripción es futura"));
@@ -210,19 +210,16 @@ public class ProgramEnrollmentImportDefinition implements ImportEntityDefinition
         ImportRowReader reader = new ImportRowReader(payload);
         DocumentType type = ImportDocumentKey.typeOf(payload).orElseThrow();
         String number = ImportDocumentKey.numberOf(payload, type);
-        Integer cohortYear = reader.integer("cohortYear", false, 1990, 2100);
+        Integer cohortYear = reader.integer("cohortYear", true, 1990, 2100);
         HistoricalProgramEnrollment historical = new HistoricalProgramEnrollment(type, number, reader.text("programName"),
                 reader.date("enrollmentDate", true), reader.enumValue("status", ProgramEnrollmentStatus.class, true).orElseThrow(),
                 reader.date("completionDate", false), reader.date("withdrawalDate", false), cohortYear);
         Optional<Long> studentId = lookups.studentId(type, number);
         Optional<Long> programId = lookups.programId(historical.programName());
-        Long enrollmentId = studentId.isPresent() && programId.isPresent()
-                ? recorder.recordProgramEnrollment(historical, studentId.get(), programId.get())
-                : recorder.recordProgramEnrollment(historical);
-        if (cohortYear != null) {
-            cohortRecorder.assignCohort(enrollmentId, new HistoricalProgramCohort(reader.text("programName"), cohortYear,
-                    reader.enumValue("intake", HistoricalCohortIntake.class, true).orElseThrow()));
-        }
-        return enrollmentId;
+        Long cohortId = cohortRecorder.findOrCreateCohortId(new HistoricalProgramCohort(reader.text("programName"),
+                cohortYear, reader.enumValue("intake", HistoricalCohortIntake.class, true).orElseThrow()));
+        return studentId.isPresent() && programId.isPresent()
+                ? recorder.recordProgramEnrollment(historical, studentId.get(), programId.get(), cohortId)
+                : recorder.recordProgramEnrollment(historical, cohortId);
     }
 }

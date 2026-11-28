@@ -1,3 +1,4 @@
+import { Lock, Plus } from 'lucide-react';
 import { useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -145,7 +146,7 @@ export function DesignCatalog() {
 
       <Section id="cards" title="Tarjetas">
         <div className="grid gap-4 sm:grid-cols-2">
-          <GlassCard className="p-5">Tarjeta de vidrio</GlassCard>
+          <GlassCard className="p-5">Tarjeta</GlassCard>
           <GlassCard interactive className="p-5">
             Tarjeta interactiva
           </GlassCard>
@@ -178,6 +179,19 @@ export function DesignCatalog() {
           ))}
         </Row>
         <Row>
+          {PILL_TONES.map((tone) => (
+            <StatusPill key={tone} tone={tone} icon={null}>
+              {tone} sin ícono
+            </StatusPill>
+          ))}
+          <StatusPill tone="accent" icon={Plus}>
+            Disponible
+          </StatusPill>
+          <StatusPill tone="neutral" icon={Lock}>
+            Bloqueada
+          </StatusPill>
+        </Row>
+        <Row>
           {BADGE_VARIANTS.map((variant) => (
             <Badge key={variant} variant={variant}>
               {variant}
@@ -188,7 +202,7 @@ export function DesignCatalog() {
 
       <Section id="tabs" title="Pestañas">
         <Tabs defaultValue="summary">
-          <TabsList variant="segmented">
+          <TabsList variant="line">
             <TabsTrigger value="summary">Resumen</TabsTrigger>
             <TabsTrigger value="students">Alumnos</TabsTrigger>
             <TabsTrigger value="grades">Notas</TabsTrigger>

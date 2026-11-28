@@ -54,7 +54,7 @@ function mockServer({ preview = previewOf(), cancel, notes = [] } = {}) {
   previewBodies = [];
   cancelBodies = [];
   server.use(
-    http.get(`${API}/students`, () => HttpResponse.json({ items: [{ id: 2, personId: 20, username: 'macosta', nombre: 'Martina', apellido: 'Acosta', dni: '28016166', email: 'martina.acosta@example.com', emailVerified: true, status: 'ACTIVO', onboardingStatus: 'CONFIRMADO' }], page: 0, size: 25, totalElements: 1 })),
+    http.get(`${API}/students`, () => HttpResponse.json({ items: [{ id: 2, personId: 20, username: 'macosta', nombre: 'Martina', apellido: 'Acosta', dni: '28016166', email: 'martina.acosta@example.com', emailVerified: true, status: 'ACTIVO', onboardingStatus: 'CONFIRMADO', attendanceRisk: 'NONE', missingRequiredDocuments: [] }], page: 0, size: 25, totalElements: 1 })),
     http.get(`${API}/students/2`, () => HttpResponse.json(studentFixture({ id: 2, nombre: 'Martina', apellido: 'Acosta', dni: '28016166' }))),
     http.get(`${API}/students/2/billing-overview`, () => {
       overviewCalls += 1;

@@ -21,6 +21,7 @@ import com.red_escuela.backend.notification.delivery.policy.EmailDeliveryContext
 import com.red_escuela.backend.notification.delivery.repository.NotificationDeliveryRepository;
 import com.red_escuela.backend.notification.delivery.specialist.DeliveryRequest;
 import com.red_escuela.backend.notification.delivery.specialist.EmailDeliveryChannel;
+import com.red_escuela.backend.notification.delivery.specialist.SharedDailyEmailQuota;
 import com.red_escuela.backend.notification.delivery.specialist.NotificationDeliveryEnqueuer;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
@@ -38,6 +39,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDate;
@@ -69,6 +71,8 @@ abstract class AbstractBroadcastDispatchIT extends AbstractIntegrationTest {
     protected BroadcastProgressTracker progressTracker;
     @Autowired
     protected TransactionTemplate transactionTemplate;
+    @Autowired
+    protected PlatformTransactionManager platformTransactionManager;
     @Autowired
     protected JdbcTemplate jdbc;
     @Autowired
@@ -179,7 +183,8 @@ abstract class AbstractBroadcastDispatchIT extends AbstractIntegrationTest {
 
     protected BroadcastEmailDispatchJob jobWith(int dailyLimit, int reserved, int maxPerRun, EmailDeliveryChannel channel) {
         BroadcastDispatchSettings settings = new BroadcastDispatchSettings(dailyLimit, reserved, maxPerRun, "09:00", "20:00");
-        return new BroadcastEmailDispatchJob(deliveryRepository, channel, consentRecheck, progressTracker, settings, MutableClock.INSTANCE,
+        return new BroadcastEmailDispatchJob(deliveryRepository, channel, consentRecheck, progressTracker, settings,
+                new SharedDailyEmailQuota(deliveryRepository, MutableClock.INSTANCE), platformTransactionManager, MutableClock.INSTANCE,
                 new SimpleMeterRegistry());
     }
 

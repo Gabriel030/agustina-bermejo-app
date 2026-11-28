@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.service;
 
+import com.red_escuela.backend.academicstructure.api.HolidayAttendanceConflictPort;
 import com.red_escuela.backend.academicstructure.dto.CreateHolidayRequest;
 import com.red_escuela.backend.academicstructure.dto.HolidayResponse;
 import com.red_escuela.backend.academicstructure.entity.Holiday;
@@ -8,13 +9,20 @@ import com.red_escuela.backend.academicstructure.repository.HolidayRepository;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Optional;
+
 @Component
 public class HolidayCreator {
 
     private final HolidayRepository holidayRepository;
+    private final HolidayImpactFinder impactFinder;
+    private final HolidayAttendanceConflictPort attendanceConflictPort;
 
-    public HolidayCreator(HolidayRepository holidayRepository) {
+    public HolidayCreator(HolidayRepository holidayRepository, HolidayImpactFinder impactFinder, HolidayAttendanceConflictPort attendanceConflictPort) {
         this.holidayRepository = holidayRepository;
+        this.impactFinder = impactFinder;
+        this.attendanceConflictPort = attendanceConflictPort;
     }
 
     @Transactional
@@ -27,6 +35,8 @@ public class HolidayCreator {
         holiday.setName(request.name());
         holiday.setType(request.type());
         holiday.setDescription(request.description());
-        return HolidayResponse.from(holidayRepository.save(holiday));
+        Optional.ofNullable(request.scope()).ifPresent(holiday::setScope);
+        Holiday saved = holidayRepository.save(holiday);
+        return HolidayResponse.from(saved, impactFinder.findAffectedBy(saved), attendanceConflictPort.findDatesWithRecordedAttendance(List.of(saved.getDate())));
     }
 }

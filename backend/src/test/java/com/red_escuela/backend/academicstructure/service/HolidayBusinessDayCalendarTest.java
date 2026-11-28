@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.service;
 
+import com.red_escuela.backend.academicstructure.domain.HolidayScope;
 import com.red_escuela.backend.academicstructure.repository.HolidayRepository;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -30,13 +31,13 @@ class HolidayBusinessDayCalendarTest {
     @ValueSource(strings = {"2027-03-06", "2027-03-07"})
     void saturdayAndSundayAreNotBusinessDays(String date) {
         assertThat(calendar.isBusinessDay(LocalDate.parse(date))).isFalse();
-        verify(holidayRepository, never()).existsByDate(LocalDate.parse(date));
+        verify(holidayRepository, never()).existsByDateAndScopeIn(LocalDate.parse(date), HolidayScope.AFFECTING_BILLING);
     }
 
     @Test
     void aWeekdayInTheHolidayTableIsNotABusinessDay() {
         LocalDate holiday = LocalDate.of(2027, 3, 24);
-        when(holidayRepository.existsByDate(holiday)).thenReturn(true);
+        when(holidayRepository.existsByDateAndScopeIn(holiday, HolidayScope.AFFECTING_BILLING)).thenReturn(true);
 
         assertThat(calendar.isBusinessDay(holiday)).isFalse();
     }

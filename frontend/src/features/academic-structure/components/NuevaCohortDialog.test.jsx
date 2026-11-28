@@ -45,6 +45,7 @@ describe('NuevaCohortDialog', () => {
         return HttpResponse.json(
           {
             id: 1,
+            planId: 21,
             intake: 'FIRST',
             admissionStart: '2027-02-01',
             admissionEnd: '2027-03-01',
@@ -68,6 +69,9 @@ describe('NuevaCohortDialog', () => {
     await user.type(dates[0], '2026-11-01');
     await user.type(dates[1], '2026-12-15');
     await user.type(dates[2], '2027-03-01');
+    await user.click(screen.getByRole('button', { name: 'Buscar preceptor' }));
+    await user.click(await screen.findByRole('option', { name: /Marcela Quiroga/ }));
+    await user.click(screen.getByRole('button', { name: 'Listo' }));
     await user.click(screen.getByRole('button', { name: 'Crear cohorte' }));
 
     await waitFor(() => expect(body).toMatchObject({ intake: 'FIRST' }));

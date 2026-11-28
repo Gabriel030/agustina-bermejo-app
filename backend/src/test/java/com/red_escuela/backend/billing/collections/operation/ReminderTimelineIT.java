@@ -308,25 +308,25 @@ class ReminderTimelineIT extends AbstractReminderTimelineIT {
         harness.track(student);
         Course course = newCourse();
         CourseEnrollment enrollment = enrollInCourse(student, course);
-        publishCourseSchedule(course, LocalDate.of(2027, 2, 27), List.of(
+        publishCourseSchedule(course, LocalDate.of(2038, 2, 27), List.of(
                 notice("weekly-after-due", ReminderMessageType.AFTER_DUE_REMINDER, ReminderMilestone.DUE_DATE, 1, EnumSet.allOf(ReminderChannel.class),
                         new ReminderRepetition(7, ReminderMilestone.SUSPENSION))));
         harness.issuing(day -> {
-            if (day.equals(march(1))) {
-                installmentOf(enrollment, march(1), march(11));
-                installmentOf(enrollment, march(1), march(18));
+            if (day.equals(marchOf2038(1))) {
+                installmentOf(enrollment, marchOf2038(1), marchOf2038(11));
+                installmentOf(enrollment, marchOf2038(1), marchOf2038(18));
             }
         });
 
-        harness.run(march(1), march(31));
+        harness.run(marchOf2038(1), marchOf2038(31));
 
-        assertThat(harness.inAppDaysOf(student)).containsExactly(march(12), march(19), march(26));
-        assertThat(harness.emailDaysOf(student)).containsExactly(march(12), march(19), march(26));
-        assertThat(highlightedLinesOf(student, march(12))).isEqualTo(1);
-        assertThat(highlightedLinesOf(student, march(19))).isEqualTo(2);
-        assertThat(highlightedLinesOf(student, march(26))).isEqualTo(2);
+        assertThat(harness.inAppDaysOf(student)).containsExactly(marchOf2038(12), marchOf2038(19), marchOf2038(26));
+        assertThat(harness.emailDaysOf(student)).containsExactly(marchOf2038(12), marchOf2038(19), marchOf2038(26));
+        assertThat(highlightedLinesOf(student, marchOf2038(12))).isEqualTo(1);
+        assertThat(highlightedLinesOf(student, marchOf2038(19))).isEqualTo(2);
+        assertThat(highlightedLinesOf(student, marchOf2038(26))).isEqualTo(2);
         assertThat(jdbc.queryForObject("select jsonb_array_length(email_messages) from collection_reminder where student_id = ? and business_date = ?", Integer.class,
-                student.getId(), march(19))).isEqualTo(1);
+                student.getId(), marchOf2038(19))).isEqualTo(1);
     }
 
     @Test

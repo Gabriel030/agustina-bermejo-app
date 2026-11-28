@@ -4,16 +4,17 @@ import com.red_escuela.backend.academicstructure.api.AcademicReferenceFinder;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
-import com.red_escuela.backend.attendance.api.AttendanceStanding;
-import com.red_escuela.backend.attendance.api.AttendanceStandingReader;
+import com.red_escuela.backend.enrollment.api.AttendanceStandingPort;
+import com.red_escuela.backend.enrollment.api.SubjectAttendanceView;
 import com.red_escuela.backend.enrollment.api.EnrollmentDebtGuardPort;
-import com.red_escuela.backend.billing.entity.ProgramCohort;
+import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
 import com.red_escuela.backend.billing.entity.ProgramYearBillingTemplate;
-import com.red_escuela.backend.billing.exception.CohortAdmissionWindowClosedException;
-import com.red_escuela.backend.billing.exception.ProgramCohortNotFoundException;
+import com.red_escuela.backend.enrollment.exception.CohortAdmissionWindowClosedException;
+import com.red_escuela.backend.academicstructure.api.ProgramCohortNotFoundException;
 import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateMismatchException;
 import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateNotFoundException;
-import com.red_escuela.backend.billing.repository.ProgramCohortRepository;
+import com.red_escuela.backend.academicstructure.api.ProgramCohortFinder;
+import com.red_escuela.backend.academicstructure.repository.ProgramCohortRepository;
 import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
 import com.red_escuela.backend.enrollment.api.EnrollmentWithdrawalBillingPort;
 import com.red_escuela.backend.enrollment.api.ProgramProgressReader;
@@ -21,7 +22,11 @@ import com.red_escuela.backend.enrollment.api.ProgramProgressView;
 import com.red_escuela.backend.enrollment.api.ElectiveGroupProgressView;
 import com.red_escuela.backend.enrollment.api.WithdrawalCause;
 import com.red_escuela.backend.enrollment.api.WithdrawnEnrollmentFacts;
+import com.red_escuela.backend.academicstructure.api.CurriculumPlanEnrollmentLock;
+import com.red_escuela.backend.academicstructure.domain.CurriculumPlanNotOpenForNewStudentsException;
+import com.red_escuela.backend.academicstructure.entity.CurriculumPlan;
 import com.red_escuela.backend.enrollment.dto.CreateProgramEnrollmentRequest;
+import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentCohortRequiredException;
 import com.red_escuela.backend.enrollment.dto.ProgramProgressResponse;
 import com.red_escuela.backend.enrollment.dto.SubjectAttendanceSummaryResponse;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -29,8 +34,8 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.exception.AlreadyEnrolledInProgramException;
 import com.red_escuela.backend.enrollment.exception.CannotWithdrawException;
-import com.red_escuela.backend.enrollment.exception.InvalidWindowConfigurationException;
-import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.InvalidWindowConfigurationException;
+import com.red_escuela.backend.enrollment.api.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
 import com.red_escuela.backend.identity.api.StudentEnrollmentEligibility;
@@ -43,12 +48,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.hibernate.exception.ConstraintViolationException;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import org.springframework.dao.DataIntegrityViolationException;
+
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -62,6 +71,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -71,6 +81,7 @@ import static org.mockito.Mockito.when;
 class ProgramEnrollmentRulesTest {
 
     private static final Clock CLOCK = Clock.fixed(Instant.parse("2026-03-02T13:00:00Z"), ZoneOffset.UTC);
+    private static final CurriculumPlan PLAN = CurriculumPlan.builder().id(21L).build();
     private static final LocalDateTime NOW = LocalDateTime.of(2026, 3, 2, 13, 0);
 
     @Mock
@@ -90,7 +101,9 @@ class ProgramEnrollmentRulesTest {
     @Mock
     private ProgramYearBillingTemplateRepository templateRepository;
     @Mock
-    private AttendanceStandingReader attendanceRiskUseCase;
+    private CurriculumPlanEnrollmentLock curriculumPlanEnrollmentLock;
+    @Mock
+    private AttendanceStandingPort attendanceStandingPort;
     @Mock
     private EnrollmentDebtGuardPort enrollmentDebtGuard;
 
@@ -108,20 +121,29 @@ class ProgramEnrollmentRulesTest {
     @BeforeEach
     void setUp() {
         service = new ProgramEnrollmentService(programEnrollmentRepository, studentFinder, studentEnrollmentEligibility,
-                academicReferenceFinder, programProgressReader, subjectSectionEnrollmentRepository, programCohortRepository,
-                templateRepository, attendanceRiskUseCase, enrollmentDebtGuard, withdrawalDateResolver, withdrawalBillingPort, documentCompletenessGuard, mock(ProgramEnrollmentSectionWithdrawer.class), CLOCK);
+                academicReferenceFinder, programProgressReader, subjectSectionEnrollmentRepository, new ProgramCohortFinder(programCohortRepository),
+                templateRepository, attendanceStandingPort, enrollmentDebtGuard, withdrawalDateResolver, withdrawalBillingPort, documentCompletenessGuard, mock(ProgramEnrollmentSectionWithdrawer.class), curriculumPlanEnrollmentLock, CLOCK);
         student = new Student();
         student.setId(7L);
         program = new Program();
         program.setId(4L);
+        lenient().when(curriculumPlanEnrollmentLock.lockOpenForNewStudents(21L)).thenReturn(PLAN);
     }
 
     private ProgramCohort cohort(LocalDate start, LocalDate end) {
         ProgramCohort cohort = new ProgramCohort();
+        cohort.markOpened(java.time.LocalDateTime.of(2000, 1, 1, 0, 0));
         cohort.setId(9L);
+        cohort.setProgramId(4L);
+        cohort.setPlan(PLAN);
         cohort.setAdmissionStart(start);
         cohort.setAdmissionEnd(end);
         return cohort;
+    }
+
+    private void givenOpenCohort() {
+        when(programCohortRepository.findById(9L))
+                .thenReturn(Optional.of(cohort(LocalDate.of(2026, 3, 1), LocalDate.of(2026, 3, 31))));
     }
 
     private ProgramEnrollment enrollment(Long id, ProgramEnrollmentStatus status) {
@@ -142,7 +164,7 @@ class ProgramEnrollmentRulesTest {
     private void givenNoActiveEnrollment() {
         when(programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusIn(7L, 4L,
                 List.of(ProgramEnrollmentStatus.ENROLLED, ProgramEnrollmentStatus.PAUSED))).thenReturn(List.of());
-        when(programEnrollmentRepository.save(any(ProgramEnrollment.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(programEnrollmentRepository.saveAndFlush(any(ProgramEnrollment.class))).thenAnswer(inv -> inv.getArgument(0));
     }
 
     @Test
@@ -150,20 +172,41 @@ class ProgramEnrollmentRulesTest {
         doThrow(new IllegalStateException("debt")).when(enrollmentDebtGuard).verifyNoOutstandingDebt(7L);
 
         assertThatThrownBy(() -> service.enroll(7L, new CreateProgramEnrollmentRequest(4L))).isInstanceOf(IllegalStateException.class);
-        verify(programEnrollmentRepository, never()).save(any());
+        verify(programEnrollmentRepository, never()).saveAndFlush(any());
     }
 
     @Test
-    void enrollWithoutCohortCreatesAnEnrolledProgramEnrollmentAtClockTime() {
+    void enrollCreatesAnEnrolledProgramEnrollmentAtClockTimeInheritingThePlanOfTheCohort() {
         givenStudentAndProgram();
         givenNoActiveEnrollment();
+        givenOpenCohort();
 
-        ProgramEnrollment saved = service.enroll(7L, new CreateProgramEnrollmentRequest(4L));
+        ProgramEnrollment saved = service.enroll(7L, new CreateProgramEnrollmentRequest(4L, 9L));
 
         assertThat(saved.getStatus()).isEqualTo(ProgramEnrollmentStatus.ENROLLED);
         assertThat(saved.getEnrollmentDate()).isEqualTo(NOW);
-        assertThat(saved.getProgramCohort()).isNull();
+        assertThat(saved.getPlan()).isSameAs(PLAN);
         verify(studentEnrollmentEligibility).requireConfirmedAndActive(student);
+    }
+
+    @Test
+    void enrollWithoutCohortIsRejectedBeforeTouchingTheStudent() {
+        assertThatThrownBy(() -> service.enroll(7L, new CreateProgramEnrollmentRequest(4L)))
+                .isInstanceOf(ProgramEnrollmentCohortRequiredException.class);
+        verify(studentFinder, never()).requireByIdForUpdate(any());
+        verify(programEnrollmentRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void enrollFailsWhenThePlanOfTheCohortIsNotOpenForNewStudents() {
+        givenStudentAndProgram();
+        givenOpenCohort();
+        when(curriculumPlanEnrollmentLock.lockOpenForNewStudents(21L))
+                .thenThrow(new CurriculumPlanNotOpenForNewStudentsException(21L));
+
+        assertThatThrownBy(() -> service.enroll(7L, new CreateProgramEnrollmentRequest(4L, 9L)))
+                .isInstanceOf(CurriculumPlanNotOpenForNewStudentsException.class);
+        verify(programEnrollmentRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -201,7 +244,7 @@ class ProgramEnrollmentRulesTest {
 
         assertThatThrownBy(() -> service.enroll(7L, new CreateProgramEnrollmentRequest(4L, 9L)))
                 .isInstanceOf(CohortAdmissionWindowClosedException.class);
-        verify(programEnrollmentRepository, never()).save(any());
+        verify(programEnrollmentRepository, never()).saveAndFlush(any());
     }
 
     @Test
@@ -221,13 +264,43 @@ class ProgramEnrollmentRulesTest {
     @Test
     void enrollFailsWhenTheStudentAlreadyHasAnEnrolledOrPausedEnrollmentInTheProgram() {
         givenStudentAndProgram();
+        givenOpenCohort();
         when(programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusIn(7L, 4L,
                 List.of(ProgramEnrollmentStatus.ENROLLED, ProgramEnrollmentStatus.PAUSED)))
                 .thenReturn(List.of(enrollment(1L, ProgramEnrollmentStatus.PAUSED)));
 
-        assertThatThrownBy(() -> service.enroll(7L, new CreateProgramEnrollmentRequest(4L)))
+        assertThatThrownBy(() -> service.enroll(7L, new CreateProgramEnrollmentRequest(4L, 9L)))
                 .isInstanceOf(AlreadyEnrolledInProgramException.class);
-        verify(programEnrollmentRepository, never()).save(any());
+        verify(programEnrollmentRepository, never()).saveAndFlush(any());
+    }
+
+    @Test
+    void enrollTranslatesTheActiveEnrollmentIndexViolationToAlreadyEnrolledInProgram() {
+        givenStudentAndProgram();
+        givenOpenCohort();
+        when(programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusIn(7L, 4L,
+                List.of(ProgramEnrollmentStatus.ENROLLED, ProgramEnrollmentStatus.PAUSED))).thenReturn(List.of());
+        when(programEnrollmentRepository.saveAndFlush(any(ProgramEnrollment.class))).thenThrow(indexViolation("uk_program_enrollment_student_program_active"));
+
+        assertThatThrownBy(() -> service.enroll(7L, new CreateProgramEnrollmentRequest(4L, 9L)))
+                .isInstanceOf(AlreadyEnrolledInProgramException.class);
+    }
+
+    @Test
+    void enrollRethrowsAnyOtherIntegrityViolation() {
+        givenStudentAndProgram();
+        givenOpenCohort();
+        when(programEnrollmentRepository.findByStudentIdAndProgramIdAndStatusIn(7L, 4L,
+                List.of(ProgramEnrollmentStatus.ENROLLED, ProgramEnrollmentStatus.PAUSED))).thenReturn(List.of());
+        when(programEnrollmentRepository.saveAndFlush(any(ProgramEnrollment.class))).thenThrow(indexViolation("fk_other"));
+
+        assertThatThrownBy(() -> service.enroll(7L, new CreateProgramEnrollmentRequest(4L, 9L)))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    private DataIntegrityViolationException indexViolation(String constraintName) {
+        return new DataIntegrityViolationException("violation",
+                new ConstraintViolationException("violation", new SQLException("duplicate", "23505"), constraintName));
     }
 
     @Test
@@ -386,10 +459,9 @@ class ProgramEnrollmentRulesTest {
         SubjectSectionEnrollment withAbsences = sectionEnrollment(100L, "Matematica");
         SubjectSectionEnrollment withoutData = sectionEnrollment(101L, "Historia");
         when(subjectSectionEnrollmentRepository.findWithSectionByProgramEnrollmentId(1L)).thenReturn(List.of(withAbsences, withoutData));
-        when(attendanceRiskUseCase.readProgramEnrollmentStandings(List.of(100L, 101L))).thenReturn(java.util.Map.of(
-                100L, new AttendanceStanding(8, 6, 2, 0, Percentage.ofFraction(new BigDecimal("0.25")),
-                        Percentage.ofFraction(new BigDecimal("0.75")), Percentage.ofFraction(new BigDecimal("0.30")), false, 2, 0),
-                101L, new AttendanceStanding(0, 0, 0, 0, null, null, null, false, null, null)));
+        when(attendanceStandingPort.readProgramSectionAttendance(List.of(100L, 101L))).thenReturn(java.util.Map.of(
+                100L, new SubjectAttendanceView(Percentage.ofFraction(new BigDecimal("0.75"))),
+                101L, new SubjectAttendanceView(null)));
 
         List<SubjectAttendanceSummaryResponse> summary = service.attendanceSummaryBySubject(1L);
 

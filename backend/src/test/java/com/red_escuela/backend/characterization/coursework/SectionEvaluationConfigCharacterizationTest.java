@@ -163,10 +163,10 @@ class SectionEvaluationConfigCharacterizationTest extends CourseworkCharacteriza
 
     @Test
     void submissionIsRejectedOnceTheTermHasStartedAndStillAllowedAfterARejection() throws Exception {
-        Classroom classroom = classroomWithDraftConfig("cfg6", "7800006", InstructorRole.LEAD, LocalDateTime.now().minusDays(10));
+        Classroom classroom = classroomWithDraftConfig("cfg6", "7800006", InstructorRole.LEAD, LocalDateTime.now().minusDays(20));
 
         postEmpty(classroom.teacher(), configPath(classroom) + "/submit")
-                .andExpect(status().is4xxClientError())
+                .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("SUBMISSION_WINDOW_CLOSED"));
         getAs(classroom.teacher(), configPath(classroom))
                 .andExpect(jsonPath("$.status").value("DRAFT"))
@@ -182,6 +182,20 @@ class SectionEvaluationConfigCharacterizationTest extends CourseworkCharacteriza
         postEmpty(assistantRoom.teacher(), configPath(assistantRoom) + "/submit").andExpect(status().isForbidden());
         putJson(leadRoom.teacher(), configPath(assistantRoom), proposal()).andExpect(status().isNotFound());
         getAs(assistantRoom.teacher(), configPath(assistantRoom)).andExpect(status().isOk());
+    }
+
+    @Test
+    void teacherListExposesDeadlineAsTermStartPlusInstitutionDueDays() throws Exception {
+        Classroom classroom = classroomWithDraftConfig("cfg9", "7800010");
+        entityManager.createQuery("update Institution i set i.evaluationConfigDueDays = 40").executeUpdate();
+        entityManager.clear();
+
+        getAs(classroom.teacher(), "/me/section-evaluation-configs")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].evaluationConfigDeadline").value(TERM_START.plusDays(40).toString()));
+        getAs(classroom.teacher(), configPath(classroom))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.evaluationConfigDeadline").value(TERM_START.plusDays(40).toString()));
     }
 
     @Test

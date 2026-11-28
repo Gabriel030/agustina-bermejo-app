@@ -10,7 +10,7 @@ import com.red_escuela.backend.billing.configuration.exception.InvalidLatePaymen
 import com.red_escuela.backend.billing.configuration.exception.InvalidYearBillingConfigurationException;
 import com.red_escuela.backend.billing.dto.CreateLatePaymentSettingsRequest;
 import com.red_escuela.backend.billing.dto.YearBillingConfigurationRequest;
-import com.red_escuela.backend.billing.entity.CohortIntake;
+import com.red_escuela.backend.academicstructure.domain.CohortIntake;
 import com.red_escuela.backend.billing.invoice.domain.FeeType;
 import com.red_escuela.backend.billing.invoice.domain.Invoice;
 import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
@@ -408,7 +408,7 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
 
         List<Invoice> afterChange = invoices(enrollment, FeeType.MONTHLY_INSTALLMENT);
         assertThat(afterChange.stream().filter(i -> i.getPeriod().equals(YearMonth.of(2027, 4))).findFirst().orElseThrow().getDueDate()).isEqualTo(aprilDue);
-        assertThat(afterChange.stream().filter(i -> i.getPeriod().equals(YearMonth.of(2027, 5))).findFirst().orElseThrow().getDueDate()).isEqualTo(date(2027, 5, 16));
+        assertThat(afterChange.stream().filter(i -> i.getPeriod().equals(YearMonth.of(2027, 5))).findFirst().orElseThrow().getDueDate()).isEqualTo(date(2027, 5, 17));
     }
 
     @Test
@@ -508,7 +508,7 @@ class BillingConfigurationPoliciesIntegrationTest extends AbstractInvoiceSequenc
     void anAdministrativeActorLeavesAPersistedProposalInsteadOfRollingBack() {
         Year year = yearWithFirstFeeIssued();
         authenticateAs("ADMINISTRATIVO");
-        var service = new com.red_escuela.backend.billing.usecase.cohort.UpdateYearBillingConfigurationService(templateRepository, configurationReader, termsOverlay, pipeline,
+        var service = new com.red_escuela.backend.billing.configuration.service.UpdateYearBillingConfigurationTransaction(templateRepository, configurationReader, termsOverlay, pipeline,
                 changeOperation, actorResolver, eventPublisher, clock);
 
         Object outcome = transactionTemplate.execute(status -> {

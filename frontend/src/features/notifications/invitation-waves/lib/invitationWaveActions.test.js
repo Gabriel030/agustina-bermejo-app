@@ -1,5 +1,5 @@
-import { afterEach, beforeEach, describe, expect, it } from 'vitest';
-import { RETRY_FAILED_AVAILABLE, SEND_REQUIRED_REASON, orderedSecondary, setRetryFailedAvailableForTests, waveActions } from './invitationWaveActions';
+import { describe, expect, it } from 'vitest';
+import { SEND_REQUIRED_REASON, orderedSecondary, waveActions } from './invitationWaveActions';
 import { buildWave } from '../test/fixtures';
 
 const FULL = { read: true, manage: true, send: true };
@@ -9,19 +9,10 @@ function keys(actions) {
 }
 
 describe('waveActions', () => {
-  beforeEach(() => setRetryFailedAvailableForTests(true));
-  afterEach(() => setRetryFailedAvailableForTests(RETRY_FAILED_AVAILABLE));
-
-  it('hidesRetryWhileTheEndpointIsNotAvailable', () => {
-    setRetryFailedAvailableForTests(false);
-    expect(RETRY_FAILED_AVAILABLE).toBe(false);
-    expect(keys(waveActions(buildWave('RUNNING'), FULL)).secondary).toEqual(['csv', 'cancel']);
-  });
-
   it.each([
     ['DRAFT', { primary: 'start', secondary: ['csv', 'cancel'] }],
     ['RUNNING', { primary: 'pause', secondary: ['retry', 'csv', 'cancel'] }],
-    ['PAUSED', { primary: 'resume', secondary: ['retry', 'csv', 'cancel'] }],
+    ['PAUSED', { primary: 'resume', secondary: ['csv', 'cancel'] }],
     ['COMPLETED', { primary: null, secondary: ['csv'] }],
     ['CANCELLED', { primary: null, secondary: ['csv'] }],
   ])('%s offers the right actions', (status, expected) => {
@@ -30,7 +21,9 @@ describe('waveActions', () => {
 
   it('offersRetryOnlyWhenSomethingFailed', () => {
     expect(keys(waveActions(buildWave('RUNNING', { failedTotal: 0 }), FULL)).secondary).not.toContain('retry');
-    expect(keys(waveActions(buildWave('COMPLETED', { failedTotal: 3 }), FULL)).secondary).toEqual(['retry', 'csv']);
+    expect(keys(waveActions(buildWave('RUNNING', { failedTotal: 3 }), FULL)).secondary).toEqual(['retry', 'csv', 'cancel']);
+    expect(keys(waveActions(buildWave('PAUSED', { failedTotal: 3 }), FULL)).secondary).not.toContain('retry');
+    expect(keys(waveActions(buildWave('COMPLETED', { failedTotal: 3 }), FULL)).secondary).not.toContain('retry');
   });
 
   it('leavesOnlyTheCsvToReaders', () => {

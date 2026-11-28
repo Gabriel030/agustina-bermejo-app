@@ -17,7 +17,7 @@ _Others_
 * `c.r.b.s.UseCaseMetricsAspect`
 * `c.r.b.s.event.DomainEventCorrelationAspect`
 * `c.r.b.s.event.EventPublicationResubmissionJob`
-* `c.r.b.s.event.ProcessedEffectGuard`
+* `c.r.b.s.event.service.ProcessedEffectGuard`
 * `c.r.b.s.exception.GlobalExceptionHandler`
 * `c.r.b.s.mail.TransactionalEmailGateway` (via `c.r.b.s.mail.MockTransactionalEmailGateway`)
 * `c.r.b.s.serialization.ValueObjectJacksonModule`

@@ -26,7 +26,7 @@ class CourseEnrollmentWithdrawalAtCourseEndIT extends AbstractLateFeeScenarioIT 
     private TermEndWithdrawalBillingRunStep termEndStep;
 
     private void arrangeCourseEndingOn(int year, LocalDate courseEnd, String standingStatus) {
-        jdbc.update("update course_enrollment set status = 'WITHDRAWN' where id in (select course_enrollment_id from enrollment_payment_standing where status = 'SUSPENDED')");
+        jdbc.update("update course_enrollment set status = 'WITHDRAWN', withdrawal_effective_date = date '2000-01-01' where id in (select course_enrollment_id from enrollment_payment_standing where status = 'SUSPENDED')");
         arrange(year);
         publishDefaults(year);
         jdbc.update("update term set end_date = ?::timestamp where id = ?", courseEnd + " 00:00:00", term.getId());
@@ -116,7 +116,8 @@ class CourseEnrollmentWithdrawalAtCourseEndIT extends AbstractLateFeeScenarioIT 
 
         assertThat(outcome.candidates()).isZero();
         assertThat(outcome.failed()).isZero();
-        assertThat(jdbc.queryForObject("select withdrawal_effective_date from course_enrollment where id = ?", java.sql.Date.class, enrollment.getId())).isNull();
+        assertThat(jdbc.queryForObject("select withdrawal_effective_date from course_enrollment where id = ?", java.sql.Date.class, enrollment.getId()).toLocalDate())
+                .isEqualTo(d(2123, 5, 10));
     }
 
     @Test

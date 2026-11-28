@@ -38,11 +38,6 @@ export function Sidebar({ titulo, items, groups }) {
   const { canSwitch } = useActiveRole();
   const { containerRef, rect } = useSlidingIndicator('.nav-item-activo');
 
-  // "Opciones" se separa del resto de la navegación de contenido y se agrupa
-  // visualmente junto a "Cerrar sesión" (pedido explícito del usuario) — el
-  // resto de los roles que no tienen ese ítem no se ven afectados.
-  const principales = items.filter((item) => item.label !== 'Opciones');
-
   return (
     // hidden lg:flex: en base/md este layout colapsa al menú hamburguesa
     // (MobileMenu, ver RoleShell.jsx) — nunca conviven los dos.
@@ -75,7 +70,7 @@ export function Sidebar({ titulo, items, groups }) {
         {groups ? (
           <NavGroups groups={groups} renderItem={(item) => <ItemNav {...item} />} />
         ) : (
-          principales.map((item) => <ItemNav key={item.to} {...item} />)
+          items.map((item) => <ItemNav key={item.to} {...item} />)
         )}
       </nav>
 

@@ -82,7 +82,32 @@ class ExamBoardManagerTest extends AbstractIntegrationTest {
         examBoard.setExamDate(examDate);
         examBoard.setStatus(ExamBoardStatus.SCHEDULED);
         entityManager.persist(examBoard);
+        persistTribunal(examBoard);
         return examBoard;
+    }
+
+    private static final java.util.concurrent.atomic.AtomicInteger TRIBUNAL_DNI = new java.util.concurrent.atomic.AtomicInteger(96000000);
+
+    private void persistTribunal(ExamBoard examBoard) {
+        String dni = String.valueOf(TRIBUNAL_DNI.incrementAndGet());
+        Address address = new Address();
+        entityManager.persist(address);
+        Person person = new Person();
+        person.setName("Tribunal");
+        person.setLastname(dni);
+        person.setDni(dni);
+        person.setUsername(dni);
+        person.setEmail(dni + "@example.com");
+        person.setAddress(address);
+        person.setStatus(StatusType.ACTIVE);
+        entityManager.persist(person);
+        com.red_escuela.backend.academicstructure.entity.Instructor instructor = new com.red_escuela.backend.academicstructure.entity.Instructor();
+        instructor.setPerson(person);
+        entityManager.persist(instructor);
+        com.red_escuela.backend.evaluation.entity.ExamBoardInstructor assignment = new com.red_escuela.backend.evaluation.entity.ExamBoardInstructor();
+        assignment.setExamBoard(examBoard);
+        assignment.setInstructor(instructor);
+        entityManager.persist(assignment);
     }
 
     private SubjectSectionEnrollment persistRegularEnrollment(Subject subject, Term term, String dni) {
@@ -147,6 +172,30 @@ class ExamBoardManagerTest extends AbstractIntegrationTest {
         assertThatThrownBy(() -> examBoardService.create(new CreateExamBoardRequest(
                 subject.getId(), null, term.getId(), LocalDateTime.of(2099, 11, 20, 18, 0), null, null, null)))
                 .isInstanceOf(ExamDateOnHolidayException.class);
+    }
+
+    @Test
+    void creatingAnExamBoardWithAnInvertedRegistrationWindowFails() {
+        Subject subject = persistSubject("MateriaMesaVentanaInvertida");
+        Term term = persistTerm();
+        entityManager.flush();
+        LocalDateTime exam = LocalDateTime.of(2099, 11, 24, 18, 0);
+
+        assertThatThrownBy(() -> examBoardService.create(new CreateExamBoardRequest(
+                subject.getId(), null, term.getId(), exam, exam.minusDays(1), exam.minusDays(5), null)))
+                .isInstanceOf(com.red_escuela.backend.evaluation.exception.InvalidExamBoardRegistrationWindowException.class);
+    }
+
+    @Test
+    void creatingAnExamBoardWhoseRegistrationClosesAfterTheExamFails() {
+        Subject subject = persistSubject("MateriaMesaCierreTardio");
+        Term term = persistTerm();
+        entityManager.flush();
+        LocalDateTime exam = LocalDateTime.of(2099, 11, 24, 18, 0);
+
+        assertThatThrownBy(() -> examBoardService.create(new CreateExamBoardRequest(
+                subject.getId(), null, term.getId(), exam, exam.minusDays(5), exam.plusDays(1), null)))
+                .isInstanceOf(com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationEndAfterExamException.class);
     }
 
     @Test

@@ -17,6 +17,9 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
+import com.red_escuela.backend.attendance.entity.Attendance;
+import com.red_escuela.backend.attendance.entity.AttendanceStatus;
+import com.red_escuela.backend.identity.api.StudentAttendanceRisk;
 import com.red_escuela.backend.identity.dto.StudentResponse;
 import com.red_escuela.backend.identity.dto.StaffResponse;
 import com.red_escuela.backend.identity.entity.Institution;
@@ -56,7 +59,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Transactional
 class EducationListQueryCountTest extends AbstractIntegrationTest {
     private static final int MANY = 12;
-    private static final int STUDENT_LIST_QUERIES = 2;
+    private static final int STUDENT_LIST_QUERIES = 6;
     private static final int STAFF_LIST_QUERIES = 4;
     private static final int OWN_SECTION_ENROLLMENTS_QUERIES = 4;
     private static final int ATTENDANCE_SUMMARY_QUERIES = 3;
@@ -106,6 +109,62 @@ class EducationListQueryCountTest extends AbstractIntegrationTest {
 
         assertThat(responses).hasSize(MANY);
         assertThat(responses).allSatisfy(response -> assertThat(response.dni()).isNotNull());
+    }
+
+    @Test
+    void studentListWithActiveEnrollmentsQueryCountDoesNotGrowWithEnrollments() {
+        Fixture fixture = persistEnrollments(MANY);
+        fixture.student().getPerson().getRoles().add(roleRepository.findByName("ALUMNO").orElseThrow());
+        for (int i = 0; i < MANY; i++) {
+            persistStudent(persistInstitution()).getPerson().getRoles().add(roleRepository.findByName("ALUMNO").orElseThrow());
+        }
+        entityManager.flush();
+        entityManager.clear();
+
+        List<StudentResponse> responses = QueryCountAssertions.assertAtMostQueries(entityManagerFactory, STUDENT_LIST_QUERIES,
+                () -> listStudentsUseCase.list(new ListStudentsCommand(null, "CONFIRMADO", null, 0, 100, false)).items());
+
+        assertThat(responses).hasSize(MANY + 1);
+        assertThat(responses).allSatisfy(response -> assertThat(response.missingRequiredDocuments()).hasSize(3));
+    }
+
+    @Test
+    void studentListSignalsAttendanceRiskFromActiveSectionEnrollments() {
+        Long nearLimitStudentId = persistStudentWithAbsences(2, 10);
+        Long freeStudentId = persistStudentWithAbsences(3, 10);
+        Long safeStudentId = persistStudentWithAbsences(1, 10);
+        entityManager.flush();
+        entityManager.clear();
+
+        List<StudentResponse> responses = listStudentsUseCase.list(new ListStudentsCommand(null, "CONFIRMADO", null, 0, 100, false)).items();
+
+        assertThat(riskOf(responses, nearLimitStudentId)).isEqualTo(StudentAttendanceRisk.NEAR_LIMIT);
+        assertThat(riskOf(responses, freeStudentId)).isEqualTo(StudentAttendanceRisk.FREE);
+        assertThat(riskOf(responses, safeStudentId)).isEqualTo(StudentAttendanceRisk.NONE);
+    }
+
+    private StudentAttendanceRisk riskOf(List<StudentResponse> responses, Long studentId) {
+        return responses.stream().filter(response -> response.id().equals(studentId)).findFirst().orElseThrow().attendanceRisk();
+    }
+
+    private Long persistStudentWithAbsences(int absences, int classes) {
+        Fixture fixture = persistEnrollments(1);
+        fixture.student().getPerson().getRoles().add(roleRepository.findByName("ALUMNO").orElseThrow());
+        SubjectSectionEnrollment enrollment = entityManager
+                .createQuery("select e from SubjectSectionEnrollment e where e.student.id = :studentId", SubjectSectionEnrollment.class)
+                .setParameter("studentId", fixture.student().getId()).getSingleResult();
+        Instructor recorder = new Instructor();
+        recorder.setPerson(persistPerson());
+        entityManager.persist(recorder);
+        for (int i = 0; i < classes; i++) {
+            Attendance attendance = new Attendance();
+            attendance.setProgramSubjectSectionEnrollment(enrollment);
+            attendance.setClassDate(java.time.LocalDate.of(2026, 3, 1).plusDays(i));
+            attendance.setStatus(i < absences ? AttendanceStatus.ABSENT : AttendanceStatus.PRESENT);
+            attendance.setRecordedBy(recorder);
+            entityManager.persist(attendance);
+        }
+        return fixture.student().getId();
     }
 
     @Test
@@ -181,7 +240,7 @@ class EducationListQueryCountTest extends AbstractIntegrationTest {
         for (int i = 0; i < count; i++) {
             Subject subject = new Subject();
             subject.setCode(TestSubjectCodes.next());
-            subject.setName("Subject " + i);
+            subject.setName("Subject " + subject.getCode());
             entityManager.persist(subject);
             SubjectSection section = new SubjectSection();
             section.setName("Section " + i);

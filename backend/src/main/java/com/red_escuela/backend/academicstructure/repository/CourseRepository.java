@@ -18,4 +18,5 @@ public interface CourseRepository extends JpaRepository<Course, Long> {
     Optional<Course> findByIdForUpdate(@Param("id") Long id);
 
     List<Course> findByWaitlistDeadlineOffsetDaysIsNotNull();
+    List<Course> findByWaitlistDeadlineOffsetDaysIsNull();
 }

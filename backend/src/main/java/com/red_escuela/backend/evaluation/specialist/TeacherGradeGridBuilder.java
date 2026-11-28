@@ -1,6 +1,5 @@
 package com.red_escuela.backend.evaluation.specialist;
 
-import com.red_escuela.backend.academicstructure.api.SectionFinder;
 import com.red_escuela.backend.academicstructure.api.SectionTeachingFinder;
 import com.red_escuela.backend.academicstructure.api.SectionTermEndFinder;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
@@ -48,7 +47,8 @@ import java.util.stream.Collectors;
 @Service
 public class TeacherGradeGridBuilder {
 
-    private final SectionFinder sectionFinder;
+    private final SectionEvaluationSchemeLoader schemeLoader;
+    private final SectionWithSchemeLoader sectionWithSchemeLoader;
     private final SectionTeachingFinder sectionTeachingFinder;
     private final SectionEnrollmentFinder sectionEnrollmentFinder;
     private final SectionFreeByAbsencesFinder sectionFreeByAbsencesFinder;
@@ -57,17 +57,20 @@ public class TeacherGradeGridBuilder {
     private final SectionGradeItemPublicationRepository publicationRepository;
     private final GradeItemAuditRepository auditRepository;
     private final SectionTermEndFinder sectionTermEndFinder;
+    private final ApprovedCourseworkCountFinder courseworkCountFinder;
 
-    public TeacherGradeGridBuilder(SectionFinder sectionFinder,
-                                   SectionTeachingFinder sectionTeachingFinder,
+    public TeacherGradeGridBuilder(SectionTeachingFinder sectionTeachingFinder,
                                    SectionEnrollmentFinder sectionEnrollmentFinder,
                                    SectionFreeByAbsencesFinder sectionFreeByAbsencesFinder,
                                    GradeItemRepository gradeItemRepository,
                                    SectionEvaluationConfigRepository configRepository,
                                    SectionGradeItemPublicationRepository publicationRepository,
                                    GradeItemAuditRepository auditRepository,
-                                   SectionTermEndFinder sectionTermEndFinder) {
-        this.sectionFinder = sectionFinder;
+                                   SectionTermEndFinder sectionTermEndFinder,
+                                   ApprovedCourseworkCountFinder courseworkCountFinder, SectionEvaluationSchemeLoader schemeLoader,
+                                   SectionWithSchemeLoader sectionWithSchemeLoader) {
+        this.schemeLoader = schemeLoader;
+        this.sectionWithSchemeLoader = sectionWithSchemeLoader;
         this.sectionTeachingFinder = sectionTeachingFinder;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
         this.sectionFreeByAbsencesFinder = sectionFreeByAbsencesFinder;
@@ -76,30 +79,31 @@ public class TeacherGradeGridBuilder {
         this.publicationRepository = publicationRepository;
         this.auditRepository = auditRepository;
         this.sectionTermEndFinder = sectionTermEndFinder;
+        this.courseworkCountFinder = courseworkCountFinder;
     }
 
     @Transactional(readOnly = true)
     public TeacherGradeGridResponse buildForProgramSection(Long sectionId, Long instructorId) {
-        SubjectSection section = sectionFinder.findProgramSectionWithSchemeAndTerms(sectionId);
+        SubjectSection section = sectionWithSchemeLoader.loadProgramSection(sectionId);
         sectionTeachingFinder.requireTeaches(SectionKind.PROGRAM, sectionId, instructorId);
         return programGrid(section);
     }
 
     @Transactional(readOnly = true)
     public TeacherGradeGridResponse buildForProgramSectionAsStaff(Long sectionId) {
-        return programGrid(sectionFinder.findProgramSectionWithSchemeAndTerms(sectionId));
+        return programGrid(sectionWithSchemeLoader.loadProgramSection(sectionId));
     }
 
     @Transactional(readOnly = true)
     public TeacherGradeGridResponse buildForCourseSection(Long sectionId, Long instructorId) {
-        CourseSubjectSection section = sectionFinder.findCourseSectionWithSchemeAndTerms(sectionId);
+        CourseSubjectSection section = sectionWithSchemeLoader.loadCourseSection(sectionId);
         sectionTeachingFinder.requireTeaches(SectionKind.COURSE, sectionId, instructorId);
         return courseGrid(section);
     }
 
     @Transactional(readOnly = true)
     public TeacherGradeGridResponse buildForCourseSectionAsStaff(Long sectionId) {
-        return courseGrid(sectionFinder.findCourseSectionWithSchemeAndTerms(sectionId));
+        return courseGrid(sectionWithSchemeLoader.loadCourseSection(sectionId));
     }
 
     private TeacherGradeGridResponse programGrid(SubjectSection section) {
@@ -119,7 +123,7 @@ public class TeacherGradeGridBuilder {
                         enrollment.getFinalScore(), itemsByEnrollment, freeEnrollmentIds, publications, correctedItemIds))
                 .sorted(byName())
                 .toList();
-        return response(SectionKind.PROGRAM, sectionId, section.getEvaluationScheme(), config.orElse(null), students, publications);
+        return response(SectionKind.PROGRAM, sectionId, schemeLoader.ofProgramSection(section), config.orElse(null), students, publications);
     }
 
     private TeacherGradeGridResponse courseGrid(CourseSubjectSection section) {
@@ -138,7 +142,7 @@ public class TeacherGradeGridBuilder {
                         enrollment.getFinalScore(), itemsByEnrollment, freeEnrollmentIds, publications, correctedItemIds))
                 .sorted(byName())
                 .toList();
-        return response(SectionKind.COURSE, sectionId, section.getEvaluationScheme(), null, students, publications);
+        return response(SectionKind.COURSE, sectionId, schemeLoader.ofCourseSection(section), null, students, publications);
     }
 
     private Map<String, LocalDateTime> publicationsOf(SectionKind kind, Long sectionId) {
@@ -205,14 +209,20 @@ public class TeacherGradeGridBuilder {
                 scheme.getMinRegularGrade(),
                 scheme.getMinApprovalGrade(),
                 scheme.getPromotionMinGrade(),
-                columns(scheme, config, publications), students, correctionDeadline);
+                columns(scheme, tpColumnCount(kind, scheme, config), config, publications), students, correctionDeadline);
     }
 
-    private List<GradeGridColumnResponse> columns(EvaluationScheme scheme, SectionEvaluationConfig config,
+    private int tpColumnCount(SectionKind kind, EvaluationScheme scheme, SectionEvaluationConfig config) {
+        if (kind == SectionKind.PROGRAM) {
+            return courseworkCountFinder.expectedCountOf(config);
+        }
+        return scheme.getTpCountExpected() == null ? 0 : scheme.getTpCountExpected();
+    }
+
+    private List<GradeGridColumnResponse> columns(EvaluationScheme scheme, int tps, SectionEvaluationConfig config,
                                                   Map<String, LocalDateTime> publications) {
         List<GradeGridColumnResponse> columns = new ArrayList<>();
         int exams = scheme.getExamCountExpected() == null ? 0 : scheme.getExamCountExpected();
-        int tps = scheme.getTpCountExpected() == null ? 0 : scheme.getTpCountExpected();
         for (int sequence = 1; sequence <= exams; sequence++) {
             columns.add(column(GradeItemType.EXAM, sequence, examDate(config, sequence), publications));
         }

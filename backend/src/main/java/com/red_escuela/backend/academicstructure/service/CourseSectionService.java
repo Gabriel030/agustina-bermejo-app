@@ -1,46 +1,39 @@
 package com.red_escuela.backend.academicstructure.service;
 
+import com.red_escuela.backend.academicstructure.exception.InstructorScheduleConflictException;
+import com.red_escuela.backend.academicstructure.entity.SectionScheduleSlot;
 import com.red_escuela.backend.academicstructure.dto.AssignInstructorRequest;
-import com.red_escuela.backend.academicstructure.dto.CreateSectionRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateSectionRequest;
-import com.red_escuela.backend.academicstructure.entity.CourseSubject;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSectionInstructor;
 import com.red_escuela.backend.academicstructure.api.SectionEnrollmentActivityPort;
 import com.red_escuela.backend.academicstructure.api.SectionEvaluationSetupPort;
+import com.red_escuela.backend.academicstructure.exception.SectionEvaluationSchemeLockedException;
 import com.red_escuela.backend.academicstructure.exception.SectionHasActiveEnrollmentsException;
-import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.shared.domain.StatusType;
-import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.academicstructure.exception.CourseSubjectNotFoundException;
 import com.red_escuela.backend.academicstructure.exception.InstructorAlreadyAssignedException;
 import com.red_escuela.backend.academicstructure.exception.InstructorNotFoundException;
+import com.red_escuela.backend.academicstructure.domain.InstructorRole;
 import com.red_escuela.backend.academicstructure.exception.SectionInstructorNotFoundException;
+import com.red_escuela.backend.academicstructure.exception.SectionLastInstructorRemovalException;
 import com.red_escuela.backend.academicstructure.exception.SectionNotFoundException;
-import com.red_escuela.backend.academicstructure.exception.TermNotFoundException;
-import com.red_escuela.backend.academicstructure.repository.CourseSubjectRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionInstructorRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionRepository;
 import com.red_escuela.backend.academicstructure.repository.InstructorRepository;
 import com.red_escuela.backend.academicstructure.repository.SectionScheduleSlotRepository;
-import com.red_escuela.backend.academicstructure.repository.TermRepository;
-import jakarta.persistence.EntityManager;
+import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 public class CourseSectionService {
     private final CourseSubjectSectionRepository sectionRepository;
-    private final CourseSubjectRepository courseSubjectRepository;
-    private final TermRepository termRepository;
     private final CourseSubjectSectionInstructorRepository sectionInstructorRepository;
     private final InstructorRepository instructorRepository;
-    private final EntityManager entityManager;
     private final SectionEvaluationSetupPort evaluationSetupPort;
     private final SectionIdentityAssigner identityAssigner;
     private final SectionConflictChecker conflictChecker;
@@ -51,11 +44,8 @@ public class CourseSectionService {
 
     public CourseSectionService(
             CourseSubjectSectionRepository sectionRepository,
-            CourseSubjectRepository courseSubjectRepository,
-            TermRepository termRepository,
             CourseSubjectSectionInstructorRepository sectionInstructorRepository,
             InstructorRepository instructorRepository,
-            EntityManager entityManager,
             SectionEvaluationSetupPort evaluationSetupPort,
             SectionIdentityAssigner identityAssigner,
             SectionConflictChecker conflictChecker,
@@ -66,43 +56,13 @@ public class CourseSectionService {
         this.capacityChangeEvents = capacityChangeEvents;
         this.enrollmentActivityPort = enrollmentActivityPort;
         this.sectionRepository = sectionRepository;
-        this.courseSubjectRepository = courseSubjectRepository;
-        this.termRepository = termRepository;
         this.sectionInstructorRepository = sectionInstructorRepository;
         this.instructorRepository = instructorRepository;
-        this.entityManager = entityManager;
         this.evaluationSetupPort = evaluationSetupPort;
         this.identityAssigner = identityAssigner;
         this.conflictChecker = conflictChecker;
         this.reactivationChecker = reactivationChecker;
         this.slotRepository = slotRepository;
-    }
-
-    @Transactional
-    public CourseSubjectSection create(Long courseSubjectId, CreateSectionRequest request) {
-        identityAssigner.requireShift(request.shift());
-        CourseSubject courseSubject = courseSubjectRepository.findById(courseSubjectId)
-                .orElseThrow(() -> new CourseSubjectNotFoundException(courseSubjectId));
-        Term term = termRepository.findById(request.termId())
-                .orElseThrow(() -> new TermNotFoundException(request.termId()));
-
-        CourseSubjectSection section = new CourseSubjectSection();
-        section.setCourseSubject(courseSubject);
-        section.setTerm(term);
-        section.setName(request.name());
-        section.setSchedule(request.schedule());
-        section.setCapacity(request.capacity());
-        section.setMaxAbsenceRate(request.maxAbsencePercent());
-        section.setStatus(StatusType.ACTIVE);
-        section.setCreatedAt(LocalDateTime.now());
-        identityAssigner.identifyNewCourseSection(section, request.shift(), request.description());
-        if (request.evaluationSchemeId() != null) {
-            section.setEvaluationScheme(resolveEvaluationScheme(request.evaluationSchemeId()));
-        }
-        if (request.maxAbsencePercent() != null) {
-            section.setMaxAbsenceRate(request.maxAbsencePercent());
-        }
-        return sectionRepository.save(section);
     }
 
     @Transactional
@@ -125,7 +85,9 @@ public class CourseSectionService {
             identityAssigner.changeCourseSectionShift(section, request.shift());
         }
         if (request.evaluationSchemeId() != null) {
-            section.setEvaluationScheme(resolveEvaluationScheme(request.evaluationSchemeId()));
+            requireEvaluationSchemeReassignable(section, request.evaluationSchemeId());
+            requireEvaluationSchemeExists(request.evaluationSchemeId());
+            section.setEvaluationSchemeId(request.evaluationSchemeId());
         }
         CourseSubjectSection saved = sectionRepository.save(section);
         capacityChangeEvents.courseSectionChanged(saved.getId(), previousCapacity, saved.getCapacity());
@@ -149,7 +111,7 @@ public class CourseSectionService {
             throw new SectionHasActiveEnrollmentsException(id);
         }
         section.setStatus(StatusType.INACTIVE);
-        sectionRepository.save(section);
+        sectionRepository.saveAndFlush(section);
     }
 
     @Transactional
@@ -165,8 +127,8 @@ public class CourseSectionService {
         CourseSubjectSection section = findOrThrow(sectionId);
         Instructor instructor = instructorRepository.findById(request.instructorId())
                 .orElseThrow(() -> new InstructorNotFoundException(request.instructorId()));
-        conflictChecker.checkInstructorAvailability(
-                section.getTerm(), instructor.getId(), slotRepository.findByCourseSectionId(sectionId));
+        List<SectionScheduleSlot> sectionSlots = slotRepository.findByCourseSectionId(sectionId);
+        conflictChecker.checkInstructorAvailability(section.getTerm(), instructor.getId(), sectionSlots);
 
         CourseSubjectSectionInstructor assignment = new CourseSubjectSectionInstructor();
         assignment.setSection(section);
@@ -180,7 +142,22 @@ public class CourseSectionService {
         try {
             return sectionInstructorRepository.saveAndFlush(assignment);
         } catch (DataIntegrityViolationException e) {
+            if (ScheduleExclusionViolation.isInstructorOverlap(e) && !sectionSlots.isEmpty()) {
+                SectionScheduleSlot slot = sectionSlots.get(0);
+                throw new InstructorScheduleConflictException(
+                        request.instructorId(), slot.getDayOfWeek(), slot.getStartTime(), slot.getEndTime());
+            }
+            if (ScheduleExclusionViolation.isInstructorOverlap(e)) {
+                throw e;
+            }
             throw new InstructorAlreadyAssignedException(request.instructorId(), sectionId);
+        } catch (CannotAcquireLockException e) {
+            if (ScheduleExclusionViolation.isDeadlock(e) && !sectionSlots.isEmpty()) {
+                SectionScheduleSlot slot = sectionSlots.get(0);
+                throw new InstructorScheduleConflictException(
+                        request.instructorId(), slot.getDayOfWeek(), slot.getStartTime(), slot.getEndTime());
+            }
+            throw e;
         }
     }
 
@@ -190,18 +167,36 @@ public class CourseSectionService {
 
     @Transactional
     public void removeInstructor(Long sectionId, Long instructorAssignmentId) {
+        CourseSubjectSection section = findOrThrow(sectionId);
         CourseSubjectSectionInstructor assignment = sectionInstructorRepository.findById(instructorAssignmentId)
                 .filter(a -> a.getSection().getId().equals(sectionId))
                 .orElseThrow(() -> new SectionInstructorNotFoundException(instructorAssignmentId));
+        if (section.getStatus() == StatusType.ACTIVE && isOnlyLead(assignment, sectionInstructorRepository.findBySectionId(sectionId))) {
+            throw new SectionLastInstructorRemovalException(sectionId);
+        }
         sectionInstructorRepository.delete(assignment);
+    }
+
+    private boolean isOnlyLead(CourseSubjectSectionInstructor assignment, List<CourseSubjectSectionInstructor> assignments) {
+        return assignment.getRole() == InstructorRole.LEAD
+                && assignments.stream().noneMatch(other -> !other.getId().equals(assignment.getId()) && other.getRole() == InstructorRole.LEAD);
     }
 
     private CourseSubjectSection findOrThrow(Long id) {
         return sectionRepository.findById(id).orElseThrow(() -> new SectionNotFoundException(id));
     }
 
-    private EvaluationScheme resolveEvaluationScheme(Long id) {
+    private void requireEvaluationSchemeExists(Long id) {
         evaluationSetupPort.requireEvaluationSchemeExists(id);
-        return entityManager.find(EvaluationScheme.class, id);
+    }
+
+    private void requireEvaluationSchemeReassignable(CourseSubjectSection section, Long newSchemeId) {
+        Long currentSchemeId = section.getEvaluationSchemeId();
+        if (newSchemeId.equals(currentSchemeId)) {
+            return;
+        }
+        if (evaluationSetupPort.hasGradesLoadedInCourseSection(section.getId())) {
+            throw new SectionEvaluationSchemeLockedException(section.getId());
+        }
     }
 }

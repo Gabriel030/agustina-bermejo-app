@@ -8,7 +8,7 @@ import com.red_escuela.backend.billing.invoice.repository.InvoiceRepository;
 import com.red_escuela.backend.billing.repository.BankTransferReceiptRepository;
 import com.red_escuela.backend.billing.entity.BankTransferReceipt;
 import com.red_escuela.backend.identity.entity.Student;
-import com.red_escuela.backend.identity.repository.StudentRepository;
+import com.red_escuela.backend.identity.api.StudentFinder;
 import org.junit.jupiter.api.Test;
 
 import java.util.Optional;
@@ -23,7 +23,7 @@ class PaymentReceiptPersisterOwnershipTest {
 
     private final InvoiceRepository invoices = mock(InvoiceRepository.class);
     private final BankTransferReceiptRepository receipts = mock(BankTransferReceiptRepository.class);
-    private final StudentRepository students = mock(StudentRepository.class);
+    private final StudentFinder students = mock(StudentFinder.class);
     private final PaymentReceiptPersister persister = new PaymentReceiptPersister(invoices, receipts, students);
 
     @Test
@@ -53,7 +53,7 @@ class PaymentReceiptPersisterOwnershipTest {
         when(invoice.isPayable()).thenReturn(true);
         when(invoices.findByIdForUpdate(10L)).thenReturn(Optional.of(invoice));
         when(invoices.findOwnerStudentIdByInvoiceId(10L)).thenReturn(Optional.of(7L));
-        when(students.findById(7L)).thenReturn(Optional.of(new Student()));
+        when(students.requireById(7L)).thenReturn(new Student());
         when(receipts.save(any(BankTransferReceipt.class))).thenAnswer(call -> call.getArgument(0));
 
         BankTransferReceipt saved = persister.persist(10L, 7L, "students/7/c.pdf");

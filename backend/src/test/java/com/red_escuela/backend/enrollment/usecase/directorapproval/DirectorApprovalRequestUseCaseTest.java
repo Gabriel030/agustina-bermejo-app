@@ -143,6 +143,12 @@ class DirectorApprovalRequestUseCaseTest extends AbstractIntegrationTest {
         enrollment.setProgram(program);
         enrollment.setStatus(status);
         enrollment.setEnrollmentDate(LocalDateTime.now());
+        if (status == ProgramEnrollmentStatus.WITHDRAWN) {
+            enrollment.setWithdrawalEffectiveDate(java.time.LocalDate.now());
+        }
+        if (status == ProgramEnrollmentStatus.COMPLETED) {
+            enrollment.setCompletionDate(java.time.LocalDateTime.now());
+        }
         entityManager.persist(enrollment);
         return enrollment;
     }
@@ -158,6 +164,7 @@ class DirectorApprovalRequestUseCaseTest extends AbstractIntegrationTest {
     private ProgramSubject persistProgramSubject(Program program, Subject subject, CurricularTerm curricularTerm) {
         ProgramSubject programSubject = new ProgramSubject();
         programSubject.setProgram(program);
+        programSubject.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
         programSubject.setSubject(subject);
         programSubject.setCredits(0);
         programSubject.setCurricularYear(1);

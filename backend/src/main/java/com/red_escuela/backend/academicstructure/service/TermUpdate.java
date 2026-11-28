@@ -13,11 +13,14 @@ public class TermUpdate {
     private final TermRepository termRepository;
     private final TermFinder termFinder;
     private final TermScheduleChangeValidator scheduleChangeValidator;
+    private final HolidayYearGuard holidayYearGuard;
 
-    public TermUpdate(TermRepository termRepository, TermFinder termFinder, TermScheduleChangeValidator scheduleChangeValidator) {
+    public TermUpdate(TermRepository termRepository, TermFinder termFinder, TermScheduleChangeValidator scheduleChangeValidator,
+                      HolidayYearGuard holidayYearGuard) {
         this.scheduleChangeValidator = scheduleChangeValidator;
         this.termRepository = termRepository;
         this.termFinder = termFinder;
+        this.holidayYearGuard = holidayYearGuard;
     }
 
     @Transactional
@@ -31,6 +34,7 @@ public class TermUpdate {
                 request.endDate() != null ? request.endDate() : term.getEndDate());
         term.reschedule(request.startDate(), request.endDate());
         term.defineEnrollmentWindow(request.enrollmentStart(), request.enrollmentEnd());
+        holidayYearGuard.ensureHolidaysLoadedForTerm(term);
         return termRepository.save(term);
     }
 }

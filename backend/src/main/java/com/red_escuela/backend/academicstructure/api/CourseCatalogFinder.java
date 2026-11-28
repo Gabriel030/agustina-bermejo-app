@@ -3,7 +3,7 @@ package com.red_escuela.backend.academicstructure.api;
 import com.red_escuela.backend.academicstructure.entity.Course;
 import com.red_escuela.backend.academicstructure.entity.CourseSubject;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
-import com.red_escuela.backend.academicstructure.exception.CourseNotFoundException;
+import com.red_escuela.backend.academicstructure.domain.CourseNotFoundException;
 import com.red_escuela.backend.academicstructure.repository.CourseRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectRepository;
 import com.red_escuela.backend.academicstructure.repository.CourseSubjectSectionRepository;
@@ -15,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Stream;
 
 @Component
 @Transactional(readOnly = true)
@@ -59,14 +60,16 @@ public class CourseCatalogFinder {
                 .toList();
     }
 
-    public List<CourseSectionView> findActiveSectionsOfModule(Long courseSubjectId) {
+    public List<CourseSectionView> findSectionsOpenForEnrollmentOfModule(Long courseSubjectId) {
         return courseSectionRepository.findByCourseSubjectIdAndStatus(courseSubjectId, StatusType.ACTIVE).stream()
+                .filter(CourseSubjectSection::isOpenForEnrollment)
                 .map(this::toSectionView)
                 .toList();
     }
 
     public List<Long> findCourseIdsWithWaitlistDeadlinePassed(LocalDate today) {
-        return courseRepository.findByWaitlistDeadlineOffsetDaysIsNotNull().stream()
+        return Stream.concat(courseRepository.findByWaitlistDeadlineOffsetDaysIsNotNull().stream(),
+                        courseRepository.findByWaitlistDeadlineOffsetDaysIsNull().stream())
                 .filter(course -> course.waitlistDeadlineHasPassed(today))
                 .map(Course::getId)
                 .toList();

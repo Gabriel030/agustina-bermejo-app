@@ -1,6 +1,10 @@
 package com.red_escuela.backend.enrollment.controller;
 
+import com.red_escuela.backend.enrollment.dto.ChangeProgramEnrollmentPlanRequest;
 import com.red_escuela.backend.enrollment.dto.OwnSubjectEquivalenceResponse;
+import com.red_escuela.backend.enrollment.dto.ProgramEnrollmentPlanChangeResponse;
+import com.red_escuela.backend.enrollment.usecase.programenrollment.ChangeProgramEnrollmentPlanCommand;
+import com.red_escuela.backend.enrollment.usecase.programenrollment.ChangeProgramEnrollmentPlanUseCase;
 import com.red_escuela.backend.enrollment.dto.RecordSubjectEquivalenceRequest;
 import com.red_escuela.backend.enrollment.dto.SubjectEquivalenceResponse;
 import com.red_escuela.backend.enrollment.dto.SubjectEquivalenceStatusFilter;
@@ -31,17 +35,20 @@ public class SubjectEquivalenceController {
     private final ListOwnSubjectEquivalencesUseCase listOwnSubjectEquivalencesUseCase;
     private final RecordSubjectEquivalenceUseCase recordSubjectEquivalenceUseCase;
     private final VoidSubjectEquivalenceUseCase voidSubjectEquivalenceUseCase;
+    private final ChangeProgramEnrollmentPlanUseCase changeProgramEnrollmentPlanUseCase;
     private final CurrentStudentService currentStudentService;
 
     public SubjectEquivalenceController(ListSubjectEquivalencesUseCase listSubjectEquivalencesUseCase,
                                         ListOwnSubjectEquivalencesUseCase listOwnSubjectEquivalencesUseCase,
                                         RecordSubjectEquivalenceUseCase recordSubjectEquivalenceUseCase,
                                         VoidSubjectEquivalenceUseCase voidSubjectEquivalenceUseCase,
+                                        ChangeProgramEnrollmentPlanUseCase changeProgramEnrollmentPlanUseCase,
                                         CurrentStudentService currentStudentService) {
         this.listSubjectEquivalencesUseCase = listSubjectEquivalencesUseCase;
         this.listOwnSubjectEquivalencesUseCase = listOwnSubjectEquivalencesUseCase;
         this.recordSubjectEquivalenceUseCase = recordSubjectEquivalenceUseCase;
         this.voidSubjectEquivalenceUseCase = voidSubjectEquivalenceUseCase;
+        this.changeProgramEnrollmentPlanUseCase = changeProgramEnrollmentPlanUseCase;
         this.currentStudentService = currentStudentService;
     }
 
@@ -62,6 +69,13 @@ public class SubjectEquivalenceController {
     @RequiresPermission(code = "enrollment.record_subject_equivalence", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
     public SubjectEquivalenceResponse record(@PathVariable Long id, @Valid @RequestBody RecordSubjectEquivalenceRequest request) {
         return recordSubjectEquivalenceUseCase.record(new RecordSubjectEquivalenceCommand(id, request));
+    }
+
+    @PostMapping("/program-enrollments/{id}/plan-change")
+    @RequiresPermission(code = "enrollment.record_subject_equivalence", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
+    public ProgramEnrollmentPlanChangeResponse changePlan(@PathVariable Long id,
+                                                          @Valid @RequestBody ChangeProgramEnrollmentPlanRequest request) {
+        return changeProgramEnrollmentPlanUseCase.change(new ChangeProgramEnrollmentPlanCommand(id, request));
     }
 
     @PostMapping("/program-enrollments/{id}/equivalences/{equivalenceId}/void")

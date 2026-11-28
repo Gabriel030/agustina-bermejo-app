@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { sectionConfigSectionId } from '../lib/sectionConfigKey';
 import { ChevronRight } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { StatusPill } from '@/components/StatusPill';
@@ -14,7 +15,7 @@ function Fila({ c, esHistorial }) {
   const pill = ESTADO_CONFIG_LABEL[c.status] ?? { label: c.status, tone: 'neutral' };
   return (
     <Link
-      to={`/director/revisar-configuracion/${c.subjectSectionId}`}
+      to={`/director/revisar-configuracion/${sectionConfigSectionId(c)}`}
       className="flex items-center justify-between gap-4 rounded-2xl px-4 py-3 transition-colors hover:bg-neutral-bg/60"
     >
       <div>

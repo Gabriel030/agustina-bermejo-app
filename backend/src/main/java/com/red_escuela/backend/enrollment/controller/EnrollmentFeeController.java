@@ -5,7 +5,7 @@ import com.red_escuela.backend.enrollment.dto.EnrollmentFeeObligationResponse;
 import com.red_escuela.backend.enrollment.dto.GrantEnrollmentFeeExemptionRequest;
 import com.red_escuela.backend.enrollment.dto.RevokeEnrollmentFeeExemptionRequest;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
-import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.service.ProgramEnrollmentService;
 import com.red_escuela.backend.enrollment.usecase.enrollmentfee.GetEnrollmentFeeStatusUseCase;
 import com.red_escuela.backend.enrollment.usecase.enrollmentfee.GrantEnrollmentFeeExemptionUseCase;

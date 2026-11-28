@@ -25,7 +25,7 @@ const COLUMNAS_PARCIALES = { 1: 'sm:grid-cols-1', 2: 'sm:grid-cols-2', 3: 'sm:gr
 const MENSAJES_ERROR_CONFIGURACION = {
   EVALUATION_DATE_OUTSIDE_TERM: 'Una de las fechas cae fuera del cuatrimestre. Revisá las fechas marcadas.',
   EVALUATION_DATE_ON_HOLIDAY: 'Una de las fechas cae en un feriado. Revisá las fechas marcadas.',
-  SUBMISSION_WINDOW_CLOSED: 'Venció el plazo para enviar la configuración: el cuatrimestre ya empezó. Si necesitás un ajuste, pedíselo a Dirección.',
+  SUBMISSION_WINDOW_CLOSED: 'Venció el plazo para enviar la configuración (inicio del cuatrimestre más los días de plazo). Si necesitás un ajuste, pedíselo a Dirección.',
   INVALID_SECTION_EVALUATION_CONFIG_TRANSITION: 'La configuración ya no se puede modificar en su estado actual. Recargá la página.',
 };
 
@@ -231,9 +231,9 @@ export function DocenteConfiguracionEvaluacion() {
                   onClick={() => setForm((f) => ({ ...f, tpCount: n }))}
                   className={`min-h-11 min-w-11 rounded-lg px-4 text-sm font-bold ${
                     form.tpCount === n
-                      ? 'bg-brand text-on-accent ring-2 ring-success ring-offset-2 hover:bg-brand hover:text-on-accent'
-                      : 'bg-neutral-bg text-ink-faint'
-                  } disabled:opacity-60 disabled:ring-0`}
+                      ? 'bg-brand text-on-accent ring-2 ring-success ring-offset-2 hover:bg-brand hover:text-on-accent disabled:text-on-accent'
+                      : 'bg-neutral-bg text-ink-faint disabled:bg-(--disabled-bg) disabled:text-(--disabled-fg)'
+                  } disabled:ring-0`}
                 >
                   {n}
                 </Button>

@@ -39,7 +39,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.red_escuela.backend.enrollment.policy.GraduationProjection;
-import com.red_escuela.backend.enrollment.exception.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.api.ProgramEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.policy.ProjectionStatus;
 
 import java.math.BigDecimal;
@@ -195,6 +195,7 @@ class GraduationProjectionReaderQueryCountTest extends AbstractIntegrationTest {
             entityManager.persist(subject);
             ProgramSubject programSubject = new ProgramSubject();
             programSubject.setProgram(program);
+            programSubject.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
             programSubject.setSubject(subject);
             programSubject.setCredits(i == 0 ? 4 : 1);
             programSubject.setSortOrder(i);

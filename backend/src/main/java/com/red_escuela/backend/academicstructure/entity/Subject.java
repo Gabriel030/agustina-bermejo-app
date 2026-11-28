@@ -121,7 +121,7 @@ public class Subject {
     }
 
     public void requireOpenableForSections() {
-        if (status == SubjectStatus.DRAFT) {
+        if (status != SubjectStatus.ACTIVE) {
             throw new SubjectNotOpenableForSectionsException(id, status);
         }
     }
@@ -142,5 +142,17 @@ public class Subject {
 
     public void setMaxFinalExamAttempts(Integer maxFinalExamAttempts) {
         this.maxFinalExamAttempts = maxFinalExamAttempts == null ? DEFAULT_MAX_FINAL_EXAM_ATTEMPTS : maxFinalExamAttempts;
+    }
+
+    public boolean isCriticalFieldsChangeBlocked(boolean hasPreviousSections, GradeMode newGradeMode,
+                                                 Integer newMaxFinalExamAttempts, Integer newWeeklyHours,
+                                                 Integer newWeeklyHoursLab) {
+        return status == SubjectStatus.ACTIVE && hasPreviousSections
+                && (differs(newGradeMode, gradeMode) || differs(newMaxFinalExamAttempts, maxFinalExamAttempts)
+                || differs(newWeeklyHours, weeklyHours) || differs(newWeeklyHoursLab, weeklyHoursLab));
+    }
+
+    private static <T> boolean differs(T requested, T current) {
+        return requested != null && !requested.equals(current);
     }
 }

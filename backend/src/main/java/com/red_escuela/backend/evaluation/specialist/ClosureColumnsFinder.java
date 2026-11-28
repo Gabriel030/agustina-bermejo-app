@@ -17,19 +17,24 @@ import java.util.stream.Collectors;
 @Service
 public class ClosureColumnsFinder {
 
+    private final SectionEvaluationSchemeLoader schemeLoader;
     private final SectionGradeItemPublicationRepository publicationRepository;
     private final SectionFinder sectionFinder;
+    private final ApprovedCourseworkCountFinder courseworkCountFinder;
 
-    public ClosureColumnsFinder(SectionGradeItemPublicationRepository publicationRepository, SectionFinder sectionFinder) {
+    public ClosureColumnsFinder(SectionGradeItemPublicationRepository publicationRepository, SectionFinder sectionFinder,
+                                ApprovedCourseworkCountFinder courseworkCountFinder, SectionEvaluationSchemeLoader schemeLoader) {
+        this.schemeLoader = schemeLoader;
         this.publicationRepository = publicationRepository;
         this.sectionFinder = sectionFinder;
+        this.courseworkCountFinder = courseworkCountFinder;
     }
 
     @Transactional(readOnly = true)
     public List<ClosureSheetColumnResponse> findColumns(SectionKind kind, Long sectionId) {
         EvaluationScheme scheme = kind == SectionKind.PROGRAM
-                ? sectionFinder.findProgramSectionEntity(sectionId).getEvaluationScheme()
-                : sectionFinder.findCourseSectionEntity(sectionId).getEvaluationScheme();
+                ? schemeLoader.ofProgramSection(sectionFinder.findProgramSectionEntity(sectionId))
+                : schemeLoader.ofCourseSection(sectionFinder.findCourseSectionEntity(sectionId));
         if (scheme == null) {
             return List.of();
         }
@@ -38,7 +43,7 @@ public class ClosureColumnsFinder {
                 .collect(Collectors.toSet());
         List<ClosureSheetColumnResponse> columns = new ArrayList<>();
         appendColumns(columns, GradeItemType.EXAM, scheme.getExamCountExpected(), publishedSlots);
-        appendColumns(columns, GradeItemType.TP, scheme.getTpCountExpected(), publishedSlots);
+        appendColumns(columns, GradeItemType.TP, courseworkCountFinder.findExpectedCount(kind, sectionId), publishedSlots);
         return columns;
     }
 

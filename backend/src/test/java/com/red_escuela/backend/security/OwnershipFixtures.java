@@ -23,6 +23,7 @@ import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.config.TestSubjectCodes;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
+import com.red_escuela.backend.enrollment.entity.CourseEnrollmentApplication;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -31,11 +32,15 @@ import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.announcement.entity.Announcement;
 import com.red_escuela.backend.announcement.entity.AnnouncementCategory;
+import com.red_escuela.backend.announcement.entity.AnnouncementRecipient;
 import com.red_escuela.backend.announcement.entity.AnnouncementStatus;
 import com.red_escuela.backend.announcement.entity.AudienceSpec;
 import com.red_escuela.backend.billing.authorization.domain.AuthorizationRequest;
 import com.red_escuela.backend.billing.operation.AuthorizationRole;
 import com.red_escuela.backend.billing.operation.BillingOperationType;
+import com.red_escuela.backend.evaluation.entity.GradeItem;
+import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
+import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfigStatus;
 import com.red_escuela.backend.evaluation.entity.GradeItemType;
 import com.red_escuela.backend.evaluation.entity.SectionGradeItemPublication;
 import java.time.Instant;
@@ -92,9 +97,12 @@ final class OwnershipFixtures {
     private Long attendanceId;
     private Long announcementId;
     private Long announcementToDeleteId;
+    private Long announcementToReadId;
     private Long annualUpfrontRequestId;
     private Long instructorPersonId;
     private Long examBoardId;
+    private Long gradeItemId;
+    private Long examBoardRegistrationId;
     private Long examCertificateId;
     private Long invoiceId;
     private Long notificationId;
@@ -113,6 +121,8 @@ final class OwnershipFixtures {
     private Long closureConfirmSectionId;
     private Long closureObservationSectionId;
     private Long closureObservationEnrollmentId;
+    private Long subjectId;
+    private Long courseApplicationId;
 
     OwnershipFixtures(TransactionTemplate transactions, EntityManager entityManager, RoleRepository roleRepository,
                       JwtService jwtService) {
@@ -145,6 +155,9 @@ final class OwnershipFixtures {
             case ANNOUNCEMENT_INSTRUCTOR -> announcementId;
             case ANNOUNCEMENT_DELETE_INSTRUCTOR -> announcementToDeleteId;
             case CERTIFICATE_EXCEPTION -> certificateExceptionId;
+            case GRADE_ITEM_INSTRUCTOR -> gradeItemId;
+            case EXAM_BOARD_REGISTRATION -> examBoardRegistrationId;
+            case ANNOUNCEMENT_RECIPIENT -> announcementToReadId;
         };
     }
 
@@ -162,6 +175,14 @@ final class OwnershipFixtures {
             case ADMINISTRATIVO -> strangerAdministrativeToken;
             default -> strangerInstructorToken;
         };
+    }
+
+    Long subjectId() {
+        return subjectId;
+    }
+
+    Long courseApplicationId() {
+        return courseApplicationId;
     }
 
     Long closureId() {
@@ -216,6 +237,7 @@ final class OwnershipFixtures {
         subject.setCode(TestSubjectCodes.next());
         subject.setName("Materia matriz");
         entityManager.persist(subject);
+        subjectId = subject.getId();
         Program program = new Program();
         program.setName("Carrera matriz");
         program.setTotalYears(3);
@@ -223,6 +245,7 @@ final class OwnershipFixtures {
         entityManager.persist(program);
         ProgramSubject planEntry = new ProgramSubject();
         planEntry.setProgram(program);
+        planEntry.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
         planEntry.setSubject(subject);
         planEntry.setCredits(10);
         planEntry.setCurricularYear(1);
@@ -248,7 +271,7 @@ final class OwnershipFixtures {
         section.setName("Comision matriz");
         section.setSubject(subject);
         section.setTerm(term);
-        section.setEvaluationScheme(scheme);
+        section.setEvaluationSchemeId(scheme == null ? null : scheme.getId());
         section.setMaxAbsenceRate(Percentage.ofPoints(BigDecimal.valueOf(25)));
         section.setCapacity(30);
         section.setStatus(StatusType.ACTIVE);
@@ -282,6 +305,12 @@ final class OwnershipFixtures {
         entityManager.flush();
         attendanceId = absence.getId();
         examBoardId = persistExamBoard(subject, term, instructor);
+        SectionEvaluationConfig evaluationConfig = new SectionEvaluationConfig();
+        evaluationConfig.setSubjectSection(section);
+        evaluationConfig.setStatus(SectionEvaluationConfigStatus.DRAFT);
+        entityManager.persist(evaluationConfig);
+        gradeItemId = persistExamGradeItem(enrollment);
+        examBoardRegistrationId = persistOpenExamBoardRegistration(subject, term, instructor, enrollment);
         examCertificateId = persistExamCertificate(examBoardId, enrollment, ownerStudent, ownerPerson);
         closureSectionId = persistClosureSection(subject, term, scheme, instructor);
         closureId = persistClosure(closureSectionId);
@@ -294,6 +323,8 @@ final class OwnershipFixtures {
         authorizationRequestId = persistAuthorizationRequest(ownerAdministrativePerson);
         announcementId = persistAnnouncement(section, instructorPerson);
         announcementToDeleteId = persistAnnouncement(section, instructorPerson);
+        announcementToReadId = persistAnnouncement(section, instructorPerson);
+        persistAnnouncementRecipient(announcementToReadId, ownerStudent);
         certificateExceptionId = persistCertificateException(ownerAdministrativePerson, ownerStudent, programEnrollment);
         courseSectionEnrollmentId = persistCourseSectionEnrollment(ownerStudent, term, instructor);
         annualUpfrontRequestId = persistAnnualUpfrontRequestAwaitingPayment(ownerStudent, ownerPerson, programEnrollment, term);
@@ -329,6 +360,31 @@ final class OwnershipFixtures {
         entityManager.persist(board);
         entityManager.flush();
         return board.getId();
+    }
+
+    private Long persistExamGradeItem(SubjectSectionEnrollment enrollment) {
+        GradeItem item = new GradeItem();
+        item.setProgramSubjectSectionEnrollment(enrollment);
+        item.setType(GradeItemType.EXAM);
+        item.setSequenceNumber(1);
+        item.setWeight(1.0);
+        item.setDate(LocalDateTime.now());
+        item.setScore(Grade.of(BigDecimal.valueOf(3.0)));
+        entityManager.persist(item);
+        entityManager.flush();
+        return item.getId();
+    }
+
+    private Long persistOpenExamBoardRegistration(Subject subject, Term term, Instructor tribunalMember, SubjectSectionEnrollment enrollment) {
+        Long boardId = persistExamBoard(subject, term, tribunalMember);
+        ExamBoardRegistration registration = new ExamBoardRegistration();
+        registration.setExamBoard(entityManager.getReference(ExamBoard.class, boardId));
+        registration.setProgramSubjectSectionEnrollment(enrollment);
+        registration.setStatus(ExamBoardRegistrationStatus.REGISTERED);
+        registration.setRegisteredAt(LocalDateTime.now());
+        entityManager.persist(registration);
+        entityManager.flush();
+        return registration.getId();
     }
 
     private Long persistExamCertificate(Long boardId, SubjectSectionEnrollment enrollment, Student student, Person issuer) {
@@ -367,7 +423,7 @@ final class OwnershipFixtures {
         section.setName("Comision cierre matriz");
         section.setSubject(subject);
         section.setTerm(term);
-        section.setEvaluationScheme(scheme);
+        section.setEvaluationSchemeId(scheme == null ? null : scheme.getId());
         section.setMaxAbsenceRate(Percentage.ofPoints(BigDecimal.valueOf(25)));
         section.setCapacity(30);
         section.setStatus(StatusType.ACTIVE);
@@ -455,7 +511,7 @@ final class OwnershipFixtures {
         courseSection.setName("Comision curso matriz");
         courseSection.setCourseSubject(courseSubject);
         courseSection.setTerm(term);
-        courseSection.setEvaluationScheme(persistScheme());
+        courseSection.setEvaluationSchemeId(persistScheme().getId());
         courseSection.setStatus(StatusType.ACTIVE);
         entityManager.persist(courseSection);
         CourseSubjectSectionInstructor courseAssignment = new CourseSubjectSectionInstructor();
@@ -464,6 +520,10 @@ final class OwnershipFixtures {
         courseAssignment.setRole(InstructorRole.LEAD);
         entityManager.persist(courseAssignment);
         courseSectionId = courseSection.getId();
+        SectionEvaluationConfig courseEvaluationConfig = new SectionEvaluationConfig();
+        courseEvaluationConfig.setCourseSection(courseSection);
+        courseEvaluationConfig.setStatus(SectionEvaluationConfigStatus.DRAFT);
+        entityManager.persist(courseEvaluationConfig);
         CourseEnrollment courseEnrollment = new CourseEnrollment();
         courseEnrollment.setStudent(student);
         courseEnrollment.setCourse(course);
@@ -471,6 +531,11 @@ final class OwnershipFixtures {
         courseEnrollment.setEnrollmentDate(LocalDateTime.now());
         entityManager.persist(courseEnrollment);
         courseEnrollmentId = courseEnrollment.getId();
+        CourseEnrollmentApplication application = new CourseEnrollmentApplication();
+        application.setStudent(student);
+        application.setCourse(course);
+        entityManager.persist(application);
+        courseApplicationId = application.getId();
         CourseSubjectSectionEnrollment enrollment = new CourseSubjectSectionEnrollment();
         enrollment.setStudent(student);
         enrollment.setCourseEnrollment(courseEnrollment);
@@ -509,7 +574,9 @@ final class OwnershipFixtures {
 
     String resolvePlaceholders(String body) {
         return body.replace("${programPlanOptionId}", String.valueOf(programPlanOptionId))
-                .replace("${coursePlanOptionId}", String.valueOf(coursePlanOptionId));
+                .replace("${coursePlanOptionId}", String.valueOf(coursePlanOptionId))
+                .replace("${sectionId}", String.valueOf(sectionId))
+                .replace("${courseSectionEnrollmentId}", String.valueOf(courseSectionEnrollmentId));
     }
 
     private Course courseOfEnrollment() {
@@ -545,6 +612,15 @@ final class OwnershipFixtures {
         entityManager.persist(announcement);
         entityManager.flush();
         return announcement.getId();
+    }
+
+    private void persistAnnouncementRecipient(Long announcementId, Student student) {
+        AnnouncementRecipient recipient = AnnouncementRecipient.builder()
+                .announcement(entityManager.getReference(Announcement.class, announcementId))
+                .student(student)
+                .build();
+        entityManager.persist(recipient);
+        entityManager.flush();
     }
 
     private Long persistNotification(Person recipient) {

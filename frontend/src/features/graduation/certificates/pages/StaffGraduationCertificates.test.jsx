@@ -12,6 +12,11 @@ import { certificateErrorResponse } from '@/test/mocks/certificateErrorHandlers'
 import { StaffGraduationCertificates } from '@/features/graduation/certificates/pages/StaffGraduationCertificates';
 
 const API = 'http://localhost:8080';
+const auth = vi.hoisted(() => ({ roles: ['ADMINISTRATIVO'] }));
+
+vi.mock('@/context/AuthContext', () => ({
+  useAuth: () => ({ usuario: { roles: auth.roles } }),
+}));
 
 function eligibleList(rows) {
   server.use(http.get(`${API}/graduation-certificates/eligible`, () => HttpResponse.json(springPage(rows))));
