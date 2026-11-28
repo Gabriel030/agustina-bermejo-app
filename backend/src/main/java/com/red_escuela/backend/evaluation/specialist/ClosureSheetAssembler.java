@@ -57,6 +57,7 @@ import java.util.stream.Collectors;
 @Service
 public class ClosureSheetAssembler {
 
+    private final SectionEvaluationSchemeLoader schemeLoader;
     private final SectionFinder sectionFinder;
     private final SectionEnrollmentFinder sectionEnrollmentFinder;
     private final SectionInstructorFinder sectionInstructorFinder;
@@ -77,7 +78,8 @@ public class ClosureSheetAssembler {
             PublishedGradeItemSelector publishedGradeItemSelector,
             CommissionClosureStudentRepository closureStudentRepository, ClosureColumnsFinder closureColumnsFinder,
             CommissionClosureExceptionRepository exceptionRepository,
-            ApprovedCourseworkCountFinder courseworkCountFinder) {
+            ApprovedCourseworkCountFinder courseworkCountFinder, SectionEvaluationSchemeLoader schemeLoader) {
+        this.schemeLoader = schemeLoader;
         this.sectionFinder = sectionFinder;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
         this.sectionInstructorFinder = sectionInstructorFinder;
@@ -295,7 +297,7 @@ public class ClosureSheetAssembler {
             AcademicOfferingCycle cycle = section.getAcademicOfferingCycle();
             return new SectionContext(section.getName(), section.getSubject().getName(),
                     cycle == null || cycle.getProgram() == null ? null : cycle.getProgram().getName(),
-                    section.getTerm() == null ? null : section.getTerm().getDescription(), section.getEvaluationScheme(),
+                    section.getTerm() == null ? null : section.getTerm().getDescription(), schemeLoader.ofProgramSection(section),
                     section.getMaxAbsenceRate(), rows, items,
                     courseworkCountFinder.findExpectedCount(kind, sectionId));
         }
@@ -310,7 +312,7 @@ public class ClosureSheetAssembler {
         AcademicOfferingCycle cycle = section.getAcademicOfferingCycle();
         return new SectionContext(section.getName(), section.getCourseSubject().getName(),
                 cycle == null || cycle.getCourse() == null ? null : cycle.getCourse().getName(),
-                section.getTerm() == null ? null : section.getTerm().getDescription(), section.getEvaluationScheme(),
+                section.getTerm() == null ? null : section.getTerm().getDescription(), schemeLoader.ofCourseSection(section),
                 section.getMaxAbsenceRate(), rows, items,
                     courseworkCountFinder.findExpectedCount(kind, sectionId));
     }

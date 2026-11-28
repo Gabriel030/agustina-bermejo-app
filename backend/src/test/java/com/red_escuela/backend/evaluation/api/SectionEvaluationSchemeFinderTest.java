@@ -5,16 +5,19 @@ import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
+import com.red_escuela.backend.evaluation.repository.EvaluationSchemeRepository;
+import com.red_escuela.backend.evaluation.specialist.SectionEvaluationSchemeLoader;
 import com.red_escuela.backend.shared.domain.Grade;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -23,8 +26,13 @@ class SectionEvaluationSchemeFinderTest {
     @Mock
     private SectionFinder sectionFinder;
 
-    @InjectMocks
     private SectionEvaluationSchemeFinder finder;
+
+    @BeforeEach
+    void createFinder() {
+        finder = new SectionEvaluationSchemeFinder(
+                sectionFinder, new SectionEvaluationSchemeLoader(mock(EvaluationSchemeRepository.class)));
+    }
 
     @Test
     void summarizesTheSchemeOfAProgramSection() {

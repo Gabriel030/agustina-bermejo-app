@@ -44,6 +44,7 @@ import java.util.function.Function;
 @Service
 public class ClosureRequirementsCalculator {
 
+    private final SectionEvaluationSchemeLoader schemeLoader;
     private final CourseworkOutcomeCalculator outcomeCalculator = new CourseworkOutcomeCalculator();
     private final ClosureConditionPolicy closureConditionPolicy = new ClosureConditionPolicy();
     private final SectionFinder sectionFinder;
@@ -63,7 +64,8 @@ public class ClosureRequirementsCalculator {
             ProgramPrerequisiteBatchEvaluator prerequisiteBatchEvaluator,
             StudentRequiredDocumentsFinder studentRequiredDocumentsFinder,
             StudentPaymentsStandingPort studentPaymentsStandingPort, Clock clock,
-            ApprovedCourseworkCountFinder courseworkCountFinder) {
+            ApprovedCourseworkCountFinder courseworkCountFinder, SectionEvaluationSchemeLoader schemeLoader) {
+        this.schemeLoader = schemeLoader;
         this.sectionFinder = sectionFinder;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
         this.sectionFreeByAbsencesFinder = sectionFreeByAbsencesFinder;
@@ -97,7 +99,7 @@ public class ClosureRequirementsCalculator {
                 .map(enrollment -> new EnrollmentRow(enrollment.getId(), enrollment.getStudent().getId(),
                         enrollment.getStatus(), enrollment.getFinalGradeType()))
                 .toList();
-        return assess(rows, SectionKind.PROGRAM, sectionId, section.getEvaluationScheme(),
+        return assess(rows, SectionKind.PROGRAM, sectionId, schemeLoader.ofProgramSection(section),
                 section.getSubject().getMaxFinalExamAttempts(), items, free, prerequisites);
     }
 
@@ -113,7 +115,7 @@ public class ClosureRequirementsCalculator {
                 .map(enrollment -> new EnrollmentRow(enrollment.getId(), enrollment.getStudent().getId(),
                         enrollment.getStatus(), enrollment.getFinalGradeType()))
                 .toList();
-        return assess(rows, SectionKind.COURSE, sectionId, section.getEvaluationScheme(),
+        return assess(rows, SectionKind.COURSE, sectionId, schemeLoader.ofCourseSection(section),
                 section.getCourseSubject().getMaxFinalExamAttempts(), items, free, Map.of());
     }
 

@@ -127,10 +127,6 @@ public class SectionEvaluationConfig {
         return courseSection != null ? courseSection.getTerm() : subjectSection.getTerm();
     }
 
-    public EvaluationScheme sectionEvaluationScheme() {
-        return courseSection != null ? courseSection.getEvaluationScheme() : subjectSection.getEvaluationScheme();
-    }
-
     public String subjectName() {
         return courseSection != null ? courseSection.getModuleName() : subjectSection.getSubject().getName();
     }

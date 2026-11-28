@@ -13,8 +13,14 @@ import java.util.List;
 @Component
 public class SectionEvaluationConfigCompletenessValidator {
 
+    private final SectionEvaluationSchemeLoader schemeLoader;
+
+    public SectionEvaluationConfigCompletenessValidator(SectionEvaluationSchemeLoader schemeLoader) {
+        this.schemeLoader = schemeLoader;
+    }
+
     public void requireComplete(SectionEvaluationConfig config) {
-        EvaluationScheme scheme = config.sectionEvaluationScheme();
+        EvaluationScheme scheme = schemeLoader.ofConfig(config);
         List<String> missing = new ArrayList<>();
         if (config.getTpCount() == null) {
             missing.add("tpCount");
