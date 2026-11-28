@@ -9,7 +9,7 @@ import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.domain.TermType;
 import com.red_escuela.backend.academicstructure.entity.SubjectRecurrence;
 import com.red_escuela.backend.academicstructure.entity.SubjectStatus;
-import com.red_escuela.backend.academicstructure.exception.SubjectNotInProgramPlanException;
+import com.red_escuela.backend.academicstructure.exception.SubjectNotOfferableInProgramPlanException;
 import com.red_escuela.backend.academicstructure.exception.SubjectNotOpenableForSectionsException;
 import com.red_escuela.backend.academicstructure.exception.SubjectRecurrenceIncompatibleWithTermException;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -69,7 +69,7 @@ class CycleSectionCreationReproductionIT extends ReproductionFixture {
         Subject subject = cycleFixtures.subject();
         flushAndClear();
 
-        assertThatThrownBy(() -> createSectionOf(subject)).isInstanceOf(SubjectNotInProgramPlanException.class);
+        assertThatThrownBy(() -> createSectionOf(subject)).isInstanceOf(SubjectNotOfferableInProgramPlanException.class);
     }
 
     @Test
@@ -78,7 +78,7 @@ class CycleSectionCreationReproductionIT extends ReproductionFixture {
         programSubject(cycleFixtures.program(), subject, 4, StatusType.ACTIVE);
         flushAndClear();
 
-        assertThatThrownBy(() -> createSectionOf(subject)).isInstanceOf(SubjectNotInProgramPlanException.class);
+        assertThatThrownBy(() -> createSectionOf(subject)).isInstanceOf(SubjectNotOfferableInProgramPlanException.class);
     }
 
     @Test
@@ -87,7 +87,7 @@ class CycleSectionCreationReproductionIT extends ReproductionFixture {
         programSubject(program, subject, 4, StatusType.INACTIVE);
         flushAndClear();
 
-        assertThatThrownBy(() -> createSectionOf(subject)).isInstanceOf(SubjectNotInProgramPlanException.class);
+        assertThatThrownBy(() -> createSectionOf(subject)).isInstanceOf(SubjectNotOfferableInProgramPlanException.class);
     }
 
     @Test
@@ -124,5 +124,19 @@ class CycleSectionCreationReproductionIT extends ReproductionFixture {
         flushAndClear();
 
         assertThat(createSectionOf(subject)).isNotNull();
+    }
+
+    @Test
+    void promotionalAndUnspecifiedRecurrenceCanBeOfferedInASemesterTerm() {
+        Subject promotional = cycleFixtures.subject();
+        programSubject(program, promotional, 4, StatusType.ACTIVE).setSubjectRecurrence(SubjectRecurrence.PROMOTIONAL);
+        Subject unspecified = cycleFixtures.subject();
+        programSubject(program, unspecified, 4, StatusType.ACTIVE);
+        flushAndClear();
+        entityManager.find(Term.class, cycle.getTerm().getId()).setType(TermType.FIRST_SEMESTER);
+        flushAndClear();
+
+        assertThat(createSectionOf(promotional)).isNotNull();
+        assertThat(createSectionOf(unspecified)).isNotNull();
     }
 }

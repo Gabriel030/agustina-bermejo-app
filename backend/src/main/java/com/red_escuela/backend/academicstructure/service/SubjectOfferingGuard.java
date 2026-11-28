@@ -5,7 +5,7 @@ import com.red_escuela.backend.academicstructure.entity.ProgramSubject;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectRecurrence;
 import com.red_escuela.backend.academicstructure.entity.Term;
-import com.red_escuela.backend.academicstructure.exception.SubjectNotInProgramPlanException;
+import com.red_escuela.backend.academicstructure.exception.SubjectNotOfferableInProgramPlanException;
 import com.red_escuela.backend.academicstructure.exception.SubjectRecurrenceIncompatibleWithTermException;
 import com.red_escuela.backend.academicstructure.repository.ProgramSubjectRepository;
 import com.red_escuela.backend.shared.domain.StatusType;
@@ -24,7 +24,7 @@ public class SubjectOfferingGuard {
         subject.requireOpenableForSections();
         ProgramSubject planEntry = programSubjectRepository.findByProgramIdAndSubjectId(programId, subject.getId())
                 .filter(entry -> entry.getStatus() == null || entry.getStatus() == StatusType.ACTIVE)
-                .orElseThrow(() -> new SubjectNotInProgramPlanException(subject.getId(), programId));
+                .orElseThrow(() -> new SubjectNotOfferableInProgramPlanException(subject.getId(), programId));
         requireRecurrenceCompatible(subject, planEntry.getSubjectRecurrence(), term.getType());
     }
 
