@@ -18,7 +18,6 @@ import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.entity.GradeItem;
 import com.red_escuela.backend.evaluation.entity.GradeItemType;
 import com.red_escuela.backend.shared.domain.Grade;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -48,7 +47,6 @@ class EvaluationRulesImmutabilityReproductionIT extends ReproductionFixture {
     }
 
     @Test
-    @Disabled("E34-B-P4")
     void sectionEvaluationSchemeCannotBeReassignedOnceGradesAreLoaded() {
         Program program = program(4);
         Subject subject = subject("Algebra");
@@ -73,7 +71,6 @@ class EvaluationRulesImmutabilityReproductionIT extends ReproductionFixture {
     }
 
     @Test
-    @Disabled("E34-B-P4")
     void gradingRulesOfAnApprovedSubjectCannotBeEdited() {
         Subject subject = subject("Algebra");
         subject.setStatus(SubjectStatus.ACTIVE);

@@ -47,6 +47,7 @@ public class CreateCycleSectionTransaction {
     private final SectionShiftSlotGuard shiftSlotGuard;
     private final TermOfferingGuard termOfferingGuard;
     private final SectionEvaluationSetupPort evaluationSetupPort;
+    private final SubjectOfferingGuard subjectOfferingGuard;
 
     public CreateCycleSectionTransaction(
             AcademicOfferingCycleRepository cycleRepository,
@@ -61,7 +62,8 @@ public class CreateCycleSectionTransaction {
             SectionIdentityAssigner identityAssigner,
             SectionShiftSlotGuard shiftSlotGuard,
             TermOfferingGuard termOfferingGuard,
-            SectionEvaluationSetupPort evaluationSetupPort
+            SectionEvaluationSetupPort evaluationSetupPort,
+            SubjectOfferingGuard subjectOfferingGuard
     ) {
         this.cycleRepository = cycleRepository;
         this.subjectRepository = subjectRepository;
@@ -76,6 +78,7 @@ public class CreateCycleSectionTransaction {
         this.shiftSlotGuard = shiftSlotGuard;
         this.termOfferingGuard = termOfferingGuard;
         this.evaluationSetupPort = evaluationSetupPort;
+        this.subjectOfferingGuard = subjectOfferingGuard;
     }
 
     @Transactional
@@ -107,7 +110,7 @@ public class CreateCycleSectionTransaction {
                                       SectionShift shift, String description, LocalDateTime createdAt) {
         var subject = subjectRepository.findById(subjectId)
                 .orElseThrow(() -> new SubjectNotFoundException(subjectId));
-        subject.requireOpenableForSections();
+        subjectOfferingGuard.requireOfferableInProgram(cycle.getProgram().getId(), subject, cycle.getTerm());
         var section = new SubjectSection();
         section.setName(name);
         section.setSubject(subject);
