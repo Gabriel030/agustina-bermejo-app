@@ -15,6 +15,7 @@ import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.evaluation.api.ClosureNotificationTargetsFinder;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
 import com.red_escuela.backend.evaluation.entity.ExamBoardAuditAction;
+import com.red_escuela.backend.evaluation.entity.ExamBoardInstructor;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistrationStatus;
 import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
@@ -134,6 +135,10 @@ class ExamBoardReopenAutoCloseIT extends AbstractIntegrationTest {
         board.setExamDate(LocalDateTime.of(2020, 6, 1, 10, 0));
         board.setStatus(ExamBoardStatus.CLOSED);
         entityManager.persist(board);
+        ExamBoardInstructor tribunal = new ExamBoardInstructor();
+        tribunal.setExamBoard(board);
+        tribunal.setInstructor(fixtures.instructor());
+        entityManager.persist(tribunal);
         registration = new ExamBoardRegistration();
         registration.setExamBoard(board);
         registration.setProgramSubjectSectionEnrollment(enrollment);
