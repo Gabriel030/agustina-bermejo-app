@@ -5052,7 +5052,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "capacity", "currency", "durationMonths", "name", "price", "registrationEnd", "registrationStart", "schedule", "teachingMode", "termId" ],
+        "required" : [ "capacity", "durationMonths", "name", "price", "termId" ],
         "type" : "object"
       },
       "CreateCourseSubjectRequest" : {
