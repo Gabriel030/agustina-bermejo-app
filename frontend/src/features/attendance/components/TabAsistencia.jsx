@@ -20,6 +20,7 @@ const ESTADO_PILL = {
   IN_PROGRESS: { label: 'En curso', tone: 'accent' },
   WAITLISTED: { label: 'En lista de espera', tone: 'warning' },
   WAITLIST_EXPIRED: { label: 'Lista de espera vencida', tone: 'neutral' },
+  APPROVAL_PENDING: { label: 'Promocionada · falta aprobar', tone: 'warning' },
   ENROLLED: { label: 'Inscripto', tone: 'accent' },
   APPROVED: { label: 'Aprobada', tone: 'success' },
   FAILED: { label: 'Desaprobada', tone: 'danger' },
