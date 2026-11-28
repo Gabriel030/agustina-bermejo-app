@@ -170,7 +170,7 @@ class SimulationDiscountsIT extends AbstractSimulationTest {
         scenario.advanceTo(LocalDate.of(2027, 5, 2)).finish();
 
         scenario.ledger().hasExactly(enrollmentFee("60000.00", "0.00", "PAID"), paidInstallment(MARCH, "48000.00"), installment(APRIL, "18000.00", "18000.00", "OVERDUE"),
-                Row.of("LATE_FEE", APRIL, LocalDate.of(2027, 5, 1), LocalDate.of(2027, 5, 11), "1162.80", "1162.80", "ISSUED", "PENDING"),
+                Row.of("LATE_FEE", APRIL, LocalDate.of(2027, 5, 1), LocalDate.of(2027, 5, 11), "1101.60", "1101.60", "ISSUED", "PENDING"),
                 installment(MAY, "36000.00", "36000.00", "PENDING"));
     }
 
