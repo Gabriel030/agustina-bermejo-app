@@ -86,6 +86,7 @@ class SimulationLatePaymentIT extends AbstractSimulationTest {
     @Tag("D-330")
     @Tag("D-331")
     @Tag("D-297")
+    @Tag("D-540")
     void lateFeeIsDailyFromOriginalDueDateWhenPaidAfterGrace() {
         onlyInExplorationTierNightly();
         Scenario scenario = paidMarch(Timeline.Mode.DAILY);
