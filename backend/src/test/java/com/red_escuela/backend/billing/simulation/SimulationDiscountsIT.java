@@ -156,6 +156,7 @@ class SimulationDiscountsIT extends AbstractSimulationTest {
     @Tag("D-297")
     @Tag("D-151")
     @Tag("D-331")
+    @Tag("D-540")
     void lateFeeIsComputedOnFinalPriceNotOnListPrice() {
         onlyInExplorationTierNightly();
         Scenario scenario = scenario(Timeline.Mode.SPARSE);
