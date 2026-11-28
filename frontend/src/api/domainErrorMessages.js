@@ -8,6 +8,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   APPLICATION_DOCUMENT_NOT_FOUND: 'No encontramos ese documento en la solicitud.',
   APPLICATION_DOCUMENT_TOO_LARGE: 'Uno de los documentos supera el tamaño permitido.',
   ATTENDANCE_STATUS_NOT_RECORDABLE: 'Ese estado de asistencia no se puede registrar.',
+  BILLING_ACTIVATION_BLOCKED_BY_COHORTS_WITHOUT_TEMPLATE: 'No se puede activar la facturación mientras haya cohortes sin plantilla de facturación. Asignales una plantilla antes de activarla.',
   BILLING_MODE_NOT_OFF: 'La importación solo se puede hacer con la facturación apagada.',
   BIRTH_DATE_REQUIRED: 'Falta la fecha de nacimiento.',
   CERTIFICATE_EXCEPTION_ALREADY_OPEN: 'Ya hay una excepción pendiente o aprobada para esta inscripción.',

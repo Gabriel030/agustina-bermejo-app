@@ -37,6 +37,7 @@ public class PlatformFeatureChanger {
     private final CurrentActorFinder currentActorFinder;
     private final FeatureTransitionConfirmationSigner confirmationSigner;
     private final ActorSummaryFinder actorSummaryFinder;
+    private final BillingActivationCohortGuard activationCohortGuard;
     private final Clock clock;
 
     public PlatformFeatureChanger(
@@ -48,6 +49,7 @@ public class PlatformFeatureChanger {
             CurrentActorFinder currentActorFinder,
             FeatureTransitionConfirmationSigner confirmationSigner,
             ActorSummaryFinder actorSummaryFinder,
+            BillingActivationCohortGuard activationCohortGuard,
             Clock clock) {
         this.featureRepository = featureRepository;
         this.changeLogRepository = changeLogRepository;
@@ -57,6 +59,7 @@ public class PlatformFeatureChanger {
         this.currentActorFinder = currentActorFinder;
         this.confirmationSigner = confirmationSigner;
         this.actorSummaryFinder = actorSummaryFinder;
+        this.activationCohortGuard = activationCohortGuard;
         this.clock = clock;
     }
 
@@ -75,6 +78,7 @@ public class PlatformFeatureChanger {
         }
         if (change.code().hasMode()) {
             BillingModeStateMachine.requireTransitionAllowed(before.mode(), requested.mode(), clearanceOf(change, before, requested, feature.getVersion()));
+            activationCohortGuard.requireNoCohortsWithoutTemplate(before.mode(), requested.mode());
         }
         Long actorPersonId = currentActorFinder.currentPersonId();
         LocalDateTime changedAt = LocalDateTime.now(clock);
