@@ -76,6 +76,8 @@ class CreateCycleSectionServiceTest {
     @Mock
     private SubjectRepository subjectRepository;
     @Mock
+    private com.red_escuela.backend.academicstructure.repository.ProgramSubjectRepository programSubjectRepository;
+    @Mock
     private CourseSubjectRepository courseSubjectRepository;
     @Mock
     private SubjectSectionRepository subjectSectionRepository;
@@ -104,7 +106,10 @@ class CreateCycleSectionServiceTest {
         service = new CreateCycleSectionService(new CreateCycleSectionTransaction(cycleRepository, subjectRepository, courseSubjectRepository,
                 subjectSectionRepository, courseSectionRepository, classroomRepository, slotRepository, conflictChecker,
                 new CycleSectionAbsenceLimitAssigner(), identityAssigner, shiftSlotGuard,
-                new com.red_escuela.backend.academicstructure.service.TermOfferingGuard(java.time.Clock.systemDefaultZone()), evaluationSetupPort));
+                new com.red_escuela.backend.academicstructure.service.TermOfferingGuard(java.time.Clock.systemDefaultZone()), evaluationSetupPort,
+                new com.red_escuela.backend.academicstructure.service.SubjectOfferingGuard(programSubjectRepository)));
+        org.mockito.Mockito.lenient().when(programSubjectRepository.findByProgramIdAndSubjectId(any(), any()))
+                .thenReturn(Optional.of(new com.red_escuela.backend.academicstructure.entity.ProgramSubject()));
         term = TermFixtures.newTerm();
         term.setStatus(com.red_escuela.backend.shared.domain.StatusType.ACTIVE);
         term.setId(2L);
