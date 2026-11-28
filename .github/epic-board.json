@@ -364,6 +364,39 @@
       ]
     },
     {
+      "id": "E35",
+      "name": "E35 Manual de usuario dentro de la app #1721",
+      "total": 11,
+      "done_at_baseline": null,
+      "done_at_seed": 0,
+      "total_estimated": true,
+      "next_step": "Mockup /ayuda v2 en revisión de Gabriel; esqueleto en PR #1723 (borrador)",
+      "refs": [
+        "e35",
+        "help-manual",
+        "ayuda"
+      ],
+      "issues": [
+        1721
+      ]
+    },
+    {
+      "id": "E36",
+      "name": "E36 Re-styling de toda la app #1724",
+      "total": 10,
+      "done_at_baseline": null,
+      "done_at_seed": 0,
+      "total_estimated": true,
+      "next_step": "Auditoría de pantallas y definición de la paleta cerrada (decisiones de Gabriel pendientes)",
+      "refs": [
+        "e36",
+        "restyling"
+      ],
+      "issues": [
+        1724
+      ]
+    },
+    {
       "id": "P1108",
       "name": "Roles y permisos #1108",
       "total": 42,
