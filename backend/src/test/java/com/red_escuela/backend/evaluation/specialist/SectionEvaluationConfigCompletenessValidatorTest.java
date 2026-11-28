@@ -8,24 +8,32 @@ import com.red_escuela.backend.evaluation.repository.EvaluationSchemeRepository;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class SectionEvaluationConfigCompletenessValidatorTest {
 
+    private static final AtomicLong NEXT_SCHEME_ID = new AtomicLong();
+    private static final EvaluationSchemeRepository SCHEME_REPOSITORY = mock(EvaluationSchemeRepository.class);
+
     private final SectionEvaluationConfigCompletenessValidator validator = new SectionEvaluationConfigCompletenessValidator(
-            new SectionEvaluationSchemeLoader(mock(EvaluationSchemeRepository.class)));
+            new SectionEvaluationSchemeLoader(SCHEME_REPOSITORY));
 
     private static final LocalDate DATE = LocalDate.of(2027, 5, 10);
 
     private static SectionEvaluationConfig config(int exams, boolean hasFinal) {
         EvaluationScheme scheme = new EvaluationScheme();
+        scheme.setId(NEXT_SCHEME_ID.incrementAndGet());
         scheme.setExamCountExpected(exams);
         scheme.setHasFinal(hasFinal);
         SubjectSection section = new SubjectSection();
-        section.setEvaluationScheme(scheme);
+        section.setEvaluationSchemeId(scheme.getId());
+        when(SCHEME_REPOSITORY.findById(scheme.getId())).thenReturn(Optional.of(scheme));
         SectionEvaluationConfig config = new SectionEvaluationConfig();
         config.setSubjectSection(section);
         config.setTpCount(2);

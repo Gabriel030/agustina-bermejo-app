@@ -115,7 +115,7 @@ public final class AcademicReproductionFixtures {
         section.setName(subject.getName() + " - Com A");
         section.setSubject(subject);
         section.setTerm(term);
-        section.setEvaluationScheme(scheme);
+        section.setEvaluationSchemeId(scheme == null ? null : scheme.getId());
         section.setStatus(StatusType.ACTIVE);
         entityManager.persist(section);
         ApprovedSectionConfigFixture.persistWhenSchemeExpectsCoursework(entityManager, section);

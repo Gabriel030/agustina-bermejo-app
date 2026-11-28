@@ -4,7 +4,6 @@ import com.red_escuela.backend.academicstructure.exception.InstructorScheduleCon
 import com.red_escuela.backend.academicstructure.entity.SectionScheduleSlot;
 import com.red_escuela.backend.academicstructure.dto.AssignInstructorRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateSectionRequest;
-import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
@@ -19,7 +18,6 @@ import com.red_escuela.backend.academicstructure.repository.InstructorRepository
 import com.red_escuela.backend.academicstructure.repository.SectionScheduleSlotRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionInstructorRepository;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
-import jakarta.persistence.EntityManager;
 import org.springframework.dao.CannotAcquireLockException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -36,7 +34,6 @@ public class SubjectSectionService {
     private final SubjectSectionRepository sectionRepository;
     private final SubjectSectionInstructorRepository sectionInstructorRepository;
     private final InstructorRepository instructorRepository;
-    private final EntityManager entityManager;
     private final SectionEvaluationSetupPort evaluationSetupPort;
     private final SectionIdentityAssigner identityAssigner;
     private final SectionConflictChecker conflictChecker;
@@ -49,7 +46,6 @@ public class SubjectSectionService {
             SubjectSectionRepository sectionRepository,
             SubjectSectionInstructorRepository sectionInstructorRepository,
             InstructorRepository instructorRepository,
-            EntityManager entityManager,
             SectionEvaluationSetupPort evaluationSetupPort,
             SectionIdentityAssigner identityAssigner,
             SectionConflictChecker conflictChecker,
@@ -62,7 +58,6 @@ public class SubjectSectionService {
         this.sectionRepository = sectionRepository;
         this.sectionInstructorRepository = sectionInstructorRepository;
         this.instructorRepository = instructorRepository;
-        this.entityManager = entityManager;
         this.evaluationSetupPort = evaluationSetupPort;
         this.identityAssigner = identityAssigner;
         this.conflictChecker = conflictChecker;
@@ -91,7 +86,8 @@ public class SubjectSectionService {
         }
         if (request.evaluationSchemeId() != null) {
             requireEvaluationSchemeReassignable(section, request.evaluationSchemeId());
-            section.setEvaluationScheme(resolveEvaluationScheme(request.evaluationSchemeId()));
+            requireEvaluationSchemeExists(request.evaluationSchemeId());
+            section.setEvaluationSchemeId(request.evaluationSchemeId());
         }
         if (request.maxAbsencePercent() != null) {
             section.setMaxAbsenceRate(request.maxAbsencePercent());
@@ -193,13 +189,12 @@ public class SubjectSectionService {
         return sectionRepository.findById(id).orElseThrow(() -> new SectionNotFoundException(id));
     }
 
-    private EvaluationScheme resolveEvaluationScheme(Long id) {
+    private void requireEvaluationSchemeExists(Long id) {
         evaluationSetupPort.requireEvaluationSchemeExists(id);
-        return entityManager.find(EvaluationScheme.class, id);
     }
 
     private void requireEvaluationSchemeReassignable(SubjectSection section, Long newSchemeId) {
-        Long currentSchemeId = section.getEvaluationScheme() == null ? null : section.getEvaluationScheme().getId();
+        Long currentSchemeId = section.getEvaluationSchemeId();
         if (newSchemeId.equals(currentSchemeId)) {
             return;
         }

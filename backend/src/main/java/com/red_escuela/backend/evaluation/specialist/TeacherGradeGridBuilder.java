@@ -1,6 +1,5 @@
 package com.red_escuela.backend.evaluation.specialist;
 
-import com.red_escuela.backend.academicstructure.api.SectionFinder;
 import com.red_escuela.backend.academicstructure.api.SectionTeachingFinder;
 import com.red_escuela.backend.academicstructure.api.SectionTermEndFinder;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
@@ -49,7 +48,7 @@ import java.util.stream.Collectors;
 public class TeacherGradeGridBuilder {
 
     private final SectionEvaluationSchemeLoader schemeLoader;
-    private final SectionFinder sectionFinder;
+    private final SectionWithSchemeLoader sectionWithSchemeLoader;
     private final SectionTeachingFinder sectionTeachingFinder;
     private final SectionEnrollmentFinder sectionEnrollmentFinder;
     private final SectionFreeByAbsencesFinder sectionFreeByAbsencesFinder;
@@ -60,8 +59,7 @@ public class TeacherGradeGridBuilder {
     private final SectionTermEndFinder sectionTermEndFinder;
     private final ApprovedCourseworkCountFinder courseworkCountFinder;
 
-    public TeacherGradeGridBuilder(SectionFinder sectionFinder,
-                                   SectionTeachingFinder sectionTeachingFinder,
+    public TeacherGradeGridBuilder(SectionTeachingFinder sectionTeachingFinder,
                                    SectionEnrollmentFinder sectionEnrollmentFinder,
                                    SectionFreeByAbsencesFinder sectionFreeByAbsencesFinder,
                                    GradeItemRepository gradeItemRepository,
@@ -69,9 +67,10 @@ public class TeacherGradeGridBuilder {
                                    SectionGradeItemPublicationRepository publicationRepository,
                                    GradeItemAuditRepository auditRepository,
                                    SectionTermEndFinder sectionTermEndFinder,
-                                   ApprovedCourseworkCountFinder courseworkCountFinder, SectionEvaluationSchemeLoader schemeLoader) {
+                                   ApprovedCourseworkCountFinder courseworkCountFinder, SectionEvaluationSchemeLoader schemeLoader,
+                                   SectionWithSchemeLoader sectionWithSchemeLoader) {
         this.schemeLoader = schemeLoader;
-        this.sectionFinder = sectionFinder;
+        this.sectionWithSchemeLoader = sectionWithSchemeLoader;
         this.sectionTeachingFinder = sectionTeachingFinder;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
         this.sectionFreeByAbsencesFinder = sectionFreeByAbsencesFinder;
@@ -85,26 +84,26 @@ public class TeacherGradeGridBuilder {
 
     @Transactional(readOnly = true)
     public TeacherGradeGridResponse buildForProgramSection(Long sectionId, Long instructorId) {
-        SubjectSection section = sectionFinder.findProgramSectionWithSchemeAndTerms(sectionId);
+        SubjectSection section = sectionWithSchemeLoader.loadProgramSection(sectionId);
         sectionTeachingFinder.requireTeaches(SectionKind.PROGRAM, sectionId, instructorId);
         return programGrid(section);
     }
 
     @Transactional(readOnly = true)
     public TeacherGradeGridResponse buildForProgramSectionAsStaff(Long sectionId) {
-        return programGrid(sectionFinder.findProgramSectionWithSchemeAndTerms(sectionId));
+        return programGrid(sectionWithSchemeLoader.loadProgramSection(sectionId));
     }
 
     @Transactional(readOnly = true)
     public TeacherGradeGridResponse buildForCourseSection(Long sectionId, Long instructorId) {
-        CourseSubjectSection section = sectionFinder.findCourseSectionWithSchemeAndTerms(sectionId);
+        CourseSubjectSection section = sectionWithSchemeLoader.loadCourseSection(sectionId);
         sectionTeachingFinder.requireTeaches(SectionKind.COURSE, sectionId, instructorId);
         return courseGrid(section);
     }
 
     @Transactional(readOnly = true)
     public TeacherGradeGridResponse buildForCourseSectionAsStaff(Long sectionId) {
-        return courseGrid(sectionFinder.findCourseSectionWithSchemeAndTerms(sectionId));
+        return courseGrid(sectionWithSchemeLoader.loadCourseSection(sectionId));
     }
 
     private TeacherGradeGridResponse programGrid(SubjectSection section) {

@@ -11,8 +11,11 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Optional;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SectionEvaluationSchemeLoaderTest {
@@ -28,23 +31,23 @@ class SectionEvaluationSchemeLoaderTest {
     }
 
     @Test
-    void returnsTheSchemeOfAProgramSectionWithoutQueryingWhenItIsAlreadyLoaded() {
+    void returnsTheSchemeOfAProgramSectionById() {
         EvaluationScheme scheme = scheme(5L);
+        when(schemeRepository.findById(5L)).thenReturn(Optional.of(scheme));
         SubjectSection section = new SubjectSection();
-        section.setEvaluationScheme(scheme);
+        section.setEvaluationSchemeId(scheme == null ? null : scheme.getId());
 
         assertThat(loader.ofProgramSection(section)).isSameAs(scheme);
-        verifyNoInteractions(schemeRepository);
     }
 
     @Test
-    void returnsTheSchemeOfACourseSectionWithoutQueryingWhenItIsAlreadyLoaded() {
+    void returnsTheSchemeOfACourseSectionById() {
         EvaluationScheme scheme = scheme(6L);
+        when(schemeRepository.findById(6L)).thenReturn(Optional.of(scheme));
         CourseSubjectSection section = new CourseSubjectSection();
-        section.setEvaluationScheme(scheme);
+        section.setEvaluationSchemeId(scheme == null ? null : scheme.getId());
 
         assertThat(loader.ofCourseSection(section)).isSameAs(scheme);
-        verifyNoInteractions(schemeRepository);
     }
 
     @Test
@@ -59,10 +62,12 @@ class SectionEvaluationSchemeLoaderTest {
     void resolvesTheSchemeOfAConfigThroughItsOwnerSection() {
         EvaluationScheme programScheme = scheme(1L);
         EvaluationScheme courseScheme = scheme(2L);
+        when(schemeRepository.findById(1L)).thenReturn(Optional.of(programScheme));
+        when(schemeRepository.findById(2L)).thenReturn(Optional.of(courseScheme));
         SubjectSection programSection = new SubjectSection();
-        programSection.setEvaluationScheme(programScheme);
+        programSection.setEvaluationSchemeId(programScheme == null ? null : programScheme.getId());
         CourseSubjectSection courseSection = new CourseSubjectSection();
-        courseSection.setEvaluationScheme(courseScheme);
+        courseSection.setEvaluationSchemeId(courseScheme == null ? null : courseScheme.getId());
         SectionEvaluationConfig programConfig = new SectionEvaluationConfig();
         programConfig.setSubjectSection(programSection);
         SectionEvaluationConfig courseConfig = new SectionEvaluationConfig();
