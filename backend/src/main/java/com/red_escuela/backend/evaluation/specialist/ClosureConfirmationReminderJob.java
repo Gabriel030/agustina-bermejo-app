@@ -1,5 +1,6 @@
 package com.red_escuela.backend.evaluation.specialist;
 
+import com.red_escuela.backend.academicstructure.api.EndedSectionFinder;
 import com.red_escuela.backend.academicstructure.api.SectionTermEndFinder;
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.evaluation.api.ClosureNotificationTargetsFinder;
@@ -15,12 +16,13 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionOperations;
 
 import java.time.Clock;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -40,39 +42,58 @@ public class ClosureConfirmationReminderJob {
     private final SectionTermEndFinder sectionTermEndFinder;
     private final ClosureNotificationTargetsFinder targetsFinder;
     private final ApplicationEventPublisher eventPublisher;
+    private final EndedSectionFinder endedSectionFinder;
+    private final TransactionOperations transactionOperations;
     private final Clock clock;
 
     public ClosureConfirmationReminderJob(SectionGradeItemPublicationRepository publicationRepository,
             CommissionClosureRepository closureRepository, CommissionClosureReminderRepository reminderRepository,
             SectionTermEndFinder sectionTermEndFinder, ClosureNotificationTargetsFinder targetsFinder,
-            ApplicationEventPublisher eventPublisher, Clock clock) {
+            ApplicationEventPublisher eventPublisher, EndedSectionFinder endedSectionFinder,
+            TransactionOperations transactionOperations, Clock clock) {
         this.publicationRepository = publicationRepository;
         this.closureRepository = closureRepository;
         this.reminderRepository = reminderRepository;
         this.sectionTermEndFinder = sectionTermEndFinder;
         this.targetsFinder = targetsFinder;
         this.eventPublisher = eventPublisher;
+        this.endedSectionFinder = endedSectionFinder;
+        this.transactionOperations = transactionOperations;
         this.clock = clock;
     }
 
     @Scheduled(cron = "0 30 8 * * *", zone = "${app.timezone}")
-    @SchedulerLock(name = "ClosureConfirmationReminderJob", lockAtMostFor = "PT30M")
-    @Transactional
+    @SchedulerLock(name = "ClosureConfirmationReminderJob", lockAtMostFor = "PT30M", lockAtLeastFor = "PT1M")
     public void sendReminders() {
         remindDueSections();
     }
 
-    @Transactional
     public int remindDueSections() {
         LocalDate today = LocalDate.now(clock);
         LocalDateTime now = LocalDateTime.now(clock);
-        List<PublishedSectionRef> sections = publicationRepository.findDistinctPublishedSections();
+        List<PublishedSectionRef> sections = sectionsToReview(today);
         int sent = 0;
         for (PublishedSectionRef section : sections) {
-            sent += remindIfDue(section, today, now) ? 1 : 0;
+            sent += remindSafely(section, today, now) ? 1 : 0;
         }
         log.info("Recordatorios de confirmación de cierre finalizados: fecha={}, secciones={}, enviados={}", today, sections.size(), sent);
         return sent;
+    }
+
+    private List<PublishedSectionRef> sectionsToReview(LocalDate today) {
+        LinkedHashSet<PublishedSectionRef> sections = new LinkedHashSet<>(publicationRepository.findDistinctPublishedSections());
+        endedSectionFinder.findActiveSectionsEndedBetween(today.minusDays(LAST_REMINDABLE_DAY), today.minusDays(FIRST_REMINDER_DAYS))
+                .forEach(ended -> sections.add(new PublishedSectionRef(ended.kind(), ended.sectionId())));
+        return List.copyOf(sections);
+    }
+
+    private boolean remindSafely(PublishedSectionRef section, LocalDate today, LocalDateTime now) {
+        try {
+            return Boolean.TRUE.equals(transactionOperations.execute(status -> remindIfDue(section, today, now)));
+        } catch (RuntimeException exception) {
+            log.error("No se pudo enviar el recordatorio de cierre: kind={}, sectionId={}", section.sectionKind(), section.sectionId(), exception);
+            return false;
+        }
     }
 
     private boolean remindIfDue(PublishedSectionRef section, LocalDate today, LocalDateTime now) {

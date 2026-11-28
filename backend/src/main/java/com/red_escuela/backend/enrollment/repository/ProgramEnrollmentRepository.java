@@ -16,10 +16,10 @@ import java.util.List;
 
 @Repository
 public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnrollment, Long> {
-    interface ProgramIdOfEnrollment {
+    interface PlanIdOfEnrollment {
         Long getEnrollmentId();
 
-        Long getProgramId();
+        Long getPlanId();
     }
 
     interface GraduationCandidateRow {
@@ -51,8 +51,8 @@ public interface ProgramEnrollmentRepository extends JpaRepository<ProgramEnroll
             """)
     List<GraduationCandidateRow> findGraduationCandidates(@Param("pattern") String pattern);
 
-    @Query("select e.id as enrollmentId, e.program.id as programId from ProgramEnrollment e where e.id in :ids")
-    List<ProgramIdOfEnrollment> findProgramIdsByIdIn(@Param("ids") Collection<Long> ids);
+    @Query("select e.id as enrollmentId, e.plan.id as planId from ProgramEnrollment e where e.id in :ids")
+    List<PlanIdOfEnrollment> findPlanIdsByIdIn(@Param("ids") Collection<Long> ids);
 
     @Modifying(flushAutomatically = true)
     @Query("delete from ProgramEnrollment e where e.id in :ids")

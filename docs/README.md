@@ -24,6 +24,7 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [specs.md](context/specs.md) | Dónde viven las specs y el roadmap (Obsidian) | vigente |
 | [cell.md](context/cell.md) | Célula de agentes: roles, arranque de sesiones, flujo de un ticket, local vs nube | vigente |
 | [plans/TEMPLATE.md](cell/plans/TEMPLATE.md) | Plantilla de plan de la célula (`docs/cell/plans/<ticket>.md`) | vigente |
+| [handoffs/1643-P7.md](cell/handoffs/1643-P7.md) | Handoff de E34-B P7: hallazgos pendientes de la revisión independiente | vigente |
 | [plans/920.md](cell/plans/920.md) | Cierre de la Fase 1 de comunicación masiva: residual derivado | vigente |
 | [plans/921.md](cell/plans/921.md) | Residual de la lista de espera: vencimiento de colas de materias y auditoría de promoción automática | vigente |
 | [plans/932.md](cell/plans/932.md) | Residual de la Fase 2: variables faltantes en la vista previa, contrato y OR por clave | vigente |
@@ -41,6 +42,8 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [reports/e18-violaciones.md](cell/reports/e18-violaciones.md) | E18 M0: violaciones de Modulith medidas, ciclos, dependencias hacia arriba y procesos a cortar | vigente |
 | [reports/e18-m5-billing.md](cell/reports/e18-m5-billing.md) | E18 M5: plan por etapas para bajar billing→enrollment y billing→academicstructure, con medición y primera rebanada | vigente |
 | [reports/e25-b2-invariantes.md](cell/reports/e25-b2-invariantes.md) | E25 B2 S1: invariantes que solo protege el código, candidatas a único parcial o CHECK, con queries de verificación | vigente |
+| [progress/1643-P3.md](cell/progress/1643-P3.md) | Estado de E34-B P3: fin de término con 14 días de gracia | vigente |
+| [handoffs/1643-P3.md](cell/handoffs/1643-P3.md) | Handoff de E34-B P3 parte 2: cierre automático de matrículas por notas | vigente |
 | `cell/progress/` | Estado de cada subtarea de la célula; se genera por rama y no se lista uno por uno | vigente |
 | [progress/921-1.md](cell/progress/921-1.md) | Estado de la subtarea 921#1 (listas de espera, consulta del personal) | vigente |
 | [progress/e2-2-4a.md](cell/progress/e2-2-4a.md) | Estado de E2 2.4a (mapa curricular del alumno: correlativas completas e inscripción vigente) | vigente |
@@ -61,8 +64,11 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [security/audit-2026-11-03-status.md](security/audit-2026-11-03-status.md) | Estado de los hallazgos de la auditoría del 3-nov-2026: 12 cerrados y 4 abiertos (parciales) | vigente |
 | [security/audit-24-4-batch-3b-authz.md](security/audit-24-4-batch-3b-authz.md) | Auditoría 24.4 lote 3b: ownership de los `{id}` de `/me`, hallazgo H-3b-1 (rutas de alumno sobre personal con ficha de alumno) y corte hacia 3c | vigente |
 | [security/audit-24-4-batch-3c-authz.md](security/audit-24-4-batch-3c-authz.md) | Auditoría 24.4 lote 3c: rutas de personal de `billing`, `graduation`, `notification` e `identity`; verificado sin cambio y un IT de ownership nuevo | vigente |
+| [security/audit-24-4b-me-coverage.md](security/audit-24-4b-me-coverage.md) | Auditoría 24.4b (#1697 S1): inventario de las 66 rutas `/me/**` sin id con su test de aislamiento real (17 con aislamiento, 36 solo funcional, 13 sin test) y los «6 endpoints» con tres lecturas posibles | vigente |
 | [cell/handoffs/1108-w13.md](cell/handoffs/1108-w13.md) | Handoff de W13/W20 (#1108, E18 M5-S6): academicstructure -> evaluation por id; qué se probó, el bloqueo de conteo de consultas y el camino propuesto | vigente |
 | [cell/handoffs/1108-w18.md](cell/handoffs/1108-w18.md) | Handoff de W18 (#1108, 24.4 lote 3c): qué se verificó del lote 3b, qué faltaba y qué buscar | histórico |
+| [cell/handoffs/1638-S9b.md](cell/handoffs/1638-S9b.md) | Handoff de E34-A S9b (#1638): motor de simulación de cinco años, causa del 409 de billing en la segunda corrida y expectativas débiles que quedan | vigente |
+| [cell/handoffs/1638-S9c.md](cell/handoffs/1638-S9c.md) | Handoff de E34-A S9c (#1638): invariantes SQL y reporte de la simulación de cinco años, sabotaje por invariante y el hallazgo de egreso aceptado sin materias aprobadas | vigente |
 | [cell/handoffs/1643-p1b-1.md](cell/handoffs/1643-p1b-1.md) | Handoff de E34-B P1b parte 1 (#1643): matrícula y cohorte apuntan al plan, fixtures que fallaban y qué faltaba correr | histórico |
 | [cell/handoffs/1643-p1b-2.md](cell/handoffs/1643-p1b-2.md) | Handoff de E34-B P1b parte 2 (#1643): fixtures corregidos con cohorte y plan, suites corridas y quién depende de `LegacyFixturePlanFiller` | vigente |
 | [security/pentest-interno.md](security/pentest-interno.md) | Plan de pentest interno (E29 G7 / 24.6a): reglas de juego, casos por flujo, criterio de aprobación, perfiles ZAP, plantilla de hallazgos y qué queda para el externo | vigente |

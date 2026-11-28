@@ -33,11 +33,16 @@ INSERT INTO person_role (person_id, role_id) SELECT 20000+g, 1 FROM generate_ser
 INSERT INTO person_role (person_id, role_id) SELECT 30000+n, 2 FROM generate_series(1,50) n;
 INSERT INTO student (id, institution_id, person_id, onboarding_status) SELECT 20000+g, 1, 20000+g, 'CONFIRMADO' FROM generate_series(1,5000) g;
 INSERT INTO instructor (id, person_id) SELECT 30000+n, 30000+n FROM generate_series(1,50) n;
-INSERT INTO program_enrollment (id, program_id, student_id, status, version, enrollment_date)
-SELECT 20000+g, 1+(g%2), 20000+g, 'ENROLLED', 0, timestamp '2026-01-15' + (g%300)*interval '1 day' FROM generate_series(1,5000) g;
+INSERT INTO program_enrollment (id, program_id, student_id, status, version, enrollment_date, plan_id)
+SELECT 20000+g, pl.program_id, 20000+g, 'ENROLLED', 0, timestamp '2026-01-15' + (g%300)*interval '1 day', pl.plan_id
+FROM generate_series(1,5000) g
+JOIN (SELECT p.program_id, p.plan_id, row_number() OVER (ORDER BY p.program_id) - 1 AS slot
+      FROM (SELECT DISTINCT ON (cp.program_id) cp.program_id, cp.id AS plan_id
+            FROM curriculum_plan cp WHERE cp.status <> 'DRAFT' ORDER BY cp.program_id, cp.version_number DESC) p) pl
+  ON pl.slot = g%2;
 
 INSERT INTO subject_section (id, term_id, subject_id, name, capacity, created_at, version, status, schedule, max_absence_percentage, pending_approval, evaluation_scheme_id)
-SELECT 14000+g, 1, 1+(g%16), 'Comisión perf '||g, 40+(g%30), timestamp '2026-02-01', 0, 'ACTIVE', 'Lunes 18:00 a 20:00', 0.25, false, 1 FROM generate_series(1,300) g;
+SELECT 14000+g, (SELECT min(id) FROM term), (SELECT id FROM subject ORDER BY id OFFSET (g%16) LIMIT 1), 'Comisión perf '||g, 40+(g%30), timestamp '2026-02-01', 0, 'ACTIVE', 'Lunes 18:00 a 20:00', 0.25, false, (SELECT min(id) FROM evaluation_scheme) FROM generate_series(1,300) g;
 INSERT INTO subject_section_instructor (id, instructor_id, program_section_id, role)
 SELECT 50000+g, 30000+1+((14000+g)%50), 14000+g, 'LEAD' FROM generate_series(1,300) g;
 
@@ -48,11 +53,11 @@ SELECT 100000 + s.g*10 + k, 20000+s.g, 14000 + 1 + ((floor(300*power(((s.g*7919)
 FROM generate_series(1,5000) s(g), generate_series(1,8) k;
 
 INSERT INTO class_session (id, version, program_section_id, class_date, status, created_by_id, created_at)
-SELECT 200000 + ss.id*30 + d, 0, ss.id, date '2026-03-02' + d*7, CASE WHEN d<6 THEN 'HELD' ELSE 'SCHEDULED' END, 1, timestamp '2026-02-01'
+SELECT 200000 + ss.id*30 + d, 0, ss.id, date '2026-03-02' + d*7, CASE WHEN d<6 THEN 'HELD' ELSE 'SCHEDULED' END, 30001, timestamp '2026-02-01'
 FROM subject_section ss, generate_series(0,23) d WHERE ss.id BETWEEN 14001 AND 14300;
 INSERT INTO attendance (id, version, program_section_enrollment_id, class_date, status, recorded_by_id)
 SELECT 1000000 + row_number() over (order by e.id, cs.class_date), 0, e.id, cs.class_date,
-       (ARRAY['PRESENT','PRESENT','PRESENT','PRESENT','ABSENT','LATE','JUSTIFIED'])[1 + ((e.id + cs.id) % 7)], 1
+       (ARRAY['PRESENT','PRESENT','PRESENT','PRESENT','ABSENT','LATE','JUSTIFIED'])[1 + ((e.id + cs.id) % 7)], 30001
 FROM subject_section_enrollment e JOIN class_session cs ON cs.program_section_id = e.program_section_id
 WHERE cs.status='HELD' AND e.status IN ('APPROVED','ENROLLED') AND e.id >= 100000 AND e.program_section_id BETWEEN 14001 AND 14300;
 INSERT INTO grade_item (id, score, sequence_number, program_section_enrollment_id, date, type, version)
@@ -71,7 +76,7 @@ SELECT 500000 + s.g*20 + m, 0, 20000+s.g, 'ARS', 'INVOICE', 'MONTHLY_INSTALLMENT
        jsonb_build_object('fullName','Nombre'||s.g||' Apellido'||s.g,'documentNumber',(30000000+s.g)::text,'address','Calle '||s.g)
 FROM generate_series(1,5000) s(g), generate_series(1,6) m;
 INSERT INTO invoice_line (id, invoice_id, currency, line_number, fee_type, concept, period, program_enrollment_id, price_version_id, charge_key, amount, amount_currency, discount_amount, discount_amount_currency, credited_amount, credited_amount_currency, free_credited_amount_currency)
-SELECT 500000 + s.g*20 + m + 10000000, 500000 + s.g*20 + m, 'ARS', 1, 'MONTHLY_INSTALLMENT', 'Cuota '||m, date '2026-03-01' + (m-1)*30, 20000+s.g, 1, 'perf-'||s.g||'-'||m, 80000,'ARS',0,'ARS',0,'ARS','ARS'
+SELECT 500000 + s.g*20 + m + 10000000, 500000 + s.g*20 + m, 'ARS', 1, 'MONTHLY_INSTALLMENT', 'Cuota '||m, date '2026-03-01' + (m-1)*30, 20000+s.g, (SELECT min(id) FROM price_version), 'perf-'||s.g||'-'||m, 80000,'ARS',0,'ARS',0,'ARS','ARS'
 FROM generate_series(1,5000) s(g), generate_series(1,6) m;
 
 INSERT INTO notification (recipient_id, type, message, read, related_entity_type, related_entity_id, created_at)

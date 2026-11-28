@@ -54,21 +54,13 @@ class ProgramCurriculumFinderTest {
     }
 
     @Test
-    void programSubjectLookupIsEmptyWhenSubjectIsNotInThePlan() {
-        when(programSubjectRepository.findByProgramIdAndSubjectId(5L, 99L)).thenReturn(Optional.empty());
-
-        assertThat(finder.findProgramSubject(5L, 99L)).isEmpty();
-        assertThat(finder.subjectBelongsToProgram(5L, 99L)).isFalse();
-    }
-
-    @Test
-    void subjectBelongsToProgramWhenPlanEntryExists() {
-        when(programSubjectRepository.findByProgramIdAndSubjectId(5L, 10L))
+    void subjectBelongsToPlanOnlyWhenThePlanHasAnEntryForIt() {
+        when(programSubjectRepository.findByPlanIdAndSubjectId(17L, 99L)).thenReturn(Optional.empty());
+        when(programSubjectRepository.findByPlanIdAndSubjectId(17L, 10L))
                 .thenReturn(Optional.of(entry(1L, 10L, "Algebra", 6, null)));
 
-        assertThat(finder.subjectBelongsToProgram(5L, 10L)).isTrue();
-        assertThat(finder.findProgramSubject(5L, 10L)).get().extracting(ProgramSubjectView::subjectName)
-                .isEqualTo("Algebra");
+        assertThat(finder.subjectBelongsToPlan(17L, 99L)).isFalse();
+        assertThat(finder.subjectBelongsToPlan(17L, 10L)).isTrue();
     }
 
     @Test

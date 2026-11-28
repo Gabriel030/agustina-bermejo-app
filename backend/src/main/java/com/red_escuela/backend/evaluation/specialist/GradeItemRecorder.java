@@ -54,6 +54,7 @@ import com.red_escuela.backend.evaluation.api.GraduationRequestTriggerPort;
 @Service
 public class GradeItemRecorder {
 
+    private final SectionEvaluationSchemeLoader schemeLoader;
     private final CourseworkOutcomeCalculator outcomeCalculator = new CourseworkOutcomeCalculator();
 
     private final GradeItemRepository gradeItemRepository;
@@ -101,7 +102,8 @@ public class GradeItemRecorder {
             ProgramPrerequisiteEvaluator programPrerequisiteEvaluator,
             SectionClosureGuard sectionClosureGuard,
             ApprovedCourseworkCountFinder courseworkCountFinder,
-            GradeItemSlotValidator slotValidator) {
+            GradeItemSlotValidator slotValidator, SectionEvaluationSchemeLoader schemeLoader) {
+        this.schemeLoader = schemeLoader;
         this.gradeItemRepository = gradeItemRepository;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
         this.sectionEnrollmentOutcomeRecorder = sectionEnrollmentOutcomeRecorder;
@@ -138,8 +140,9 @@ public class GradeItemRecorder {
         requireFinalFromExamBoard(request);
         sectionEnrollmentFinder.lockProgramEnrollment(enrollmentId);
         SubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findProgramEnrollment(enrollmentId);
+        enrollment.getProgramEnrollment().requireActive();
         requireSectionNotClosedUnlessFinal(request, SectionKind.PROGRAM, enrollment.getSubjectSection().getId());
-        EvaluationScheme scheme = enrollment.getSubjectSection().getEvaluationScheme();
+        EvaluationScheme scheme = schemeLoader.ofProgramSection(enrollment.getSubjectSection());
         ExamBoard examBoard = validateGradeSource(
                 request.examBoardId(), instructorId,
                 () -> sectionTeachingFinder
@@ -229,7 +232,7 @@ public class GradeItemRecorder {
     @Transactional
     public void recalculateProgramEnrollmentCondition(Long enrollmentId) {
         sectionEnrollmentFinder.findProgramEnrollmentIfPresent(enrollmentId)
-                .filter(enrollment -> enrollment.getSubjectSection().getEvaluationScheme() != null)
+                .filter(enrollment -> schemeLoader.ofProgramSection(enrollment.getSubjectSection()) != null)
                 .ifPresent(enrollment -> {
                     sectionEnrollmentFinder.lockProgramEnrollment(enrollmentId);
                     applyProgramEnrollmentCondition(enrollment, false, true);
@@ -239,7 +242,7 @@ public class GradeItemRecorder {
     @Transactional
     public void recalculateCourseEnrollmentCondition(Long enrollmentId) {
         sectionEnrollmentFinder.findCourseEnrollmentIfPresent(enrollmentId)
-                .filter(enrollment -> enrollment.getCourseSubjectSection().getEvaluationScheme() != null)
+                .filter(enrollment -> schemeLoader.ofCourseSection(enrollment.getCourseSubjectSection()) != null)
                 .ifPresent(enrollment -> {
                     sectionEnrollmentFinder.lockCourseEnrollment(enrollmentId);
                     applyCourseEnrollmentCondition(enrollment, false, true);
@@ -249,7 +252,7 @@ public class GradeItemRecorder {
     private void applyProgramEnrollmentCondition(
             SubjectSectionEnrollment enrollment, boolean finalCorrection, boolean rebuildFromItems) {
         Long enrollmentId = enrollment.getId();
-        EvaluationScheme scheme = enrollment.getSubjectSection().getEvaluationScheme();
+        EvaluationScheme scheme = schemeLoader.ofProgramSection(enrollment.getSubjectSection());
         List<GradeItem> items = publishedGradeItemSelector.selectPublished(
                 SectionKind.PROGRAM, enrollment.getSubjectSection().getId(),
                 gradeItemRepository.findByProgramSubjectSectionEnrollmentId(enrollmentId));
@@ -300,7 +303,7 @@ public class GradeItemRecorder {
 
     private void publishApprovalStandingChanged(SubjectSectionEnrollment enrollment, boolean approved) {
         eventPublisher.publishEvent(SubjectApprovalStandingChangedEvent.changedFor(
-                enrollment.getProgramEnrollment().getId(), enrollment.getProgramEnrollment().getProgram().getId(),
+                enrollment.getProgramEnrollment().getId(), enrollment.getProgramEnrollment().getPlan().getId(),
                 enrollment.subjectId(), approved));
     }
 
@@ -337,7 +340,7 @@ public class GradeItemRecorder {
         sectionEnrollmentFinder.lockCourseEnrollment(enrollmentId);
         CourseSubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findCourseEnrollment(enrollmentId);
         requireSectionNotClosedUnlessFinal(request, SectionKind.COURSE, enrollment.getCourseSubjectSection().getId());
-        EvaluationScheme scheme = enrollment.getCourseSubjectSection().getEvaluationScheme();
+        EvaluationScheme scheme = schemeLoader.ofCourseSection(enrollment.getCourseSubjectSection());
         ExamBoard examBoard = validateGradeSource(
                 request.examBoardId(), instructorId,
                 () -> sectionTeachingFinder
@@ -383,7 +386,7 @@ public class GradeItemRecorder {
     private void applyCourseEnrollmentCondition(
             CourseSubjectSectionEnrollment enrollment, boolean finalCorrection, boolean rebuildFromItems) {
         Long enrollmentId = enrollment.getId();
-        EvaluationScheme scheme = enrollment.getCourseSubjectSection().getEvaluationScheme();
+        EvaluationScheme scheme = schemeLoader.ofCourseSection(enrollment.getCourseSubjectSection());
         List<GradeItem> items = publishedGradeItemSelector.selectPublished(
                 SectionKind.COURSE, enrollment.getCourseSubjectSection().getId(),
                 gradeItemRepository.findByCourseSubjectSectionEnrollmentId(enrollmentId));

@@ -19,6 +19,8 @@ public interface ExamBoardRegistrationRepository extends JpaRepository<ExamBoard
 
     List<ExamBoardRegistration> findByExamBoardId(Long examBoardId);
 
+    long countByExamBoardIdAndStatus(Long examBoardId, ExamBoardRegistrationStatus status);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select r from ExamBoardRegistration r where r.examBoard.id = :examBoardId and r.id in :ids order by r.id")
     List<ExamBoardRegistration> findByExamBoardIdAndIdInForUpdate(
@@ -45,6 +47,9 @@ public interface ExamBoardRegistrationRepository extends JpaRepository<ExamBoard
             @Param("endExclusive") LocalDateTime endExclusive);
 
     List<ExamBoardRegistration> findByProgramSubjectSectionEnrollmentId(Long enrollmentId);
+
+    List<ExamBoardRegistration> findByProgramSubjectSectionEnrollment_ProgramEnrollment_IdAndStatus(
+            Long programEnrollmentId, ExamBoardRegistrationStatus status);
 
     List<ExamBoardRegistration> findByCourseSubjectSectionEnrollmentId(Long enrollmentId);
 
@@ -96,4 +101,17 @@ public interface ExamBoardRegistrationRepository extends JpaRepository<ExamBoard
               and b.status = com.red_escuela.backend.evaluation.entity.ExamBoardStatus.CLOSED
             """)
     List<ExamBoardRegistration> findAttendedCourseRegistrationsOfStudent(@Param("studentId") Long studentId);
+
+    @Query("""
+            select count(r) > 0 from ExamBoardRegistration r
+            join r.examBoard b
+            left join r.programSubjectSectionEnrollment pe
+            left join r.courseSubjectSectionEnrollment ce
+            where r.status = com.red_escuela.backend.evaluation.entity.ExamBoardRegistrationStatus.REGISTERED
+              and b.id <> :examBoardId and b.examDate = :examDate
+              and b.status = com.red_escuela.backend.evaluation.entity.ExamBoardStatus.SCHEDULED
+              and (pe.student.id = :studentId or ce.student.id = :studentId)
+            """)
+    boolean existsRegisteredOfStudentAt(@Param("studentId") Long studentId, @Param("examBoardId") Long examBoardId,
+                                        @Param("examDate") LocalDateTime examDate);
 }

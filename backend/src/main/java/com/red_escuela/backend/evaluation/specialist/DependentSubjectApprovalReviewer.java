@@ -35,7 +35,7 @@ public class DependentSubjectApprovalReviewer {
 
     @EventListener
     public void onSubjectApprovalStandingChanged(SubjectApprovalStandingChangedEvent event) {
-        for (Long dependentSubjectId : findDependentSubjectIds(event.programId(), event.subjectId())) {
+        for (Long dependentSubjectId : findDependentSubjectIds(event.planId(), event.subjectId())) {
             List<SubjectSectionEnrollment> dependents = sectionEnrollmentFinder.findProgramEnrollmentsOfSubject(
                     event.programEnrollmentId(), dependentSubjectId, REVIEWABLE_STATUSES);
             for (SubjectSectionEnrollment dependent : dependents) {
@@ -44,9 +44,9 @@ public class DependentSubjectApprovalReviewer {
         }
     }
 
-    private Set<Long> findDependentSubjectIds(Long programId, Long subjectId) {
-        Map<Long, List<PrerequisiteView>> prerequisitesByProgramSubject = programCurriculumFinder.findProgramPrerequisites(programId);
-        return programCurriculumFinder.findProgramSubjects(programId).stream()
+    private Set<Long> findDependentSubjectIds(Long planId, Long subjectId) {
+        Map<Long, List<PrerequisiteView>> prerequisitesByProgramSubject = programCurriculumFinder.findPrerequisitesOfPlan(planId);
+        return programCurriculumFinder.findProgramSubjectsOfPlan(planId).stream()
                 .filter(programSubject -> prerequisitesByProgramSubject.getOrDefault(programSubject.id(), List.of()).stream()
                         .anyMatch(prerequisite -> subjectId.equals(prerequisite.prerequisiteSubjectId())))
                 .map(ProgramSubjectView::subjectId)

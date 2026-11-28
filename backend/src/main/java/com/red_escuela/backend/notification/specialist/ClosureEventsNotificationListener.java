@@ -1,11 +1,15 @@
 package com.red_escuela.backend.notification.specialist;
 
+import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.evaluation.api.ClosureNotificationTargets;
 import com.red_escuela.backend.evaluation.api.ClosureNotificationTargetsFinder;
 import com.red_escuela.backend.evaluation.events.ClosureApprovedEvent;
 import com.red_escuela.backend.evaluation.events.ClosureConfirmationReminderEvent;
 import com.red_escuela.backend.evaluation.events.ClosureExceptionGrantedEvent;
 import com.red_escuela.backend.evaluation.events.ClosureReopenedEvent;
+import com.red_escuela.backend.evaluation.events.ExamBoardAutoClosedEvent;
+import com.red_escuela.backend.evaluation.events.ExamBoardWithoutTribunalEvent;
+import com.red_escuela.backend.evaluation.events.TermEndClosureOverdueEvent;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.notification.domain.ClosureNotification;
 import com.red_escuela.backend.notification.domain.NotificationRecipient;
@@ -19,6 +23,7 @@ import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class ClosureEventsNotificationListener {
@@ -26,6 +31,9 @@ public class ClosureEventsNotificationListener {
     static final String NOTIFY_CLOSURE_REOPENED_HANDLER = "ClosureEventsNotificationListener.notifyClosureReopened";
     static final String NOTIFY_CLOSURE_EXCEPTION_GRANTED_HANDLER = "ClosureEventsNotificationListener.notifyClosureExceptionGranted";
     static final String NOTIFY_CLOSURE_REMINDER_HANDLER = "ClosureEventsNotificationListener.notifyClosureConfirmationReminder";
+    static final String NOTIFY_TERM_END_OVERDUE_HANDLER = "ClosureEventsNotificationListener.notifyTermEndClosureOverdue";
+    static final String NOTIFY_EXAM_BOARD_AUTO_CLOSED_HANDLER = "ClosureEventsNotificationListener.notifyExamBoardAutoClosed";
+    static final String NOTIFY_EXAM_BOARD_WITHOUT_TRIBUNAL_HANDLER = "ClosureEventsNotificationListener.notifyExamBoardWithoutTribunal";
     static final String CLOSURE_ENTITY_TYPE = "CommissionClosure";
 
     private final ProcessedEffectGuard effectGuard;
@@ -91,6 +99,44 @@ public class ClosureEventsNotificationListener {
                         "Pasaron " + event.daysAfterTermEnd() + " días del fin de la cursada de " + event.sectionLabel()
                                 + " y todavía no confirmaste el cierre de la comisión.",
                         personRecipients(event.instructorPersonIds()), "PROGRAM".equals(event.sectionKind()) ? "SubjectSection" : "CourseSubjectSection", event.sectionId())));
+    }
+
+    @ApplicationModuleListener
+    public void notifyTermEndClosureOverdue(TermEndClosureOverdueEvent event) {
+        effectGuard.runEffectOnce(DerivedEventIdentity.of(event), NOTIFY_TERM_END_OVERDUE_HANDLER, () -> {
+            String entityType = "PROGRAM".equals(event.sectionKind()) ? "SubjectSection" : "CourseSubjectSection";
+            eventPublisher.publishEvent(new ClosureNotification(NotificationType.TERM_CLOSURE_OVERDUE,
+                    "Pasaron " + event.daysAfterTermEnd() + " días del fin de la cursada de " + event.sectionLabel()
+                            + " y el cierre sigue pendiente: terminó el plazo de gracia.",
+                    List.of(NotificationTopic.TERM_CLOSURE_SUPERVISION), entityType, event.sectionId()));
+            personRecipientsOfSection(event).ifPresent(recipients -> eventPublisher.publishEvent(new ClosureNotification(
+                    NotificationType.TERM_CLOSURE_OVERDUE,
+                    "Terminó el plazo de gracia para cerrar " + event.sectionLabel() + ": Dirección ya fue avisada.",
+                    recipients, entityType, event.sectionId())));
+        });
+    }
+
+    @ApplicationModuleListener
+    public void notifyExamBoardAutoClosed(ExamBoardAutoClosedEvent event) {
+        effectGuard.runEffectOnce(DerivedEventIdentity.of(event), NOTIFY_EXAM_BOARD_AUTO_CLOSED_HANDLER, () ->
+                eventPublisher.publishEvent(new ClosureNotification(NotificationType.EXAM_BOARD_AUTO_CLOSED,
+                        "La mesa de " + event.subjectName() + " se cerró sola al terminar el plazo de gracia: "
+                                + event.absentCount() + " inscriptos sin nota quedaron ausentes.",
+                        List.of(NotificationTopic.TERM_CLOSURE_SUPERVISION), "ExamBoard", event.examBoardId())));
+    }
+
+    @ApplicationModuleListener
+    public void notifyExamBoardWithoutTribunal(ExamBoardWithoutTribunalEvent event) {
+        effectGuard.runEffectOnce(DerivedEventIdentity.of(event), NOTIFY_EXAM_BOARD_WITHOUT_TRIBUNAL_HANDLER, () ->
+                eventPublisher.publishEvent(new ClosureNotification(NotificationType.TERM_CLOSURE_OVERDUE,
+                        "La mesa de " + event.subjectName() + " venció el plazo de gracia pero no se puede cerrar sola: no tiene tribunal asignado.",
+                        List.of(NotificationTopic.TERM_CLOSURE_SUPERVISION), "ExamBoard", event.examBoardId())));
+    }
+
+    private Optional<List<NotificationRecipient>> personRecipientsOfSection(TermEndClosureOverdueEvent event) {
+        List<Long> instructors = targetsFinder.findInstructorPersonIds(
+                SectionKind.valueOf(event.sectionKind()), event.sectionId());
+        return instructors.isEmpty() ? Optional.empty() : Optional.of(personRecipients(instructors));
     }
 
     private List<NotificationRecipient> personRecipients(List<Long> personIds) {

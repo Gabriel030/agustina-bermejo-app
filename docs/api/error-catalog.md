@@ -116,6 +116,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ENROLLMENT_WINDOW_CLOSED` | no | `EnrollmentWindowClosedException` | enrollment |
 | `EVALUATION_DATE_ON_HOLIDAY` | no | `EvaluationDateOnHolidayException` | evaluation |
 | `EVALUATION_DATE_OUTSIDE_TERM` | no | `EvaluationDateOutsideTermException` | evaluation |
+| `EXAM_BOARD_DATE_IN_PAST` | no | `ExamBoardDateInPastException` | evaluation |
+| `EXAM_BOARD_DATE_ON_WEEKEND` | no | `ExamBoardDateOnWeekendException` | evaluation |
 | `EXAM_BOARD_REGISTRATION_END_AFTER_EXAM` | no | `ExamBoardRegistrationEndAfterExamException` | evaluation |
 | `EXAM_BOARD_REGISTRATION_WINDOW_CLOSED` | no | `ExamBoardRegistrationWindowClosedException` | evaluation |
 | `EXAM_BOARD_SUBJECT_MISMATCH` | no | `ExamBoardSubjectMismatchException` | evaluation |
@@ -209,6 +211,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `PAYMENT_REJECTION_REASON_REQUIRED` | no | `PaymentRejectionReasonRequiredException` | billing |
 | `PAYMENT_REJECTION_REASON_TOO_LONG` | no | `PaymentRejectionReasonTooLongException` | billing |
 | `PAYMENT_REVIEW_NOTE_TOO_LONG` | no | `PaymentReviewNoteTooLongException` | billing |
+| `PRECEPTOR_ASSIGNMENT_TARGET_INVALID` | no | `PreceptorAssignmentTargetInvalidException` | identity |
 | `PREREQUISITE_NOT_MET` | no | `PrerequisiteNotMetException` | enrollment |
 | `PRICE_FILTER_CONFLICT` | no | `PriceFilterConflictException` | billing |
 | `PROGRAM_ENROLLMENT_COHORT_REQUIRED` | no | `ProgramEnrollmentCohortRequiredException` | enrollment |
@@ -355,6 +358,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `PAYMENT_RECEIPT_FILE_NOT_FOUND` | no | `PaymentReceiptFileNotFoundException` | billing |
 | `PAYMENT_RECEIPT_NOT_FOUND` | no | `PaymentReceiptNotFoundException` | billing |
 | `PERSON_NOT_FOUND` | no | `PersonNotFoundException` | identity |
+| `PRECEPTOR_ASSIGNMENT_NOT_FOUND` | no | `PreceptorAssignmentNotFoundException` | identity |
+| `PRECEPTOR_ASSIGNMENT_SECTION_NOT_FOUND` | no | `PreceptorAssignmentSectionNotFoundException` | identity |
 | `PREREQUISITE_NOT_FOUND` | no | `PrerequisiteNotFoundException` | academicstructure |
 | `PRICE_NOT_FOUND` | no | `PriceNotFoundException` | billing |
 | `PRICE_VERSION_NOT_FOUND` | no | `PriceVersionNotFoundException` | billing |
@@ -500,8 +505,10 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `EXAM_BOARD_HAS_GRADES` | no | `ExamBoardHasGradesException` | evaluation |
 | `EXAM_BOARD_NOT_CLOSED` | no | `ExamBoardNotClosedException` | evaluation |
 | `EXAM_BOARD_NOT_YET_TAKEN` | no | `ExamBoardNotYetTakenException` | evaluation |
+| `EXAM_BOARD_REGISTRATION_AFTER_EXAM_DATE` | no | `ExamBoardRegistrationAfterExamDateException` | evaluation |
 | `EXAM_BOARD_REGISTRATION_NOT_WITHDRAWABLE` | no | `ExamBoardRegistrationNotWithdrawableException` | evaluation |
 | `EXAM_BOARD_REGISTRATION_WITHDRAWN` | no | `ExamBoardRegistrationWithdrawnException` | evaluation |
+| `EXAM_BOARD_WITHOUT_TRIBUNAL` | no | `ExamBoardWithoutTribunalException` | evaluation |
 | `EXAM_CERTIFICATE_ALREADY_ISSUED` | no | `ExamCertificateAlreadyIssuedException` | graduation |
 | `EXAM_CERTIFICATE_NOT_REVOCABLE` | no | `ExamCertificateNotRevocableException` | graduation |
 | `EXCEPTION_ALREADY_CONSUMED` | no | `ExceptionAlreadyConsumedException` | graduation |
@@ -629,6 +636,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `PERSON_ALREADY_ACTIVATED` | no | `PersonAlreadyActivatedException` | identity |
 | `PERSON_NOT_ELIGIBLE_FOR_ACTIVATION` | no | `PersonNotEligibleForActivationException` | identity |
 | `POSSIBLE_DUPLICATE_BANK_TRANSFER` | no | `PossibleDuplicateBankTransferException` | billing |
+| `PRECEPTOR_ASSIGNMENT_ALREADY_EXISTS` | no | `PreceptorAssignmentAlreadyExistsException` | identity |
 | `PRECEPTOR_ROLE_REQUIRED` | no | `PreceptorRoleRequiredException` | identity |
 | `PREREQUISITE_ALREADY_EXISTS` | no | `PrerequisiteAlreadyExistsException` | academicstructure |
 | `PRICE_CHANGED_CONCURRENTLY` | no | `PriceChangedConcurrentlyException` | billing |
@@ -689,6 +697,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `STUDENT_DISCOUNT_PROPOSAL_EXPIRED` | no | `StudentDiscountProposalExpiredException` | billing |
 | `STUDENT_DOCUMENT_ALREADY_EXISTS` | no | `StudentDocumentAlreadyExistsException` | identity |
 | `STUDENT_DOCUMENT_MISSING` | no | `StudentDocumentMissingException` | graduation |
+| `STUDENT_EXAM_BOARD_OVERLAP` | no | `StudentExamBoardOverlapException` | evaluation |
 | `STUDENT_FREE_BY_ABSENCES` | no | `StudentFreeByAbsencesException` | evaluation |
 | `STUDENT_HAS_ACTIVE_ENROLLMENTS` | no | `StudentHasActiveEnrollmentsException` | identity |
 | `STUDENT_HAS_DEBT` | no | `StudentHasDebtException` | graduation |
@@ -1029,6 +1038,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/payments/{paymentId}/approval-revocation/preview` | `PaymentReversalPreviewController#previewApprovalRevocation` |
 | POST | `/payments/{paymentId}/chargebacks` | `PaymentReversalController#registerChargeback` |
 | POST | `/payments/{paymentId}/chargebacks/preview` | `PaymentReversalPreviewController#previewChargebackRegistration` |
+| POST | `/preceptor-assignments` | `PreceptorAssignmentController#assign` |
 | POST | `/price-versions/{priceVersionId}/cancellation` | `PriceController#cancelScheduledPriceVersion` |
 | POST | `/prices/{priceId}/versions` | `PriceController#publishPriceVersion` |
 | POST | `/prices/{priceId}/versions/impact` | `PriceController#getPriceChangeImpact` |

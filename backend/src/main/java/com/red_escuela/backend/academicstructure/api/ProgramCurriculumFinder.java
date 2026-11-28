@@ -41,11 +41,6 @@ public class ProgramCurriculumFinder {
                 .toList();
     }
 
-    public Optional<ProgramSubjectView> findProgramSubject(Long programId, Long subjectId) {
-        return programSubjectRepository.findByProgramIdAndSubjectId(programId, subjectId)
-                .map(this::toProgramSubjectView);
-    }
-
     public List<ProgramSubjectView> findProgramSubjectsOfPlan(Long planId) {
         return programSubjectRepository.findByPlanIdOrderById(planId).stream()
                 .map(this::toProgramSubjectView)
@@ -81,12 +76,12 @@ public class ProgramCurriculumFinder {
                         Collectors.mapping(this::toCorequisiteView, Collectors.toList())));
     }
 
-    public boolean subjectIsActiveInPlan(Long planId, Long subjectId) {
-        return programSubjectRepository.existsActiveByPlanIdAndSubjectId(planId, subjectId);
+    public boolean subjectBelongsToPlan(Long planId, Long subjectId) {
+        return programSubjectRepository.findByPlanIdAndSubjectId(planId, subjectId).isPresent();
     }
 
-    public boolean subjectBelongsToProgram(Long programId, Long subjectId) {
-        return programSubjectRepository.findByProgramIdAndSubjectId(programId, subjectId).isPresent();
+    public boolean subjectIsActiveInPlan(Long planId, Long subjectId) {
+        return programSubjectRepository.existsActiveByPlanIdAndSubjectId(planId, subjectId);
     }
 
     public List<PrerequisiteView> findPrerequisites(Long programSubjectId) {
@@ -99,18 +94,6 @@ public class ProgramCurriculumFinder {
         return programSubjectRepository.findActiveByProgramId(programId).stream()
                 .map(this::toCurriculumEntryView)
                 .toList();
-    }
-
-    public Map<Long, List<PrerequisiteView>> findProgramPrerequisites(Long programId) {
-        return prerequisiteRepository.findAllOfProgram(programId).stream()
-                .collect(Collectors.groupingBy(prerequisite -> prerequisite.getProgramSubject().getId(),
-                        Collectors.mapping(this::toPrerequisiteView, Collectors.toList())));
-    }
-
-    public Map<Long, List<ProgramCorequisiteView>> findProgramCorequisites(Long programId) {
-        return corequisiteRepository.findAllOfProgram(programId).stream()
-                .collect(Collectors.groupingBy(corequisite -> corequisite.getProgramSubject().getId(),
-                        Collectors.mapping(this::toCorequisiteView, Collectors.toList())));
     }
 
     public List<ElectiveGroupRequirementView> findElectiveGroupRequirements(Long programId) {

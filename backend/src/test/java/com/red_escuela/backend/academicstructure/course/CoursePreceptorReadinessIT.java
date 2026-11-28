@@ -54,6 +54,7 @@ class CoursePreceptorReadinessIT extends AbstractIntegrationTest {
     @Autowired private AcademicOfferingCycleRepository cycleRepository;
     @Autowired private PreceptorAssignmentRepository assignments;
     @Autowired private PreceptorTestFactory preceptors;
+    @Autowired private com.red_escuela.backend.academicstructure.usecase.readiness.GetIncompleteAcademicOfferUseCase incompleteOffer;
     @Autowired private EntityManager entityManager;
     @Autowired private JdbcTemplate jdbc;
 
@@ -159,6 +160,23 @@ class CoursePreceptorReadinessIT extends AbstractIntegrationTest {
         assertThat(readinessChecker.check(course.getId()).ready()).isTrue();
     }
 
+    @Test
+    void incompleteOfferListsAnActiveCourseWithoutResponsibleOrSectionsAndSkipsACompleteOne() {
+        Course incomplete = persistCourse();
+        Course complete = courseService.create(request(List.of(preceptors.createPreceptorId())));
+        entityManager.flush();
+
+        var offer = incompleteOffer.getIncompleteAcademicOffer();
+
+        assertThat(offer.courses()).filteredOn(item -> item.id().equals(incomplete.getId())).singleElement().satisfies(item -> {
+            assertThat(item.missingCodes()).containsExactly("COURSE_RESPONSIBLE", "COURSE_SECTIONS");
+            assertThat(item.reasons()).containsExactly("El curso no tiene preceptor responsable", "El curso no tiene comisiones");
+        });
+        assertThat(offer.courses()).filteredOn(item -> item.id().equals(complete.getId())).singleElement()
+                .satisfies(item -> assertThat(item.missingCodes()).containsExactly("COURSE_SECTIONS"));
+        assertThat(offer.incompleteCourseCount()).isEqualTo(offer.courses().size());
+    }
+
     private CreateCourseRequest request(List<Long> responsibleIds) {
         return new CreateCourseRequest("Curso " + System.nanoTime(), term.getId(), null, 20,
                 Money.of(new BigDecimal("1000"), Currency.ARS), 3, null, null, null, null, null, responsibleIds);
@@ -168,6 +186,7 @@ class CoursePreceptorReadinessIT extends AbstractIntegrationTest {
         Course course = new Course();
         course.setName("Curso " + System.nanoTime());
         course.setTerm(term);
+        course.setIsActive(StatusType.ACTIVE);
         entityManager.persist(course);
         return course;
     }

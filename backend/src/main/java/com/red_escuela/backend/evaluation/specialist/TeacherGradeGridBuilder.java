@@ -48,6 +48,7 @@ import java.util.stream.Collectors;
 @Service
 public class TeacherGradeGridBuilder {
 
+    private final SectionEvaluationSchemeLoader schemeLoader;
     private final SectionFinder sectionFinder;
     private final SectionTeachingFinder sectionTeachingFinder;
     private final SectionEnrollmentFinder sectionEnrollmentFinder;
@@ -68,7 +69,8 @@ public class TeacherGradeGridBuilder {
                                    SectionGradeItemPublicationRepository publicationRepository,
                                    GradeItemAuditRepository auditRepository,
                                    SectionTermEndFinder sectionTermEndFinder,
-                                   ApprovedCourseworkCountFinder courseworkCountFinder) {
+                                   ApprovedCourseworkCountFinder courseworkCountFinder, SectionEvaluationSchemeLoader schemeLoader) {
+        this.schemeLoader = schemeLoader;
         this.sectionFinder = sectionFinder;
         this.sectionTeachingFinder = sectionTeachingFinder;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
@@ -122,7 +124,7 @@ public class TeacherGradeGridBuilder {
                         enrollment.getFinalScore(), itemsByEnrollment, freeEnrollmentIds, publications, correctedItemIds))
                 .sorted(byName())
                 .toList();
-        return response(SectionKind.PROGRAM, sectionId, section.getEvaluationScheme(), config.orElse(null), students, publications);
+        return response(SectionKind.PROGRAM, sectionId, schemeLoader.ofProgramSection(section), config.orElse(null), students, publications);
     }
 
     private TeacherGradeGridResponse courseGrid(CourseSubjectSection section) {
@@ -141,7 +143,7 @@ public class TeacherGradeGridBuilder {
                         enrollment.getFinalScore(), itemsByEnrollment, freeEnrollmentIds, publications, correctedItemIds))
                 .sorted(byName())
                 .toList();
-        return response(SectionKind.COURSE, sectionId, section.getEvaluationScheme(), null, students, publications);
+        return response(SectionKind.COURSE, sectionId, schemeLoader.ofCourseSection(section), null, students, publications);
     }
 
     private Map<String, LocalDateTime> publicationsOf(SectionKind kind, Long sectionId) {

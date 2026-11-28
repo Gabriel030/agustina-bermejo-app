@@ -131,7 +131,32 @@ class ExamBoardRegistrationManagerTest extends AbstractIntegrationTest {
         examBoard.setExamDate(LocalDateTime.now().plusDays(1));
         examBoard.setStatus(ExamBoardStatus.SCHEDULED);
         entityManager.persist(examBoard);
+        persistTribunal(examBoard);
         return examBoard;
+    }
+
+    private static final java.util.concurrent.atomic.AtomicInteger TRIBUNAL_DNI = new java.util.concurrent.atomic.AtomicInteger(97000000);
+
+    private void persistTribunal(ExamBoard examBoard) {
+        String dni = String.valueOf(TRIBUNAL_DNI.incrementAndGet());
+        Address address = new Address();
+        entityManager.persist(address);
+        Person person = new Person();
+        person.setName("Tribunal");
+        person.setLastname(dni);
+        person.setDni(dni);
+        person.setUsername(dni);
+        person.setEmail(dni + "@example.com");
+        person.setAddress(address);
+        person.setStatus(StatusType.ACTIVE);
+        entityManager.persist(person);
+        com.red_escuela.backend.academicstructure.entity.Instructor instructor = new com.red_escuela.backend.academicstructure.entity.Instructor();
+        instructor.setPerson(person);
+        entityManager.persist(instructor);
+        com.red_escuela.backend.evaluation.entity.ExamBoardInstructor assignment = new com.red_escuela.backend.evaluation.entity.ExamBoardInstructor();
+        assignment.setExamBoard(examBoard);
+        assignment.setInstructor(instructor);
+        entityManager.persist(assignment);
     }
 
     private Program persistProgram(String name) {

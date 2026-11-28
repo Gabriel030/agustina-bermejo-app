@@ -5,6 +5,7 @@ import java.math.BigDecimal;
 import com.red_escuela.backend.shared.domain.Grade;
 
 import com.red_escuela.backend.academicstructure.domain.SectionKind;
+import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
 
 import java.time.LocalDate;
@@ -48,15 +49,16 @@ public record SectionEvaluationConfigResponse(
                 instructors, canEdit, canSubmit, null, SectionKind.PROGRAM.name());
     }
 
-    public static SectionEvaluationConfigResponse from(SectionEvaluationConfig config, List<SectionInstructorSummary> instructors) {
-        return from(config, instructors, false, false);
+    public static SectionEvaluationConfigResponse from(SectionEvaluationConfig config, EvaluationScheme scheme,
+                                                       List<SectionInstructorSummary> instructors) {
+        return from(config, scheme, instructors, false, false);
     }
 
-    public static SectionEvaluationConfigResponse from(SectionEvaluationConfig config, List<SectionInstructorSummary> instructors,
+    public static SectionEvaluationConfigResponse from(SectionEvaluationConfig config, EvaluationScheme scheme,
+                                                       List<SectionInstructorSummary> instructors,
                                                        boolean canEdit, boolean canSubmit) {
         boolean courseOwned = config.isOwnedByCourseSection();
         var term = config.term();
-        var scheme = config.sectionEvaluationScheme();
         return new SectionEvaluationConfigResponse(
                 config.getId(), courseOwned ? null : config.ownerSectionId(), config.subjectName(), config.sectionName(),
                 config.getStatus().name(),

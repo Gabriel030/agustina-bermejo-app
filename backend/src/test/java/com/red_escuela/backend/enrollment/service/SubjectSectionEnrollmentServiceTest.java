@@ -615,6 +615,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         persistProgramSubject(program, subject);
         LocalDateTime now = LocalDateTime.now();
         Term term = persistTerm(now.minusDays(20), now.minusDays(10));
+        term.setEndDate(now.plusDays(30));
         term.setEnrollmentOverride(TermEnrollmentOverride.OPEN);
         SubjectSection section = persistSubjectSection(subject, term, null);
         ProgramEnrollment enrollment = persistProgramEnrollment(student, program, ProgramEnrollmentStatus.ENROLLED);
@@ -836,7 +837,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void withdrawingTheProgramEnrollmentKeepsRegularApprovedAndFailedSectionEnrollmentsAsHistory() {
+    void withdrawingTheProgramEnrollmentWithdrawsRegularAndKeepsApprovedAndFailedSectionEnrollmentsAsHistory() {
         Institution institution = persistInstitution();
         Program program = persistProgram("CarreraHistoria");
         Term term = persistTerm(null, null);
@@ -851,7 +852,7 @@ class SubjectSectionEnrollmentServiceTest extends AbstractIntegrationTest {
         programEnrollmentService.withdrawForNonpayment(enrollment.getId());
 
         assertThat(rows).extracting(row -> subjectSectionEnrollmentService.get(row.getId()).getStatus())
-                .containsExactly(EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVED, EnrollmentStatus.FAILED);
+                .containsExactly(EnrollmentStatus.WITHDRAWN, EnrollmentStatus.APPROVED, EnrollmentStatus.FAILED);
     }
 
     private SubjectSectionEnrollment persistSectionEnrollment(ProgramEnrollment enrollment, Student student, Program program,

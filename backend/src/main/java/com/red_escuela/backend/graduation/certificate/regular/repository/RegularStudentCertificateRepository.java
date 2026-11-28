@@ -4,6 +4,7 @@ import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCert
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateStatus;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularStudentCertificate;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,7 +13,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
-public interface RegularStudentCertificateRepository extends JpaRepository<RegularStudentCertificate, Long> {
+public interface RegularStudentCertificateRepository extends JpaRepository<RegularStudentCertificate, Long>, JpaSpecificationExecutor<RegularStudentCertificate> {
 
     Optional<RegularStudentCertificate> findByCode(String code);
 
@@ -31,14 +32,6 @@ public interface RegularStudentCertificateRepository extends JpaRepository<Regul
     List<RegularStudentCertificate> findTop50ByCourseEnrollmentIdOrderByIssuedAtDesc(Long courseEnrollmentId);
 
     List<RegularStudentCertificate> findByStudentIdOrderByIssuedAtDesc(Long studentId);
-
-    List<RegularStudentCertificate> findTop200ByOrderByIssuedAtDesc();
-
-    List<RegularStudentCertificate> findTop200ByStatusOrderByIssuedAtDesc(RegularCertificateStatus status);
-
-    List<RegularStudentCertificate> findTop200ByStudentIdOrderByIssuedAtDesc(Long studentId);
-
-    List<RegularStudentCertificate> findTop200ByStudentIdAndStatusOrderByIssuedAtDesc(Long studentId, RegularCertificateStatus status);
 
     @Modifying
     @Query("update RegularStudentCertificate c set c.status = com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateStatus.EXPIRED"

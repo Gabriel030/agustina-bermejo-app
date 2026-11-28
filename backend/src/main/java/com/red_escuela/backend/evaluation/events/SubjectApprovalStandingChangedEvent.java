@@ -7,11 +7,11 @@ import com.red_escuela.backend.shared.time.ApplicationTime;
 import java.time.Instant;
 
 public record SubjectApprovalStandingChangedEvent(String correlationId, Instant occurredAt, Long programEnrollmentId,
-                                                  Long programId, Long subjectId, boolean approved) implements DomainEvent {
+                                                  Long planId, Long subjectId, boolean approved) implements DomainEvent {
 
-    public static SubjectApprovalStandingChangedEvent changedFor(Long programEnrollmentId, Long programId, Long subjectId,
+    public static SubjectApprovalStandingChangedEvent changedFor(Long programEnrollmentId, Long planId, Long subjectId,
                                                                  boolean approved) {
         return new SubjectApprovalStandingChangedEvent(CorrelationIds.current(), ApplicationTime.instant(),
-                programEnrollmentId, programId, subjectId, approved);
+                programEnrollmentId, planId, subjectId, approved);
     }
 }

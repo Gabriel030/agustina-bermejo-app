@@ -2,7 +2,9 @@ package com.red_escuela.backend.enrollment.service;
 
 import com.red_escuela.backend.academicstructure.api.SectionInstructorFinder;
 import com.red_escuela.backend.academicstructure.api.SectionInstructorView;
+import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
+import com.red_escuela.backend.enrollment.events.ProgramSectionStatusChangedEvent;
 import com.red_escuela.backend.enrollment.events.SubjectEnrollmentWithdrawnEvent;
 import com.red_escuela.backend.enrollment.events.SubjectSectionChangedEvent;
 import com.red_escuela.backend.identity.entity.Person;
@@ -27,6 +29,11 @@ public class EnrollmentChangeEventPublisher {
         eventPublisher.publishEvent(SubjectEnrollmentWithdrawnEvent.of(enrollment.getId(), person.getId(), fullNameOf(person),
                 enrollment.getSubjectSection().getSubject().getName(), enrollment.getSubjectSection().getName(),
                 instructorPersonIds(enrollment.getSubjectSection().getId()), change.madeByStaff(), change.reason()));
+    }
+
+    public void publishProgramSectionStatusChanged(SubjectSectionEnrollment enrollment, EnrollmentStatus previousStatus) {
+        eventPublisher.publishEvent(ProgramSectionStatusChangedEvent.changed(enrollment.getProgramEnrollment().getId(),
+                enrollment.getId(), previousStatus != enrollment.getStatus(), false));
     }
 
     public void publishSectionChanged(SubjectSectionEnrollment origin, SubjectSectionEnrollment destination, EnrollmentChange change) {

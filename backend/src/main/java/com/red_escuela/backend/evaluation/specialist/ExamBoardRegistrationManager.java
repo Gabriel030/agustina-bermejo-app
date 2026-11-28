@@ -18,7 +18,9 @@ import com.red_escuela.backend.evaluation.exception.ExamBoardClosedException;
 import com.red_escuela.backend.evaluation.exception.ExamBoardNotFoundException;
 import com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationNotFoundException;
 import com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationNotWithdrawableException;
+import com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationAfterExamDateException;
 import com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationWindowClosedException;
+import com.red_escuela.backend.evaluation.exception.StudentExamBoardOverlapException;
 import com.red_escuela.backend.evaluation.exception.ExamBoardSubjectMismatchException;
 import com.red_escuela.backend.evaluation.exception.MaxExamAttemptsExceededException;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRegistrationRepository;
@@ -67,8 +69,8 @@ public class ExamBoardRegistrationManager {
         this.clock = clock;
     }
 
-    private void requireEnrollmentFeeOfCourseTerm(SubjectSectionEnrollment enrollment) {
-        Term term = enrollment.getSubjectSection().getTerm();
+    private void requireEnrollmentFeeOfExamTerm(ExamBoard examBoard, SubjectSectionEnrollment enrollment) {
+        Term term = examBoard.getTerm();
         if (term == null) {
             enrollmentFeeRequirementPort.requireForCurrentPeriod(enrollment.getProgramEnrollment().getId(), EnrollmentFeeRequirementPurpose.EXAM_REGISTRATION);
             return;
@@ -88,11 +90,18 @@ public class ExamBoardRegistrationManager {
         requireScheduledExamBoard(examBoard);
 
         SubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findProgramEnrollment(enrollmentId);
-        requireEnrollmentFeeOfCourseTerm(enrollment);
-        if (!lateExamApprovalChecker.hasApprovedLateExam(
-                enrollment.getProgramEnrollment().getId(), enrollment.getSubjectSection().getSubject().getId())) {
-            requireOpenRegistrationWindow(examBoard);
+        enrollment.getProgramEnrollment().requireActive();
+        requireEnrollmentFeeOfExamTerm(examBoard, enrollment);
+        Long programEnrollmentId = enrollment.getProgramEnrollment().getId();
+        Long enrollmentSubjectId = enrollment.getSubjectSection().getSubject().getId();
+        boolean lateExamRequired = !isRegistrationWindowOpen(examBoard);
+        if (lateExamRequired) {
+            if (!lateExamApprovalChecker.hasApprovedLateExam(programEnrollmentId, enrollmentSubjectId)) {
+                throw new ExamBoardRegistrationWindowClosedException(examBoard.getId());
+            }
+            requireBeforeExamDate(examBoard);
         }
+        requireNoOverlappingExamBoard(examBoard, enrollment.getStudent().getId());
         finalExamEligibilityEvaluator.requireEligibleToRegister(enrollment);
         Long subjectId = enrollment.getSubjectSection().getSubject().getId();
         if (examBoard.getSubject() == null || !examBoard.getSubject().getId().equals(subjectId)) {
@@ -126,6 +135,11 @@ public class ExamBoardRegistrationManager {
             }
         }
 
+        if (lateExamRequired
+                && !lateExamApprovalChecker.consumeApprovedLateExam(programEnrollmentId, enrollmentSubjectId)) {
+            throw new ExamBoardRegistrationWindowClosedException(examBoard.getId());
+        }
+
         if (existing.isPresent()) {
             ExamBoardRegistration registration = existing.get();
             registration.setStatus(ExamBoardRegistrationStatus.REGISTERED);
@@ -151,6 +165,7 @@ public class ExamBoardRegistrationManager {
         requireOpenExamBoard(examBoard);
 
         CourseSubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findCourseEnrollment(enrollmentId);
+        requireNoOverlappingExamBoard(examBoard, enrollment.getStudent().getId());
         finalExamEligibilityEvaluator.requireEligibleToRegister(enrollment);
         Long courseSubjectId = enrollment.getCourseSubjectSection().getCourseSubject().getId();
         if (examBoard.getCourseSubject() == null || !examBoard.getCourseSubject().getId().equals(courseSubjectId)) {
@@ -245,7 +260,21 @@ public class ExamBoardRegistrationManager {
 
     private void requireOpenExamBoard(ExamBoard examBoard) {
         requireScheduledExamBoard(examBoard);
-        requireOpenRegistrationWindow(examBoard);
+        if (!isRegistrationWindowOpen(examBoard)) {
+            throw new ExamBoardRegistrationWindowClosedException(examBoard.getId());
+        }
+    }
+
+    private void requireBeforeExamDate(ExamBoard examBoard) {
+        if (LocalDateTime.now(clock).isAfter(examBoard.getExamDate())) {
+            throw new ExamBoardRegistrationAfterExamDateException(examBoard.getId());
+        }
+    }
+
+    private void requireNoOverlappingExamBoard(ExamBoard examBoard, Long studentId) {
+        if (examBoardRegistrationRepository.existsRegisteredOfStudentAt(studentId, examBoard.getId(), examBoard.getExamDate())) {
+            throw new StudentExamBoardOverlapException(studentId, examBoard.getExamDate());
+        }
     }
 
     private void requireScheduledExamBoard(ExamBoard examBoard) {
@@ -254,15 +283,13 @@ public class ExamBoardRegistrationManager {
         }
     }
 
-    private void requireOpenRegistrationWindow(ExamBoard examBoard) {
+    private boolean isRegistrationWindowOpen(ExamBoard examBoard) {
         LocalDateTime now = LocalDateTime.now(clock);
         if (examBoard.getRegistrationStart() != null && now.isBefore(examBoard.getRegistrationStart())) {
-            throw new ExamBoardRegistrationWindowClosedException(examBoard.getId());
+            return false;
         }
         LocalDateTime registrationEnd = examBoard.getRegistrationEnd() != null
                 ? examBoard.getRegistrationEnd() : examBoard.getExamDate();
-        if (now.isAfter(registrationEnd)) {
-            throw new ExamBoardRegistrationWindowClosedException(examBoard.getId());
-        }
+        return !now.isAfter(registrationEnd);
     }
 }

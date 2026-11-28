@@ -37,10 +37,13 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.ActiveProfiles;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -97,6 +100,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class ExamRegistrationIssuanceIT extends AbstractIntegrationTest {
 
     private static final String PATH = "/me/documents/EXAM_REGISTRATION_CERTIFICATE";
+
+    @TempDir
+    static Path isolatedCertificatesDirectory;
+
+    @DynamicPropertySource
+    static void isolateCertificatesDirectory(DynamicPropertyRegistry registry) {
+        registry.add("app.certificates.directory", () -> isolatedCertificatesDirectory.toString());
+    }
 
     @Autowired
     private TransactionTemplate transactions;
