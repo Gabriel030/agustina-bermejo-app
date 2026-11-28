@@ -80,6 +80,12 @@ class CoursePreceptorReadinessIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void courseCreationWithoutTheResponsibleListIsRejected() {
+        assertThatThrownBy(() -> courseService.create(request(null)))
+                .isInstanceOf(CourseResponsibleRequiredException.class);
+    }
+
+    @Test
     void courseCreationRejectsAResponsibleWithoutThePreceptorRole() {
         Long teacher = preceptors.createPersonWithRole("DOCENTE");
 

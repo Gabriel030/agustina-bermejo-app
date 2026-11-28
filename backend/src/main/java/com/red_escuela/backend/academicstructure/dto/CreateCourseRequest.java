@@ -1,8 +1,8 @@
 package com.red_escuela.backend.academicstructure.dto;
 
 import com.red_escuela.backend.academicstructure.entity.TeachingMode;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import org.springframework.lang.Nullable;
@@ -20,7 +20,7 @@ public record CreateCourseRequest(
         TeachingMode teachingMode,
         LocalDateTime registrationStart, LocalDateTime registrationEnd, Currency currency,
         @Nullable @Positive(message = "La carga horaria debe ser mayor a cero") Integer durationHours,
-        @NotEmpty List<@NotNull Long> responsiblePreceptorIds) {
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) List<Long> responsiblePreceptorIds) {
 
     public CreateCourseRequest(String name, Long termId, String schedule, Integer capacity, Money price,
                                Integer durationMonths, TeachingMode teachingMode,

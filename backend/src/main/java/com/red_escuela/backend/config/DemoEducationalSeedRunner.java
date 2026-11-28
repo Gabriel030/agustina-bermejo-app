@@ -353,6 +353,8 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
         course.put("capacity", 20);
         course.put("price", Map.of("amount", "15000", "currency", "ARS"));
         course.put("durationMonths", 3);
+        long preceptorId = jdbcTemplate.queryForObject("select id from person where username = 'preceptor.demo'", Long.class);
+        course.put("responsiblePreceptorIds", List.of(preceptorId));
         long courseId = api.post(ADMIN, "/courses", course).get("id").asLong();
         long cycleId = createCycle(api, "courseId", courseId, termId);
         List<Long> moduleSectionIds = new ArrayList<>();
@@ -369,6 +371,7 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
             long sectionId = api.post(ADMIN, "/academic-offering-cycles/" + cycleId + "/sections", section).asLong();
             api.put(ADMIN, "/course-sections/" + sectionId, Map.of("evaluationSchemeId", schemeId));
             api.post(ADMIN, "/course-sections/" + sectionId + "/instructors", Map.of("instructorId", instructorId, "role", "LEAD"));
+            jdbcTemplate.update("insert into preceptor_assignment (person_id, course_section_id, created_by) values (?, ?, ?)", preceptorId, sectionId, preceptorId);
             moduleSectionIds.add(sectionId);
         }
         approveCycle(api, cycleId);
