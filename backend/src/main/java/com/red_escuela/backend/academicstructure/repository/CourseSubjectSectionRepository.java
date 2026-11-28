@@ -24,6 +24,8 @@ public interface CourseSubjectSectionRepository extends JpaRepository<CourseSubj
 
     List<CourseSubjectSection> findByCourseSubjectId(Long courseSubjectId);
 
+    List<CourseSubjectSection> findByCourseSubjectCourseId(Long courseId);
+
     List<CourseSubjectSection> findByAcademicOfferingCycleId(Long cycleId);
 
     @Query("select new com.red_escuela.backend.academicstructure.repository.CycleSectionCount(s.academicOfferingCycle.id, count(s)) from CourseSubjectSection s where s.academicOfferingCycle.id in :cycleIds group by s.academicOfferingCycle.id")

@@ -5,4 +5,6 @@ import java.util.Set;
 
 public interface SectionEvaluationApprovalPort {
     Set<Long> programSectionIdsWithApprovedEvaluation(Collection<Long> programSectionIds);
+
+    Set<Long> courseSectionIdsWithApprovedEvaluation(Collection<Long> courseSectionIds);
 }

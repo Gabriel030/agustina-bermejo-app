@@ -29,4 +29,14 @@ public class SectionEvaluationApprovalPortAdapter implements SectionEvaluationAp
                 .map(config -> config.getSubjectSection().getId())
                 .collect(Collectors.toUnmodifiableSet());
     }
+
+    @Override
+    public Set<Long> courseSectionIdsWithApprovedEvaluation(Collection<Long> courseSectionIds) {
+        if (courseSectionIds.isEmpty()) {
+            return Set.of();
+        }
+        return configRepository.findByCourseSectionIdInAndStatus(courseSectionIds, SectionEvaluationConfigStatus.APPROVED).stream()
+                .map(config -> config.getCourseSection().getId())
+                .collect(Collectors.toUnmodifiableSet());
+    }
 }
