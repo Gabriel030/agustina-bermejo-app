@@ -3,6 +3,7 @@ package com.red_escuela.backend.identity.api;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.identity.entity.PreceptorAssignment;
 import com.red_escuela.backend.identity.exception.CohortResponsibleRequiredException;
+import com.red_escuela.backend.identity.exception.CourseResponsibleRequiredException;
 import com.red_escuela.backend.identity.exception.PreceptorRoleRequiredException;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.PreceptorAssignmentRepository;
@@ -35,6 +36,31 @@ public class CohortResponsibleAssigner {
         if (distinctIds.isEmpty()) {
             throw new CohortResponsibleRequiredException();
         }
+        requirePreceptors(distinctIds);
+        for (Long personId : distinctIds) {
+            if (!preceptorAssignmentRepository.existsByPersonIdAndProgramCohortId(personId, programCohortId)) {
+                preceptorAssignmentRepository.save(PreceptorAssignment.builder()
+                        .personId(personId).programCohortId(programCohortId).createdBy(actorId).build());
+            }
+        }
+    }
+
+    @Transactional
+    public void assignToCourse(Long courseId, Collection<Long> personIds, Long actorId) {
+        Set<Long> distinctIds = personIds == null ? Set.of() : new LinkedHashSet<>(personIds);
+        if (distinctIds.isEmpty()) {
+            throw new CourseResponsibleRequiredException();
+        }
+        requirePreceptors(distinctIds);
+        for (Long personId : distinctIds) {
+            if (!preceptorAssignmentRepository.existsByPersonIdAndCourseId(personId, courseId)) {
+                preceptorAssignmentRepository.save(PreceptorAssignment.builder()
+                        .personId(personId).courseId(courseId).createdBy(actorId).build());
+            }
+        }
+    }
+
+    private void requirePreceptors(Set<Long> distinctIds) {
         Map<Long, Person> peopleById = personRepository.findAllWithRolesByIdIn(distinctIds).stream()
                 .collect(Collectors.toMap(Person::getId, Function.identity()));
         for (Long personId : distinctIds) {
@@ -42,12 +68,6 @@ public class CohortResponsibleAssigner {
             boolean isPreceptor = person != null && person.getRoles().stream().anyMatch(role -> PRECEPTOR_ROLE.equals(role.getName()));
             if (!isPreceptor) {
                 throw new PreceptorRoleRequiredException(personId);
-            }
-        }
-        for (Long personId : distinctIds) {
-            if (!preceptorAssignmentRepository.existsByPersonIdAndProgramCohortId(personId, programCohortId)) {
-                preceptorAssignmentRepository.save(PreceptorAssignment.builder()
-                        .personId(personId).programCohortId(programCohortId).createdBy(actorId).build());
             }
         }
     }
