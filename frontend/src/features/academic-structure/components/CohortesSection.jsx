@@ -17,6 +17,7 @@ import {
   useProgramCohorts,
 } from '@/features/academic-structure/hooks/useCohorts';
 import { NuevaCohortDialog } from './NuevaCohortDialog';
+import { CohortResponsibleDialog } from './CohortResponsibleDialog';
 import { cohortStatus, cohortTitle, readinessChecklist } from '@/features/academic-structure/lib/cohorts';
 
 const COMMISSIONS_PATH = '/director/oferta-academica';
@@ -30,7 +31,7 @@ function cohortDatesLine(cohort) {
   return [admission, cursada].filter(Boolean).join(' · ');
 }
 
-function ReadinessChecklist({ items, canManage }) {
+function ReadinessChecklist({ items, canManage, onCompleteResponsible }) {
   const fulfilledCount = items.filter((item) => item.fulfilled).length;
 
   return (
@@ -54,6 +55,11 @@ function ReadinessChecklist({ items, canManage }) {
               {item.label}
               {item.code === 'SECTION_PRECEPTORS' && !item.fulfilled ? (item.total === null ? ` · faltan ${item.pendingCount}` : ` · ${item.withPreceptor} de ${item.total}`) : ''}
             </span>
+            {!item.fulfilled && canManage && item.code === 'COHORT_RESPONSIBLE' && (
+              <Button type="button" variant="link" size="inline" className="font-semibold" onClick={onCompleteResponsible}>
+                Completar
+              </Button>
+            )}
             {!item.fulfilled && canManage && item.code === 'SECTION_PRECEPTORS' && (
               <Link to={COMMISSIONS_PATH} className="font-semibold text-brand underline underline-offset-2">
                 Ir a comisiones
@@ -72,6 +78,7 @@ function CohortCard({ cohort, canManage }) {
   const openCohort = useOpenCohort();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [openFailed, setOpenFailed] = useState(false);
+  const [responsibleOpen, setResponsibleOpen] = useState(false);
   const title = cohortTitle(cohort);
   const datesLine = cohortDatesLine(cohort);
   const readiness = readinessQuery.data;
@@ -133,7 +140,17 @@ function CohortCard({ cohort, canManage }) {
           No se hizo ningún cambio. Probá de nuevo en un momento.
         </Notice>
       )}
-      {readiness && !readiness.open && missing && <ReadinessChecklist items={checklist} canManage={canManage} />}
+      {readiness && !readiness.open && missing && <ReadinessChecklist items={checklist} canManage={canManage} onCompleteResponsible={() => setResponsibleOpen(true)} />}
+
+      {canManage && responsibleOpen && (
+        <CohortResponsibleDialog
+          open
+          onClose={() => setResponsibleOpen(false)}
+          cohortId={cohort.id}
+          cohortTitle={title}
+          initialIds={(cohort.responsiblePreceptors ?? []).map((preceptor) => preceptor.id)}
+        />
+      )}
 
       <ConfirmActionDialog
         open={confirmOpen}

@@ -73,3 +73,18 @@ export function useCreateCohort() {
     },
   });
 }
+
+export function useReplaceCohortResponsibles(cohortId) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (responsiblePreceptorIds) =>
+      apiFetch(`/cohorts/${cohortId}/responsible-preceptors`, {
+        method: 'PUT',
+        body: JSON.stringify({ responsiblePreceptorIds }),
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['cohort-readiness', cohortId] });
+      queryClient.invalidateQueries({ queryKey: ['program-cohorts'] });
+    },
+  });
+}
