@@ -140,6 +140,7 @@ public class GradeItemRecorder {
         requireFinalFromExamBoard(request);
         sectionEnrollmentFinder.lockProgramEnrollment(enrollmentId);
         SubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findProgramEnrollment(enrollmentId);
+        enrollment.getProgramEnrollment().requireActive();
         requireSectionNotClosedUnlessFinal(request, SectionKind.PROGRAM, enrollment.getSubjectSection().getId());
         EvaluationScheme scheme = schemeLoader.ofProgramSection(enrollment.getSubjectSection());
         ExamBoard examBoard = validateGradeSource(

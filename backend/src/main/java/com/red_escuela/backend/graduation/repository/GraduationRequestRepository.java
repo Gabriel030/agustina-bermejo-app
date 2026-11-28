@@ -26,6 +26,8 @@ public interface GraduationRequestRepository extends JpaRepository<GraduationReq
 
     List<GraduationRequest> findByProgramEnrollmentIdAndStatusNot(Long programEnrollmentId, GraduationRequestStatus status);
 
+    List<GraduationRequest> findByProgramEnrollmentIdAndStatusIn(Long programEnrollmentId, java.util.Collection<GraduationRequestStatus> statuses);
+
     Optional<GraduationRequest> findFirstByProgramEnrollmentIdOrderByIdDesc(Long programEnrollmentId);
 
     boolean existsByProgramEnrollmentIdAndStatus(Long programEnrollmentId, GraduationRequestStatus status);
