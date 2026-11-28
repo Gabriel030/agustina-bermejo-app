@@ -7,9 +7,9 @@ screens: ["pagos", "pagos/:invoiceId/online", "facturacion", "descuentos", "prec
 last_review: 2026-11-28
 ---
 
-## Pantalla en rediseño
+## En rediseño
 
-Esta sección está pendiente de rediseño. No tiene contenido todavía.
+Esta sección está en rediseño. No tiene contenido todavía.
 
 ## Pantallas cubiertas por excepción
 
