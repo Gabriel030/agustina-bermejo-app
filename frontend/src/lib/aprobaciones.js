@@ -26,9 +26,18 @@ export function isAlreadyDecided(error) {
   return error?.status === 409 && (!error.code || ALREADY_DECIDED_CODES.includes(error.code));
 }
 
+function courseCycleNotReadyMessage(error) {
+  const reasons = Array.isArray(error.details?.reasons) ? error.details.reasons : [];
+  const base = 'No se puede aprobar: hay comisiones del curso sin preceptor.';
+  return reasons.length === 0 ? base : `${base} Falta en ${reasons.map((reason) => reason.replace(/: sin preceptor$/, '')).join(', ')}.`;
+}
+
 export function decisionErrorMessage(error) {
   if (isAlreadyDecided(error)) {
     return 'Otra persona de dirección ya decidió este trámite.';
+  }
+  if (error?.code === 'COURSE_CYCLE_NOT_READY') {
+    return courseCycleNotReadyMessage(error);
   }
   return DECISION_ERROR_MESSAGES[error?.code] ?? 'No se pudo guardar la decisión. Probá de nuevo.';
 }

@@ -5,12 +5,12 @@ import { PreceptorMultiSelect } from '@/components/PreceptorMultiSelect';
 import { useReplaceSectionPreceptors } from '@/features/academic-structure/hooks/useReplaceSectionPreceptors';
 import { describeImpact, sameIds } from '@/features/academic-structure/lib/sectionPreceptors';
 
-export function SectionPreceptorsEditor({ section, cycleId, onClose }) {
+export function SectionPreceptorsEditor({ section, cycleId, sectionKind, onClose }) {
   const current = (section.preceptors ?? []).map((p) => p.personId);
   const pendingRequestCount = Math.max(0, ...(section.preceptors ?? []).map((p) => p.pendingRequestCount));
   const [selected, setSelected] = useState(current);
   const [failed, setFailed] = useState(false);
-  const replace = useReplaceSectionPreceptors(cycleId);
+  const replace = useReplaceSectionPreceptors(cycleId, sectionKind);
   const container = useRef(null);
 
   useEffect(() => {
