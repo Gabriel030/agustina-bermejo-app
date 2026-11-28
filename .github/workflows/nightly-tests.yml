@@ -67,7 +67,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ needs.decide.outputs.sha }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || needs.decide.outputs.sha }}
 
       - name: Pull the Postgres image in the background
         run: nohup docker pull -q postgres:16-alpine > "$RUNNER_TEMP/prepull.log" 2>&1 &
@@ -119,7 +119,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ needs.decide.outputs.sha }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || needs.decide.outputs.sha }}
 
       - name: Pull the Postgres image in the background
         run: nohup docker pull -q postgres:16-alpine > "$RUNNER_TEMP/prepull.log" 2>&1 &
@@ -162,7 +162,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          ref: ${{ needs.decide.outputs.sha }}
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.sha || needs.decide.outputs.sha }}
 
       - name: Install the frontend and e2e dependencies
         run: |
