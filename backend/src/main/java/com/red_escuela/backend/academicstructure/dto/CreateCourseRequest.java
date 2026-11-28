@@ -15,10 +15,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 public record CreateCourseRequest(
-        @NotBlank String name, @NotNull Long termId, String schedule,
+        @NotBlank String name, @NotNull Long termId, @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) String schedule,
         @NotNull @Positive Integer capacity, @NonNegativeMoney Money price, @NotNull @Positive Integer durationMonths,
-        TeachingMode teachingMode,
-        LocalDateTime registrationStart, LocalDateTime registrationEnd, Currency currency,
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) TeachingMode teachingMode,
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDateTime registrationStart, @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) LocalDateTime registrationEnd, @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) Currency currency,
         @Nullable @Positive(message = "La carga horaria debe ser mayor a cero") Integer durationHours,
         @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) List<Long> responsiblePreceptorIds) {
 
