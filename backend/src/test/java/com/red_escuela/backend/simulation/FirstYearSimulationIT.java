@@ -23,6 +23,8 @@ import com.red_escuela.backend.identity.specialist.LocalSeedRunner;
 import com.red_escuela.backend.identity.specialist.PersonFactory;
 import com.red_escuela.backend.platform.infrastructure.FeatureSnapshotHolder;
 import com.red_escuela.backend.platform.infrastructure.InstituteSettingsSnapshotHolder;
+import com.red_escuela.backend.platform.specialist.InitialBillingModeProvisioner;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import com.red_escuela.backend.testsupport.NightlyTest;
 import com.red_escuela.backend.testsupport.SlowTest;
@@ -100,6 +102,8 @@ class FirstYearSimulationIT extends AbstractIntegrationTest {
     @Autowired
     private HolidaysMissingForNextYearReminderJob holidaysReminderJob;
     @Autowired
+    private InitialBillingModeProvisioner billingModeProvisioner;
+    @Autowired
     private List<FeatureSnapshotHolder> featureSnapshotHolders;
     @Autowired
     private List<InstituteSettingsSnapshotHolder> settingsSnapshotHolders;
@@ -108,6 +112,7 @@ class FirstYearSimulationIT extends AbstractIntegrationTest {
     void oneSchoolYearOfThirtyEightStudentsRunsWithoutServerErrorsAndIsDeterministic() throws IOException {
         SimulationReport first = simulateYear();
         TestDatabaseIsolation.restoreNow();
+        billingModeProvisioner.provisionInitialBillingMode(BillingMode.OFF);
         featureSnapshotHolders.forEach(FeatureSnapshotHolder::refresh);
         settingsSnapshotHolders.forEach(InstituteSettingsSnapshotHolder::refresh);
         SimulationReport second = simulateYear();
