@@ -9,6 +9,7 @@ const STATUS_PRESENTATION = {
   FAILED: { label: 'Desaprobado', tone: 'danger' },
   WITHDRAWN: { label: 'Dado de baja', tone: 'neutral' },
   WAITLIST_EXPIRED: { label: 'Lista de espera vencida', tone: 'neutral' },
+  APPROVAL_PENDING: { label: 'Promocionada · falta aprobar', tone: 'warning' },
 };
 
 export function isCourseEnrollmentInProgress(enrollment) {

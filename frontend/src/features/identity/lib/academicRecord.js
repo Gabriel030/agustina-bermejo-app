@@ -39,6 +39,7 @@ export const SECTION_STATUS = {
   ENROLLED: { tone: 'neutral', label: 'Inscripta' },
   WAITLISTED: { tone: 'warning', label: 'En lista de espera' },
   WAITLIST_EXPIRED: { tone: 'neutral', label: 'Lista de espera vencida' },
+  APPROVAL_PENDING: { tone: 'warning', label: 'Promocionada · falta aprobar' },
 };
 
 export function describeSectionStatus(status) {

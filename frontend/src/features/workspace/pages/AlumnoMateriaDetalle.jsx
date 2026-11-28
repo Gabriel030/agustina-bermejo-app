@@ -22,6 +22,7 @@ const BADGE_ESTADO = {
   IN_PROGRESS: { label: 'En curso', tone: 'accent', Icon: Clock },
   WAITLISTED: { label: 'En lista de espera', tone: 'warning', Icon: Clock },
   WAITLIST_EXPIRED: { label: 'Lista de espera vencida', tone: 'neutral', Icon: XCircle },
+  APPROVAL_PENDING: { label: 'Promocionada · falta aprobar', tone: 'warning', Icon: Flag },
   ENROLLED: { label: 'Inscripto', tone: 'accent', Icon: CheckCircle2 },
   APPROVED: { label: 'Aprobada', tone: 'success', Icon: CheckCircle2 },
   FAILED: { label: 'Desaprobada', tone: 'danger', Icon: XCircle },
