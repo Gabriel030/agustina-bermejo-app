@@ -514,8 +514,8 @@ class DataImportLifecycleIT extends AbstractIntegrationTest {
 
     private long importFullHistory(String key, String studentDocument, String teacherDocument, int year) throws Exception {
         String program = "Tecnicatura " + key;
-        String subject = "H" + key.substring(0, 3);
-        String second = "J" + key.substring(0, 3);
+        String subject = freeSubjectCode("H");
+        String second = freeSubjectCode("J");
         String section = "SEC-" + key;
         long batchId = createBatch();
         upload(batchId, "PERSONS", PERSON_HEADER + student(studentDocument, "Ana", "ana." + key)
