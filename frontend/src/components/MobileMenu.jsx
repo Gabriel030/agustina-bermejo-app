@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Dialog as DialogPrimitive } from 'radix-ui';
-import { useLocation } from 'react-router-dom';
-import { ChevronRight, LogOut, X } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { ChevronRight, CircleHelp, LogOut, X } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { InstitutionBrand } from '@/components/InstitutionBrand';
 import { RoleSwitcher } from '@/components/RoleSwitcher';
 import { DRAWER_ROW, DrawerBackRow, DrawerEntryList } from '@/components/MobileDrawerLevel';
 import { buildDrawerEntries, findCurrentTarget, resolveLevelNodes } from '@/routes/navModel';
+import { canReadHelp } from '@/lib/helpAccess';
 import { useAuth } from '@/context/AuthContext';
 import { useActiveRole } from '@/hooks/useActiveRole';
 import { roleLabel } from '@/lib/activeRole';
@@ -45,7 +46,7 @@ export function MobileMenu({ titulo, items, groups, hiddenFrom = 'lg:hidden' }) 
   const [direction, setDirection] = useState('forward');
   const { logout } = useAuth();
   const { pathname } = useLocation();
-  const { canSwitch, activeRole } = useActiveRole();
+  const { canSwitch, activeRole, roleBase } = useActiveRole();
   const contentRef = useRef(null);
   const pendingFocus = useRef(null);
 
@@ -153,6 +154,12 @@ export function MobileMenu({ titulo, items, groups, hiddenFrom = 'lg:hidden' }) 
                   <span className="shrink-0 text-size-13 font-normal text-ink-faint">{roleLabel(activeRole)}</span>
                   <ChevronRight aria-hidden="true" className="h-4 w-4 shrink-0" />
                 </button>
+              )}
+              {canReadHelp(roleBase) && (
+                <Link to="/ayuda" onClick={closeDrawer} className={cn(DRAWER_ROW, 'mb-1')}>
+                  <CircleHelp aria-hidden="true" className="h-4 w-4 shrink-0" />
+                  Ayuda
+                </Link>
               )}
               <Button
                 type="button"

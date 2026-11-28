@@ -8,6 +8,7 @@ import { MENU_ROW, MenuLink, TOP_NAV_BUTTON, TOP_NAV_BUTTON_ACTIVE, TopNavMenu }
 import { TopNavGridPanel } from '@/components/TopNavGridPanel';
 import { TopNavCatalogPanel } from '@/features/enrollment';
 import { NotificationBell } from '@/features/notifications';
+import { canReadHelp } from '@/lib/helpAccess';
 import { useAuth } from '@/context/AuthContext';
 import { useActiveRole } from '@/hooks/useActiveRole';
 import { useTopNavMenus } from '@/hooks/useTopNavMenus';
@@ -68,7 +69,7 @@ function CatalogMenu({ entry, pathname, menus }) {
 
 function UserMenu({ titulo, usuario, menus, breakpoint }) {
   const { logout } = useAuth();
-  const { canSwitch } = useActiveRole();
+  const { canSwitch, roleBase } = useActiveRole();
   return (
     <TopNavMenu
       id="user"
@@ -101,6 +102,11 @@ function UserMenu({ titulo, usuario, menus, breakpoint }) {
       <Link to="/perfil" onClick={menus.close} className={MENU_ROW}>
         Mi perfil
       </Link>
+      {canReadHelp(roleBase) && (
+        <Link to="/ayuda" onClick={menus.close} className={MENU_ROW}>
+          Ayuda
+        </Link>
+      )}
       <Button type="button" variant="ghost" size="inline" onClick={logout} className={MENU_ROW}>
         Cerrar sesión
       </Button>
