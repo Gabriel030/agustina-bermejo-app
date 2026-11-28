@@ -9396,6 +9396,57 @@
         "required" : [ "code", "column", "entityType", "message", "rowNumber", "rowStatus" ],
         "type" : "object"
       },
+      "IncompleteAcademicOfferResponse" : {
+        "properties" : {
+          "cohorts" : {
+            "items" : {
+              "$ref" : "#/components/schemas/IncompleteOfferItemResponse"
+            },
+            "type" : "array"
+          },
+          "courses" : {
+            "items" : {
+              "$ref" : "#/components/schemas/IncompleteOfferItemResponse"
+            },
+            "type" : "array"
+          },
+          "incompleteCohortCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          },
+          "incompleteCourseCount" : {
+            "format" : "int32",
+            "type" : "integer"
+          }
+        },
+        "required" : [ "cohorts", "courses", "incompleteCohortCount", "incompleteCourseCount" ],
+        "type" : "object"
+      },
+      "IncompleteOfferItemResponse" : {
+        "properties" : {
+          "id" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "missingCodes" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          },
+          "name" : {
+            "type" : "string"
+          },
+          "reasons" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "id", "missingCodes", "name", "reasons" ],
+        "type" : "object"
+      },
       "InformativeSessionResponse" : {
         "properties" : {
           "capacity" : {
@@ -20463,6 +20514,124 @@
           }
         },
         "tags" : [ "academic-offering-cycle-controller" ]
+      }
+    },
+    "/academic-readiness/incomplete" : {
+      "get" : {
+        "operationId" : "AcademicReadiness_getIncompleteAcademicOffer",
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/IncompleteAcademicOfferResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "academic-readiness-controller" ]
       }
     },
     "/announcements/{id}" : {
