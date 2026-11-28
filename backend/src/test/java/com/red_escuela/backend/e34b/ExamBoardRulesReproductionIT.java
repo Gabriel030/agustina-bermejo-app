@@ -1,5 +1,6 @@
 package com.red_escuela.backend.e34b;
 
+import com.red_escuela.backend.academicstructure.entity.Instructor;
 import com.red_escuela.backend.academicstructure.entity.Program;
 import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -9,6 +10,7 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.evaluation.dto.RescheduleExamBoardRequest;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
+import com.red_escuela.backend.evaluation.entity.ExamBoardInstructor;
 import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
 import com.red_escuela.backend.evaluation.specialist.ExamBoardRegistrationManager;
 import com.red_escuela.backend.evaluation.specialist.ExamBoardRescheduler;
@@ -33,6 +35,8 @@ class ExamBoardRulesReproductionIT extends ReproductionFixture {
     @Autowired
     private ExamBoardRescheduler rescheduler;
     @Autowired
+    private com.red_escuela.backend.evaluation.specialist.ExamBoardManager examBoardManager;
+    @Autowired
     private ProgramEnrollmentSectionWithdrawer sectionWithdrawer;
     @Autowired
     private SubjectSectionEnrollmentRepository sectionEnrollmentRepository;
@@ -44,7 +48,19 @@ class ExamBoardRulesReproductionIT extends ReproductionFixture {
         board.setExamDate(examDate);
         board.setStatus(ExamBoardStatus.SCHEDULED);
         entityManager.persist(board);
+        addTribunal(board);
         return board;
+    }
+
+    private void addTribunal(ExamBoard board) {
+        Instructor instructor = new Instructor();
+        instructor.setPerson(person());
+        entityManager.persist(instructor);
+        ExamBoardInstructor assignment = new ExamBoardInstructor();
+        assignment.setExamBoard(board);
+        assignment.setInstructor(instructor);
+        entityManager.persist(assignment);
+        board.setTribunal(new java.util.ArrayList<>(java.util.List.of(assignment)));
     }
 
     private SubjectSectionEnrollment regularEnrollmentIn(Term term, Subject subject, ProgramEnrollmentStatus programStatus) {
@@ -69,7 +85,6 @@ class ExamBoardRulesReproductionIT extends ReproductionFixture {
     }
 
     @Test
-    @Disabled("E34-B-P6")
     void registrationAfterTheExamDateIsRejectedEvenWithoutRegistrationEnd() {
         Subject subject = subject("Algebra");
         Term term = term(LocalDateTime.of(2029, 3, 1, 0, 0), LocalDateTime.of(2029, 7, 1, 0, 0));
@@ -85,7 +100,6 @@ class ExamBoardRulesReproductionIT extends ReproductionFixture {
     }
 
     @Test
-    @Disabled("E34-B-P6")
     void examBoardCannotBeRescheduledToAPastDate() {
         Subject subject = subject("Algebra");
         Term term = term(LocalDateTime.of(2029, 3, 1, 0, 0), LocalDateTime.of(2029, 7, 1, 0, 0));
@@ -98,7 +112,6 @@ class ExamBoardRulesReproductionIT extends ReproductionFixture {
     }
 
     @Test
-    @Disabled("E34-B-P6")
     void examBoardCannotBeRescheduledToAWeekend() {
         Subject subject = subject("Algebra");
         Term term = term(LocalDateTime.of(2029, 3, 1, 0, 0), LocalDateTime.of(2029, 7, 1, 0, 0));
@@ -123,5 +136,41 @@ class ExamBoardRulesReproductionIT extends ReproductionFixture {
 
         assertThat(sectionEnrollmentRepository.findById(regular.getId()).orElseThrow().getStatus())
                 .isNotEqualTo(EnrollmentStatus.REGULAR);
+    }
+
+    @Test
+    void reschedulingAnExamBoardWithoutTribunalIsRejected() {
+        Subject subject = subject("Algebra");
+        Term term = term(LocalDateTime.of(2029, 3, 1, 0, 0), LocalDateTime.of(2029, 7, 1, 0, 0));
+        ExamBoard board = new ExamBoard();
+        board.setSubject(subject);
+        board.setTerm(term);
+        board.setExamDate(FUTURE_EXAM);
+        board.setStatus(ExamBoardStatus.SCHEDULED);
+        entityManager.persist(board);
+        flushAndClear();
+
+        assertThatThrownBy(() -> rescheduler.reschedule(board.getId(), new RescheduleExamBoardRequest(FUTURE_EXAM.plusDays(1), null, null, null)))
+                .isInstanceOf(com.red_escuela.backend.evaluation.exception.ExamBoardWithoutTribunalException.class);
+    }
+
+    @Test
+    void sameStudentCannotRegisterInTwoBoardsAtTheSameDateTime() {
+        Subject algebra = subject("Algebra");
+        Subject physics = subject("Fisica");
+        Term term = term(LocalDateTime.of(2029, 3, 1, 0, 0), LocalDateTime.of(2029, 7, 1, 0, 0));
+        ExamBoard algebraBoard = examBoard(algebra, term, FUTURE_EXAM);
+        ExamBoard physicsBoard = examBoard(physics, term, FUTURE_EXAM);
+        ExamBoard physicsOtherDayBoard = examBoard(physics, term, FUTURE_EXAM.plusDays(1));
+        ProgramEnrollment programEnrollment = programEnrollment(student(), program(4), ProgramEnrollmentStatus.ENROLLED);
+        SubjectSectionEnrollment inAlgebra = sectionEnrollment(programEnrollment, section(algebra, term), EnrollmentStatus.REGULAR);
+        SubjectSectionEnrollment inPhysics = sectionEnrollment(programEnrollment, section(physics, term), EnrollmentStatus.REGULAR);
+        flushAndClear();
+
+        registrationManager.registerProgramEnrollment(algebraBoard.getId(), inAlgebra.getId());
+        assertThatThrownBy(() -> registrationManager.registerProgramEnrollment(physicsBoard.getId(), inPhysics.getId()))
+                .isInstanceOf(com.red_escuela.backend.evaluation.exception.StudentExamBoardOverlapException.class);
+        assertThatCode(() -> registrationManager.registerProgramEnrollment(physicsOtherDayBoard.getId(), inPhysics.getId()))
+                .doesNotThrowAnyException();
     }
 }

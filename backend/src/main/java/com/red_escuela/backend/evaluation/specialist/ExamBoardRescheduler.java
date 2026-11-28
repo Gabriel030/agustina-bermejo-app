@@ -6,6 +6,7 @@ import com.red_escuela.backend.evaluation.dto.RescheduleExamBoardRequest;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
 import com.red_escuela.backend.evaluation.events.ExamBoardRescheduledEvent;
 import com.red_escuela.backend.evaluation.exception.ExamBoardNotFoundException;
+import com.red_escuela.backend.evaluation.exception.ExamBoardWithoutTribunalException;
 import com.red_escuela.backend.evaluation.exception.ExamDateOnHolidayException;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRepository;
 import org.springframework.context.ApplicationEventPublisher;
@@ -21,21 +22,25 @@ public class ExamBoardRescheduler {
     private final HolidayFinder holidayFinder;
     private final ExamBoardChangeChecker participants;
     private final ExamBoardWindowValidator windowValidator;
+    private final ExamBoardRescheduleDateValidator dateValidator;
     private final ApplicationEventPublisher eventPublisher;
 
     public ExamBoardRescheduler(ExamBoardRepository examBoardRepository, HolidayFinder holidayFinder,
                                 ExamBoardChangeChecker participants, ExamBoardWindowValidator windowValidator,
+                                ExamBoardRescheduleDateValidator dateValidator,
                                 ApplicationEventPublisher eventPublisher) {
         this.examBoardRepository = examBoardRepository;
         this.holidayFinder = holidayFinder;
         this.participants = participants;
         this.windowValidator = windowValidator;
+        this.dateValidator = dateValidator;
         this.eventPublisher = eventPublisher;
     }
 
     @Transactional
     public ExamBoardResponse reschedule(Long examBoardId, RescheduleExamBoardRequest request) {
         ExamBoard examBoard = examBoardRepository.findById(examBoardId).orElseThrow(() -> new ExamBoardNotFoundException(examBoardId));
+        dateValidator.require(request.examDate());
         windowValidator.require(request.examDate(), request.registrationStart(), request.registrationEnd());
         if (holidayFinder.isHoliday(request.examDate().toLocalDate())) {
             throw new ExamDateOnHolidayException(request.examDate().toLocalDate());
@@ -43,6 +48,9 @@ public class ExamBoardRescheduler {
         participants.requireScheduled(examBoard);
         LocalDateTime oldExamDate = examBoard.getExamDate();
         participants.requireNoGrades(examBoardId);
+        if (examBoard.getTribunal() == null || examBoard.getTribunal().isEmpty()) {
+            throw new ExamBoardWithoutTribunalException(examBoardId);
+        }
         examBoard.reschedule(request.examDate(), request.registrationStart(), request.registrationEnd(), request.classroom());
         ExamBoard saved = examBoardRepository.save(examBoard);
         eventPublisher.publishEvent(ExamBoardRescheduledEvent.rescheduledFor(examBoardId, participants.subjectNameOf(saved), oldExamDate,
