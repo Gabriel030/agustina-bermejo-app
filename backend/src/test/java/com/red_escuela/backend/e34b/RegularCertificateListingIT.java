@@ -2,13 +2,13 @@ package com.red_escuela.backend.e34b;
 
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
-import com.red_escuela.backend.identity.entity.Student;
 import com.red_escuela.backend.graduation.certificate.regular.dto.CertificatePage;
 import com.red_escuela.backend.graduation.certificate.regular.dto.RegularCertificateResponse;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCertificateStatus;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularityKind;
 import com.red_escuela.backend.graduation.certificate.regular.specialist.RegularEnrollmentCertificateRevoker;
 import com.red_escuela.backend.graduation.certificate.regular.usecase.ListRegularCertificatesUseCase;
+import com.red_escuela.backend.identity.entity.Student;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

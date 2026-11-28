@@ -71,4 +71,30 @@ public final class IssuedCertificateRows {
         return (String) entityManager.createNativeQuery("select status from graduation_request where id = :id")
                 .setParameter("id", id).getSingleResult();
     }
+
+    public void markApprovedSubjectsAs(Long id, String status) {
+        entityManager.createNativeQuery("update approved_subjects_certificate set status = :status where id = :id")
+                .setParameter("status", status).setParameter("id", id).executeUpdate();
+    }
+
+    public void markRegularAs(Long id, String status) {
+        entityManager.createNativeQuery("update regular_student_certificate set status = :status where id = :id")
+                .setParameter("status", status).setParameter("id", id).executeUpdate();
+    }
+
+    public long auditEntries(String action, Long entityId) {
+        return ((Number) entityManager.createNativeQuery("select count(*) from audit_log where action = :action and entity_id = :id")
+                .setParameter("action", action).setParameter("id", entityId).getSingleResult()).longValue();
+    }
+
+    public Long auditActor(String action, Long entityId) {
+        Object actor = entityManager.createNativeQuery("select actor_person_id from audit_log where action = :action and entity_id = :id")
+                .setParameter("action", action).setParameter("id", entityId).getSingleResult();
+        return actor == null ? null : ((Number) actor).longValue();
+    }
+
+    public String revocationReasonOfRegular(Long id) {
+        return (String) entityManager.createNativeQuery("select revocation_reason from regular_student_certificate where id = :id")
+                .setParameter("id", id).getSingleResult();
+    }
 }

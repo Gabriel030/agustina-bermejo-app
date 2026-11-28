@@ -14,7 +14,6 @@ import com.red_escuela.backend.evaluation.entity.GradeItemAuditKind;
 import com.red_escuela.backend.evaluation.entity.GradeItemType;
 import com.red_escuela.backend.evaluation.entity.SectionGradeItemPublication;
 import com.red_escuela.backend.evaluation.events.GradeCorrectedEvent;
-import com.red_escuela.backend.evaluation.events.ProgramGradeCorrectedEvent;
 import com.red_escuela.backend.evaluation.exception.GradeItemAlreadyRecoveredException;
 import com.red_escuela.backend.evaluation.exception.GradeItemNotFoundException;
 import com.red_escuela.backend.evaluation.exception.GradeItemNotPublishedException;
@@ -114,9 +113,6 @@ public class ExamRecoveryRecorder {
         eventPublisher.publishEvent(GradeCorrectedEvent.correctedFor(
                 gradeItemId, target.studentPersonId(), target.sectionName(), gradeItem.getType().displayName(),
                 SectionGradeItemPublication.sequenceKey(gradeItem.getSequenceNumber()), RECOVERY_REASON));
-        if (target.kind() == SectionKind.PROGRAM) {
-            eventPublisher.publishEvent(ProgramGradeCorrectedEvent.correctedFor(target.programEnrollmentId(), target.studentPersonId()));
-        }
         return GradeItemAuditResponse.from(audit);
     }
 

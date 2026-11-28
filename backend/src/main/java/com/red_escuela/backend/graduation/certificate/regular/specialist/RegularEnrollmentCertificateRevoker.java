@@ -4,6 +4,10 @@ import com.red_escuela.backend.graduation.certificate.regular.entity.RegularCert
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularStudentCertificate;
 import com.red_escuela.backend.graduation.certificate.regular.entity.RegularityKind;
 import com.red_escuela.backend.graduation.certificate.regular.repository.RegularStudentCertificateRepository;
+import com.red_escuela.backend.shared.audit.AuditAction;
+import com.red_escuela.backend.shared.audit.AuditEntityType;
+import com.red_escuela.backend.shared.audit.AuditRecord;
+import com.red_escuela.backend.shared.audit.service.AuditTrail;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,10 +19,12 @@ import java.util.Optional;
 public class RegularEnrollmentCertificateRevoker {
 
     private final RegularStudentCertificateRepository repository;
+    private final AuditTrail auditTrail;
     private final Clock clock;
 
-    public RegularEnrollmentCertificateRevoker(RegularStudentCertificateRepository repository, Clock clock) {
+    public RegularEnrollmentCertificateRevoker(RegularStudentCertificateRepository repository, AuditTrail auditTrail, Clock clock) {
         this.repository = repository;
+        this.auditTrail = auditTrail;
         this.clock = clock;
     }
 
@@ -32,6 +38,8 @@ public class RegularEnrollmentCertificateRevoker {
         validOf(kind, enrollmentId).filter(RegularStudentCertificate::isRevocable).ifPresent(certificate -> {
             certificate.revoke(reason, null, LocalDateTime.now(clock));
             repository.save(certificate);
+            auditTrail.record(new AuditRecord(AuditAction.REGULAR_CERTIFICATE_REVOKED, AuditEntityType.CERTIFICATE_DOCUMENT,
+                    certificate.getId(), "VALID", "REVOKED", reason));
         });
     }
 

@@ -9,35 +9,25 @@ import org.springframework.stereotype.Component;
 @Component
 public class RegularCertificateAttendanceListener {
 
-    static final String REGULARITY_LOST_REASON = "El alumno dejó de cumplir las condiciones de regularidad después de emitida la constancia";
-
     private final SectionEnrollmentFinder sectionEnrollmentFinder;
-    private final RegularityEvaluator regularityEvaluator;
-    private final RegularEnrollmentCertificateRevoker revoker;
+    private final RegularityLossRevoker regularityLossRevoker;
 
-    public RegularCertificateAttendanceListener(SectionEnrollmentFinder sectionEnrollmentFinder, RegularityEvaluator regularityEvaluator,
-                                                RegularEnrollmentCertificateRevoker revoker) {
+    public RegularCertificateAttendanceListener(SectionEnrollmentFinder sectionEnrollmentFinder,
+                                                RegularityLossRevoker regularityLossRevoker) {
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
-        this.regularityEvaluator = regularityEvaluator;
-        this.revoker = revoker;
+        this.regularityLossRevoker = regularityLossRevoker;
     }
 
     @EventListener
     public void revokeCertificateWhenRegularityIsLost(AttendanceStatusChangedEvent event) {
         if (event.programSectionEnrollmentId() != null) {
             sectionEnrollmentFinder.findProgramEnrollmentIfPresent(event.programSectionEnrollmentId())
-                    .ifPresent(section -> revokeIfNoLongerRegular(RegularityKind.PROGRAM, section.getProgramEnrollment().getId()));
+                    .ifPresent(section -> regularityLossRevoker.revokeIfNoLongerRegular(
+                            RegularityKind.PROGRAM, section.getProgramEnrollment().getId()));
         }
         if (event.courseSectionEnrollmentId() != null) {
-            revokeIfNoLongerRegular(RegularityKind.COURSE,
+            regularityLossRevoker.revokeIfNoLongerRegular(RegularityKind.COURSE,
                     sectionEnrollmentFinder.findCourseEnrollment(event.courseSectionEnrollmentId()).getCourseEnrollment().getId());
-        }
-    }
-
-    private void revokeIfNoLongerRegular(RegularityKind kind, Long enrollmentId) {
-        if (revoker.hasValidCertificate(kind, enrollmentId)
-                && !regularityEvaluator.evaluate(kind, enrollmentId).institutionallyRegular()) {
-            revoker.revokeValidCertificate(kind, enrollmentId, REGULARITY_LOST_REASON);
         }
     }
 }

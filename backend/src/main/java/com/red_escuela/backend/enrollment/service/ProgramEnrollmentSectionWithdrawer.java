@@ -2,10 +2,12 @@ package com.red_escuela.backend.enrollment.service;
 
 import com.red_escuela.backend.academicstructure.api.SectionFinder;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
+import com.red_escuela.backend.enrollment.entity.ExceptionType;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
-import com.red_escuela.backend.enrollment.events.ProgramEnrollmentWithdrawnEvent;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
+import com.red_escuela.backend.enrollment.events.ProgramEnrollmentWithdrawnEvent;
 import com.red_escuela.backend.enrollment.api.ProgramEnrollmentNotFoundException;
+import com.red_escuela.backend.enrollment.repository.DirectorApprovalRequestRepository;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
 import org.springframework.context.ApplicationEventPublisher;
@@ -28,6 +30,7 @@ public class ProgramEnrollmentSectionWithdrawer {
     private final SectionFinder sectionFinder;
     private final SectionWaitlistPromoter waitlistPromoter;
     private final ApplicationEventPublisher eventPublisher;
+    private final DirectorApprovalRequestRepository directorApprovalRequestRepository;
     private final Clock clock;
 
     public ProgramEnrollmentSectionWithdrawer(SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository,
@@ -35,12 +38,14 @@ public class ProgramEnrollmentSectionWithdrawer {
                                               SectionFinder sectionFinder,
                                               SectionWaitlistPromoter waitlistPromoter,
                                               ApplicationEventPublisher eventPublisher,
+                                              DirectorApprovalRequestRepository directorApprovalRequestRepository,
                                               Clock clock) {
         this.subjectSectionEnrollmentRepository = subjectSectionEnrollmentRepository;
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.sectionFinder = sectionFinder;
         this.waitlistPromoter = waitlistPromoter;
         this.eventPublisher = eventPublisher;
+        this.directorApprovalRequestRepository = directorApprovalRequestRepository;
         this.clock = clock;
     }
 
@@ -65,6 +70,7 @@ public class ProgramEnrollmentSectionWithdrawer {
             enrollment.setDroppedAt(now);
             subjectSectionEnrollmentRepository.save(enrollment);
         }
+        directorApprovalRequestRepository.markAllApprovedConsumed(programEnrollmentId, ExceptionType.LATE_EXAM, now);
         sectionsWithFreedSeat.stream().distinct().sorted().forEach(waitlistPromoter::promoteNextFromWaitlist);
         eventPublisher.publishEvent(ProgramEnrollmentWithdrawnEvent.withdrawn(
                 programEnrollment.getStudent().getId(), programEnrollmentId));

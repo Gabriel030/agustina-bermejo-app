@@ -12,7 +12,6 @@ import com.red_escuela.backend.evaluation.entity.GradeItemAudit;
 import com.red_escuela.backend.evaluation.entity.GradeItemAuditKind;
 import com.red_escuela.backend.evaluation.entity.SectionGradeItemPublication;
 import com.red_escuela.backend.evaluation.events.GradeCorrectedEvent;
-import com.red_escuela.backend.evaluation.events.ProgramGradeCorrectedEvent;
 import com.red_escuela.backend.evaluation.exception.GradeCorrectionNoChangeException;
 import com.red_escuela.backend.evaluation.exception.GradeCorrectionPeriodEndedException;
 import com.red_escuela.backend.evaluation.exception.GradeItemNotFoundException;
@@ -104,9 +103,6 @@ public class PublishedGradeCorrector {
         eventPublisher.publishEvent(GradeCorrectedEvent.correctedFor(
                 gradeItemId, target.studentPersonId(), target.sectionName(), gradeItem.getType().displayName(),
                 SectionGradeItemPublication.sequenceKey(gradeItem.getSequenceNumber()), reason));
-        if (target.kind() == SectionKind.PROGRAM) {
-            eventPublisher.publishEvent(ProgramGradeCorrectedEvent.correctedFor(target.programEnrollmentId(), target.studentPersonId()));
-        }
         return GradeItemAuditResponse.from(audit);
     }
 
