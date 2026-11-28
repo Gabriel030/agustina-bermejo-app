@@ -91,14 +91,14 @@ public class ExamBoardRegistrationManager {
 
         SubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findProgramEnrollment(enrollmentId);
         requireEnrollmentFeeOfExamTerm(examBoard, enrollment);
-        if (!isRegistrationWindowOpen(examBoard)) {
-            Long programEnrollmentId = enrollment.getProgramEnrollment().getId();
-            Long enrollmentSubjectId = enrollment.getSubjectSection().getSubject().getId();
+        Long programEnrollmentId = enrollment.getProgramEnrollment().getId();
+        Long enrollmentSubjectId = enrollment.getSubjectSection().getSubject().getId();
+        boolean lateExamRequired = !isRegistrationWindowOpen(examBoard);
+        if (lateExamRequired) {
             if (!lateExamApprovalChecker.hasApprovedLateExam(programEnrollmentId, enrollmentSubjectId)) {
                 throw new ExamBoardRegistrationWindowClosedException(examBoard.getId());
             }
             requireBeforeExamDate(examBoard);
-            lateExamApprovalChecker.consumeApprovedLateExam(programEnrollmentId, enrollmentSubjectId);
         }
         requireNoOverlappingExamBoard(examBoard, enrollment.getStudent().getId());
         finalExamEligibilityEvaluator.requireEligibleToRegister(enrollment);
@@ -132,6 +132,11 @@ public class ExamBoardRegistrationManager {
             if (previousAttempts >= maxAttempts) {
                 throw new MaxExamAttemptsExceededException(subjectId, maxAttempts);
             }
+        }
+
+        if (lateExamRequired
+                && !lateExamApprovalChecker.consumeApprovedLateExam(programEnrollmentId, enrollmentSubjectId)) {
+            throw new ExamBoardRegistrationWindowClosedException(examBoard.getId());
         }
 
         if (existing.isPresent()) {

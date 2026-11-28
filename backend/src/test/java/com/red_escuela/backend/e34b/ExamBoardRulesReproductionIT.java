@@ -9,7 +9,11 @@ import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
 import com.red_escuela.backend.evaluation.dto.RescheduleExamBoardRequest;
+import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequest;
+import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequestStatus;
+import com.red_escuela.backend.enrollment.entity.ExceptionType;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
+import com.red_escuela.backend.evaluation.entity.ExamBoardRegistration;
 import com.red_escuela.backend.evaluation.entity.ExamBoardInstructor;
 import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
 import com.red_escuela.backend.evaluation.specialist.ExamBoardRegistrationManager;
@@ -139,19 +143,91 @@ class ExamBoardRulesReproductionIT extends ReproductionFixture {
     }
 
     @Test
-    void reschedulingAnExamBoardWithoutTribunalIsRejected() {
+    void closingAnExamBoardWithoutTribunalIsRejected() {
         Subject subject = subject("Algebra");
-        Term term = term(LocalDateTime.of(2029, 3, 1, 0, 0), LocalDateTime.of(2029, 7, 1, 0, 0));
-        ExamBoard board = new ExamBoard();
-        board.setSubject(subject);
-        board.setTerm(term);
-        board.setExamDate(FUTURE_EXAM);
-        board.setStatus(ExamBoardStatus.SCHEDULED);
-        entityManager.persist(board);
+        Term term = term(LocalDateTime.of(2019, 3, 1, 0, 0), LocalDateTime.of(2019, 7, 1, 0, 0));
+        ExamBoard withoutTribunal = new ExamBoard();
+        withoutTribunal.setSubject(subject);
+        withoutTribunal.setTerm(term);
+        withoutTribunal.setExamDate(LocalDateTime.of(2019, 6, 3, 10, 0));
+        withoutTribunal.setStatus(ExamBoardStatus.SCHEDULED);
+        entityManager.persist(withoutTribunal);
+        ExamBoard withTribunal = examBoard(subject, term, LocalDateTime.of(2019, 6, 4, 10, 0));
         flushAndClear();
 
-        assertThatThrownBy(() -> rescheduler.reschedule(board.getId(), new RescheduleExamBoardRequest(FUTURE_EXAM.plusDays(1), null, null, null)))
+        assertThatThrownBy(() -> examBoardManager.close(withoutTribunal.getId()))
                 .isInstanceOf(com.red_escuela.backend.evaluation.exception.ExamBoardWithoutTribunalException.class);
+        assertThatCode(() -> examBoardManager.close(withTribunal.getId())).doesNotThrowAnyException();
+    }
+
+    private DirectorApprovalRequest approvedLateExam(SubjectSectionEnrollment enrollment, Subject subject) {
+        ProgramEnrollment programEnrollment = entityManager.find(ProgramEnrollment.class, enrollment.getProgramEnrollment().getId());
+        DirectorApprovalRequest request = DirectorApprovalRequest.open(ExceptionType.LATE_EXAM, programEnrollment, subject,
+                "Motivo", person(), LocalDateTime.of(2026, 1, 1, 10, 0));
+        request.decide(DirectorApprovalRequestStatus.APPROVED, person(), "Ok", LocalDateTime.of(2026, 1, 2, 10, 0));
+        entityManager.persist(request);
+        return request;
+    }
+
+    private ExamBoard boardWithClosedRegistrationWindow(Subject subject, Term term) {
+        ExamBoard board = examBoard(subject, term, FUTURE_EXAM);
+        board.setRegistrationEnd(LocalDateTime.of(2026, 1, 1, 0, 0));
+        return board;
+    }
+
+    private Object consumedAtOf(Long requestId) {
+        return entityManager.createNativeQuery("select consumed_at from director_approval_request where id = :id")
+                .setParameter("id", requestId).getSingleResult();
+    }
+
+    @Test
+    void lateExamApprovalIsConsumedByTheRegistrationThatUsesIt() {
+        Subject subject = subject("Algebra");
+        Term term = term(LocalDateTime.of(2029, 3, 1, 0, 0), LocalDateTime.of(2029, 7, 1, 0, 0));
+        ExamBoard board = boardWithClosedRegistrationWindow(subject, term);
+        SubjectSectionEnrollment enrollment = regularEnrollmentIn(term, subject, ProgramEnrollmentStatus.ENROLLED);
+        DirectorApprovalRequest approval = approvedLateExam(enrollment, subject);
+        flushAndClear();
+
+        registrationManager.registerProgramEnrollment(board.getId(), enrollment.getId());
+        flushAndClear();
+
+        assertThat(consumedAtOf(approval.getId())).isNotNull();
+    }
+
+    @Test
+    void rejectedRegistrationDoesNotConsumeTheLateExamApproval() {
+        Subject subject = subject("Algebra");
+        Term term = term(LocalDateTime.of(2029, 3, 1, 0, 0), LocalDateTime.of(2029, 7, 1, 0, 0));
+        ExamBoard board = boardWithClosedRegistrationWindow(subject, term);
+        Program program = program(4);
+        ProgramEnrollment programEnrollment = programEnrollment(student(), program, ProgramEnrollmentStatus.ENROLLED);
+        SubjectSectionEnrollment notRegular = sectionEnrollment(programEnrollment, section(subject, term), EnrollmentStatus.IN_PROGRESS);
+        DirectorApprovalRequest approval = approvedLateExam(notRegular, subject);
+        flushAndClear();
+
+        assertThatThrownBy(() -> registrationManager.registerProgramEnrollment(board.getId(), notRegular.getId()))
+                .isInstanceOf(RuntimeException.class);
+
+        assertThat(consumedAtOf(approval.getId())).isNull();
+    }
+
+    @Test
+    void consumedLateExamApprovalDoesNotOpenTheClosedWindowAgain() {
+        Subject subject = subject("Algebra");
+        Term term = term(LocalDateTime.of(2029, 3, 1, 0, 0), LocalDateTime.of(2029, 7, 1, 0, 0));
+        ExamBoard board = boardWithClosedRegistrationWindow(subject, term);
+        ExamBoard otherBoard = boardWithClosedRegistrationWindow(subject, term);
+        otherBoard.setExamDate(FUTURE_EXAM.plusDays(1));
+        SubjectSectionEnrollment enrollment = regularEnrollmentIn(term, subject, ProgramEnrollmentStatus.ENROLLED);
+        approvedLateExam(enrollment, subject);
+        flushAndClear();
+        ExamBoardRegistration registration = registrationManager.registerProgramEnrollment(board.getId(), enrollment.getId());
+        registrationManager.withdraw(registration.getId());
+        flushAndClear();
+
+        assertThatThrownBy(() -> registrationManager.registerProgramEnrollment(otherBoard.getId(), enrollment.getId()))
+                .isInstanceOf(com.red_escuela.backend.evaluation.exception.ExamBoardRegistrationWindowClosedException.class);
     }
 
     @Test

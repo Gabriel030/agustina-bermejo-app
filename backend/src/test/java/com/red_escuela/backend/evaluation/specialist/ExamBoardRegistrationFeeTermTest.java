@@ -140,7 +140,7 @@ class ExamBoardRegistrationFeeTermTest {
     }
 
     @Test
-    void closedWindowWithApprovedLateExamConsumesTheApprovalOnce() {
+    void rejectedRegistrationDoesNotConsumeTheLateExamApproval() {
         ExamBoard board = board(term(200L), NOW.plusDays(10));
         board.setRegistrationEnd(NOW.minusDays(1));
         enrollmentInTerm(term(100L));
@@ -149,6 +149,18 @@ class ExamBoardRegistrationFeeTermTest {
 
         assertThatThrownBy(() -> manager.registerProgramEnrollment(10L, 5L)).isInstanceOf(IllegalStateException.class);
 
-        verify(lateExamApprovalChecker).consumeApprovedLateExam(7L, 3L);
+        verify(lateExamApprovalChecker, never()).consumeApprovedLateExam(anyLong(), anyLong());
+    }
+
+    @Test
+    void examBoardWithoutTermFallsBackToTheCurrentPeriodFee() {
+        board(null, NOW.plusDays(10));
+        enrollmentInTerm(term(100L));
+        org.mockito.Mockito.doThrow(new IllegalStateException("stop")).when(eligibilityEvaluator).requireEligibleToRegister(any(SubjectSectionEnrollment.class));
+
+        assertThatThrownBy(() -> manager.registerProgramEnrollment(10L, 5L)).isInstanceOf(IllegalStateException.class);
+
+        verify(feePort).requireForCurrentPeriod(7L, EnrollmentFeeRequirementPurpose.EXAM_REGISTRATION);
+        verify(feePort, never()).requireForTerm(anyLong(), anyLong(), any());
     }
 }

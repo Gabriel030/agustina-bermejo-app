@@ -6,7 +6,6 @@ import com.red_escuela.backend.evaluation.dto.RescheduleExamBoardRequest;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
 import com.red_escuela.backend.evaluation.events.ExamBoardRescheduledEvent;
 import com.red_escuela.backend.evaluation.exception.ExamBoardNotFoundException;
-import com.red_escuela.backend.evaluation.exception.ExamBoardWithoutTribunalException;
 import com.red_escuela.backend.evaluation.exception.ExamDateOnHolidayException;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRepository;
 import org.springframework.context.ApplicationEventPublisher;
@@ -48,9 +47,6 @@ public class ExamBoardRescheduler {
         participants.requireScheduled(examBoard);
         LocalDateTime oldExamDate = examBoard.getExamDate();
         participants.requireNoGrades(examBoardId);
-        if (examBoard.getTribunal() == null || examBoard.getTribunal().isEmpty()) {
-            throw new ExamBoardWithoutTribunalException(examBoardId);
-        }
         examBoard.reschedule(request.examDate(), request.registrationStart(), request.registrationEnd(), request.classroom());
         ExamBoard saved = examBoardRepository.save(examBoard);
         eventPublisher.publishEvent(ExamBoardRescheduledEvent.rescheduledFor(examBoardId, participants.subjectNameOf(saved), oldExamDate,

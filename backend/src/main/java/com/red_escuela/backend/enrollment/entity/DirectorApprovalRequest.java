@@ -91,10 +91,6 @@ public class DirectorApprovalRequest {
         this.decidedAt = decidedAt;
     }
 
-    public void consume(LocalDateTime consumedAt) {
-        this.consumedAt = consumedAt;
-    }
-
     public Person student() {
         return programEnrollment.getStudent().getPerson();
     }

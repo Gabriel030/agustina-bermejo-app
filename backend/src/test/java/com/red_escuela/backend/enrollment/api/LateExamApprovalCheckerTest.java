@@ -12,6 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -43,23 +44,50 @@ class LateExamApprovalCheckerTest {
         assertThat(checker.hasApprovedLateExam(1L, 2L)).isFalse();
     }
 
-    @Test
-    void consumeMarksTheApprovedRequestAsConsumedAndReturnsTrue() {
+    private DirectorApprovalRequest requestWithId(Long id) {
         DirectorApprovalRequest request = new DirectorApprovalRequest();
-        when(directorApprovalRequestRepository.findByProgramEnrollmentIdAndSubjectIdAndTypeAndStatusAndConsumedAtIsNull(
-                1L, 2L, ExceptionType.LATE_EXAM, DirectorApprovalRequestStatus.APPROVED)).thenReturn(List.of(request));
+        request.setId(id);
+        return request;
+    }
+
+    private void stubUnconsumed(DirectorApprovalRequest... requests) {
+        when(directorApprovalRequestRepository
+                .findByProgramEnrollmentIdAndSubjectIdAndTypeAndStatusAndConsumedAtIsNullOrderByDecidedAtAscIdAsc(
+                        1L, 2L, ExceptionType.LATE_EXAM, DirectorApprovalRequestStatus.APPROVED))
+                .thenReturn(List.of(requests));
+    }
+
+    @Test
+    void consumeMarksTheOldestApprovedRequestAndReturnsTrue() {
+        stubUnconsumed(requestWithId(10L), requestWithId(11L));
+        when(directorApprovalRequestRepository.markConsumed(eq(10L), any())).thenReturn(1);
 
         assertThat(checker.consumeApprovedLateExam(1L, 2L)).isTrue();
-        assertThat(request.getConsumedAt()).isNotNull();
-        verify(directorApprovalRequestRepository).save(request);
+        verify(directorApprovalRequestRepository, never()).markConsumed(eq(11L), any());
+    }
+
+    @Test
+    void consumeFallsBackToTheNextApprovalWhenAConcurrentConsumerWonTheFirst() {
+        stubUnconsumed(requestWithId(10L), requestWithId(11L));
+        when(directorApprovalRequestRepository.markConsumed(eq(10L), any())).thenReturn(0);
+        when(directorApprovalRequestRepository.markConsumed(eq(11L), any())).thenReturn(1);
+
+        assertThat(checker.consumeApprovedLateExam(1L, 2L)).isTrue();
     }
 
     @Test
     void consumeReturnsFalseWhenThereIsNoUnconsumedApproval() {
-        when(directorApprovalRequestRepository.findByProgramEnrollmentIdAndSubjectIdAndTypeAndStatusAndConsumedAtIsNull(
-                1L, 2L, ExceptionType.LATE_EXAM, DirectorApprovalRequestStatus.APPROVED)).thenReturn(List.of());
+        stubUnconsumed();
 
         assertThat(checker.consumeApprovedLateExam(1L, 2L)).isFalse();
-        verify(directorApprovalRequestRepository, never()).save(any());
+        verify(directorApprovalRequestRepository, never()).markConsumed(any(), any());
+    }
+
+    @Test
+    void consumeReturnsFalseWhenEveryCandidateWasTakenConcurrently() {
+        stubUnconsumed(requestWithId(10L));
+        when(directorApprovalRequestRepository.markConsumed(eq(10L), any())).thenReturn(0);
+
+        assertThat(checker.consumeApprovedLateExam(1L, 2L)).isFalse();
     }
 }

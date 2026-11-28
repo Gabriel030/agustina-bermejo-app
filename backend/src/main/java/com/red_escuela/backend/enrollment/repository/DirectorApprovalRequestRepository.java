@@ -4,6 +4,7 @@ import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequest;
 import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequestStatus;
 import com.red_escuela.backend.enrollment.entity.ExceptionType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -41,11 +42,15 @@ public interface DirectorApprovalRequestRepository extends JpaRepository<Directo
             @Param("programEnrollmentId") Long programEnrollmentId,
             @Param("type") ExceptionType type, @Param("status") DirectorApprovalRequestStatus status);
 
-    List<DirectorApprovalRequest> findByProgramEnrollmentIdAndSubjectIdAndTypeAndStatusAndConsumedAtIsNull(
+    List<DirectorApprovalRequest> findByProgramEnrollmentIdAndSubjectIdAndTypeAndStatusAndConsumedAtIsNullOrderByDecidedAtAscIdAsc(
             Long programEnrollmentId, Long subjectId, ExceptionType type, DirectorApprovalRequestStatus status);
 
+    @Modifying(flushAutomatically = true)
+    @Query("update DirectorApprovalRequest r set r.consumedAt = :consumedAt where r.id = :id and r.consumedAt is null")
+    int markConsumed(@Param("id") Long id, @Param("consumedAt") java.time.LocalDateTime consumedAt);
+
     default boolean hasUnconsumedApproved(Long programEnrollmentId, Long subjectId, ExceptionType type) {
-        return !findByProgramEnrollmentIdAndSubjectIdAndTypeAndStatusAndConsumedAtIsNull(
+        return !findByProgramEnrollmentIdAndSubjectIdAndTypeAndStatusAndConsumedAtIsNullOrderByDecidedAtAscIdAsc(
                 programEnrollmentId, subjectId, type, DirectorApprovalRequestStatus.APPROVED).isEmpty();
     }
 

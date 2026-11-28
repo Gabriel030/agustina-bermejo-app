@@ -11,5 +11,7 @@ public interface ExamBoardInstructorRepository extends JpaRepository<ExamBoardIn
 
     List<ExamBoardInstructor> findByExamBoardId(Long examBoardId);
 
+    boolean existsByExamBoardId(Long examBoardId);
+
     boolean existsByExamBoardIdAndInstructorId(Long examBoardId, Long instructorId);
 }

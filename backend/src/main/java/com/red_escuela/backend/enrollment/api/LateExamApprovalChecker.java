@@ -1,6 +1,5 @@
 package com.red_escuela.backend.enrollment.api;
 
-import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequest;
 import com.red_escuela.backend.enrollment.entity.DirectorApprovalRequestStatus;
 import com.red_escuela.backend.enrollment.entity.ExceptionType;
 import com.red_escuela.backend.enrollment.repository.DirectorApprovalRequestRepository;
@@ -28,18 +27,11 @@ public class LateExamApprovalChecker {
 
     @Transactional
     public boolean consumeApprovedLateExam(Long programEnrollmentId, Long subjectId) {
+        LocalDateTime now = LocalDateTime.now(clock);
         return directorApprovalRequestRepository
-                .findByProgramEnrollmentIdAndSubjectIdAndTypeAndStatusAndConsumedAtIsNull(
+                .findByProgramEnrollmentIdAndSubjectIdAndTypeAndStatusAndConsumedAtIsNullOrderByDecidedAtAscIdAsc(
                         programEnrollmentId, subjectId, ExceptionType.LATE_EXAM, DirectorApprovalRequestStatus.APPROVED)
                 .stream()
-                .findFirst()
-                .map(request -> consume(request))
-                .orElse(false);
-    }
-
-    private boolean consume(DirectorApprovalRequest request) {
-        request.consume(LocalDateTime.now(clock));
-        directorApprovalRequestRepository.save(request);
-        return true;
+                .anyMatch(request -> directorApprovalRequestRepository.markConsumed(request.getId(), now) == 1);
     }
 }
