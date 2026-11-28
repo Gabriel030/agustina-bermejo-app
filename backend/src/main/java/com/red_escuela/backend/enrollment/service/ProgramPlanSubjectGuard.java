@@ -23,7 +23,7 @@ public class ProgramPlanSubjectGuard {
 
     public void requireSubjectInEnrollmentPlan(ProgramEnrollment enrollment, Long subjectId) {
         Long planId = enrollment.getPlan().getId();
-        if (!programCurriculumFinder.subjectBelongsToPlan(planId, subjectId)) {
+        if (!programCurriculumFinder.subjectIsActiveInPlan(planId, subjectId)) {
             throw new SubjectNotInEnrollmentPlanException(subjectId, planId);
         }
     }

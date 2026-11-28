@@ -108,6 +108,92 @@ class SubjectEquivalenceConcurrencyIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void twoSimultaneousRecordsThatCompleteThePlanCreateASingleGraduationRequestAndKeepBothEquivalences() throws Exception {
+        long[] ids = transactionTemplate.execute(status -> seed());
+        long enrollmentId = ids[0];
+        String token = tokenOf(ids[2]);
+        int attempts = 2;
+        CountDownLatch ready = new CountDownLatch(attempts);
+        CountDownLatch go = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(attempts);
+        List<Future<Integer>> results = new ArrayList<>();
+        for (int i = 0; i < attempts; i++) {
+            long subjectId = ids[i == 0 ? 1 : 3];
+            String body = "{\"subjectId\":" + subjectId + ",\"originInstitution\":\"Universidad de origen\","
+                    + "\"originSubjectName\":\"Materia de origen\",\"recognizedOn\":\"" + LocalDate.now()
+                    + "\",\"resolutionNumber\":\"RES-1\",\"reason\":\"Estudios previos reconocidos\"}";
+            results.add(executor.submit(() -> {
+                ready.countDown();
+                go.await();
+                return mockMvc.perform(post("/program-enrollments/{id}/equivalences", enrollmentId)
+                                .header("Authorization", "Bearer " + token)
+                                .contentType(MediaType.APPLICATION_JSON).content(body))
+                        .andReturn().getResponse().getStatus();
+            }));
+        }
+        assertTrue(ready.await(10, TimeUnit.SECONDS));
+        go.countDown();
+        List<Integer> statuses = new ArrayList<>();
+        for (Future<Integer> result : results) {
+            statuses.add(result.get(30, TimeUnit.SECONDS));
+        }
+        executor.shutdown();
+
+        assertThat(statuses).containsExactly(201, 201);
+        assertThat(equivalenceRepository.findByProgramEnrollmentIdAndStatusOrderByRecognizedOnDescIdDesc(enrollmentId,
+                SubjectEquivalenceStatus.ACTIVE)).hasSize(2);
+        assertThat(jdbc.queryForObject("select count(*) from graduation_request where program_enrollment_id = ?",
+                Integer.class, enrollmentId)).isEqualTo(1);
+    }
+
+    @Test
+    void recordingTheLastEquivalenceWhileVoidingAnotherLeavesTheGraduationRequestConsistent() throws Exception {
+        long[] ids = transactionTemplate.execute(status -> seed());
+        long enrollmentId = ids[0];
+        String token = tokenOf(ids[2]);
+        String firstBody = recordBody(ids[1]);
+        String created = mockMvc.perform(post("/program-enrollments/{id}/equivalences", enrollmentId)
+                        .header("Authorization", "Bearer " + token).contentType(MediaType.APPLICATION_JSON).content(firstBody))
+                .andReturn().getResponse().getContentAsString();
+        long firstEquivalenceId = Long.parseLong(created.replaceAll(".*\"id\":(\\d+).*", "$1"));
+        CountDownLatch ready = new CountDownLatch(2);
+        CountDownLatch go = new CountDownLatch(1);
+        ExecutorService executor = Executors.newFixedThreadPool(2);
+        Future<Integer> recording = executor.submit(() -> {
+            ready.countDown();
+            go.await();
+            return mockMvc.perform(post("/program-enrollments/{id}/equivalences", enrollmentId)
+                            .header("Authorization", "Bearer " + token).contentType(MediaType.APPLICATION_JSON)
+                            .content(recordBody(ids[3])))
+                    .andReturn().getResponse().getStatus();
+        });
+        Future<Integer> voiding = executor.submit(() -> {
+            ready.countDown();
+            go.await();
+            return mockMvc.perform(post("/program-enrollments/{id}/equivalences/{eid}/void", enrollmentId, firstEquivalenceId)
+                            .header("Authorization", "Bearer " + token).contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"reason\":\"Anulación por carga errónea\"}"))
+                    .andReturn().getResponse().getStatus();
+        });
+        assertTrue(ready.await(10, TimeUnit.SECONDS));
+        go.countDown();
+        assertThat(recording.get(30, TimeUnit.SECONDS)).isEqualTo(201);
+        assertThat(voiding.get(30, TimeUnit.SECONDS)).isEqualTo(200);
+        executor.shutdown();
+
+        List<Object> outdatedMarkers = jdbc.query("select outdated_at from graduation_request where program_enrollment_id = ?",
+                (resultSet, row) -> resultSet.getObject(1), enrollmentId);
+        assertThat(outdatedMarkers).hasSizeLessThanOrEqualTo(1);
+        outdatedMarkers.forEach(marker -> assertThat(marker).isNotNull());
+    }
+
+    private String recordBody(long subjectId) {
+        return "{\"subjectId\":" + subjectId + ",\"originInstitution\":\"Universidad de origen\","
+                + "\"originSubjectName\":\"Materia de origen\",\"recognizedOn\":\"" + LocalDate.now()
+                + "\",\"resolutionNumber\":\"RES-1\",\"reason\":\"Estudios previos reconocidos\"}";
+    }
+
+    @Test
     void twoSimultaneousVoidsOfTheSameEquivalenceLeaveOneVoidedAndOneConflict() throws Exception {
         long[] ids = transactionTemplate.execute(status -> seed());
         long enrollmentId = ids[0];
@@ -193,6 +279,19 @@ class SubjectEquivalenceConcurrencyIT extends AbstractIntegrationTest {
         subject.setCode(TestSubjectCodes.next());
         subject.setName("Materia concurrente " + suffix);
         entityManager.persist(subject);
+        Subject secondSubject = new Subject();
+        secondSubject.setCode(TestSubjectCodes.next());
+        secondSubject.setName("Segunda materia concurrente " + suffix);
+        entityManager.persist(secondSubject);
+        ProgramSubject secondEntry = new ProgramSubject();
+        secondEntry.setProgram(program);
+        secondEntry.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
+        secondEntry.setSubject(secondSubject);
+        secondEntry.setCredits(5);
+        secondEntry.setCurricularYear(1);
+        secondEntry.setCurricularTerm(CurricularTerm.FIRST);
+        secondEntry.setStatus(StatusType.ACTIVE);
+        entityManager.persist(secondEntry);
         ProgramSubject planEntry = new ProgramSubject();
         planEntry.setProgram(program);
         planEntry.setPlan(com.red_escuela.backend.testsupport.TestCurriculumPlans.planOf(program));
@@ -222,6 +321,6 @@ class SubjectEquivalenceConcurrencyIT extends AbstractIntegrationTest {
         staff.getRoles().add(role);
         entityManager.persist(staff);
         entityManager.flush();
-        return new long[] {enrollment.getId(), subject.getId(), staff.getId()};
+        return new long[] {enrollment.getId(), subject.getId(), staff.getId(), secondSubject.getId()};
     }
 }
