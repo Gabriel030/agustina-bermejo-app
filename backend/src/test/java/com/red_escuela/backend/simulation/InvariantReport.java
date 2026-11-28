@@ -28,6 +28,10 @@ public final class InvariantReport {
         return violations;
     }
 
+    public List<InvariantViolation> violationsOf(String rule) {
+        return violations.stream().filter(violation -> violation.rule().equals(rule)).toList();
+    }
+
     public Map<String, Long> countsByRule() {
         Map<String, Long> counts = new TreeMap<>();
         AcademicInvariants.codes().forEach(code -> counts.put(code, 0L));
