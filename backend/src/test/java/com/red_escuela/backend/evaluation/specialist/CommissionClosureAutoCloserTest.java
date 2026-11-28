@@ -48,17 +48,19 @@ class CommissionClosureAutoCloserTest {
     private final CommissionClosureExceptionRepository exceptionRepository = mock(CommissionClosureExceptionRepository.class);
     private final ClosureSectionEnrollmentLocker locker = mock(ClosureSectionEnrollmentLocker.class);
     private final CommissionClosureSnapshotRecorder snapshotRecorder = mock(CommissionClosureSnapshotRecorder.class);
+    private final ClosureColumnsFinder columnsFinder = mock(ClosureColumnsFinder.class);
     private final ClosureOutcomeApplier outcomeApplier = mock(ClosureOutcomeApplier.class);
     private final ClosureReportNumberAllocator numberAllocator = mock(ClosureReportNumberAllocator.class);
     private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
 
     private CommissionClosureAutoCloser closerOn(LocalDate today) {
         when(termEndFinder.termEndDate(SectionKind.PROGRAM, 5L)).thenReturn(TERM_END);
+        when(columnsFinder.allPublished(any())).thenReturn(true);
         when(numberAllocator.allocateNextReportNumber()).thenReturn("ACTA-2026-0001");
         when(exceptionRepository.findByClosureIdAndRevokedAtIsNull(9L)).thenReturn(List.of());
         when(studentRepository.saveAll(any())).thenAnswer(call -> call.getArgument(0));
         return new CommissionClosureAutoCloser(mock(SectionFinder.class), termEndFinder, closureRepository, auditRepository,
-                studentRepository, exceptionRepository, locker, snapshotRecorder, outcomeApplier, numberAllocator, eventPublisher,
+                studentRepository, exceptionRepository, locker, snapshotRecorder, columnsFinder, outcomeApplier, numberAllocator, eventPublisher,
                 Clock.fixed(today.atTime(9, 0).toInstant(ZoneOffset.UTC), ZoneOffset.UTC));
     }
 
@@ -204,5 +206,31 @@ class CommissionClosureAutoCloserTest {
 
         verify(outcomeApplier, times(1)).applyClosedResults(any(), any());
         verify(auditRepository, times(1)).save(any());
+    }
+
+    @Test
+    void aSectionWithAGradeLoadedInAColumnStillUnpublishedIsNotClosed() {
+        CommissionClosure closure = closureIn(ClosureStatus.DRAFT_AVAILABLE);
+        CommissionClosureAutoCloser closer = closerOn(TERM_END.plusDays(15));
+        when(columnsFinder.allPublished(any())).thenReturn(false);
+
+        assertThat(closer.closeIfGradesLoaded(SectionKind.PROGRAM, 5L)).isFalse();
+
+        assertThat(closure.getStatus()).isEqualTo(ClosureStatus.DRAFT_AVAILABLE);
+        verify(locker, never()).lockMembersInAscendingOrder(any(), any());
+        verify(outcomeApplier, never()).applyClosedResults(any(), any());
+        verify(auditRepository, never()).save(any());
+    }
+
+    @Test
+    void aTeacherConfirmedClosureWithARowWithoutFinalConditionIsNotClosed() {
+        CommissionClosure closure = closureIn(ClosureStatus.TEACHER_CONFIRMED);
+        CommissionClosureAutoCloser closer = closerOn(TERM_END.plusDays(15));
+        when(studentRepository.findByClosureId(9L)).thenReturn(List.of(graded(1L, ClosureFinalCondition.PROMOTES), graded(2L, null)));
+
+        assertThat(closer.closeIfGradesLoaded(SectionKind.PROGRAM, 5L)).isFalse();
+
+        assertThat(closure.getStatus()).isEqualTo(ClosureStatus.TEACHER_CONFIRMED);
+        verify(outcomeApplier, never()).applyClosedResults(any(), any());
     }
 }

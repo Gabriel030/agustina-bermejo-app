@@ -42,6 +42,7 @@ public class CommissionClosureAutoCloser {
     private final CommissionClosureExceptionRepository exceptionRepository;
     private final ClosureSectionEnrollmentLocker enrollmentLocker;
     private final CommissionClosureSnapshotRecorder snapshotRecorder;
+    private final ClosureColumnsFinder closureColumnsFinder;
     private final ClosureOutcomeApplier outcomeApplier;
     private final ClosureReportNumberAllocator reportNumberAllocator;
     private final ApplicationEventPublisher eventPublisher;
@@ -51,7 +52,8 @@ public class CommissionClosureAutoCloser {
             CommissionClosureRepository closureRepository, CommissionClosureAuditRepository auditRepository,
             CommissionClosureStudentRepository closureStudentRepository,
             CommissionClosureExceptionRepository exceptionRepository, ClosureSectionEnrollmentLocker enrollmentLocker,
-            CommissionClosureSnapshotRecorder snapshotRecorder, ClosureOutcomeApplier outcomeApplier,
+            CommissionClosureSnapshotRecorder snapshotRecorder, ClosureColumnsFinder closureColumnsFinder,
+            ClosureOutcomeApplier outcomeApplier,
             ClosureReportNumberAllocator reportNumberAllocator, ApplicationEventPublisher eventPublisher, Clock clock) {
         this.sectionFinder = sectionFinder;
         this.sectionTermEndFinder = sectionTermEndFinder;
@@ -61,6 +63,7 @@ public class CommissionClosureAutoCloser {
         this.exceptionRepository = exceptionRepository;
         this.enrollmentLocker = enrollmentLocker;
         this.snapshotRecorder = snapshotRecorder;
+        this.closureColumnsFinder = closureColumnsFinder;
         this.outcomeApplier = outcomeApplier;
         this.reportNumberAllocator = reportNumberAllocator;
         this.eventPublisher = eventPublisher;
@@ -81,6 +84,9 @@ public class CommissionClosureAutoCloser {
         if (closure.getStatus() == ClosureStatus.CLOSED) {
             return false;
         }
+        if (!closureColumnsFinder.allPublished(closureColumnsFinder.findColumns(kind, sectionId))) {
+            return false;
+        }
         enrollmentLocker.lockMembersInAscendingOrder(kind, sectionId);
         boolean withoutConfirmation = closure.getStatus() != ClosureStatus.TEACHER_CONFIRMED;
         if (withoutConfirmation) {
@@ -91,7 +97,7 @@ public class CommissionClosureAutoCloser {
             }
         }
         List<CommissionClosureStudent> rows = settleConditionalPromotions(closureId);
-        if (rows.stream().noneMatch(row -> row.getFinalCondition() != null)) {
+        if (rows.isEmpty() || rows.stream().anyMatch(row -> row.getFinalCondition() == null)) {
             return false;
         }
         outcomeApplier.applyClosedResults(kind, rows);
