@@ -13,8 +13,10 @@ function readinessOf(cohortId, { open = false, missing = [] } = {}) {
   return {
     cohortId,
     open,
-    openedAt: '2026-08-01T10:00:00Z',
+    openedAt: open ? '2026-08-01T10:00:00Z' : null,
     ready: missing.length === 0,
+    commissionsTotal: 4,
+    commissionsWithoutPreceptor: missing.includes('SECTION_PRECEPTORS') ? 1 : 0,
     items: codes.map((code) => ({
       code,
       blocking: code !== 'COHORT_RESPONSIBLE',

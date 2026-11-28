@@ -491,37 +491,10 @@ export const handlers = [
   ),
   http.get(`${API}/programs/:id/cohorts`, ({ params }) =>
     HttpResponse.json([
-      { id: 1, programId: Number(params.id), label: 'Marzo 2026', ordenEnAnio: 1, cursadaStart: '2026-03-01', admissionOpen: true },
-      { id: 2, programId: Number(params.id), label: 'Agosto 2026', ordenEnAnio: 2, cursadaStart: '2026-08-01', admissionOpen: true },
+      { id: 1, programId: Number(params.id), label: 'Marzo 2026', ordenEnAnio: 1, cursadaStart: '2026-03-01', admissionOpen: true, intake: 'FIRST', planId: 1, planName: 'Plan 2026', openedAt: '2026-01-10T09:00:00', responsiblePreceptors: [{ id: 7, name: 'Paula Preceptora' }] },
+      { id: 2, programId: Number(params.id), label: 'Agosto 2026', ordenEnAnio: 2, cursadaStart: '2026-08-01', admissionOpen: true, intake: 'SECOND', planId: 1, planName: 'Plan 2026', openedAt: null, responsiblePreceptors: [] },
     ]),
   ),
-  http.get(`${API}/cohorts/:id/readiness`, ({ params }) => {
-    const cohortId = Number(params.id);
-    const incomplete = cohortId === 1;
-    return HttpResponse.json({
-      cohortId,
-      open: false,
-      openedAt: '2026-01-01T00:00:00Z',
-      ready: !incomplete,
-      items: [
-        { code: 'CURRENT_PLAN', blocking: true, fulfilled: true, reasons: [] },
-        { code: 'FIRST_YEAR_SECTIONS', blocking: true, fulfilled: true, reasons: [] },
-        {
-          code: 'SECTION_PRECEPTORS',
-          blocking: true,
-          fulfilled: !incomplete,
-          reasons: incomplete ? ['Programación I (A): sin preceptor', 'Matemática (A): sin preceptor'] : [],
-        },
-        {
-          code: 'COHORT_RESPONSIBLE',
-          blocking: false,
-          fulfilled: !incomplete,
-          reasons: incomplete ? ['La cohorte no tiene preceptor responsable'] : [],
-        },
-        { code: 'HOLIDAYS_LOADED', blocking: true, fulfilled: true, reasons: [] },
-      ],
-    });
-  }),
   http.post(`${API}/cohorts/:id/open`, ({ params }) =>
     HttpResponse.json({
       id: Number(params.id),
@@ -545,6 +518,13 @@ export const handlers = [
       { id: 35, nombre: 'Lucía', apellido: 'Benítez', dni: '20111226', email: 'lucia.benitez@demo.test', role: 'PRECEPTOR', status: 'ACTIVE', telefono: null, username: 'lbenitez' },
       { id: 36, nombre: 'Nicolás', apellido: 'Ramos', dni: '20111227', email: 'nicolas.ramos@demo.test', role: 'PRECEPTOR', status: 'ACTIVE', telefono: null, username: 'nramos' },
     ]),
+  ),
+  http.put(`${API}/cohorts/:id/responsible-preceptors`, async ({ request }) => {
+    const body = await request.json().catch(() => ({ responsiblePreceptorIds: [] }));
+    return HttpResponse.json(body.responsiblePreceptorIds.map((id) => ({ id, name: `Preceptor ${id}` })));
+  }),
+  http.get(`${API}/cohorts/:id/readiness`, ({ params }) =>
+    HttpResponse.json({ cohortId: Number(params.id), open: false, openedAt: null, ready: false, commissionsTotal: 4, commissionsWithoutPreceptor: 1, items: [] }),
   ),
   http.get(`${API}/programs`, () => HttpResponse.json([])),
   http.get(`${API}/academic-offering-cycles`, () => HttpResponse.json([])),

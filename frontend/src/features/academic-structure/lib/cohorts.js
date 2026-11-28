@@ -36,6 +36,10 @@ export function readinessChecklist(readiness) {
       label: READINESS_LABELS[item.code] ?? item.code,
       fulfilled: item.fulfilled,
       pendingCount: item.fulfilled ? 0 : item.reasons.length,
+      withPreceptor: item.code === 'SECTION_PRECEPTORS' && Number.isFinite(readiness.commissionsTotal)
+        ? readiness.commissionsTotal - (readiness.commissionsWithoutPreceptor ?? 0)
+        : null,
+      total: item.code === 'SECTION_PRECEPTORS' && Number.isFinite(readiness.commissionsTotal) ? readiness.commissionsTotal : null,
     }));
 }
 

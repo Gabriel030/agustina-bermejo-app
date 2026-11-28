@@ -1,9 +1,9 @@
 package com.red_escuela.backend.billing.usecase.cohort;
 
-import com.red_escuela.backend.academicstructure.entity.ProgramCohort;
+import com.red_escuela.backend.billing.dto.ProgramCohortCatalogResponse;
 
 import java.util.List;
 
 public interface ListProgramCohortsForProgramUseCase {
-    List<ProgramCohort> list(Long programId);
+    List<ProgramCohortCatalogResponse> list(Long programId);
 }

@@ -52,7 +52,7 @@ function ReadinessChecklist({ items, canManage }) {
             )}
             <span>
               {item.label}
-              {item.code === 'SECTION_PRECEPTORS' && !item.fulfilled ? ` · faltan ${item.pendingCount}` : ''}
+              {item.code === 'SECTION_PRECEPTORS' && !item.fulfilled ? (item.total === null ? ` · faltan ${item.pendingCount}` : ` · ${item.withPreceptor} de ${item.total}`) : ''}
             </span>
             {!item.fulfilled && canManage && item.code === 'SECTION_PRECEPTORS' && (
               <Link to={COMMISSIONS_PATH} className="font-semibold text-brand underline underline-offset-2">
