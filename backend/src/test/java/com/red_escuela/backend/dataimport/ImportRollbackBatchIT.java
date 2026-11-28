@@ -307,6 +307,7 @@ class ImportRollbackBatchIT extends AbstractDataImportIT {
     private long statementsToRollBack(HistoricalDatasetCsv csv, int students) throws Exception {
         long batchId = importEnrollments(csv, students);
         String token = directorToken();
+        mockMvc.perform(get("/data-imports/" + batchId).header("Authorization", "Bearer " + token)).andExpect(status().isOk());
         Statistics statistics = entityManagerFactory.unwrap(SessionFactory.class).getStatistics();
         boolean wasEnabled = statistics.isStatisticsEnabled();
         statistics.setStatisticsEnabled(true);
