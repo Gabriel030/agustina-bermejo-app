@@ -70,6 +70,27 @@ class ApprovedOutcomeCriteriaReproductionIT extends ReproductionFixture {
     }
 
     @Test
+    void correctingTheScoreOfAnApprovedSubjectKeepsTheDateOfTheFirstApproval() {
+        Program program = program(4);
+        Subject subject = subject("Algebra");
+        programSubject(program, subject, 4, StatusType.ACTIVE);
+        ProgramEnrollment enrollment = programEnrollment(student(), program, ProgramEnrollmentStatus.ENROLLED);
+        Term term = term(LocalDateTime.of(2025, 3, 1, 0, 0), LocalDateTime.of(2025, 7, 1, 0, 0));
+        SubjectSectionEnrollment sectionEnrollment = sectionEnrollment(enrollment, section(subject, term), EnrollmentStatus.APPROVED);
+        sectionEnrollment.setFinalScore(grade("6.00"));
+        sectionEnrollment.setFinalScoreDate(LocalDate.of(2025, 7, 1));
+        flushAndClear();
+
+        outcomeRecorder.recordProgramOutcome(sectionEnrollment.getId(), EnrollmentStatus.APPROVED, grade("7.00"),
+                FinalGradeType.PROMOTION, false);
+        flushAndClear();
+
+        SubjectSectionEnrollment corrected = sectionEnrollmentRepository.findById(sectionEnrollment.getId()).orElseThrow();
+        assertThat(corrected.getFinalScore()).isEqualTo(grade("7.00"));
+        assertThat(corrected.getFinalScoreDate()).isEqualTo(LocalDate.of(2025, 7, 1));
+    }
+
+    @Test
     void everyReaderPicksTheSameScoreWhenASubjectHasTwoApprovedAttempts() {
         Program program = program(4);
         Subject subject = subject("Algebra");

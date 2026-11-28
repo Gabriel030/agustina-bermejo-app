@@ -697,6 +697,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `SUBJECT_NOT_ASSIGNABLE_TO_PLAN` | no | `SubjectNotAssignableToPlanException` | academicstructure |
 | `SUBJECT_NOT_IN_ENROLLMENT_PLAN` | no | `SubjectNotInEnrollmentPlanException` | enrollment |
 | `SUBJECT_NOT_OPENABLE_FOR_SECTIONS` | no | `SubjectNotOpenableForSectionsException` | academicstructure |
+| `SUBJECT_REGULAR` | no | `SubjectRegularException` | enrollment |
 | `SUBMISSION_WINDOW_CLOSED` | no | `SubmissionWindowClosedException` | evaluation |
 | `TEMPLATE_NOTHING_TO_DISCARD` | no | `TemplateNothingToDiscardException` | graduation |
 | `TEMPLATE_NOTHING_TO_PUBLISH` | no | `TemplateNothingToPublishException` | graduation |

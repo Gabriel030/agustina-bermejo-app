@@ -35,7 +35,7 @@ public class SectionEnrollmentOutcomeRecorder {
         if (finalScore != null) {
             enrollment.setFinalScore(finalScore);
             enrollment.setFinalGradeType(finalGradeType);
-            if (status == EnrollmentStatus.APPROVED) {
+            if (status == EnrollmentStatus.APPROVED && enrollment.getFinalScoreDate() == null) {
                 enrollment.setFinalScoreDate(ApplicationTime.today());
             }
         } else if (clearFinalWhenAbsent) {

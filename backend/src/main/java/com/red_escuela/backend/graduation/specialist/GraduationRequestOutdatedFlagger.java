@@ -24,9 +24,10 @@ public class GraduationRequestOutdatedFlagger {
     public void flagOutdatedRequests(Long programEnrollmentId) {
         graduationRequestRepository.findByProgramEnrollmentIdAndStatusNot(programEnrollmentId, GraduationRequestStatus.REJECTED)
                 .forEach(request -> {
-                    request.markOutdated(ApplicationTime.now());
-                    graduationRequestRepository.save(request);
-                    eventPublisher.publishEvent(GraduationRequestOutdatedEvent.outdatedFor(request));
+                    if (request.markOutdated(ApplicationTime.now())) {
+                        graduationRequestRepository.save(request);
+                        eventPublisher.publishEvent(GraduationRequestOutdatedEvent.outdatedFor(request));
+                    }
                 });
     }
 }

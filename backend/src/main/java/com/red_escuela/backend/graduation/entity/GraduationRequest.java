@@ -71,8 +71,16 @@ public class GraduationRequest {
     @Column(name = "outdated_at")
     private LocalDateTime outdatedAt;
 
-    public void markOutdated(LocalDateTime flaggedAt) {
+    public boolean markOutdated(LocalDateTime flaggedAt) {
+        if (outdatedAt != null) {
+            return false;
+        }
         outdatedAt = flaggedAt;
+        return true;
+    }
+
+    public void clearOutdated() {
+        outdatedAt = null;
     }
 
     public void requireAwaitingDirectorDecision() {
