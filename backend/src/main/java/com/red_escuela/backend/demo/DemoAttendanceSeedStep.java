@@ -40,8 +40,8 @@ public class DemoAttendanceSeedStep implements DemoSeedStep {
     public void seed(DemoDataset dataset) {
         List<LocalDate> classDates = recentClassDaysBefore(ApplicationTime.today(), CLASSES_PER_SECTION, holidayDates());
         List<Long> sectionIds = session.enrolledSectionIdsOf(dataset);
-        for (int sectionPosition = 0; sectionPosition < sectionIds.size(); sectionPosition++) {
-            recordSection(sectionIds.get(sectionPosition), sectionPosition, classDates);
+        for (long sectionId : sectionIds) {
+            recordSection(sectionId, classDates);
         }
     }
 
@@ -69,17 +69,18 @@ public class DemoAttendanceSeedStep implements DemoSeedStep {
         return dates;
     }
 
-    private void recordSection(long sectionId, int sectionPosition, List<LocalDate> classDates) {
+    private void recordSection(long sectionId, List<LocalDate> classDates) {
         JsonNode roster = session.api().get(DemoPersona.TEACHER, "/program-sections/" + sectionId + "/roster");
         if (roster.isEmpty()) {
             throw new IllegalStateException("La comisión " + sectionId + " no tiene alumnos para tomar asistencia");
         }
         for (int dateIndex = 0; dateIndex < classDates.size(); dateIndex++) {
             List<Map<String, Object>> entries = new ArrayList<>();
-            for (int rosterPosition = 0; rosterPosition < roster.size(); rosterPosition++) {
-                int absences = DemoAcademicProfile.of(rosterPosition, sectionPosition).absences();
+            for (JsonNode rosterEntry : roster) {
+                long sectionEnrollmentId = rosterEntry.get("enrollmentId").asLong();
+                int absences = DemoAcademicProfile.of(sectionEnrollmentId).absences();
                 Map<String, Object> entry = new LinkedHashMap<>();
-                entry.put("enrollmentId", roster.get(rosterPosition).get("enrollmentId").asLong());
+                entry.put("enrollmentId", sectionEnrollmentId);
                 entry.put("status", dateIndex < absences ? "ABSENT" : "PRESENT");
                 entries.add(entry);
             }

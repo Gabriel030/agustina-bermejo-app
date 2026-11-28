@@ -17,8 +17,8 @@ public enum DemoAcademicProfile {
         this.absences = absences;
     }
 
-    public static DemoAcademicProfile of(int rosterPosition, int sectionPosition) {
-        return values()[(rosterPosition + sectionPosition) % values().length];
+    public static DemoAcademicProfile of(long sectionEnrollmentId) {
+        return values()[(int) (sectionEnrollmentId % values().length)];
     }
 
     public List<BigDecimal> examScores() {

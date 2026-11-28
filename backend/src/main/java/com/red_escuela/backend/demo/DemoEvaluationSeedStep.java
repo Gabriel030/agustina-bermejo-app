@@ -39,20 +39,20 @@ public class DemoEvaluationSeedStep implements DemoSeedStep {
     public void seed(DemoDataset dataset) {
         LocalDate today = ApplicationTime.today();
         List<Long> sectionIds = session.enrolledSectionIdsOf(dataset);
-        for (int sectionPosition = 0; sectionPosition < sectionIds.size(); sectionPosition++) {
-            gradeSection(sectionIds.get(sectionPosition), sectionPosition, today);
+        for (long sectionId : sectionIds) {
+            gradeSection(sectionId, today);
         }
     }
 
-    private void gradeSection(long sectionId, int sectionPosition, LocalDate today) {
+    private void gradeSection(long sectionId, LocalDate today) {
         JsonNode roster = session.api().get(DemoPersona.TEACHER, "/program-sections/" + sectionId + "/roster");
         if (roster.isEmpty()) {
             throw new IllegalStateException("La comisión " + sectionId + " no tiene alumnos para calificar");
         }
         int loadedExams = 0;
-        for (int rosterPosition = 0; rosterPosition < roster.size(); rosterPosition++) {
-            long sectionEnrollmentId = roster.get(rosterPosition).get("enrollmentId").asLong();
-            List<BigDecimal> scores = DemoAcademicProfile.of(rosterPosition, sectionPosition).examScores();
+        for (JsonNode entry : roster) {
+            long sectionEnrollmentId = entry.get("enrollmentId").asLong();
+            List<BigDecimal> scores = DemoAcademicProfile.of(sectionEnrollmentId).examScores();
             for (int exam = 0; exam < scores.size(); exam++) {
                 int daysAgo = exam == 0 ? FIRST_EXAM_DAYS_AGO : SECOND_EXAM_DAYS_AGO;
                 loadExam(sectionEnrollmentId, exam + 1, today.minusDays(daysAgo), scores.get(exam));

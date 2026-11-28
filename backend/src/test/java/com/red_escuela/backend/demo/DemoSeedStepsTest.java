@@ -114,7 +114,7 @@ class DemoSeedStepsTest {
 
     @Test
     void academicProfilesCycleThroughEveryProfile() {
-        assertThat(java.util.stream.IntStream.range(0, 4).mapToObj(position -> DemoAcademicProfile.of(position, 0)).distinct())
+        assertThat(java.util.stream.IntStream.range(0, 4).mapToObj(enrollmentId -> DemoAcademicProfile.of(enrollmentId)).distinct())
                 .hasSize(DemoAcademicProfile.values().length);
     }
 }

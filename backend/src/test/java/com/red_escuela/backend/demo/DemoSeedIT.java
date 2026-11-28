@@ -183,14 +183,14 @@ class DemoSeedIT extends AbstractIntegrationTest {
     }
 
     @Test
-    void seededGradesAndAttendanceFollowTheAcademicProfileOfTheFirstStudent() {
+    void seededGradesAndAttendanceFollowTheAcademicProfileOfEachEnrollment() {
         String username = DemoPeopleSeedStep.studentUsername(0);
         long programEnrollmentId = api.get(username, "/me/program-enrollments").get(0).get("id").asLong();
         JsonNode sectionEnrollments = api.get(DemoPersona.ADMIN, "/program-enrollments/" + programEnrollmentId + "/section-enrollments");
         assertThat(sectionEnrollments).hasSize(DemoEnrollmentSeedStep.SECTIONS_PER_STUDENT);
         for (int sectionPosition = 0; sectionPosition < sectionEnrollments.size(); sectionPosition++) {
             long enrollmentId = sectionEnrollments.get(sectionPosition).get("id").asLong();
-            DemoAcademicProfile profile = DemoAcademicProfile.of(0, sectionPosition);
+            DemoAcademicProfile profile = DemoAcademicProfile.of(enrollmentId);
             assertThat(api.get(DemoPersona.ADMIN, "/section-enrollments/" + enrollmentId + "/grade-items"))
                     .hasSize(profile.examScores().size());
             JsonNode attendance = api.get(username, "/me/section-enrollments/" + enrollmentId + "/attendance");
