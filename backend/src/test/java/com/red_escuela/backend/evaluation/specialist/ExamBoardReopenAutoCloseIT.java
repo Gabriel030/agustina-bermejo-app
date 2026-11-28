@@ -55,7 +55,7 @@ import static org.mockito.Mockito.when;
 @Transactional
 class ExamBoardReopenAutoCloseIT extends AbstractIntegrationTest {
 
-    private final AtomicReference<Instant> now = new AtomicReference<>(Instant.parse("2170-06-20T12:00:00Z"));
+    private final AtomicReference<Instant> now = new AtomicReference<>(Instant.parse("2020-06-20T12:00:00Z"));
     private final Clock clock = new Clock() {
         @Override
         public ZoneId getZone() {
@@ -131,7 +131,7 @@ class ExamBoardReopenAutoCloseIT extends AbstractIntegrationTest {
         board = new ExamBoard();
         board.setTerm(term);
         board.setSubject(subject);
-        board.setExamDate(LocalDateTime.of(2170, 6, 1, 10, 0));
+        board.setExamDate(LocalDateTime.of(2020, 6, 1, 10, 0));
         board.setStatus(ExamBoardStatus.CLOSED);
         entityManager.persist(board);
         registration = new ExamBoardRegistration();
@@ -157,10 +157,10 @@ class ExamBoardReopenAutoCloseIT extends AbstractIntegrationTest {
 
     @Test
     void aReopenedBoardStaysScheduledWhileTheGraceWindowFromTheReopeningIsOpen() {
-        now.set(Instant.parse("2170-07-01T12:00:00Z"));
+        now.set(Instant.parse("2020-07-01T12:00:00Z"));
 
         assertThat(auditRepository.findLastOccurredAt(board.getId(), ExamBoardAuditAction.REOPENED))
-                .contains(LocalDateTime.of(2170, 6, 20, 12, 0));
+                .contains(LocalDateTime.of(2020, 6, 20, 12, 0));
         assertThat(job.closeExpiredExamBoards()).isZero();
 
         entityManager.flush();
@@ -172,7 +172,7 @@ class ExamBoardReopenAutoCloseIT extends AbstractIntegrationTest {
 
     @Test
     void aReopenedBoardIsClosedAndUngradedRegistrationsAreMarkedAbsentOnceTheGraceFromTheReopeningHasPassed() {
-        now.set(Instant.parse("2170-07-05T12:00:00Z"));
+        now.set(Instant.parse("2020-07-05T12:00:00Z"));
 
         assertThat(job.closeExpiredExamBoards()).isEqualTo(1);
 
