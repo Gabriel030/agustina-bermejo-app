@@ -10,6 +10,7 @@ import com.red_escuela.backend.evaluation.entity.ClosureStatus;
 import com.red_escuela.backend.evaluation.entity.CommissionClosure;
 import com.red_escuela.backend.evaluation.entity.SectionGradeItemPublication;
 import com.red_escuela.backend.evaluation.repository.CommissionClosureRepository;
+import com.red_escuela.backend.evaluation.repository.ExamBoardAuditRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRegistrationRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRepository;
 import com.red_escuela.backend.evaluation.repository.SectionGradeItemPublicationRepository;
@@ -33,7 +34,8 @@ class TermEndClosureReviewTest {
     private final SectionGradeItemPublicationRepository publicationRepository = mock(SectionGradeItemPublicationRepository.class);
     private final ClosureNotificationTargetsFinder targetsFinder = mock(ClosureNotificationTargetsFinder.class);
     private final TermEndClosureReview review = new TermEndClosureReview(endedSectionFinder, closureRepository, publicationRepository,
-            targetsFinder, mock(ExamBoardRepository.class), mock(ExamBoardRegistrationRepository.class));
+            targetsFinder, mock(ExamBoardRepository.class), mock(ExamBoardRegistrationRepository.class),
+            mock(ExamBoardAuditRepository.class));
 
     private void endedSection(Long id, LocalDate termEnd) {
         when(endedSectionFinder.findActiveSectionsEndedBetween(any(), any())).thenReturn(List.of(new EndedSectionRef(SectionKind.PROGRAM, id, termEnd)));

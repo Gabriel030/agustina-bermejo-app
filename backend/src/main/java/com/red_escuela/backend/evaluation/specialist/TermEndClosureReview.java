@@ -13,6 +13,8 @@ import com.red_escuela.backend.evaluation.entity.ExamBoard;
 import com.red_escuela.backend.evaluation.entity.ExamBoardRegistrationStatus;
 import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
 import com.red_escuela.backend.evaluation.repository.CommissionClosureRepository;
+import com.red_escuela.backend.evaluation.entity.ExamBoardAuditAction;
+import com.red_escuela.backend.evaluation.repository.ExamBoardAuditRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRegistrationRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRepository;
 import com.red_escuela.backend.evaluation.repository.SectionGradeItemPublicationRepository;
@@ -36,16 +38,19 @@ public class TermEndClosureReview {
     private final ClosureNotificationTargetsFinder targetsFinder;
     private final ExamBoardRepository examBoardRepository;
     private final ExamBoardRegistrationRepository registrationRepository;
+    private final ExamBoardAuditRepository examBoardAuditRepository;
 
     public TermEndClosureReview(EndedSectionFinder endedSectionFinder, CommissionClosureRepository closureRepository,
             SectionGradeItemPublicationRepository publicationRepository, ClosureNotificationTargetsFinder targetsFinder,
-            ExamBoardRepository examBoardRepository, ExamBoardRegistrationRepository registrationRepository) {
+            ExamBoardRepository examBoardRepository, ExamBoardRegistrationRepository registrationRepository,
+            ExamBoardAuditRepository examBoardAuditRepository) {
         this.endedSectionFinder = endedSectionFinder;
         this.closureRepository = closureRepository;
         this.publicationRepository = publicationRepository;
         this.targetsFinder = targetsFinder;
         this.examBoardRepository = examBoardRepository;
         this.registrationRepository = registrationRepository;
+        this.examBoardAuditRepository = examBoardAuditRepository;
     }
 
     public PendingTermClosuresResponse review(LocalDate today) {
@@ -61,6 +66,14 @@ public class TermEndClosureReview {
 
     public List<ExamBoard> expiredScheduledBoards(LocalDate today) {
         return examBoardRepository.findByStatusAndExamDateLessThanOrderByExamDate(ExamBoardStatus.SCHEDULED, today.atStartOfDay());
+    }
+
+    public LocalDate graceReference(ExamBoard board) {
+        LocalDate examDay = board.getExamDate().toLocalDate();
+        return examBoardAuditRepository.findLastOccurredAt(board.getId(), ExamBoardAuditAction.REOPENED)
+                .map(reopenedAt -> reopenedAt.toLocalDate())
+                .filter(reopenedDay -> reopenedDay.isAfter(examDay))
+                .orElse(examDay);
     }
 
     public List<PendingExamBoardClosureResponse> pendingExamBoards(LocalDate today) {
@@ -81,10 +94,10 @@ public class TermEndClosureReview {
     }
 
     private PendingExamBoardClosureResponse toPendingBoard(ExamBoard board, LocalDate today) {
-        LocalDate examDay = board.getExamDate().toLocalDate();
+        LocalDate referenceDay = graceReference(board);
         String subjectName = board.getSubject() != null ? board.getSubject().getName() : board.getCourseSubject().getName();
         return new PendingExamBoardClosureResponse(board.getId(), subjectName, board.getExamDate(),
-                ChronoUnit.DAYS.between(examDay, today), TermEndGracePolicy.isGraceOver(examDay, today),
+                ChronoUnit.DAYS.between(referenceDay, today), TermEndGracePolicy.isGraceOver(referenceDay, today),
                 registrationRepository.countByExamBoardIdAndStatus(board.getId(), ExamBoardRegistrationStatus.REGISTERED));
     }
 }

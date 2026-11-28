@@ -10,6 +10,9 @@ import com.red_escuela.backend.evaluation.events.ExamBoardAutoClosedEvent;
 import com.red_escuela.backend.evaluation.events.TermEndClosureOverdueEvent;
 import com.red_escuela.backend.evaluation.repository.CommissionClosureReminderRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRegistrationRepository;
+import com.red_escuela.backend.evaluation.repository.ExamBoardRepository;
+import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
+import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.context.ApplicationEventPublisher;
@@ -38,12 +41,16 @@ class TermEndEscalationJobTest {
     private final CommissionClosureReminderRepository reminderRepository = mock(CommissionClosureReminderRepository.class);
     private final ExamBoardManager examBoardManager = mock(ExamBoardManager.class);
     private final ExamBoardRegistrationRepository registrationRepository = mock(ExamBoardRegistrationRepository.class);
+    private final ExamBoardRepository examBoardRepository = mock(ExamBoardRepository.class);
+    private final java.util.Map<Long, ExamBoard> boards = new java.util.HashMap<>();
     private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
 
     private TermEndEscalationJob jobOn(LocalDate today) {
         Clock clock = Clock.fixed(today.atTime(9, 0).toInstant(ZoneOffset.UTC), ZoneOffset.UTC);
         when(reminderRepository.insertIfAbsent(any(), any(), anyInt(), any())).thenReturn(1);
-        return new TermEndEscalationJob(closureReview, reminderRepository, examBoardManager, registrationRepository, eventPublisher,
+        when(examBoardRepository.findByIdForUpdate(any())).thenAnswer(call -> Optional.ofNullable(boards.get((Long) call.getArgument(0))));
+        when(closureReview.graceReference(any())).thenAnswer(call -> ((ExamBoard) call.getArgument(0)).getExamDate().toLocalDate());
+        return new TermEndEscalationJob(closureReview, reminderRepository, examBoardManager, registrationRepository, examBoardRepository, eventPublisher,
                 TransactionOperations.withoutTransaction(), clock);
     }
 
@@ -58,6 +65,8 @@ class TermEndEscalationJobTest {
         ExamBoard board = new ExamBoard();
         board.setId(id);
         board.setSubject(subject);
+        board.setStatus(ExamBoardStatus.SCHEDULED);
+        boards.put(id, board);
         board.setExamDate(examDate);
         return board;
     }
@@ -122,7 +131,7 @@ class TermEndEscalationJobTest {
         ExamBoard board = board(5L, today.minusDays(15).atTime(10, 0));
         when(closureReview.expiredScheduledBoards(any())).thenReturn(List.of(board));
         when(examBoardManager.close(5L)).thenReturn(board);
-        when(registrationRepository.countByExamBoardIdAndStatus(5L, ExamBoardRegistrationStatus.ABSENT)).thenReturn(3L);
+        when(registrationRepository.countByExamBoardIdAndStatus(5L, ExamBoardRegistrationStatus.ABSENT)).thenReturn(0L, 3L);
 
         assertThat(job.closeExpiredExamBoards()).isEqualTo(1);
 
@@ -143,5 +152,34 @@ class TermEndEscalationJobTest {
         when(examBoardManager.close(6L)).thenReturn(healthy);
 
         assertThat(job.closeExpiredExamBoards()).isEqualTo(1);
+    }
+
+    @Test
+    void aBoardAlreadyClosedByTheTimeTheJobGetsToItIsNotAnnouncedAgain() {
+        LocalDate today = LocalDate.of(2026, 12, 25);
+        TermEndEscalationJob job = jobOn(today);
+        ExamBoard stale = board(5L, today.minusDays(20).atTime(10, 0));
+        when(closureReview.expiredScheduledBoards(any())).thenReturn(List.of(stale));
+        stale.setStatus(ExamBoardStatus.CLOSED);
+
+        assertThat(job.closeExpiredExamBoards()).isZero();
+        verify(examBoardManager, never()).close(any());
+        verify(eventPublisher, never()).publishEvent(any(ExamBoardAutoClosedEvent.class));
+    }
+
+    @Test
+    void theAbsentCountOnlyIncludesTheRegistrationsMarkedInThisRun() {
+        LocalDate today = LocalDate.of(2026, 12, 25);
+        TermEndEscalationJob job = jobOn(today);
+        ExamBoard board = board(5L, today.minusDays(20).atTime(10, 0));
+        when(closureReview.expiredScheduledBoards(any())).thenReturn(List.of(board));
+        when(examBoardManager.close(5L)).thenReturn(board);
+        when(registrationRepository.countByExamBoardIdAndStatus(5L, ExamBoardRegistrationStatus.ABSENT)).thenReturn(2L, 5L);
+
+        job.closeExpiredExamBoards();
+
+        ArgumentCaptor<ExamBoardAutoClosedEvent> event = ArgumentCaptor.forClass(ExamBoardAutoClosedEvent.class);
+        verify(eventPublisher).publishEvent(event.capture());
+        assertThat(event.getValue().absentCount()).isEqualTo(3L);
     }
 }

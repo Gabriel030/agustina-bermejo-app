@@ -9,4 +9,3 @@ begin
     execute 'alter table notification add constraint notification_type_enum check (type in (' || notification_literals
         || ', ''TERM_CLOSURE_OVERDUE'', ''EXAM_BOARD_AUTO_CLOSED'')) not valid';
 end $$;
-alter table notification validate constraint notification_type_enum;

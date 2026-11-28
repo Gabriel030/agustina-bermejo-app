@@ -8,7 +8,9 @@ import com.red_escuela.backend.evaluation.entity.ExamBoardRegistrationStatus;
 import com.red_escuela.backend.evaluation.events.ExamBoardAutoClosedEvent;
 import com.red_escuela.backend.evaluation.events.TermEndClosureOverdueEvent;
 import com.red_escuela.backend.evaluation.repository.CommissionClosureReminderRepository;
+import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRegistrationRepository;
+import com.red_escuela.backend.evaluation.repository.ExamBoardRepository;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,17 +34,19 @@ public class TermEndEscalationJob {
     private final CommissionClosureReminderRepository reminderRepository;
     private final ExamBoardManager examBoardManager;
     private final ExamBoardRegistrationRepository registrationRepository;
+    private final ExamBoardRepository examBoardRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final TransactionOperations transactionOperations;
     private final Clock clock;
 
     public TermEndEscalationJob(TermEndClosureReview closureReview, CommissionClosureReminderRepository reminderRepository,
             ExamBoardManager examBoardManager, ExamBoardRegistrationRepository registrationRepository,
-            ApplicationEventPublisher eventPublisher, TransactionOperations transactionOperations, Clock clock) {
+            ExamBoardRepository examBoardRepository, ApplicationEventPublisher eventPublisher, TransactionOperations transactionOperations, Clock clock) {
         this.closureReview = closureReview;
         this.reminderRepository = reminderRepository;
         this.examBoardManager = examBoardManager;
         this.registrationRepository = registrationRepository;
+        this.examBoardRepository = examBoardRepository;
         this.eventPublisher = eventPublisher;
         this.transactionOperations = transactionOperations;
         this.clock = clock;
@@ -71,7 +75,7 @@ public class TermEndEscalationJob {
         LocalDate today = LocalDate.now(clock);
         int closed = 0;
         for (ExamBoard board : closureReview.expiredScheduledBoards(today)) {
-            if (TermEndGracePolicy.isGraceOver(board.getExamDate().toLocalDate(), today) && closeSafely(board)) {
+            if (TermEndGracePolicy.isGraceOver(closureReview.graceReference(board), today) && closeSafely(board)) {
                 closed++;
             }
         }
@@ -103,10 +107,15 @@ public class TermEndEscalationJob {
         Long boardId = board.getId();
         try {
             return Boolean.TRUE.equals(transactionOperations.execute(status -> {
+                ExamBoard current = examBoardRepository.findByIdForUpdate(boardId).orElse(null);
+                if (current == null || current.getStatus() != ExamBoardStatus.SCHEDULED) {
+                    return false;
+                }
+                long absentBefore = registrationRepository.countByExamBoardIdAndStatus(boardId, ExamBoardRegistrationStatus.ABSENT);
                 ExamBoard closed = examBoardManager.close(boardId);
-                long absent = registrationRepository.countByExamBoardIdAndStatus(boardId, ExamBoardRegistrationStatus.ABSENT);
+                long absentNow = registrationRepository.countByExamBoardIdAndStatus(boardId, ExamBoardRegistrationStatus.ABSENT) - absentBefore;
                 String subjectName = closed.getSubject() != null ? closed.getSubject().getName() : closed.getCourseSubject().getName();
-                eventPublisher.publishEvent(ExamBoardAutoClosedEvent.of(boardId, subjectName, absent));
+                eventPublisher.publishEvent(ExamBoardAutoClosedEvent.of(boardId, subjectName, absentNow));
                 return true;
             }));
         } catch (RuntimeException exception) {
