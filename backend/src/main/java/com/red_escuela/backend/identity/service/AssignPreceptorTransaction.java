@@ -11,8 +11,8 @@ import com.red_escuela.backend.identity.exception.PreceptorRoleRequiredException
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.PreceptorAssignmentRepository;
 import com.red_escuela.backend.identity.specialist.IdentityAuditRecorder;
-import com.red_escuela.backend.identity.usecase.preceptorassignment.AssignPreceptorCommand;
-import com.red_escuela.backend.identity.usecase.preceptorassignment.PreceptorAssignmentResult;
+import com.red_escuela.backend.identity.dto.AssignPreceptorCommand;
+import com.red_escuela.backend.identity.dto.PreceptorAssignmentResult;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

@@ -14,7 +14,9 @@ import com.red_escuela.backend.identity.repository.PreceptorAssignmentRepository
 import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
+import com.red_escuela.backend.shared.permission.PermissionSnapshotCache;
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +52,7 @@ class PreceptorAssignmentControllerIT extends AbstractIntegrationTest {
     @Autowired private JwtService jwtService;
     @Autowired private PreceptorAssignmentRepository assignments;
     @Autowired private JdbcTemplate jdbc;
+    @Autowired private PermissionSnapshotCache permissionCache;
 
     private CycleTestFixtures fixtures;
     private Term term;
@@ -64,6 +67,24 @@ class PreceptorAssignmentControllerIT extends AbstractIntegrationTest {
         programSection = fixtures.section(fixtures.subject(), term, StatusType.ACTIVE, null);
         courseSection = persistCourseSection();
         administrative = person("ADMINISTRATIVO");
+    }
+
+    @AfterEach
+    void invalidatePermissionCache() {
+        permissionCache.invalidate();
+    }
+
+    @Test
+    void removingThePermissionFromTheGridBlocksAdministrative() throws Exception {
+        jdbc.update("insert into permission_module_mode (role, module, mode) values ('ADMINISTRATIVO', 'academicstructure', 'ENFORCE') on conflict (role, module) do update set mode = 'ENFORCE'");
+        jdbc.update("delete from role_permission where role = 'ADMINISTRATIVO' and permission_id = (select id from permission where code = 'academicstructure.manage_preceptor_assignments')");
+        permissionCache.invalidate();
+
+        mockMvc.perform(get("/preceptor-assignments").param("subjectSectionId", programSection.getId().toString())
+                        .header("Authorization", bearer(administrative)))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(assign(administrative, person("PRECEPTOR").getId(), programSection.getId(), null))
+                .andExpect(status().isForbidden());
     }
 
     @Test

@@ -5,8 +5,8 @@ import com.red_escuela.backend.identity.entity.PreceptorAssignment;
 import com.red_escuela.backend.identity.exception.PreceptorAssignmentTargetInvalidException;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.PreceptorAssignmentRepository;
-import com.red_escuela.backend.identity.usecase.preceptorassignment.ListPreceptorAssignmentsCommand;
-import com.red_escuela.backend.identity.usecase.preceptorassignment.PreceptorAssignmentResult;
+import com.red_escuela.backend.identity.dto.ListPreceptorAssignmentsCommand;
+import com.red_escuela.backend.identity.dto.PreceptorAssignmentResult;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
