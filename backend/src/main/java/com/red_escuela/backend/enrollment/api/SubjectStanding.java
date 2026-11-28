@@ -33,7 +33,8 @@ public record SubjectStanding(List<CourseworkEntry> coursework, RecognizedEquiva
     }
 
     public boolean isApprovedOrRegular() {
-        return isApproved() || courseworkStatuses().contains(EnrollmentStatus.REGULAR);
+        return isApproved() || courseworkStatuses().contains(EnrollmentStatus.REGULAR)
+                || courseworkStatuses().contains(EnrollmentStatus.APPROVAL_PENDING);
     }
 
     public ApprovalSource approvalSource() {

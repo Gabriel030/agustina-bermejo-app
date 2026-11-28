@@ -227,19 +227,23 @@ public final class AcademicInvariants {
                     join subject sub on sub.id = ss.subject_id
                     join program_enrollment pe on pe.id = sse.program_enrollment_id
                     where sse.status = 'APPROVAL_PENDING'
-                      and not exists (
-                        select 1 from program_subject ps
-                        join program_subject_prerequisite pr on pr.program_subject_id = ps.id
-                        join program_subject pps on pps.id = pr.prerequisite_program_subject_id
-                        where ps.program_id = pe.program_id and ps.plan_id = pe.plan_id and ps.subject_id = ss.subject_id
-                          and not exists (
-                            select 1 from subject_section_enrollment prior
-                            join subject_section pss on pss.id = prior.program_section_id
-                            where prior.program_enrollment_id = sse.program_enrollment_id
-                              and pss.subject_id = pps.subject_id
-                              and prior.id <> sse.id
-                              and (prior.status = 'APPROVED'
-                                   or (pr.requirement_type = 'PASSED_COURSEWORK' and prior.status in ('REGULAR', 'APPROVAL_PENDING')))))
+                      and (exists (select 1 from director_approval_request dar
+                                   where dar.program_enrollment_id = sse.program_enrollment_id and dar.subject_id = ss.subject_id
+                                     and dar.type = 'PREREQUISITE_WAIVER' and dar.status = 'APPROVED')
+                           or not exists (
+                            select 1 from program_subject ps
+                            join program_subject_prerequisite pr on pr.program_subject_id = ps.id
+                            join program_subject pps on pps.id = pr.prerequisite_program_subject_id
+                            where ps.program_id = pe.program_id and ps.plan_id = pe.plan_id and ps.subject_id = ss.subject_id
+                              and not exists (
+                                select 1 from subject_section_enrollment prior
+                                join subject_section pss on pss.id = prior.program_section_id
+                                where prior.program_enrollment_id = sse.program_enrollment_id
+                                  and pss.subject_id = pps.subject_id and prior.status = 'APPROVED')
+                              and not exists (
+                                select 1 from subject_equivalence eq
+                                where eq.program_enrollment_id = sse.program_enrollment_id
+                                  and eq.subject_id = pps.subject_id and eq.status = 'ACTIVE')))
                     """),
             new AcademicInvariant(GRADUATION_REQUEST_BEFORE_CLOSURE, """
                     select cast(:today as date) as fact_day, pe.student_id as student_id,
