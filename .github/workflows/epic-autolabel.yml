@@ -1,0 +1,31 @@
+name: Epic autolabel
+
+on:
+  pull_request_target:
+    types: [opened, reopened, synchronize, edited]
+    branches: [develop]
+
+permissions:
+  issues: write
+  pull-requests: read
+  contents: read
+
+concurrency:
+  group: epic-autolabel-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  autolabel:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.base.ref }}
+          persist-credentials: false
+      - name: Infer epic label
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+        run: scripts/epic-board.sh autolabel
