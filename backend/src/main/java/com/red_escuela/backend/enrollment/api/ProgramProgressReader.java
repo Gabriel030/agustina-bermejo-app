@@ -89,7 +89,7 @@ public class ProgramProgressReader {
             return false;
         }
         Set<Long> coursedSubjectIds = subjectIdsMatching(
-                standingsOf(programEnrollmentId, entries, List.of(EnrollmentStatus.APPROVED, EnrollmentStatus.REGULAR)),
+                standingsOf(programEnrollmentId, entries, List.of(EnrollmentStatus.APPROVED, EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVAL_PENDING)),
                 SubjectStanding::isApprovedOrRegular);
         List<ProgramSubjectView> coursed = entriesOfSubjects(entries, coursedSubjectIds);
         boolean mandatoryPending = entries.stream()
