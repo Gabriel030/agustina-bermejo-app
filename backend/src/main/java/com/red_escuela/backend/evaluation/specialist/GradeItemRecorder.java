@@ -9,7 +9,9 @@ import com.red_escuela.backend.evaluation.events.SubjectApprovalRevertedEvent;
 import com.red_escuela.backend.evaluation.events.SubjectApprovalStandingChangedEvent;
 import com.red_escuela.backend.identity.entity.Person;
 import org.springframework.context.ApplicationEventPublisher;
-import com.red_escuela.backend.evaluation.domain.PrerequisiteGatedOutcome;
+import com.red_escuela.backend.evaluation.domain.ApprovalRequirementContext;
+import com.red_escuela.backend.evaluation.domain.RequirementGatedOutcome;
+import com.red_escuela.backend.evaluation.domain.UnmetApprovalRequirements;
 import com.red_escuela.backend.evaluation.policy.CourseworkOutcomeCalculator;
 import com.red_escuela.backend.evaluation.dto.CreateGradeItemRequest;
 import com.red_escuela.backend.enrollment.api.ProgramPrerequisiteEvaluator;
@@ -49,6 +51,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 import com.red_escuela.backend.evaluation.api.GraduationRequestTriggerPort;
 
 @Service
@@ -79,6 +82,7 @@ public class GradeItemRecorder {
     private final SectionClosureGuard sectionClosureGuard;
     private final ApprovedCourseworkCountFinder courseworkCountFinder;
     private final GradeItemSlotValidator slotValidator;
+    private final ApprovalRequirementsEvaluator approvalRequirementsEvaluator;
 
     public GradeItemRecorder(
             GradeItemRepository gradeItemRepository,
@@ -102,7 +106,9 @@ public class GradeItemRecorder {
             ProgramPrerequisiteEvaluator programPrerequisiteEvaluator,
             SectionClosureGuard sectionClosureGuard,
             ApprovedCourseworkCountFinder courseworkCountFinder,
-            GradeItemSlotValidator slotValidator, SectionEvaluationSchemeLoader schemeLoader) {
+            GradeItemSlotValidator slotValidator, SectionEvaluationSchemeLoader schemeLoader,
+            ApprovalRequirementsEvaluator approvalRequirementsEvaluator) {
+        this.approvalRequirementsEvaluator = approvalRequirementsEvaluator;
         this.schemeLoader = schemeLoader;
         this.gradeItemRepository = gradeItemRepository;
         this.sectionEnrollmentFinder = sectionEnrollmentFinder;
@@ -261,20 +267,22 @@ public class GradeItemRecorder {
         var current = rebuild ? EnrollmentStatus.ENROLLED : enrollment.statusAssumingRegularWhen(finalCorrection);
         BooleanSupplier prerequisitesMet = () -> programPrerequisiteEvaluator.areAllApprovedOrWaivedOrSubjectOutsidePlan(
                 enrollment.getProgramEnrollment().getId(), enrollment.subjectId());
+        Supplier<UnmetApprovalRequirements> unmetApprovalRequirements = () -> approvalRequirementsEvaluator.evaluate(
+                new ApprovalRequirementContext(prerequisitesMet));
         Long programEnrollmentId = enrollment.getProgramEnrollment().getId();
         int courseworkCount = courseworkCountFinder.findExpectedCount(SectionKind.PROGRAM, enrollment.getSubjectSection().getId());
         boolean wasApproved = enrollment.getStatus() == EnrollmentStatus.APPROVED;
         if (rebuildFromItems && isApprovedByFinalExam(enrollment)) {
-            PrerequisiteGatedOutcome gated = outcomeCalculator.promotionPolicy().restrictApprovalWhenPrerequisitesUnmet(
+            RequirementGatedOutcome gated = outcomeCalculator.promotionPolicy().holdApprovalUntilRequirementsMet(
                     outcomeCalculator.calculate(scheme, courseworkCount, items, EnrollmentStatus.REGULAR, maxFinalExamAttempts),
-                    prerequisitesMet);
+                    unmetApprovalRequirements);
             if (gated.forcedFinalCondition().isPresent()) {
                 revertApprovalLosingPrerequisites(enrollment);
             }
             return;
         }
-        Optional<CourseworkOutcome> calculated = outcomeCalculator.promotionPolicy().restrictApprovalWhenPrerequisitesUnmet(
-                outcomeCalculator.calculate(scheme, courseworkCount, items, current, maxFinalExamAttempts), prerequisitesMet)
+        Optional<CourseworkOutcome> calculated = outcomeCalculator.promotionPolicy().holdApprovalUntilRequirementsMet(
+                outcomeCalculator.calculate(scheme, courseworkCount, items, current, maxFinalExamAttempts), unmetApprovalRequirements)
                 .outcome();
         CourseworkOutcome result = outcomeCalculator.regularityPolicy().holdWhileFree(
                 calculated,

@@ -3,7 +3,9 @@ package com.red_escuela.backend.evaluation.policy;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.FinalGradeType;
 import com.red_escuela.backend.evaluation.domain.CourseworkOutcome;
-import com.red_escuela.backend.evaluation.domain.PrerequisiteGatedOutcome;
+import com.red_escuela.backend.evaluation.domain.ApprovalRequirement;
+import com.red_escuela.backend.evaluation.domain.RequirementGatedOutcome;
+import com.red_escuela.backend.evaluation.domain.UnmetApprovalRequirements;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.entity.GradeItem;
 import com.red_escuela.backend.shared.domain.Grade;
@@ -11,6 +13,7 @@ import com.red_escuela.backend.shared.domain.Grade;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 public final class PromotionPolicy {
 
@@ -35,20 +38,25 @@ public final class PromotionPolicy {
                 .map(aggregate -> new CourseworkOutcome(EnrollmentStatus.APPROVED, aggregate, FinalGradeType.PROMOTION));
     }
 
-    public PrerequisiteGatedOutcome restrictPromotionWhenPrerequisitesUnmet(
+    public RequirementGatedOutcome restrictPromotionWhenPrerequisitesUnmet(
             Optional<CourseworkOutcome> outcome, BooleanSupplier prerequisitesMet) {
         if (outcome.isEmpty() || !isPromotion(outcome.get()) || prerequisitesMet.getAsBoolean()) {
-            return PrerequisiteGatedOutcome.unchanged(outcome);
+            return RequirementGatedOutcome.unchanged(outcome);
         }
-        return PrerequisiteGatedOutcome.restrictedToFinal(new CourseworkOutcome(EnrollmentStatus.REGULAR, null, null));
+        return RequirementGatedOutcome.restrictedToFinal(
+                new CourseworkOutcome(EnrollmentStatus.REGULAR, null, null), UnmetApprovalRequirements.of(List.of(ApprovalRequirement.PREREQUISITES)));
     }
 
-    public PrerequisiteGatedOutcome restrictApprovalWhenPrerequisitesUnmet(
-            Optional<CourseworkOutcome> outcome, BooleanSupplier prerequisitesMet) {
-        if (outcome.isEmpty() || outcome.get().status() != EnrollmentStatus.APPROVED || prerequisitesMet.getAsBoolean()) {
-            return PrerequisiteGatedOutcome.unchanged(outcome);
+    public RequirementGatedOutcome holdApprovalUntilRequirementsMet(
+            Optional<CourseworkOutcome> outcome, Supplier<UnmetApprovalRequirements> unmetRequirements) {
+        if (outcome.isEmpty() || outcome.get().status() != EnrollmentStatus.APPROVED) {
+            return RequirementGatedOutcome.unchanged(outcome);
         }
-        return PrerequisiteGatedOutcome.restrictedToFinal(new CourseworkOutcome(EnrollmentStatus.REGULAR, null, null));
+        UnmetApprovalRequirements pendingRequirements = unmetRequirements.get();
+        if (pendingRequirements.isEmpty()) {
+            return RequirementGatedOutcome.unchanged(outcome);
+        }
+        return RequirementGatedOutcome.restrictedToFinal(new CourseworkOutcome(EnrollmentStatus.REGULAR, null, null), pendingRequirements);
     }
 
     private static boolean isPromotion(CourseworkOutcome outcome) {
