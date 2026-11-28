@@ -120,18 +120,19 @@ class SubjectTest {
         assertThatCode(subject::requireAssignableToPlan).doesNotThrowAnyException();
     }
 
-    @Test
-    void draftSubjectCannotOpenSections() {
+    @ParameterizedTest
+    @EnumSource(value = SubjectStatus.class, names = "ACTIVE", mode = EnumSource.Mode.EXCLUDE)
+    void subjectsThatAreNotActiveCannotOpenSections(SubjectStatus status) {
         Subject subject = completeDraft();
+        subject.setStatus(status);
 
         assertThatThrownBy(subject::requireOpenableForSections).isInstanceOf(SubjectNotOpenableForSectionsException.class);
     }
 
-    @ParameterizedTest
-    @EnumSource(value = SubjectStatus.class, names = "DRAFT", mode = EnumSource.Mode.EXCLUDE)
-    void subjectsPastDraftCanOpenSections(SubjectStatus status) {
+    @Test
+    void activeSubjectCanOpenSections() {
         Subject subject = completeDraft();
-        subject.setStatus(status);
+        subject.setStatus(SubjectStatus.ACTIVE);
 
         assertThatCode(subject::requireOpenableForSections).doesNotThrowAnyException();
     }

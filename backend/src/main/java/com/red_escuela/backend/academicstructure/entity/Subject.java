@@ -121,7 +121,7 @@ public class Subject {
     }
 
     public void requireOpenableForSections() {
-        if (status == SubjectStatus.DRAFT) {
+        if (status != SubjectStatus.ACTIVE) {
             throw new SubjectNotOpenableForSectionsException(id, status);
         }
     }

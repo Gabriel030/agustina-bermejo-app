@@ -58,5 +58,12 @@ public interface ProgramSubjectRepository extends JpaRepository<ProgramSubject, 
 
     Optional<ProgramSubject> findByPlanIdAndSubjectId(Long planId, Long subjectId);
 
+    @Query("""
+            select count(ps) > 0 from ProgramSubject ps
+            where ps.plan.id = :planId and ps.subject.id = :subjectId
+            and (ps.status is null or ps.status = com.red_escuela.backend.shared.domain.StatusType.ACTIVE)
+            """)
+    boolean existsActiveByPlanIdAndSubjectId(@Param("planId") Long planId, @Param("subjectId") Long subjectId);
+
     List<ProgramSubject> findByProgramIdAndElectiveGroupId(Long programId, Long electiveGroupId);
 }

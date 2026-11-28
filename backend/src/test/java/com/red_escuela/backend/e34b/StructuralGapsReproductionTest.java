@@ -4,11 +4,7 @@ import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycle;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
-import com.red_escuela.backend.enrollment.service.RecordSubjectEquivalenceTransaction;
-import com.red_escuela.backend.enrollment.service.VoidSubjectEquivalenceTransaction;
-import com.red_escuela.backend.evaluation.api.GraduationRequestTriggerPort;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
-import com.red_escuela.backend.graduation.entity.GraduationRequest;
 import com.red_escuela.backend.testsupport.ImportedApplicationClasses;
 import com.tngtech.archunit.core.domain.JavaAnnotation;
 import com.tngtech.archunit.core.domain.JavaClass;
@@ -17,12 +13,10 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.scheduling.annotation.Scheduled;
 
-import java.lang.reflect.Field;
 import java.util.ArrayDeque;
 import java.util.Arrays;
 import java.util.Deque;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -75,11 +69,6 @@ class StructuralGapsReproductionTest {
         return false;
     }
 
-    private boolean dependsOn(Class<?> from, Class<?> target) {
-        return main.get(from).getDirectDependenciesFromSelf().stream()
-                .anyMatch(dependency -> dependency.getTargetClass().getName().equals(target.getName()));
-    }
-
     @Test
     @Disabled("E34-B-P3")
     void someScheduledJobClosesTermsAfterTheirEndDate() {
@@ -98,35 +87,6 @@ class StructuralGapsReproductionTest {
         assertThat(someScheduledJobReachesCallTo(AcademicOfferingCycle.class, "setStatus")).as("cycle").isTrue();
         assertThat(someScheduledJobReachesCallTo(SubjectSection.class, "setStatus")).as("section").isTrue();
         assertThat(someScheduledJobReachesCallTo(ProgramEnrollment.class, "setStatus")).as("program enrollment").isTrue();
-    }
-
-    @Test
-    @Disabled("E34-B-P2")
-    void recordingAnEquivalenceTriggersGraduationEligibilityAndOutdatedFlag() {
-        assertThat(dependsOn(RecordSubjectEquivalenceTransaction.class, GraduationRequestTriggerPort.class)).isTrue();
-    }
-
-    @Test
-    @Disabled("E34-B-P2")
-    void voidingAnEquivalenceFlagsGraduationRequestsAsOutdated() {
-        assertThat(dependsOn(VoidSubjectEquivalenceTransaction.class, GraduationRequestTriggerPort.class)).isTrue();
-    }
-
-    @Test
-    @Disabled("E34-B-P2")
-    void voidingAnEquivalenceRequiresAnActiveProgramEnrollment() {
-        JavaClass transaction = main.get(VoidSubjectEquivalenceTransaction.class);
-
-        assertThat(transaction.getMethodCallsFromSelf().stream().anyMatch(call -> call.getName().equals("requireActiveEnrollment")))
-                .isTrue();
-    }
-
-    @Test
-    @Disabled("E34-B-P2")
-    void graduationRequestPersistsAnOutdatedMarker() {
-        List<String> fieldNames = Arrays.stream(GraduationRequest.class.getDeclaredFields()).map(Field::getName).toList();
-
-        assertThat(fieldNames).anyMatch(name -> name.toLowerCase().contains("outdated") || name.toLowerCase().contains("stale"));
     }
 
     @Test
