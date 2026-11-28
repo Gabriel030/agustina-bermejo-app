@@ -250,6 +250,42 @@ class CourseExamBoardRegistrationAndTribunalTest extends AbstractIntegrationTest
     }
 
     @Test
+    void aCourseStudentCannotRegisterInTwoExamBoardsOfDifferentSubjectsAtTheSameDateTime() {
+        World w = world(3);
+        CourseSubjectSectionEnrollment first = persistEnrollment(w, EnrollmentStatus.REGULAR);
+        CourseSubject otherSubject = new CourseSubject();
+        otherSubject.setCourse(w.course());
+        otherSubject.setName("Otro modulo de mesas");
+        entityManager.persist(otherSubject);
+        CourseSubjectSection otherSection = new CourseSubjectSection();
+        otherSection.setName("Otra comision de mesas");
+        otherSection.setCourseSubject(otherSubject);
+        otherSection.setTerm(w.term());
+        otherSection.setStatus(StatusType.ACTIVE);
+        entityManager.persist(otherSection);
+        CourseSubjectSectionEnrollment second = new CourseSubjectSectionEnrollment();
+        second.setStudent(first.getStudent());
+        second.setCourseEnrollment(first.getCourseEnrollment());
+        second.setCourseSubjectSection(otherSection);
+        second.setStatus(EnrollmentStatus.REGULAR);
+        second.setEnrolledAt(LocalDateTime.now());
+        second.setAttemptNumber(1);
+        entityManager.persist(second);
+        ExamBoard firstBoard = scheduledBoard(w);
+        ExamBoard secondBoard = new ExamBoard();
+        secondBoard.setCourseSubject(otherSubject);
+        secondBoard.setTerm(w.term());
+        secondBoard.setExamDate(firstBoard.getExamDate());
+        secondBoard.setStatus(ExamBoardStatus.SCHEDULED);
+        entityManager.persist(secondBoard);
+        entityManager.flush();
+        registrationService.registerCourseEnrollment(firstBoard.getId(), first.getId());
+
+        assertThatThrownBy(() -> registrationService.registerCourseEnrollment(secondBoard.getId(), second.getId()))
+                .isInstanceOf(com.red_escuela.backend.evaluation.exception.StudentExamBoardOverlapException.class);
+    }
+
+    @Test
     void withdrawingFromACourseExamBoardEnablesRegisteringInAnotherAndReRegisteringReactivatesTheRow() {
         World w = world(3);
         CourseSubjectSectionEnrollment enrollment = persistEnrollment(w, EnrollmentStatus.REGULAR);

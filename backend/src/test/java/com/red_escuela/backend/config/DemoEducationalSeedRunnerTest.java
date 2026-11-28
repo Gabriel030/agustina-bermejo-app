@@ -1,6 +1,7 @@
 package com.red_escuela.backend.config;
 
 import com.red_escuela.backend.config.infrastructure.DemoApiClient;
+import com.red_escuela.backend.identity.api.CohortResponsibleAssigner;
 import org.junit.jupiter.api.Test;
 import org.springframework.core.env.Environment;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -18,7 +19,7 @@ class DemoEducationalSeedRunnerTest {
 
     private static final String ADMIN = "administrativo.demo";
 
-    private final DemoEducationalSeedRunner runner = new DemoEducationalSeedRunner(mock(Environment.class), mock(JdbcTemplate.class));
+    private final DemoEducationalSeedRunner runner = new DemoEducationalSeedRunner(mock(Environment.class), mock(JdbcTemplate.class), mock(CohortResponsibleAssigner.class));
     private final DemoApiClient api = mock(DemoApiClient.class);
     private final JsonMapper mapper = JsonMapper.builder().build();
 

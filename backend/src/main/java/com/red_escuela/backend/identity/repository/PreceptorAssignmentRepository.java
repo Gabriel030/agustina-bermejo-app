@@ -18,6 +18,10 @@ public interface PreceptorAssignmentRepository extends JpaRepository<PreceptorAs
 
     List<PreceptorAssignment> findByCourseSectionIdIn(Collection<Long> courseSectionIds);
 
+    boolean existsByPersonIdAndSubjectSectionId(Long personId, Long subjectSectionId);
+
+    boolean existsByPersonIdAndCourseSectionId(Long personId, Long courseSectionId);
+
     boolean existsByPersonIdAndCourseId(Long personId, Long courseId);
 
     boolean existsByPersonIdAndProgramCohortId(Long personId, Long programCohortId);

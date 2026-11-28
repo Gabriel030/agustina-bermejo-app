@@ -60,6 +60,30 @@ public class CohortResponsibleAssigner {
         }
     }
 
+    @Transactional
+    public void assignToSubjectSection(Long subjectSectionId, Collection<Long> personIds, Long actorId) {
+        Set<Long> distinctIds = personIds == null ? Set.of() : new LinkedHashSet<>(personIds);
+        requirePreceptors(distinctIds);
+        for (Long personId : distinctIds) {
+            if (!preceptorAssignmentRepository.existsByPersonIdAndSubjectSectionId(personId, subjectSectionId)) {
+                preceptorAssignmentRepository.save(PreceptorAssignment.builder()
+                        .personId(personId).subjectSectionId(subjectSectionId).createdBy(actorId).build());
+            }
+        }
+    }
+
+    @Transactional
+    public void assignToCourseSection(Long courseSectionId, Collection<Long> personIds, Long actorId) {
+        Set<Long> distinctIds = personIds == null ? Set.of() : new LinkedHashSet<>(personIds);
+        requirePreceptors(distinctIds);
+        for (Long personId : distinctIds) {
+            if (!preceptorAssignmentRepository.existsByPersonIdAndCourseSectionId(personId, courseSectionId)) {
+                preceptorAssignmentRepository.save(PreceptorAssignment.builder()
+                        .personId(personId).courseSectionId(courseSectionId).createdBy(actorId).build());
+            }
+        }
+    }
+
     private void requirePreceptors(Set<Long> distinctIds) {
         Map<Long, Person> peopleById = personRepository.findAllWithRolesByIdIn(distinctIds).stream()
                 .collect(Collectors.toMap(Person::getId, Function.identity()));
