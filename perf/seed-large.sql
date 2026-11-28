@@ -33,8 +33,10 @@ INSERT INTO person_role (person_id, role_id) SELECT 20000+g, 1 FROM generate_ser
 INSERT INTO person_role (person_id, role_id) SELECT 30000+n, 2 FROM generate_series(1,50) n;
 INSERT INTO student (id, institution_id, person_id, onboarding_status) SELECT 20000+g, 1, 20000+g, 'CONFIRMADO' FROM generate_series(1,5000) g;
 INSERT INTO instructor (id, person_id) SELECT 30000+n, 30000+n FROM generate_series(1,50) n;
-INSERT INTO program_enrollment (id, program_id, student_id, status, version, enrollment_date)
-SELECT 20000+g, 1+(g%2), 20000+g, 'ENROLLED', 0, timestamp '2026-01-15' + (g%300)*interval '1 day' FROM generate_series(1,5000) g;
+INSERT INTO program_enrollment (id, program_id, student_id, status, version, enrollment_date, plan_id)
+SELECT 20000+g, 1+(g%2), 20000+g, 'ENROLLED', 0, timestamp '2026-01-15' + (g%300)*interval '1 day',
+  (SELECT cp.id FROM curriculum_plan cp WHERE cp.program_id = 1+(g%2) AND cp.status <> 'DRAFT' ORDER BY cp.version_number DESC LIMIT 1)
+FROM generate_series(1,5000) g;
 
 INSERT INTO subject_section (id, term_id, subject_id, name, capacity, created_at, version, status, schedule, max_absence_percentage, pending_approval, evaluation_scheme_id)
 SELECT 14000+g, 1, 1+(g%16), 'Comisión perf '||g, 40+(g%30), timestamp '2026-02-01', 0, 'ACTIVE', 'Lunes 18:00 a 20:00', 0.25, false, 1 FROM generate_series(1,300) g;
