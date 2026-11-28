@@ -141,6 +141,7 @@ class MultiYearSimulationIT extends AbstractIntegrationTest {
         assertThat(failuresOfLastRun).isEmpty();
         assertThat(second.digest()).isEqualTo(first.digest());
         assertThat(secondInvariants.digest()).isEqualTo(firstInvariants.digest());
+        assertThat(secondInvariants.violationsOf(AcademicInvariants.GRADUATION_WITH_PENDING_SUBJECTS)).isEmpty();
         assertThat(secondInvariants.violations()).isEmpty();
         assertSabotageIsDetected();
     }
@@ -156,11 +157,6 @@ class MultiYearSimulationIT extends AbstractIntegrationTest {
         }));
         assertThat(InvariantSabotage.mutations().keySet()).containsExactlyInAnyOrderElementsOf(AcademicInvariants.codes());
         assertThat(checker.detect(AcademicInvariants.ENROLLMENT_WITHOUT_COHORT, LAST_DAY)).isEmpty();
-    }
-
-    @Test
-    void graduationRequestIsOnlyAcceptedWhenEveryMandatorySubjectIsApproved() {
-        assertThat(invariantReportOfLastRun.violationsOf(AcademicInvariants.GRADUATION_WITH_PENDING_SUBJECTS)).isEmpty();
     }
 
     private InvariantReport invariantReportOfLastRun;
