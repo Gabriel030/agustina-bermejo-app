@@ -161,7 +161,10 @@
       "done_at_baseline": 3,
       "done_at_seed": 13,
       "total_estimated": true,
-      "next_step": ""
+      "next_step": "Código completo (#1619, #1623, #1616). Falta D5: que Gabriel confirme un PDF demo; después cerrar #1609",
+      "issues": [
+        1609
+      ]
     },
     {
       "id": "E22",
@@ -178,7 +181,10 @@
       "done_at_baseline": 5,
       "done_at_seed": 6,
       "total_estimated": true,
-      "next_step": ""
+      "next_step": "Endpoint legacy retirado (#1567); migrar 2 requests de Bruno (#1523) y que Gabriel confirme el PDF de R1/N1",
+      "issues": [
+        1523
+      ]
     },
     {
       "id": "E24",
@@ -298,7 +304,7 @@
       "done_at_baseline": null,
       "done_at_seed": 8,
       "total_estimated": true,
-      "next_step": "F2: terminar pantallas (cohorte y curso mergeadas) y cerrar el Issue #1650",
+      "next_step": "F2 completo; update_baselines disparado el 28-nov (rama chore/visual-baselines-2026-11-28); después cerrar el Issue #1650",
       "refs": [
         "e34-c"
       ],
@@ -323,11 +329,11 @@
     {
       "id": "E28-F",
       "name": "E28-F cierre de la épica 28 #1607",
-      "total": 8,
+      "total": 10,
       "done_at_baseline": null,
-      "done_at_seed": 7,
+      "done_at_seed": 8,
       "total_estimated": true,
-      "next_step": "Confirmar S0 (verificación, solo comentario) y cerrar el Issue #1607",
+      "next_step": "S0 verificada (comentario del 28-nov): S6 botón del acta en curso; S7 listado de mesas por rol del personal necesita mockup y OK de Gabriel",
       "refs": [
         "e28-f"
       ],
