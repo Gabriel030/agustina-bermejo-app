@@ -77,8 +77,7 @@ function CohortCard({ cohort, canManage }) {
   const readiness = readinessQuery.data;
   const status = readiness ? cohortStatus(readiness) : null;
   const checklist = readiness ? readinessChecklist(readiness) : [];
-  const responsible = checklist.find((item) => item.code === 'COHORT_RESPONSIBLE');
-  const plan = checklist.find((item) => item.code === 'CURRENT_PLAN');
+  const responsibleNames = (cohort.responsiblePreceptors ?? []).map((preceptor) => preceptor.name).join(', ');
   const missing = checklist.some((item) => !item.fulfilled);
 
   async function handleOpen() {
@@ -121,10 +120,10 @@ function CohortCard({ cohort, canManage }) {
       {readiness && (
         <p className="mt-3 flex flex-wrap gap-x-6 gap-y-1 text-size-13 text-ink">
           <span>
-            <b className="font-semibold text-ink-soft">Responsable</b> {responsible?.fulfilled ? 'Asignado' : '—'}
+            <b className="font-semibold text-ink-soft">Responsable</b> {responsibleNames || '—'}
           </span>
           <span>
-            <b className="font-semibold text-ink-soft">Plan</b> {plan?.fulfilled ? 'Vigente' : '—'}
+            <b className="font-semibold text-ink-soft">Plan</b> {cohort.planName || '—'}
           </span>
         </p>
       )}

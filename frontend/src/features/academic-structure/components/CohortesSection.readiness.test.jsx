@@ -39,6 +39,11 @@ function mockCohorts(readinessByCohort) {
           admissionStart: '2027-02-01',
           admissionEnd: '2027-03-31',
           admissionOpen: true,
+          intake: 'FIRST',
+          planId: 3,
+          planName: 'Plan 2024 v2',
+          openedAt: null,
+          responsiblePreceptors: [{ id: 31, name: 'Marcela Quiroga' }, { id: 32, name: 'Julián Ferreyra' }],
         })),
       ),
     ),
@@ -135,5 +140,13 @@ describe('CohortesSection — opening a cohort', () => {
 
     expect(screen.queryByText('Sin cohortes')).not.toBeInTheDocument();
     expect(screen.getByRole('button', { name: /Nueva cohorte/ })).toBeEnabled();
+  });
+
+  it('shows the responsible preceptors and the plan name from the cohort listing', async () => {
+    mockCohorts({ 5: readinessOf(5) });
+    renderWithProviders(<CohortesSection programId={7} />);
+
+    expect(await screen.findByText('Marcela Quiroga, Julián Ferreyra')).toBeInTheDocument();
+    expect(screen.getByText('Plan 2024 v2')).toBeInTheDocument();
   });
 });
