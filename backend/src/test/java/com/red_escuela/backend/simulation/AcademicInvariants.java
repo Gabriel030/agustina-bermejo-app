@@ -195,7 +195,7 @@ public final class AcademicInvariants {
                     join program_enrollment pe on pe.id = gr.program_enrollment_id
                     join program_subject ps on ps.program_id = pe.program_id and ps.plan_id = pe.plan_id
                     join subject sub on sub.id = ps.subject_id
-                    where gr.status <> 'REJECTED' and ps.category in ('MANDATORY', 'ADDITIONAL_MANDATORY') and ps.status = 'ACTIVE'
+                    where gr.status <> 'REJECTED' and gr.outdated_at is null and ps.category in ('MANDATORY', 'ADDITIONAL_MANDATORY') and ps.status = 'ACTIVE'
                       and not exists (select 1 from subject_section_enrollment sse
                                       join subject_section ss on ss.id = sse.program_section_id
                                       where sse.program_enrollment_id = pe.id and ss.subject_id = ps.subject_id and sse.status = 'APPROVED')
