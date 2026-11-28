@@ -130,4 +130,18 @@ class ModulePatternRulesTest {
                 .hasMessageNotContaining("ReleasedLookupPort")
                 .hasMessageNotContaining("package-info");
     }
+
+    @Test
+    void enrollmentDoesNotImportBillingInternalTypes() {
+        FreezingArchRule.freeze(ModulePatternRules.enrollmentDoesNotImportBillingInternalTypes(ArchitectureRules.ROOT)).check(MAIN_CLASSES);
+    }
+
+    @Test
+    void enrollmentBillingRuleDetectsAnEntityImportAndAllowsApiAndEvents() {
+        assertThatThrownBy(() -> ModulePatternRules.enrollmentDoesNotImportBillingInternalTypes(FIXTURE_ROOT + ".r11").check(fixturesOf("r11")))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("LeakyEnrollmentFlow")
+                .hasMessageContaining("BillingInvoice")
+                .hasMessageNotContaining("CleanEnrollmentFlow");
+    }
 }
