@@ -7,10 +7,12 @@ import com.red_escuela.backend.identity.exception.CourseResponsibleRequiredExcep
 import com.red_escuela.backend.identity.exception.PreceptorRoleRequiredException;
 import com.red_escuela.backend.identity.repository.PersonRepository;
 import com.red_escuela.backend.identity.repository.PreceptorAssignmentRepository;
+import com.red_escuela.backend.identity.specialist.IdentityAuditRecorder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Set;
@@ -24,10 +26,38 @@ public class CohortResponsibleAssigner {
 
     private final PreceptorAssignmentRepository preceptorAssignmentRepository;
     private final PersonRepository personRepository;
+    private final IdentityAuditRecorder identityAuditRecorder;
 
-    public CohortResponsibleAssigner(PreceptorAssignmentRepository preceptorAssignmentRepository, PersonRepository personRepository) {
+    public CohortResponsibleAssigner(PreceptorAssignmentRepository preceptorAssignmentRepository, PersonRepository personRepository,
+                                     IdentityAuditRecorder identityAuditRecorder) {
         this.preceptorAssignmentRepository = preceptorAssignmentRepository;
         this.personRepository = personRepository;
+        this.identityAuditRecorder = identityAuditRecorder;
+    }
+
+    @Transactional
+    public Set<Long> replace(Long programCohortId, Collection<Long> personIds, Long actorId) {
+        Set<Long> distinctIds = personIds == null ? Set.of() : new LinkedHashSet<>(personIds);
+        if (distinctIds.isEmpty()) {
+            throw new CohortResponsibleRequiredException();
+        }
+        requirePreceptors(distinctIds);
+        List<PreceptorAssignment> current = preceptorAssignmentRepository.findByProgramCohortId(programCohortId);
+        for (PreceptorAssignment assignment : current) {
+            if (!distinctIds.contains(assignment.getPersonId())) {
+                preceptorAssignmentRepository.delete(assignment);
+                identityAuditRecorder.recordPreceptorUnassigned(assignment);
+            }
+        }
+        Set<Long> alreadyAssigned = current.stream().map(PreceptorAssignment::getPersonId).collect(Collectors.toSet());
+        for (Long personId : distinctIds) {
+            if (!alreadyAssigned.contains(personId)) {
+                PreceptorAssignment saved = preceptorAssignmentRepository.save(PreceptorAssignment.builder()
+                        .personId(personId).programCohortId(programCohortId).createdBy(actorId).build());
+                identityAuditRecorder.recordPreceptorAssigned(saved);
+            }
+        }
+        return distinctIds;
     }
 
     @Transactional

@@ -74,14 +74,16 @@ public class CohortReadinessChecker {
         List<CohortReadinessItemResponse> items = new ArrayList<>();
         items.add(currentPlanItem(cohort));
         items.add(firstYearSectionsItem(firstYearSubjects, approvedSectionsBySubject, sectionIds));
-        items.add(sectionPreceptorsItem(approvedSections, sectionIds));
+        CohortReadinessItemResponse sectionPreceptors = sectionPreceptorsItem(approvedSections, sectionIds);
+        items.add(sectionPreceptors);
         items.add(cohortResponsibleItem(cohort));
         items.add(holidaysItem(cohort));
         if (billingMode.currentMode() == BillingMode.FULL) {
             items.add(billingTemplateItem(cohort));
         }
         boolean ready = items.stream().noneMatch(item -> item.blocking() && !item.fulfilled());
-        return new CohortReadinessResponse(cohort.getId(), cohort.isOpen(), cohort.getOpenedAt(), ready, List.copyOf(items));
+        return new CohortReadinessResponse(cohort.getId(), cohort.isOpen(), cohort.getOpenedAt(), ready,
+                approvedSections.size(), sectionPreceptors.reasons().size(), List.copyOf(items));
     }
 
     private Map<Long, List<SubjectSection>> approvedSectionsBySubject(ProgramCohort cohort, List<ProgramSubjectView> subjects) {
