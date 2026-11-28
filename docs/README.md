@@ -43,6 +43,11 @@ Punto de entrada: [README.md](../README.md) (qué es, cómo levantarlo) y [CLAUD
 | [reports/e18-m5-billing.md](cell/reports/e18-m5-billing.md) | E18 M5: plan por etapas para bajar billing→enrollment y billing→academicstructure, con medición y primera rebanada | vigente |
 | [reports/e25-b2-invariantes.md](cell/reports/e25-b2-invariantes.md) | E25 B2 S1: invariantes que solo protege el código, candidatas a único parcial o CHECK, con queries de verificación | vigente |
 | [progress/1643-P3.md](cell/progress/1643-P3.md) | Estado de E34-B P3: fin de término con 14 días de gracia | vigente |
+| [handoffs/2026-11-28/estado-y-plan.md](cell/handoffs/2026-11-28/estado-y-plan.md) | Estado y plan del proyecto al 28-nov-2026 para retomar con otra sesión: cómo se trabaja, épicas, decisiones tomadas, trabajo en vuelo, release 32 y prioridades | vigente |
+| [handoffs/2026-11-28/release-32-dossier.md](cell/handoffs/2026-11-28/release-32-dossier.md) | Dossier recalculado del release 32: migraciones V466 a V510, contrato, variables y riesgos | vigente |
+| [handoffs/2026-11-28/modularizacion-plan.md](cell/handoffs/2026-11-28/modularizacion-plan.md) | Plan por rebanadas de la modularización restante (ciclos entre matrícula, asistencia, evaluación y facturación) | vigente |
+| [handoffs/2026-11-28/restyling-auditoria-etiquetas.md](cell/handoffs/2026-11-28/restyling-auditoria-etiquetas.md) | Inventario de etiquetas y colores de la app para el re-styling | vigente |
+| [handoffs/2026-11-28/manual-auditoria.md](cell/handoffs/2026-11-28/manual-auditoria.md) | Auditoría del manual de usuario existente contra la app actual | vigente |
 | [handoffs/1643-P3.md](cell/handoffs/1643-P3.md) | Handoff de E34-B P3 parte 2: cierre automático de matrículas por notas | vigente |
 | `cell/progress/` | Estado de cada subtarea de la célula; se genera por rama y no se lista uno por uno | vigente |
 | [progress/921-1.md](cell/progress/921-1.md) | Estado de la subtarea 921#1 (listas de espera, consulta del personal) | vigente |
