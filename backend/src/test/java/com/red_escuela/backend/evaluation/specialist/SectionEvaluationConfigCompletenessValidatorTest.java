@@ -4,16 +4,19 @@ import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
 import com.red_escuela.backend.evaluation.exception.IncompleteSectionEvaluationConfigException;
+import com.red_escuela.backend.evaluation.repository.EvaluationSchemeRepository;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 
 class SectionEvaluationConfigCompletenessValidatorTest {
 
-    private final SectionEvaluationConfigCompletenessValidator validator = new SectionEvaluationConfigCompletenessValidator();
+    private final SectionEvaluationConfigCompletenessValidator validator = new SectionEvaluationConfigCompletenessValidator(
+            new SectionEvaluationSchemeLoader(mock(EvaluationSchemeRepository.class)));
 
     private static final LocalDate DATE = LocalDate.of(2027, 5, 10);
 
