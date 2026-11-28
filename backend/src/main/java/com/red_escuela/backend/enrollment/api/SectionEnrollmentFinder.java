@@ -25,6 +25,7 @@ public class SectionEnrollmentFinder {
             EnrollmentStatus.ENROLLED,
             EnrollmentStatus.IN_PROGRESS,
             EnrollmentStatus.REGULAR,
+            EnrollmentStatus.APPROVAL_PENDING,
             EnrollmentStatus.APPROVED,
             EnrollmentStatus.FAILED);
 

@@ -22,7 +22,7 @@ import java.util.Optional;
 public class ChangeSectionCandidatesFinder {
 
     private static final List<EnrollmentStatus> SEAT_HOLDING_STATUSES =
-            List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR);
+            List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVAL_PENDING);
 
     private final SubjectSectionEnrollmentRepository enrollmentRepository;
     private final SectionFinder sectionFinder;

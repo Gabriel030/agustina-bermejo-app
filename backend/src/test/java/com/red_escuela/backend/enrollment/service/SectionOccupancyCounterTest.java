@@ -28,7 +28,7 @@ class SectionOccupancyCounterTest {
     @Test
     void seatsTakenUseTheSameStatusesAsTheEnrollmentCapacityRule() {
         when(programEnrollmentRepository.countBySubjectSectionIdAndStatusIn(5L,
-                List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR)))
+                List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVAL_PENDING)))
                 .thenReturn(7L);
 
         assertThat(counter.countSeatsTaken(SectionKind.PROGRAM, 5L)).isEqualTo(7L);

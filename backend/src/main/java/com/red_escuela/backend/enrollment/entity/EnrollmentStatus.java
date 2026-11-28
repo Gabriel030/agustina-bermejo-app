@@ -12,5 +12,7 @@ public enum EnrollmentStatus {
     WITHDRAWN,
     WAITLISTED,
 
-    WAITLIST_EXPIRED
+    WAITLIST_EXPIRED,
+
+    APPROVAL_PENDING
 }

@@ -536,7 +536,7 @@ class CommissionClosureQaIT extends AbstractIntegrationTest {
                 approvedEnrollment, subjectId, commission.enrollmentIds().get(1))).doesNotThrowAnyException();
         MutableClock.INSTANCE.setDate(LocalDate.of(2026, 12, 20));
         String before = sheetOf(director, commission);
-        assertThat(rowField(before, commission.enrollmentIds().get(0), "suggestedResult")).isEqualTo("GOES_TO_FINAL");
+        assertThat(rowField(before, commission.enrollmentIds().get(0), "suggestedResult")).isEqualTo("PROMOTION_CONDITIONAL");
         assertThat(rowField(before, commission.enrollmentIds().get(0), "alerts")).contains("UNMET_PREREQUISITE");
         assertThat(rowField(before, commission.enrollmentIds().get(1), "suggestedResult")).isEqualTo("PROMOTES");
 
@@ -552,6 +552,30 @@ class CommissionClosureQaIT extends AbstractIntegrationTest {
                 regularEnrollment, subjectId, commission.enrollmentIds().get(0))).doesNotThrowAnyException();
         String after = sheetOf(director, commission);
         assertThat(rowField(after, commission.enrollmentIds().get(0), "suggestedResult")).isEqualTo("PROMOTES");
+    }
+
+    @Test
+    void aPromotedStudentWithAnUnmetPrerequisiteIsClosedAsApprovalPendingKeepingThePromotionGradeAndNeverAsRegular() throws Exception {
+        Commission commission = commission(TERM_END_2026);
+        Subject prerequisite = addPrerequisite(commission);
+        studentTook(commission, 0, prerequisite, EnrollmentStatus.REGULAR);
+        studentTook(commission, 1, prerequisite, EnrollmentStatus.APPROVED);
+        entityManager.flush();
+        Long admin = personWithRole("ADMINISTRATIVO");
+        MutableClock.INSTANCE.setDate(LocalDate.of(2026, 12, 20));
+        confirmAsTeacher(commission);
+
+        approveAs(admin, commission, APPROVE_BODY);
+        entityManager.flush();
+        entityManager.clear();
+
+        SubjectSectionEnrollment pending = entityManager.find(SubjectSectionEnrollment.class, commission.enrollmentIds().get(0));
+        assertThat(pending.getStatus()).isEqualTo(EnrollmentStatus.APPROVAL_PENDING);
+        assertThat(pending.getFinalGradeType()).isEqualTo(FinalGradeType.PROMOTION);
+        assertThat(pending.getFinalScore()).isEqualTo(Grade.of(new BigDecimal("8.50")));
+        assertThat(pending.hasRegularCoursework()).isFalse();
+        SubjectSectionEnrollment approved = entityManager.find(SubjectSectionEnrollment.class, commission.enrollmentIds().get(1));
+        assertThat(approved.getStatus()).isEqualTo(EnrollmentStatus.APPROVED);
     }
 
     @Test

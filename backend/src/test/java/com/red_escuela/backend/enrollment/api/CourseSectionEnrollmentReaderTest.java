@@ -100,7 +100,7 @@ class CourseSectionEnrollmentReaderTest {
         CourseSubjectSectionEnrollment enrollment = enrollmentOf(10L, 3L, 100L);
         enrollment.getCourseSubjectSection().setSchedule("Lun 18:00");
         when(repository.findByStudentIdAndStatusInOrderByIdAsc(3L, List.of(
-                EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR)))
+                EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVAL_PENDING)))
                 .thenReturn(List.of(enrollment));
         when(sectionInstructorFinder.findCourseSectionInstructors(7L)).thenReturn(List.of(
                 new SectionInstructorView(1L, 11L, "Ana Perez", InstructorRole.LEAD)));

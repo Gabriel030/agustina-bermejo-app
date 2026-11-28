@@ -156,12 +156,15 @@ public class ClosureRequirementsCalculator {
                 .holdApprovalUntilRequirementsMet(calculated, () -> approvalRequirementsEvaluator.evaluate(
                         new ApprovalRequirementContext(() -> prerequisitesMet)));
         boolean promotionCandidate = calculated.filter(CourseworkOutcome::isPromotion).isPresent();
+        boolean promotionAwaitingRequirements = promotionCandidate && !gated.pendingRequirements().isEmpty();
+        Optional<CourseworkOutcome> closureOutcome = promotionAwaitingRequirements ? calculated : gated.outcome();
+        boolean forcedToFinal = !promotionAwaitingRequirements && gated.forcedFinalCondition().isPresent();
         var finalCondition = closureConditionPolicy.decideFinalCondition(
-                gated.outcome(), gated.forcedFinalCondition().isPresent(), current, free, payments, documentsComplete);
+                closureOutcome, forcedToFinal, current, free, payments, documentsComplete, promotionAwaitingRequirements);
         Grade promotionGrade = finalCondition
                 .filter(condition -> condition == ClosureFinalCondition.PROMOTES
                         || condition == ClosureFinalCondition.PROMOTION_CONDITIONAL)
-                .flatMap(condition -> gated.outcome())
+                .flatMap(condition -> closureOutcome)
                 .map(CourseworkOutcome::finalScore)
                 .orElse(null);
         List<ClosureAlert> alerts = gated.alerts();

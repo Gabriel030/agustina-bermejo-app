@@ -14,7 +14,7 @@ import java.util.List;
 @Component
 public class SubjectRetakeGuard {
 
-    private static final List<EnrollmentStatus> PASSED_STATUSES = List.of(EnrollmentStatus.APPROVED, EnrollmentStatus.REGULAR);
+    private static final List<EnrollmentStatus> PASSED_STATUSES = List.of(EnrollmentStatus.APPROVED, EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVAL_PENDING);
 
     private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
     private final SubjectApprovalLookup subjectApprovalLookup;

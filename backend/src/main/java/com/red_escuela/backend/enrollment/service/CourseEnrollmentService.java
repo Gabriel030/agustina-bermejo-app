@@ -241,7 +241,7 @@ public class CourseEnrollmentService {
     private EnrollmentStatus calculateStatusByCapacity(CourseSectionView section) {
         int ocupadas = courseSubjectSectionEnrollmentRepository
                 .findByCourseSubjectSectionIdAndStatusIn(section.id(),
-                        List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR))
+                        List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVAL_PENDING))
                 .size();
         return section.capacity() == null || ocupadas < section.capacity()
                 ? EnrollmentStatus.ENROLLED : EnrollmentStatus.WAITLISTED;

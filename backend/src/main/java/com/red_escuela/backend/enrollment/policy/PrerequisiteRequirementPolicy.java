@@ -11,7 +11,7 @@ import java.util.List;
 public final class PrerequisiteRequirementPolicy {
 
     public List<EnrollmentStatus> relevantStatuses() {
-        return List.of(EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVED);
+        return List.of(EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVAL_PENDING, EnrollmentStatus.APPROVED);
     }
 
     public PrerequisiteStanding standingOf(Collection<EnrollmentStatus> studentStatuses) {
@@ -22,7 +22,7 @@ public final class PrerequisiteRequirementPolicy {
         if (approvedByEquivalence || studentStatuses.contains(EnrollmentStatus.APPROVED)) {
             return PrerequisiteStanding.APPROVED;
         }
-        if (studentStatuses.contains(EnrollmentStatus.REGULAR)) {
+        if (studentStatuses.contains(EnrollmentStatus.REGULAR) || studentStatuses.contains(EnrollmentStatus.APPROVAL_PENDING)) {
             return PrerequisiteStanding.REGULAR;
         }
         return PrerequisiteStanding.NOT_TAKEN;

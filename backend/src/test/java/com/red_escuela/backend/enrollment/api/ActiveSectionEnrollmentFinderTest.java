@@ -19,7 +19,7 @@ import static org.mockito.Mockito.when;
 class ActiveSectionEnrollmentFinderTest {
 
     private static final List<EnrollmentStatus> ACTIVE =
-            List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR);
+            List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVAL_PENDING);
 
     private final SubjectSectionEnrollmentRepository programRepository = mock(SubjectSectionEnrollmentRepository.class);
     private final CourseSubjectSectionEnrollmentRepository courseRepository = mock(CourseSubjectSectionEnrollmentRepository.class);

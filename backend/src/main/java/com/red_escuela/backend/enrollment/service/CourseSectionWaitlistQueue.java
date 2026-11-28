@@ -21,7 +21,7 @@ import java.util.stream.Collectors;
 public class CourseSectionWaitlistQueue implements WaitlistQueue {
 
     private static final List<EnrollmentStatus> OCCUPYING =
-            List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR);
+            List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVAL_PENDING);
 
     private final CourseSubjectSectionEnrollmentRepository repository;
     private final SectionFinder sectionFinder;

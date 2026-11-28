@@ -17,7 +17,7 @@ public class PersonCurrentCourseFinder {
 
     private static final int LOOKUP_CHUNK_SIZE = 1000;
     private static final List<EnrollmentStatus> CURRENT_STATUSES =
-            List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR);
+            List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVAL_PENDING);
 
     private final SubjectSectionEnrollmentRepository repository;
 

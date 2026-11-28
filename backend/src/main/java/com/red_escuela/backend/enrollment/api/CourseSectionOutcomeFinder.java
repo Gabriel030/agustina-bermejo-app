@@ -18,7 +18,7 @@ public class CourseSectionOutcomeFinder {
 
     private static final Set<EnrollmentStatus> COUNTED_STATUSES = Set.of(
             EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR,
-            EnrollmentStatus.APPROVED, EnrollmentStatus.FAILED);
+            EnrollmentStatus.APPROVAL_PENDING, EnrollmentStatus.APPROVED, EnrollmentStatus.FAILED);
 
     private final CourseSubjectSectionEnrollmentRepository repository;
     private final CourseSectionTermEndResolver courseSectionTermEndResolver;

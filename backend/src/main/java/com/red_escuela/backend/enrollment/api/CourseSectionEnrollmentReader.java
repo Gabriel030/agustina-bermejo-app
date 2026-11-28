@@ -20,7 +20,8 @@ public class CourseSectionEnrollmentReader {
     private static final List<EnrollmentStatus> SCHEDULE_STATUSES = List.of(
             EnrollmentStatus.ENROLLED,
             EnrollmentStatus.IN_PROGRESS,
-            EnrollmentStatus.REGULAR);
+            EnrollmentStatus.REGULAR,
+            EnrollmentStatus.APPROVAL_PENDING);
 
     private final CourseSubjectSectionEnrollmentRepository courseEnrollmentRepository;
     private final SectionInstructorFinder sectionInstructorFinder;

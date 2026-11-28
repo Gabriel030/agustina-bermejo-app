@@ -39,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class SectionEnrollmentConcurrencyIT extends AbstractIntegrationTest {
 
     private static final List<EnrollmentStatus> SEAT_HOLDING = List.of(
-            EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR);
+            EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVAL_PENDING);
 
     @Autowired
     private SubjectSectionEnrollmentService service;
