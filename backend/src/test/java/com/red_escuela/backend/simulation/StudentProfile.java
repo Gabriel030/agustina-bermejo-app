@@ -9,12 +9,13 @@ public enum StudentProfile {
     BECOMES_FREE,
     RECOVERY_AND_FINAL,
     DROPS_OUT,
-    REPEATS_YEAR;
+    REPEATS_YEAR,
+    PROMOTES_BEFORE_CORRELATIVE_FINAL;
 
     public static final int RETAKE_SUBJECT_INDEX = 0;
     public static final int FREE_SUBJECT_INDEX = 0;
     public static final int FINAL_SUBJECT_INDEX = 1;
-    public static final BigDecimal RECOVERY_SCORE = BigDecimal.valueOf(5);
+    public static final int DEFERRED_FINAL_SUBJECT_INDEX = 4;    public static final BigDecimal RECOVERY_SCORE = BigDecimal.valueOf(5);
     public static final BigDecimal FINAL_SCORE = BigDecimal.valueOf(8);
 
     private static final BigDecimal PASSING = BigDecimal.valueOf(9);
@@ -26,6 +27,8 @@ public enum StudentProfile {
             case FAILS_AND_RETAKES -> firstAttempt && studyYear == 1 && subjectIndex == RETAKE_SUBJECT_INDEX ? FAILING : PASSING;
             case REPEATS_YEAR -> firstAttempt && studyYear == 1 ? FAILING : PASSING;
             case RECOVERY_AND_FINAL -> studyYear == 1 && subjectIndex == FINAL_SUBJECT_INDEX ? (sequenceNumber == 1 ? FAILING : BigDecimal.valueOf(6)) : PASSING;
+            case PROMOTES_BEFORE_CORRELATIVE_FINAL -> studyYear == 1 && subjectIndex == DEFERRED_FINAL_SUBJECT_INDEX
+                    ? (sequenceNumber == 1 ? FAILING : BigDecimal.valueOf(6)) : PASSING;
             default -> PASSING;
         };
     }
@@ -38,6 +41,8 @@ public enum StudentProfile {
     }
 
     public boolean needsRecovery(int studyYear, int subjectIndex, int attempt) {
-        return this == RECOVERY_AND_FINAL && attempt == 1 && studyYear == 1 && subjectIndex == FINAL_SUBJECT_INDEX;
+        boolean recoversFinalSubject = this == RECOVERY_AND_FINAL && subjectIndex == FINAL_SUBJECT_INDEX;
+        boolean recoversDeferredSubject = this == PROMOTES_BEFORE_CORRELATIVE_FINAL && subjectIndex == DEFERRED_FINAL_SUBJECT_INDEX;
+        return attempt == 1 && studyYear == 1 && (recoversFinalSubject || recoversDeferredSubject);
     }
 }

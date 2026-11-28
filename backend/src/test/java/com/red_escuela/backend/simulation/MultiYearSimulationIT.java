@@ -165,7 +165,7 @@ class MultiYearSimulationIT extends AbstractIntegrationTest {
 
     private static final List<StudentProfile> PROFILES = List.of(StudentProfile.GRADUATES, StudentProfile.FAILS_AND_RETAKES,
             StudentProfile.BECOMES_FREE, StudentProfile.RECOVERY_AND_FINAL, StudentProfile.DROPS_OUT, StudentProfile.REPEATS_YEAR,
-            StudentProfile.PASSES_EVERYTHING, StudentProfile.PASSES_EVERYTHING, StudentProfile.PASSES_EVERYTHING,
+            StudentProfile.PROMOTES_BEFORE_CORRELATIVE_FINAL, StudentProfile.PASSES_EVERYTHING, StudentProfile.PASSES_EVERYTHING,
             StudentProfile.PASSES_EVERYTHING, StudentProfile.PASSES_EVERYTHING);
     private static final int[] COHORT_YEARS = {2026, 2026, 2026, 2026, 2026, 2026, 2027, 2027, 2028, 2029, 2030};
 

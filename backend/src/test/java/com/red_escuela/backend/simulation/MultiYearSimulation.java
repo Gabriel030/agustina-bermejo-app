@@ -110,6 +110,11 @@ public class MultiYearSimulation {
 
     public void adoptSeededYear(int year) {
         termIds.put(year, annualTermId(year));
+        jdbc.update("""
+                update program_subject_prerequisite set requirement_type = 'PASSED_COURSEWORK'
+                where program_subject_id in (select ps.id from program_subject ps join subject sub on sub.id = ps.subject_id
+                                             where ps.program_id = ? and sub.name = ?)
+                """, programId, spec.subjectsByYear().get(1).get(StudentProfile.DEFERRED_FINAL_SUBJECT_INDEX));
         schemeId = api.post(DemoPersona.DIRECTOR, "/evaluation-schemes", scheme()).get("id").asLong();
         sectionsByYear.put(year, sectionsOf(year));
         sectionsByYear.get(year).values().forEach(sectionId ->
@@ -250,6 +255,9 @@ public class MultiYearSimulation {
                 if (statuses.contains("APPROVED")) {
                     continue;
                 }
+                if (statuses.contains("REGULAR") && isDeferredFinalSubject(pupil, studyYear, subjectIndex)) {
+                    continue;
+                }
                 if (statuses.contains("REGULAR") || statuses.contains("APPROVAL_PENDING")) {
                     blocked = true;
                     continue;
@@ -358,9 +366,31 @@ public class MultiYearSimulation {
         }
     }
 
+    private void grantExceptionsToPromotionsAwaitingCorrelatives(long sectionId) {
+        List<Long> enrollmentIds = jdbc.queryForList("""
+                select cs.enrollment_id from commission_closure_student cs
+                join commission_closure c on c.id = cs.closure_id
+                join subject_section_enrollment sse on sse.id = cs.enrollment_id
+                where c.section_kind = 'PROGRAM' and c.section_id = ? and cs.final_condition = 'PROMOTION_CONDITIONAL'
+                  and cs.correlatives_ok = false and sse.program_enrollment_id = any (?)
+                """, Long.class, sectionId, (Object) deferringProgramEnrollmentIds());
+        for (long enrollmentId : enrollmentIds) {
+            api.put(DemoPersona.DIRECTOR, "/program-sections/" + sectionId + "/closure/students/" + enrollmentId + "/exception",
+                    Map.of("reason", "Documentación pendiente de entrega, correlativa a rendir final"));
+            report.count("closureExceptions");
+        }
+    }
+
+    private Long[] deferringProgramEnrollmentIds() {
+        return pupils.stream()
+                .filter(pupil -> pupil.profile == StudentProfile.PROMOTES_BEFORE_CORRELATIVE_FINAL && pupil.programEnrollmentId != null)
+                .map(pupil -> pupil.programEnrollmentId).toArray(Long[]::new);
+    }
+
     private void closeYear(int year) {
         for (long sectionId : activeSectionsByYear.getOrDefault(year, List.of())) {
             api.get(DemoPersona.TEACHER, "/program-sections/" + sectionId + "/closure-sheet");
+            grantExceptionsToPromotionsAwaitingCorrelatives(sectionId);
             api.post(DemoPersona.TEACHER, "/program-sections/" + sectionId + "/closure/confirm", null);
             Map<String, Object> approval = new LinkedHashMap<>();
             approval.put("book", "L" + year);
@@ -402,12 +432,22 @@ public class MultiYearSimulation {
         }
     }
 
+    private boolean isDeferredFinalSubject(Pupil pupil, int studyYear, int subjectIndex) {
+        return pupil.profile == StudentProfile.PROMOTES_BEFORE_CORRELATIVE_FINAL && studyYear == 1
+                && subjectIndex == StudentProfile.DEFERRED_FINAL_SUBJECT_INDEX;
+    }
+
     private List<Long> regularEnrollmentsOf(int closedYear) {
+        Long[] deferringProgramEnrollmentIds = deferringProgramEnrollmentIds();
+        String deferredSubjectName = spec.subjectsByYear().get(0).get(StudentProfile.DEFERRED_FINAL_SUBJECT_INDEX);
         return jdbc.queryForList("""
                 select sse.id from subject_section_enrollment sse join subject_section ss on ss.id = sse.program_section_id
+                join subject sub on sub.id = ss.subject_id
                 join program_enrollment pe on pe.id = sse.program_enrollment_id
-                where sse.status = 'REGULAR' and ss.term_id = ? and pe.status = 'ENROLLED' order by sse.id
-                """, Long.class, termIds.get(closedYear));
+                where sse.status = 'REGULAR' and pe.status = 'ENROLLED'
+                  and ss.term_id = case when sse.program_enrollment_id = any (?) and sub.name = ? then cast(? as bigint) else cast(? as bigint) end
+                order by sse.id
+                """, Long.class, (Object) deferringProgramEnrollmentIds, deferredSubjectName, termIds.get(closedYear - 1), termIds.get(closedYear));
     }
 
     private void createFinalBoards(int year) {
@@ -418,7 +458,8 @@ public class MultiYearSimulation {
             boardIdsByKey.computeIfAbsent((int) subjectId, key -> {
                 Map<String, Object> board = new LinkedHashMap<>();
                 board.put("subjectId", subjectId);
-                board.put("termId", termIds.get(year - 1));
+                board.put("termId", jdbc.queryForObject("select ss.term_id from subject_section ss join subject_section_enrollment sse on sse.program_section_id = ss.id where sse.id = ?",
+                        Long.class, enrollmentId));
                 board.put("examDate", LocalDateTime.of(year, 2, 20, 8, 0).plusMinutes(10L * boardIdsByKey.size()).toString());
                 board.put("registrationStart", LocalDateTime.of(year, 2, 10, 0, 0).toString());
                 board.put("registrationEnd", LocalDateTime.of(year, 2, 17, 0, 0).toString());
@@ -528,6 +569,12 @@ public class MultiYearSimulation {
                 case BECOMES_FREE -> expect(failures, pupil, absencesOf(pupil, first) > 0 && !statuses.get(first).isEmpty()
                         && statuses.get(first).stream().noneMatch("ENROLLED"::equals), "free " + statuses.get(first));
                 case RECOVERY_AND_FINAL -> expect(failures, pupil, statuses.get(spec.subjectsByYear().get(0).get(StudentProfile.FINAL_SUBJECT_INDEX)).equals(List.of("APPROVED")), "final exam approval " + statuses);
+                case PROMOTES_BEFORE_CORRELATIVE_FINAL -> {
+                    String correlative = spec.subjectsByYear().get(0).get(StudentProfile.DEFERRED_FINAL_SUBJECT_INDEX);
+                    String dependent = spec.subjectsByYear().get(1).get(StudentProfile.DEFERRED_FINAL_SUBJECT_INDEX);
+                    expect(failures, pupil, statuses.get(correlative).equals(List.of("APPROVED")), "correlative final " + statuses.get(correlative));
+                    expect(failures, pupil, statuses.get(dependent).equals(List.of("APPROVED")), "dependent " + statuses.get(dependent));
+                }
                 case DROPS_OUT -> expect(failures, pupil, "WITHDRAWN".equals(program), "program " + program);
                 case REPEATS_YEAR -> expect(failures, pupil, spec.subjectsByYear().get(0).stream().allMatch(name -> statuses.get(name).equals(List.of("FAILED", "APPROVED"))), "repeat " + statuses);
             }
