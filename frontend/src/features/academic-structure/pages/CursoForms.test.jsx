@@ -41,6 +41,9 @@ async function fillWizard(user) {
   await user.selectOptions(screen.getByLabelText(/Período académico/), '4');
   await user.type(screen.getByLabelText(/Cupo/), '20');
   await user.type(screen.getByLabelText(/Cuota mensual/), '15000');
+  await user.click(screen.getByRole('button', { name: 'Buscar preceptor' }));
+  await user.click(await screen.findByRole('option', { name: /Marcela Quiroga/ }));
+  await user.click(screen.getByRole('button', { name: 'Listo' }));
   await user.click(screen.getByRole('button', { name: 'Continuar' }));
   await user.type(await screen.findByLabelText(/Duración \(meses\)/), '3');
   return view;
@@ -69,7 +72,7 @@ describe('CursoWizard form', () => {
     expect(screen.getByLabelText(/Período académico/)).toHaveAttribute('aria-invalid', 'true');
     expect(screen.getByLabelText(/Cupo/)).toHaveAttribute('aria-invalid', 'true');
     expect(screen.getByLabelText(/Cuota mensual/)).toHaveAttribute('aria-invalid', 'true');
-    expect(screen.getByText('Corregí los 4 campos marcados para continuar.')).toBeInTheDocument();
+    expect(screen.getByText('Corregí los 5 campos marcados para continuar.')).toBeInTheDocument();
   });
 });
 

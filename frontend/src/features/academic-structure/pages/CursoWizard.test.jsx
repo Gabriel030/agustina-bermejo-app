@@ -1,11 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { fireEvent, screen } from '@testing-library/react';
+import { fireEvent, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { http, HttpResponse } from 'msw';
 import { server } from '@/test/mocks/server';
 import { renderWithProviders } from '@/test/renderWithProviders';
 import { CursoWizard } from './CursoWizard';
 import { termFixture } from '@/test/fixtures/terms';
+import { takeContractDeviations } from '@/test/contract/withContract';
 
 const API = 'http://localhost:8080';
 
@@ -19,6 +20,9 @@ async function completeCourseFirstStep(user) {
   await user.selectOptions(screen.getAllByRole('combobox')[0], '4');
   await user.type(screen.getByPlaceholderText('Ej. 30'), '20');
   await user.type(screen.getByPlaceholderText('Ej. 15000'), '15000');
+  await user.click(screen.getByRole('button', { name: 'Buscar preceptor' }));
+  await user.click(await screen.findByRole('option', { name: /Marcela Quiroga/ }));
+  await user.click(screen.getByRole('button', { name: 'Listo' }));
   await user.click(screen.getByRole('button', { name: 'Continuar' }));
 }
 
@@ -99,5 +103,41 @@ describe('CursoWizard', () => {
 
     expect(await screen.findByText('El cierre de inscripción no puede ser anterior a la apertura.')).toBeInTheDocument();
     expect(posted).toBe(false);
+  });
+
+  it('requires a responsible preceptor before moving to the second step', async () => {
+    const user = userEvent.setup();
+    mockTerms();
+    renderWithProviders(<CursoWizard />);
+    await user.type(screen.getByPlaceholderText('Ej. Curso de Excel Avanzado'), 'Excel avanzado');
+    await screen.findByRole('option', { name: '2027 — Anual' });
+    await user.selectOptions(screen.getAllByRole('combobox')[0], '4');
+    await user.type(screen.getByPlaceholderText('Ej. 30'), '20');
+    await user.type(screen.getByPlaceholderText('Ej. 15000'), '15000');
+
+    await user.click(screen.getByRole('button', { name: 'Continuar' }));
+
+    expect(screen.getByText('Elegí al menos un preceptor.')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Crear curso' })).not.toBeInTheDocument();
+  });
+
+  it('sends the chosen responsible preceptors when creating the course', async () => {
+    const user = userEvent.setup();
+    mockTerms();
+    const requests = [];
+    server.use(
+      http.post(`${API}/courses`, async ({ request }) => {
+        requests.push(await request.json());
+        return HttpResponse.json({ id: 9 }, { status: 201 });
+      }),
+    );
+    renderWithProviders(<CursoWizard />);
+    await completeCourseFirstStep(user);
+    await user.type(await screen.findByLabelText(/Duración \(meses\)/), '3');
+    await user.click(screen.getByRole('button', { name: 'Crear curso' }));
+
+    await waitFor(() => expect(requests).toHaveLength(1));
+    expect(requests[0].responsiblePreceptorIds).toEqual([31]);
+    takeContractDeviations();
   });
 });
