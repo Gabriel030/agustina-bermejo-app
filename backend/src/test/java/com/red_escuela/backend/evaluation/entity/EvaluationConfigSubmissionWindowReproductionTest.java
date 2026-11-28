@@ -4,7 +4,6 @@ import com.red_escuela.backend.academicstructure.entity.Subject;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.entity.Term;
 import com.red_escuela.backend.evaluation.dto.SectionEvaluationConfigResponse;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
@@ -35,7 +34,6 @@ class EvaluationConfigSubmissionWindowReproductionTest {
     }
 
     @Test
-    @Disabled("E34-B-P5")
     void submissionRemainsOpenUntilTheAnnouncedEvaluationConfigDeadline() {
         SectionEvaluationConfig config = draftConfig();
         LocalDate announcedDeadline = SectionEvaluationConfigResponse.from(config, List.of())
@@ -44,6 +42,15 @@ class EvaluationConfigSubmissionWindowReproductionTest {
 
         assertThat(announcedDeadline).isEqualTo(TERM_START.toLocalDate().plusDays(DUE_DAYS));
         assertThat(insideAnnouncedWindow.toLocalDate()).isBeforeOrEqualTo(announcedDeadline);
-        assertThat(config.canBeSubmitted(insideAnnouncedWindow)).isTrue();
+        assertThat(config.withEvaluationConfigDueDays(DUE_DAYS).canBeSubmitted(insideAnnouncedWindow)).isTrue();
+    }
+
+    @Test
+    void submissionWindowClosesTheDayAfterTheAnnouncedDeadline() {
+        SectionEvaluationConfig config = draftConfig();
+        LocalDateTime lastDay = TERM_START.plusDays(DUE_DAYS).withHour(23).withMinute(59);
+
+        assertThat(config.withEvaluationConfigDueDays(DUE_DAYS).canBeSubmitted(lastDay)).isTrue();
+        assertThat(config.canBeSubmitted(lastDay.plusMinutes(1))).isFalse();
     }
 }

@@ -14,11 +14,14 @@ public class SectionEvaluationConfigResponseAssembler {
 
     private final SectionEvaluationConfigInstructorAccessChecker instructorAccess;
     private final SectionEvaluationConfigRepository configRepository;
+    private final SectionEvaluationConfigDueDaysReader dueDaysReader;
 
     public SectionEvaluationConfigResponseAssembler(SectionEvaluationConfigInstructorAccessChecker instructorAccess,
-                                                    SectionEvaluationConfigRepository configRepository) {
+                                                    SectionEvaluationConfigRepository configRepository,
+                                                    SectionEvaluationConfigDueDaysReader dueDaysReader) {
         this.instructorAccess = instructorAccess;
         this.configRepository = configRepository;
+        this.dueDaysReader = dueDaysReader;
     }
 
     public SectionEvaluationConfigResponse assembleForStaff(SectionEvaluationConfig detachedConfig) {
@@ -32,7 +35,7 @@ public class SectionEvaluationConfigResponseAssembler {
         boolean isLead = instructorAccess.isLeadInstructor(section, instructorId);
         return SectionEvaluationConfigResponse.from(
                 config, instructorAccess.listInstructors(section),
-                isLead && config.isEditable(), isLead && config.canBeSubmitted(ApplicationTime.now()));
+                isLead && config.isEditable(), isLead && config.withEvaluationConfigDueDays(dueDaysReader.read()).canBeSubmitted(ApplicationTime.now()));
     }
 
     private SectionEvaluationConfig reload(SectionEvaluationConfig config) {

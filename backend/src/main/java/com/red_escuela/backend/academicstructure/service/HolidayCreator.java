@@ -10,15 +10,18 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Component
 public class HolidayCreator {
 
     private final HolidayRepository holidayRepository;
+    private final HolidayImpactFinder impactFinder;
     private final HolidayAttendanceConflictPort attendanceConflictPort;
 
-    public HolidayCreator(HolidayRepository holidayRepository, HolidayAttendanceConflictPort attendanceConflictPort) {
+    public HolidayCreator(HolidayRepository holidayRepository, HolidayImpactFinder impactFinder, HolidayAttendanceConflictPort attendanceConflictPort) {
         this.holidayRepository = holidayRepository;
+        this.impactFinder = impactFinder;
         this.attendanceConflictPort = attendanceConflictPort;
     }
 
@@ -32,7 +35,8 @@ public class HolidayCreator {
         holiday.setName(request.name());
         holiday.setType(request.type());
         holiday.setDescription(request.description());
+        Optional.ofNullable(request.scope()).ifPresent(holiday::setScope);
         Holiday saved = holidayRepository.save(holiday);
-        return HolidayResponse.from(saved, attendanceConflictPort.findDatesWithRecordedAttendance(List.of(saved.getDate())));
+        return HolidayResponse.from(saved, impactFinder.findAffectedBy(saved), attendanceConflictPort.findDatesWithRecordedAttendance(List.of(saved.getDate())));
     }
 }

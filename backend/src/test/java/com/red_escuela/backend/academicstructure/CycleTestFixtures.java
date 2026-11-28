@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure;
 
+import com.red_escuela.backend.testsupport.HolidayFixtures;
 import com.red_escuela.backend.testsupport.TermFixtures;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycle;
 import com.red_escuela.backend.academicstructure.entity.AcademicOfferingCycleStatus;
@@ -67,6 +68,7 @@ public class CycleTestFixtures {
         term.setEndDate(LocalDateTime.of(year, 12, 15, 0, 0));
         term.setStatus(StatusType.ACTIVE);
         entityManager.persist(term);
+        HolidayFixtures.ensureHolidaysLoaded(entityManager, year, year);
         return term;
     }
 

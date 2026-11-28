@@ -50,12 +50,14 @@ class HolidaysMissingForNextYearReminderJobTest {
     }
 
     private HolidaysMissingForNextYearReminderJob jobAt(LocalDate today) {
+        org.mockito.Mockito.lenient().when(holidayRepository.countByDateBetween(
+                LocalDate.of(today.getYear(), 1, 1), LocalDate.of(today.getYear(), 12, 31))).thenReturn(5L);
         Clock clock = Clock.fixed(today.atTime(8, 0).toInstant(ZoneOffset.UTC), ZoneOffset.UTC);
         return new HolidaysMissingForNextYearReminderJob(holidayRepository, effectGuard, eventPublisher, clock);
     }
 
     private void nextYearHolidaysLoaded(boolean loaded) {
-        when(holidayRepository.existsByDateBetween(LocalDate.of(2027, 1, 1), LocalDate.of(2027, 12, 31))).thenReturn(loaded);
+        when(holidayRepository.countByDateBetween(LocalDate.of(2027, 1, 1), LocalDate.of(2027, 12, 31))).thenReturn(loaded ? 5L : 0L);
     }
 
     @Test
@@ -77,7 +79,7 @@ class HolidaysMissingForNextYearReminderJobTest {
         assertThat(job.remindIfMissing(WINDOW_OPENS.minusDays(1))).isFalse();
 
         verify(eventPublisher, never()).publishEvent(any(Object.class));
-        verify(holidayRepository, never()).existsByDateBetween(any(), any());
+        verify(holidayRepository, never()).countByDateBetween(LocalDate.of(2027, 1, 1), LocalDate.of(2027, 12, 31));
     }
 
     @Test
@@ -126,7 +128,8 @@ class HolidaysMissingForNextYearReminderJobTest {
 
     @Test
     void onNewYearsDayTheWindowForTheFollowingYearIsNotOpenYet() {
-        when(holidayRepository.existsByDateBetween(LocalDate.of(2028, 1, 1), LocalDate.of(2028, 12, 31))).thenReturn(false);
+        when(holidayRepository.countByDateBetween(LocalDate.of(2028, 1, 1), LocalDate.of(2028, 12, 31))).thenReturn(0L);
+        when(holidayRepository.countByDateBetween(LocalDate.of(2027, 1, 1), LocalDate.of(2027, 12, 31))).thenReturn(5L);
 
         assertThat(job.remindIfMissing(LocalDate.of(2027, 1, 1))).isFalse();
         verify(eventPublisher, never()).publishEvent(any(Object.class));
@@ -139,5 +142,13 @@ class HolidaysMissingForNextYearReminderJobTest {
         jobAt(WINDOW_OPENS).runDaily();
 
         verify(eventPublisher).publishEvent(any(HolidaysMissingForNextYearEvent.class));
+    }
+
+    @Test
+    void currentYearWithoutEnoughHolidaysEmitsTheReminderEvenOnNewYearsDay() {
+        HolidaysMissingForNextYearReminderJob jobOnNewYearsDay = jobAt(LocalDate.of(2027, 1, 1));
+        when(holidayRepository.countByDateBetween(LocalDate.of(2027, 1, 1), LocalDate.of(2027, 12, 31))).thenReturn(1L);
+
+        assertThat(jobOnNewYearsDay.remindIfMissing(LocalDate.of(2027, 1, 1))).isTrue();
     }
 }

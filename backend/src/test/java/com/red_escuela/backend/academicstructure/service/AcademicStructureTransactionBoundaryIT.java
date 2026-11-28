@@ -89,6 +89,7 @@ class AcademicStructureTransactionBoundaryIT extends AbstractIntegrationTest {
         long[] ids = new long[3];
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             var fixtures = new CycleTestFixtures(entityManager);
+            com.red_escuela.backend.testsupport.HolidayFixtures.ensureHolidaysLoaded(entityManager, 2026, 2028);
             var program = fixtures.program();
             var otherTerm = fixtures.term(CLOSED_YEAR);
             fixtures.programCycle(program, otherTerm, AcademicOfferingCycleStatus.APPROVED);

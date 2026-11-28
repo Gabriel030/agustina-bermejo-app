@@ -16,7 +16,7 @@ public class DraftInvoiceDueDateResolver {
 
     private final BillingConfigurationReader configurationReader;
     private final JdbcTemplate jdbcTemplate;
-    private final MonthlyInstallmentDueDateCalculator dueDateCalculator = new MonthlyInstallmentDueDateCalculator();
+    @org.springframework.beans.factory.annotation.Autowired private com.red_escuela.backend.billing.planning.domain.InstallmentBusinessDays businessDays;
 
     public DraftInvoiceDueDateResolver(BillingConfigurationReader configurationReader, JdbcTemplate jdbcTemplate) {
         this.configurationReader = configurationReader;
@@ -29,7 +29,7 @@ public class DraftInvoiceDueDateResolver {
         }
         InvoiceLine line = draft.getPrimaryLine();
         int dueDays = line.getProgramEnrollmentId() != null ? programDueDays(line, approvalDate) : courseDueDays(line, approvalDate);
-        return dueDateCalculator.calculateInstallmentDueDate(approvalDate, dueDays);
+        return new MonthlyInstallmentDueDateCalculator(businessDays).calculateInstallmentDueDate(approvalDate, dueDays);
     }
 
     private int programDueDays(InvoiceLine line, LocalDate approvalDate) {

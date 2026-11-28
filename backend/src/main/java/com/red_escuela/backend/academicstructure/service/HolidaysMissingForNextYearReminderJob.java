@@ -45,15 +45,21 @@ public class HolidaysMissingForNextYearReminderJob {
 
     @Transactional
     public boolean remindIfMissing(LocalDate today) {
-        int nextYear = today.getYear() + 1;
+        boolean currentYearReminded = remindIfMissingForYear(today, today.getYear());
+        boolean nextYearReminded = remindIfMissingForYear(today, today.getYear() + 1);
+        return currentYearReminded || nextYearReminded;
+    }
+
+    private boolean remindIfMissingForYear(LocalDate today, int nextYear) {
         LocalDate windowOpensOn = LocalDate.of(nextYear, 1, 1).minusDays(WINDOW_DAYS_BEFORE_NEW_YEAR);
         if (today.isBefore(windowOpensOn)) {
             return false;
         }
-        if (holidayRepository.existsByDateBetween(LocalDate.of(nextYear, 1, 1), LocalDate.of(nextYear, 12, 31))) {
+        if (holidayRepository.countByDateBetween(LocalDate.of(nextYear, 1, 1), LocalDate.of(nextYear, 12, 31))
+                >= HolidayYearGuard.MINIMUM_HOLIDAYS_PER_YEAR) {
             return false;
         }
-        int weeksSinceWindowOpened = (int) (ChronoUnit.DAYS.between(windowOpensOn, today) / DAYS_PER_WEEK);
+        int weeksSinceWindowOpened = (int) (Math.max(0, ChronoUnit.DAYS.between(windowOpensOn, today)) / DAYS_PER_WEEK);
         HolidaysMissingForNextYearEvent event = HolidaysMissingForNextYearEvent.missingFor(nextYear, weeksSinceWindowOpened);
         boolean published = effectGuard.runEffectOnce(event, REMINDER_HANDLER, () -> eventPublisher.publishEvent(event));
         log.info("Recordatorio de feriados faltantes: anio={}, semana={}, emitido={}", nextYear, weeksSinceWindowOpened, published);

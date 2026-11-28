@@ -106,6 +106,7 @@ public final class AcademicReproductionFixtures {
         term.setDescription("2026-1C");
         term.setStatus(StatusType.ACTIVE);
         entityManager.persist(term);
+        HolidayFixtures.ensureHolidaysLoaded(entityManager, 2026, 2028);
         return term;
     }
 

@@ -24,4 +24,12 @@ public interface SectionEvaluationConfigRepository extends JpaRepository<Section
     List<SectionEvaluationConfig> findByStatusAndCourseSectionIsNotNull(SectionEvaluationConfigStatus status);
 
     List<SectionEvaluationConfig> findByStatusIn(List<SectionEvaluationConfigStatus> statuses);
+
+    @org.springframework.data.jpa.repository.Query("""
+            select c from SectionEvaluationConfig c
+            where c.tp1DueDate = :date or c.tp2DueDate = :date or c.tp3DueDate = :date
+               or c.exam1Date = :date or c.exam2Date = :date or c.exam3Date = :date or c.exam4Date = :date
+               or c.finalCall1Date = :date or c.finalCall2Date = :date
+            """)
+    java.util.List<SectionEvaluationConfig> findWithAnyEvaluationDateOn(@org.springframework.data.repository.query.Param("date") java.time.LocalDate date);
 }

@@ -7,8 +7,10 @@ import com.red_escuela.backend.billing.configuration.domain.ConfigurationValues;
 import com.red_escuela.backend.billing.configuration.domain.YearBillingTerms;
 import com.red_escuela.backend.billing.configuration.policy.AnnualUpfrontCheck;
 import com.red_escuela.backend.billing.exception.ProgramYearBillingTemplateNotFoundException;
-import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
+import com.red_escuela.backend.billing.planning.domain.InstallmentBusinessDays;
 import com.red_escuela.backend.billing.planning.service.MonthlyInstallmentDueDateCalculator;
+import com.red_escuela.backend.billing.repository.ProgramYearBillingTemplateRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
@@ -21,10 +23,22 @@ public class AnnualUpfrontScopeHandler implements ConfigurationScopeHandler {
     private final ConfigurationPolicyEvaluator policyEvaluator;
     private final BillingConfigurationReader configurationReader;
     private final Clock clock;
-    private final MonthlyInstallmentDueDateCalculator dueDateCalculator = new MonthlyInstallmentDueDateCalculator();
+    private final MonthlyInstallmentDueDateCalculator dueDateCalculator;
 
     public AnnualUpfrontScopeHandler(ProgramYearBillingTemplateRepository templateRepository, ConfigurationPolicyEvaluator policyEvaluator,
                                      BillingConfigurationReader configurationReader, Clock clock) {
+        this(templateRepository, policyEvaluator, configurationReader, clock, new MonthlyInstallmentDueDateCalculator());
+    }
+
+    @Autowired
+    public AnnualUpfrontScopeHandler(ProgramYearBillingTemplateRepository templateRepository, ConfigurationPolicyEvaluator policyEvaluator,
+                                     BillingConfigurationReader configurationReader, Clock clock, InstallmentBusinessDays billingCalendar) {
+        this(templateRepository, policyEvaluator, configurationReader, clock, new MonthlyInstallmentDueDateCalculator(billingCalendar));
+    }
+
+    private AnnualUpfrontScopeHandler(ProgramYearBillingTemplateRepository templateRepository, ConfigurationPolicyEvaluator policyEvaluator,
+                                      BillingConfigurationReader configurationReader, Clock clock, MonthlyInstallmentDueDateCalculator dueDateCalculator) {
+        this.dueDateCalculator = dueDateCalculator;
         this.templateRepository = templateRepository;
         this.policyEvaluator = policyEvaluator;
         this.configurationReader = configurationReader;

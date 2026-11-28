@@ -29,7 +29,6 @@ class DeadlineBoundariesReproductionTest {
     }
 
     @Test
-    @Disabled("E34-B-P5")
     void installmentDueDateNeverFallsOnWeekend() {
         LocalDate issueDate = LocalDate.of(2027, 3, 1);
 

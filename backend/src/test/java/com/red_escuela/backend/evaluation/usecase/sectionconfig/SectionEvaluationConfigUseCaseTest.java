@@ -298,7 +298,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
     @Test
     void submittingAfterTermStartedFails() {
         Subject subject = persistSubject("MateriaVentanaVencida");
-        Term term = persistTerm(LocalDateTime.now().minusDays(1), LocalDateTime.now().plusMonths(4));
+        Term term = persistTerm(LocalDateTime.now().minusDays(20), LocalDateTime.now().plusMonths(4));
         entityManager.flush();
         SubjectSection section = sectionFactory.create(subject, term, "Comisión A", 30, null);
         Instructor leadInstructor = persistInstructor("90000005");
@@ -310,7 +310,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void submissionWindowClosesWhenTheClockReachesTheTermStart() {
+    void submissionWindowClosesTheDayAfterTheEvaluationConfigDueDays() {
         Subject subject = persistSubject("MateriaVentanaPorReloj");
         LocalDateTime termStart = LocalDateTime.now().plusDays(30);
         Term term = persistTerm(termStart, LocalDateTime.now().plusMonths(4));
@@ -322,7 +322,7 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         saveSectionEvaluationConfigDraftUseCase.save(new SaveSectionEvaluationConfigDraftCommand(section.getId(), leadInstructor.getId(),
                 validRequest(nonHolidayDate(40), nonHolidayDate(60), nonHolidayDate(80))));
 
-        MutableClock.INSTANCE.setDateTime(termStart.plusMinutes(1));
+        MutableClock.INSTANCE.setDateTime(termStart.plusDays(16));
 
         assertThatThrownBy(() -> submitSectionEvaluationConfigForApprovalUseCase.submit(new SubmitSectionEvaluationConfigForApprovalCommand(section.getId(), leadInstructor.getId())))
                 .isInstanceOf(SubmissionWindowClosedException.class);
@@ -530,11 +530,11 @@ class SectionEvaluationConfigUseCaseTest extends AbstractIntegrationTest {
         SectionEvaluationConfig config = configRepository.findBySubjectSectionId(section.getId()).orElseThrow();
         LocalDateTime now = LocalDateTime.of(2020, 6, 1, 10, 0);
 
-        assertThat(config.canBeSubmitted(now)).isFalse();
+        assertThat(config.withEvaluationConfigDueDays(15).canBeSubmitted(now)).isFalse();
         config.setStatus(SectionEvaluationConfigStatus.REJECTED);
-        assertThat(config.canBeSubmitted(now)).isTrue();
+        assertThat(config.withEvaluationConfigDueDays(15).canBeSubmitted(now)).isTrue();
         config.setStatus(SectionEvaluationConfigStatus.PENDING_APPROVAL);
-        assertThat(config.canBeSubmitted(now)).isFalse();
+        assertThat(config.withEvaluationConfigDueDays(15).canBeSubmitted(now)).isFalse();
     }
 
     @Test

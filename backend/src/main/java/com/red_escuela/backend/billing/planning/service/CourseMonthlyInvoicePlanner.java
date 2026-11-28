@@ -1,5 +1,6 @@
 package com.red_escuela.backend.billing.planning.service;
 
+import com.red_escuela.backend.billing.planning.domain.InstallmentBusinessDays;
 import com.red_escuela.backend.billing.planning.domain.CourseInvoicePlanningFacts;
 import com.red_escuela.backend.billing.planning.domain.InvoicePlanningDecision;
 import com.red_escuela.backend.billing.planning.domain.MonthlyInvoicePlan;
@@ -19,7 +20,7 @@ public final class CourseMonthlyInvoicePlanner implements MonthlyInvoicePlanner<
     private final PlanningPolicySetsConfiguration policySets;
     private final InvoicePlanningVerdictMapper verdictMapper = new InvoicePlanningVerdictMapper();
     private final CoursePlanningPeriods planningPeriods = new CoursePlanningPeriods();
-    private final MonthlyInstallmentDueDateCalculator dueDateCalculator = new MonthlyInstallmentDueDateCalculator();
+    private final MonthlyInstallmentDueDateCalculator dueDateCalculator;
 
     public CourseMonthlyInvoicePlanner() {
         this(new PlanningPolicySetsConfiguration());
@@ -27,6 +28,12 @@ public final class CourseMonthlyInvoicePlanner implements MonthlyInvoicePlanner<
 
     public CourseMonthlyInvoicePlanner(PlanningPolicySetsConfiguration policySets) {
         this.policySets = policySets;
+        this.dueDateCalculator = new MonthlyInstallmentDueDateCalculator();
+    }
+
+    public CourseMonthlyInvoicePlanner(PlanningPolicySetsConfiguration policySets, InstallmentBusinessDays billingCalendar) {
+        this.policySets = policySets;
+        this.dueDateCalculator = new MonthlyInstallmentDueDateCalculator(billingCalendar);
     }
 
     public MonthlyInvoicePlan planInvoicesForMonth(CourseInvoicePlanningFacts facts) {

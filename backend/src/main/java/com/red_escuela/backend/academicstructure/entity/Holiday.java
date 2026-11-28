@@ -1,5 +1,6 @@
 package com.red_escuela.backend.academicstructure.entity;
 
+import com.red_escuela.backend.academicstructure.domain.HolidayScope;
 import com.red_escuela.backend.academicstructure.domain.HolidayType;
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -25,6 +26,10 @@ public class Holiday {
     @Enumerated(EnumType.STRING)
     @Column(name = "type", nullable = false, length = 30)
     private HolidayType type;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "scope", nullable = false, length = 20)
+    private HolidayScope scope = HolidayScope.BOTH;
 
     @Column(name = "description")
     private String description;

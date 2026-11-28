@@ -1,6 +1,9 @@
 package com.red_escuela.backend.e34b;
 
+import com.red_escuela.backend.academicstructure.api.HolidayAffectedItem;
+import com.red_escuela.backend.academicstructure.domain.HolidayScope;
 import com.red_escuela.backend.academicstructure.domain.HolidayType;
+import com.red_escuela.backend.academicstructure.dto.HolidayResponse;
 import com.red_escuela.backend.academicstructure.dto.CreateHolidayRequest;
 import com.red_escuela.backend.academicstructure.entity.Holiday;
 import com.red_escuela.backend.academicstructure.entity.Subject;
@@ -12,7 +15,6 @@ import com.red_escuela.backend.academicstructure.service.HolidaysMissingForNextY
 import com.red_escuela.backend.attendance.api.JustificationDeadlinePolicy;
 import com.red_escuela.backend.evaluation.entity.ExamBoard;
 import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -21,11 +23,16 @@ import java.time.LocalDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 class HolidayRulesReproductionIT extends ReproductionFixture {
 
     @Autowired
     private HolidayCreator holidayCreator;
+    @Autowired
+    private com.red_escuela.backend.academicstructure.service.HolidayBusinessDayCalendar holidayBusinessDayCalendar;
+    @Autowired
+    private com.red_escuela.backend.academicstructure.api.HolidayFinder holidayFinder;
     @Autowired
     private HolidayDeleter holidayDeleter;
     @Autowired
@@ -36,7 +43,12 @@ class HolidayRulesReproductionIT extends ReproductionFixture {
     private JustificationDeadlinePolicy justificationDeadlinePolicy;
 
     private Holiday holiday(LocalDate date) {
+        return holiday(date, HolidayScope.BOTH);
+    }
+
+    private Holiday holiday(LocalDate date, HolidayScope scope) {
         Holiday holiday = new Holiday();
+        holiday.setScope(scope);
         holiday.setDate(date);
         holiday.setName("Feriado " + date);
         holiday.setType(HolidayType.NATIONAL);
@@ -45,8 +57,7 @@ class HolidayRulesReproductionIT extends ReproductionFixture {
     }
 
     @Test
-    @Disabled("E34-B-P5")
-    void holidayCannotBeCreatedOnADateWithAnScheduledExamBoard() {
+    void holidayCreatedOnADateWithAScheduledExamBoardReportsTheAffectedBoard() {
         Subject subject = subject("Algebra");
         Term term = term(LocalDateTime.of(2046, 3, 1, 0, 0), LocalDateTime.of(2046, 7, 1, 0, 0));
         ExamBoard board = new ExamBoard();
@@ -57,13 +68,15 @@ class HolidayRulesReproductionIT extends ReproductionFixture {
         entityManager.persist(board);
         flushAndClear();
 
-        assertThatThrownBy(() -> holidayCreator.create(
-                new CreateHolidayRequest(LocalDate.of(2046, 5, 2), "Feriado puente", HolidayType.NATIONAL, null)))
-                .isInstanceOf(RuntimeException.class);
+        HolidayResponse response = holidayCreator.create(
+                new CreateHolidayRequest(LocalDate.of(2046, 5, 2), "Feriado puente", HolidayType.NATIONAL, null));
+
+        assertThat(response.affected()).extracting(HolidayAffectedItem::kind, HolidayAffectedItem::referenceId)
+                .containsExactly(tuple("EXAM_BOARD", board.getId()));
     }
 
     @Test
-    @Disabled("E34-B-P5")
+    @org.junit.jupiter.api.Disabled("E34-B-P5 pendiente: plazo de justificacion persistido")
     void deletingAHolidayDoesNotChangeTheDeadlineOfAnOpenJustification() {
         LocalDate classDate = LocalDate.of(2046, 3, 5);
         Holiday holiday = holiday(LocalDate.of(2046, 3, 6));
@@ -77,7 +90,20 @@ class HolidayRulesReproductionIT extends ReproductionFixture {
     }
 
     @Test
-    @Disabled("E34-B-P5")
+    void classesScopedHolidayDoesNotShiftBillingBusinessDaysAndBillingScopedOneDoesNotBlockClasses() {
+        LocalDate classesOnly = LocalDate.of(2047, 4, 2);
+        LocalDate billingOnly = LocalDate.of(2047, 4, 3);
+        holiday(classesOnly, HolidayScope.CLASSES);
+        holiday(billingOnly, HolidayScope.BILLING);
+        flushAndClear();
+
+        assertThat(holidayBusinessDayCalendar.isBusinessDay(classesOnly)).isTrue();
+        assertThat(holidayBusinessDayCalendar.isBusinessDay(billingOnly)).isFalse();
+        assertThat(holidayFinder.isHoliday(classesOnly)).isTrue();
+        assertThat(holidayFinder.isHoliday(billingOnly)).isFalse();
+    }
+
+    @Test
     void singleHolidayDoesNotMarkTheWholeYearAsLoaded() {
         holiday(LocalDate.of(2045, 1, 1));
         flushAndClear();
@@ -86,7 +112,6 @@ class HolidayRulesReproductionIT extends ReproductionFixture {
     }
 
     @Test
-    @Disabled("E34-B-P5")
     void termHolidayCheckUsesTheTermDatesAndNotOnlyItsYearField() {
         holiday(LocalDate.of(2045, 1, 1));
         Term term = term(LocalDateTime.of(2046, 3, 1, 0, 0), LocalDateTime.of(2046, 7, 1, 0, 0));
@@ -97,7 +122,6 @@ class HolidayRulesReproductionIT extends ReproductionFixture {
     }
 
     @Test
-    @Disabled("E34-B-P5")
     void reminderAlsoCoversTheCurrentYearWhenItsHolidaysAreMissing() {
         boolean reminded = reminderJob.remindIfMissing(LocalDate.of(2046, 1, 10));
 
