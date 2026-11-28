@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate, useParams, Link } from 'react-router-dom';
-import { ChevronLeft, ChevronRight, Users, Calendar, ClipboardList } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Users, Calendar, ClipboardList, Pencil, Plus } from 'lucide-react';
 import { PageContainer } from '@/components/PageContainer';
 import { GlassCard } from '@/components/GlassCard';
 import { StatusPill } from '@/components/StatusPill';
@@ -15,6 +15,7 @@ import { useRoleBasePath } from '@/features/academic-structure/hooks/useRoleBase
 import { ResumeCycleButton } from '@/features/academic-structure/components/ResumeCycleButton';
 import { RejectionReasonNotice } from '@/features/academic-structure/components/RejectionReasonNotice';
 import { SectionScheduleRequestAction } from '@/features/academic-structure/components/SectionScheduleRequestAction';
+import { SectionPreceptorsEditor } from '@/features/academic-structure/components/SectionPreceptorsEditor';
 import { SectionPendingScheduleNotice } from '@/features/academic-structure/components/SectionPendingScheduleNotice';
 
 const CICLO_STATUS_CONFIG = {
@@ -39,12 +40,24 @@ function formatHora(t) {
   return t?.slice(0, 5) ?? '—';
 }
 
-function FilaSeccion({ seccion, ciclo }) {
+const PRECEPTOR_MANAGER_BASE_PATHS = ['/director', '/administrativo', '/subdirector'];
+
+function FilaSeccion({ seccion, ciclo, editingId, onEdit, onCloseEdit }) {
   const cicloId = ciclo.id;
   const basePath = useRoleBasePath();
   const cfg = SECCION_STATUS_CONFIG[seccion.status] ?? { label: seccion.status, tone: 'neutral' };
   const titular = seccion.instructors?.find((i) => i.role === 'LEAD');
   const slotsPrimero = seccion.slots?.[0];
+  const canManagePreceptors = PRECEPTOR_MANAGER_BASE_PATHS.includes(basePath);
+  const editing = canManagePreceptors && editingId === seccion.id;
+  const locked = editingId !== null && !editing;
+  const preceptors = seccion.preceptors ?? [];
+  const editButton = useRef(null);
+
+  function handleClose() {
+    onCloseEdit();
+    requestAnimationFrame(() => editButton.current?.focus());
+  }
 
   return (
     <div className="rounded-2xl border border-surface-border px-4 py-3">
@@ -76,6 +89,18 @@ function FilaSeccion({ seccion, ciclo }) {
           <StatusPill tone={cfg.tone}>{cfg.label}</StatusPill>
         </div>
       </div>
+      {editing ? (
+        <SectionPreceptorsEditor section={seccion} cycleId={cicloId} onClose={handleClose} />
+      ) : (
+        <div className="mt-2 flex flex-wrap items-center gap-2 text-size-13">
+          <span className="text-ink-faint">Preceptores</span>
+          {preceptors.length === 0 ? (
+            <StatusPill tone="warning">Sin preceptor</StatusPill>
+          ) : (
+            <span className="text-ink">{preceptors.map((p) => p.personName).join(', ')}</span>
+          )}
+        </div>
+      )}
       <div className="mt-2 flex flex-wrap gap-2">
         <Button variant="outline" size="sm" asChild>
           <Link to={`${basePath}/oferta-academica/ciclos/${cicloId}/comisiones/${seccion.id}/inscriptos`}>
@@ -83,6 +108,23 @@ function FilaSeccion({ seccion, ciclo }) {
             Inscriptos
           </Link>
         </Button>
+        {canManagePreceptors && !editing && (
+          <Button
+            ref={editButton}
+            variant="outline"
+            size="sm"
+            disabled={locked}
+            title={locked ? 'Guardá o cancelá la edición abierta' : undefined}
+            onClick={() => onEdit(seccion.id)}
+          >
+            {preceptors.length === 0 ? (
+              <Plus className="mr-1.5 h-3.5 w-3.5" />
+            ) : (
+              <Pencil className="mr-1.5 h-3.5 w-3.5" />
+            )}
+            {preceptors.length === 0 ? 'Asignar preceptor' : 'Preceptores'}
+          </Button>
+        )}
         {basePath !== '/director' && <SectionScheduleRequestAction section={seccion} cycle={ciclo} />}
       </div>
       <SectionPendingScheduleNotice section={seccion} />
@@ -95,6 +137,7 @@ function PanelCiclo({ ciclo }) {
   const navigate = useNavigate();
   const cfg = CICLO_STATUS_CONFIG[ciclo.status] ?? { label: ciclo.status, tone: 'neutral' };
   const { data: secciones, isLoading, isError, error, refetch } = useCicloSecciones(ciclo.id);
+  const [editingId, setEditingId] = useState(null);
 
   return (
     <GlassCard className="flex flex-col gap-4 p-4">
@@ -131,7 +174,16 @@ function PanelCiclo({ ciclo }) {
         <EmptyState title="Este ciclo aún no tiene comisiones." className="py-6" />
       ) : (
         <div className="flex flex-col gap-2">
-          {secciones.map((s) => <FilaSeccion key={s.id} seccion={s} ciclo={ciclo} />)}
+          {secciones.map((s) => (
+            <FilaSeccion
+              key={s.id}
+              seccion={s}
+              ciclo={ciclo}
+              editingId={editingId}
+              onEdit={setEditingId}
+              onCloseEdit={() => setEditingId(null)}
+            />
+          ))}
         </div>
       )}
     </GlassCard>

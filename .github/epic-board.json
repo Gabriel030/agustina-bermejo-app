@@ -269,7 +269,13 @@
       "total": 12,
       "done_at_baseline": null,
       "done_at_seed": 12,
-      "next_step": "Cerrar el Issue #1638; billing en FULL queda como rebanada posterior"
+      "next_step": "Cerrar el Issue #1638; billing en FULL queda como rebanada posterior",
+      "refs": [
+        "e34-a"
+      ],
+      "issues": [
+        1638
+      ]
     },
     {
       "id": "E34-B",
@@ -277,7 +283,13 @@
       "total": 10,
       "done_at_baseline": null,
       "done_at_seed": 10,
-      "next_step": "Cerrar el Issue #1643 (P0 a P8 y aviso D7 en develop)"
+      "next_step": "Cerrar el Issue #1643 (P0 a P8 y aviso D7 en develop)",
+      "refs": [
+        "e34-b"
+      ],
+      "issues": [
+        1643
+      ]
     },
     {
       "id": "E34-C",
@@ -286,7 +298,13 @@
       "done_at_baseline": null,
       "done_at_seed": 8,
       "total_estimated": true,
-      "next_step": "F2: terminar pantallas (cohorte y curso mergeadas) y cerrar el Issue #1650"
+      "next_step": "F2: terminar pantallas (cohorte y curso mergeadas) y cerrar el Issue #1650",
+      "refs": [
+        "e34-c"
+      ],
+      "issues": [
+        1650
+      ]
     },
     {
       "id": "E19-A",
@@ -294,7 +312,13 @@
       "total": 5,
       "done_at_baseline": null,
       "done_at_seed": 4,
-      "next_step": "S5: eventos, job de espera de pago y regla ArchUnit"
+      "next_step": "S5: eventos, job de espera de pago y regla ArchUnit",
+      "refs": [
+        "e19-a"
+      ],
+      "issues": [
+        1606
+      ]
     },
     {
       "id": "E28-F",
@@ -303,7 +327,13 @@
       "done_at_baseline": null,
       "done_at_seed": 7,
       "total_estimated": true,
-      "next_step": "Confirmar S0 (verificación, solo comentario) y cerrar el Issue #1607"
+      "next_step": "Confirmar S0 (verificación, solo comentario) y cerrar el Issue #1607",
+      "refs": [
+        "e28-f"
+      ],
+      "issues": [
+        1607
+      ]
     },
     {
       "id": "E18-S6",
@@ -311,7 +341,13 @@
       "total": 2,
       "done_at_baseline": null,
       "done_at_seed": 2,
-      "next_step": "Cerrar el Issue #1696 (S6-1 y S6-2 en develop)"
+      "next_step": "Cerrar el Issue #1696 (S6-1 y S6-2 en develop)",
+      "refs": [
+        "e18-s6"
+      ],
+      "issues": [
+        1696
+      ]
     },
     {
       "id": "E24-4b",
@@ -319,7 +355,46 @@
       "total": 2,
       "done_at_baseline": null,
       "done_at_seed": 2,
-      "next_step": "Cerrar el Issue #1697 (S3 solo si hubiera hallazgo)"
+      "next_step": "Cerrar el Issue #1697 (S3 solo si hubiera hallazgo)",
+      "refs": [
+        "e24-4b"
+      ],
+      "issues": [
+        1697
+      ]
+    },
+    {
+      "id": "E35",
+      "name": "E35 Manual de usuario dentro de la app #1721",
+      "total": 11,
+      "done_at_baseline": null,
+      "done_at_seed": 0,
+      "total_estimated": true,
+      "next_step": "Mockup /ayuda v2 en revisión de Gabriel; esqueleto en PR #1723 (borrador)",
+      "refs": [
+        "e35",
+        "help-manual",
+        "ayuda"
+      ],
+      "issues": [
+        1721
+      ]
+    },
+    {
+      "id": "E36",
+      "name": "E36 Re-styling de toda la app #1724",
+      "total": 10,
+      "done_at_baseline": null,
+      "done_at_seed": 0,
+      "total_estimated": true,
+      "next_step": "Auditoría de pantallas y definición de la paleta cerrada (decisiones de Gabriel pendientes)",
+      "refs": [
+        "e36",
+        "restyling"
+      ],
+      "issues": [
+        1724
+      ]
     },
     {
       "id": "P1108",
@@ -327,7 +402,13 @@
       "total": 42,
       "done_at_baseline": null,
       "done_at_seed": 31,
-      "next_step": ""
+      "next_step": "",
+      "refs": [
+        "p1108"
+      ],
+      "issues": [
+        1108
+      ]
     }
   ],
   "seed_date": "2026-11-24"
