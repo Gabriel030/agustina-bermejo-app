@@ -3,6 +3,7 @@ package com.red_escuela.backend.graduation.certificate.template.specialist;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateAssets;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateSnapshot;
 import com.red_escuela.backend.graduation.certificate.engine.CertificateTexts;
+import com.red_escuela.backend.graduation.certificate.engine.DefaultInstituteLogo;
 import com.red_escuela.backend.graduation.certificate.engine.SignatorySnapshot;
 import com.red_escuela.backend.graduation.certificate.entity.GraduationCertificateKind;
 import com.red_escuela.backend.graduation.certificate.template.dto.CertificateTemplateContent;
@@ -98,7 +99,9 @@ public class CertificateTemplateRenderSource {
         signatures.add(imageOf(templateId, content.secondSigner() == null ? null : content.secondSigner().signatureImageId()));
         CertificateTexts texts = new CertificateTexts(content.instituteName(), content.title(), content.introText(),
                 content.approvalText(), content.dictationText(), content.qrLabel(), content.footerLegend());
-        return new CertificateAssets(imageOf(templateId, content.logoImageId()), signatures, registryNumber, texts);
+        byte[] templateLogo = imageOf(templateId, content.logoImageId());
+        byte[] logo = templateLogo == null ? DefaultInstituteLogo.bytes() : templateLogo;
+        return new CertificateAssets(logo, signatures, registryNumber, texts);
     }
 
     private SignatorySnapshot signatoryOf(CertificateTemplateSigner signer) {
