@@ -151,31 +151,23 @@ jobs:
 
   pwa-offline-e2e:
     runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v1.55.0-noble
+      options: --user root
     needs: decide
     if: needs.decide.outputs.run == 'true'
     timeout-minutes: 20
+    env:
+      HOME: /root
     steps:
       - uses: actions/checkout@v7
         with:
           ref: ${{ needs.decide.outputs.sha }}
 
-      - name: Set up Node
-        uses: actions/setup-node@v7
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: |
-            frontend/package-lock.json
-            e2e/package-lock.json
-
       - name: Install the frontend and e2e dependencies
         run: |
           npm ci --prefix frontend
           npm ci --prefix e2e
-
-      - name: Install Chromium
-        working-directory: e2e
-        run: npx playwright install --with-deps chromium
 
       - name: Run the offline matrix against the production build
         working-directory: e2e
