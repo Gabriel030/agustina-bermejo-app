@@ -266,10 +266,10 @@
     {
       "id": "E34-A",
       "name": "E34-A integridad académica #1638",
-      "total": 12,
+      "total": 17,
       "done_at_baseline": null,
       "done_at_seed": 12,
-      "next_step": "Cerrar el Issue #1638; billing en FULL queda como rebanada posterior",
+      "next_step": "Requisitos de aprobación (H10/H15): 5 rebanadas nuevas aprobadas el 28-nov (refactor #1739, cierre con APPROVAL_PENDING, término y egreso, exposición, vencimiento)",
       "refs": [
         "e34-a"
       ],
@@ -312,7 +312,7 @@
       "total": 5,
       "done_at_baseline": null,
       "done_at_seed": 4,
-      "next_step": "S5: eventos, job de espera de pago y regla ArchUnit",
+      "next_step": "Cerrar el Issue #1606 (S5 mergeada en #1732)",
       "refs": [
         "e19-a"
       ],
@@ -368,9 +368,9 @@
       "name": "E35 Manual de usuario dentro de la app #1721",
       "total": 11,
       "done_at_baseline": null,
-      "done_at_seed": 0,
+      "done_at_seed": 1,
       "total_estimated": true,
-      "next_step": "Mockup /ayuda v2 en revisión de Gabriel; esqueleto en PR #1723 (borrador)",
+      "next_step": "Página /ayuda #1737 y contenido E, F, G y J en PR; faltan H e I (después de #1638), D (test de cobertura) y K (capturas)",
       "refs": [
         "e35",
         "help-manual",
@@ -387,7 +387,7 @@
       "done_at_baseline": null,
       "done_at_seed": 0,
       "total_estimated": true,
-      "next_step": "Auditoría de pantallas y definición de la paleta cerrada (decisiones de Gabriel pendientes)",
+      "next_step": "Auditoría A en #1731; decisiones de Gabriel pendientes (tipografía, duraciones, hover, radios, GlassCard a Card)",
       "refs": [
         "e36",
         "restyling"
