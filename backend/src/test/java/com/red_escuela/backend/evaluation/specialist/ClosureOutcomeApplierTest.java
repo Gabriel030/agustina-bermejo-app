@@ -17,6 +17,9 @@ import org.junit.jupiter.api.Test;
 import java.math.BigDecimal;
 import java.util.List;
 
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -70,7 +73,7 @@ class ClosureOutcomeApplierTest {
         verify(recorder).recordProgramOutcome(2L, EnrollmentStatus.FAILED, null, null, true);
         verify(graduation).flagGraduationRequestOutdated(71L);
         verify(graduation).flagGraduationRequestOutdated(72L);
-        verify(graduation, never()).requestGraduationIfEligible(org.mockito.ArgumentMatchers.anyLong());
+        verify(graduation, never()).requestGraduationIfEligible(anyLong());
     }
 
     @Test
@@ -89,15 +92,37 @@ class ClosureOutcomeApplierTest {
     void freeStudentsFailWithFreeReasonAndCourseSectionsNeverRequestGraduation() {
         CourseSubjectSectionEnrollment courseEnrollment = new CourseSubjectSectionEnrollment();
         courseEnrollment.setStatus(EnrollmentStatus.IN_PROGRESS);
-        when(finder.refreshCourseEnrollment(org.mockito.ArgumentMatchers.anyLong())).thenReturn(courseEnrollment);
+        when(finder.refreshCourseEnrollment(anyLong())).thenReturn(courseEnrollment);
         applier.applyClosedResults(SectionKind.COURSE, List.of(
                 row(1L, ClosureFinalCondition.FREE, null), row(2L, ClosureFinalCondition.PROMOTES, "9.00")));
 
-        verify(recorder, never()).recordProgramOutcome(org.mockito.ArgumentMatchers.anyLong(), org.mockito.ArgumentMatchers.any(),
-                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.anyBoolean());
+        verify(recorder, never()).recordProgramOutcome(anyLong(), any(),
+                any(), any(), anyBoolean());
         verify(recorder).recordCourseOutcome(2L, EnrollmentStatus.APPROVED, Grade.of(new BigDecimal("9.00")), FinalGradeType.PROMOTION, true);
         verify(recorder).recordCourseOutcome(1L, EnrollmentStatus.FAILED, null, null, true);
         verify(recorder).markCourseFreeReason(1L);
         verifyNoInteractions(graduation);
+    }
+
+    @Test
+    void conditionalPromotionsAreRecordedAsApprovalPendingKeepingThePromotionGradeWithoutRequestingGraduation() {
+        Grade grade = Grade.of(new BigDecimal("8.50"));
+        programEnrollment(1L, EnrollmentStatus.IN_PROGRESS, 71L);
+
+        applier.applyClosedResults(SectionKind.PROGRAM, List.of(row(1L, ClosureFinalCondition.PROMOTION_CONDITIONAL, "8.50")));
+
+        verify(recorder).recordProgramOutcome(1L, EnrollmentStatus.APPROVAL_PENDING, grade, FinalGradeType.PROMOTION, true);
+        verify(graduation, never()).requestGraduationIfEligible(anyLong());
+    }
+
+    @Test
+    void approvalPendingEnrollmentsAreNotClosedAgain() {
+        programEnrollment(1L, EnrollmentStatus.APPROVAL_PENDING, 71L);
+
+        applier.applyClosedResults(SectionKind.PROGRAM, List.of(row(1L, ClosureFinalCondition.GOES_TO_FINAL, null)));
+
+        verify(recorder, never()).recordProgramOutcome(
+                anyLong(), any(), any(),
+                any(), anyBoolean());
     }
 }

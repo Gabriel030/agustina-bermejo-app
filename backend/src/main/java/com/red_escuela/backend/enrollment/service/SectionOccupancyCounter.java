@@ -14,7 +14,7 @@ import java.util.List;
 public class SectionOccupancyCounter {
 
     private static final List<EnrollmentStatus> SEAT_OCCUPYING_STATUSES =
-            List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR);
+            List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVAL_PENDING);
     private static final List<EnrollmentStatus> WAITING_STATUSES = List.of(EnrollmentStatus.WAITLISTED);
 
     private final SubjectSectionEnrollmentRepository programEnrollmentRepository;

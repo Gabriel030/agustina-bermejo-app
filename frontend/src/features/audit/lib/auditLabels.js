@@ -23,6 +23,7 @@ const ACTIONS = {
   WAITLIST_PRIORITIZED_BY_STAFF: ['Priorizado en lista de espera', 'accent'],
   WAITLIST_REMOVED_BY_STAFF: ['Quitado de lista de espera', 'danger'],
   WAITLIST_EXPIRED: ['Lista de espera vencida', 'neutral'],
+  APPROVAL_PENDING: ['Promocionada · falta aprobar', 'warning'],
   BROADCAST_CONFIRMED: ['Difusión confirmada', 'success'],
   BROADCAST_CANCELLED: ['Difusión cancelada', 'danger'],
   BROADCAST_RECIPIENT_DATA_ANONYMIZED: ['Datos de destinatarios anonimizados', 'warning'],

@@ -11,7 +11,8 @@ public final class ClosureConditionPolicy {
 
     public Optional<ClosureFinalCondition> decideFinalCondition(
             Optional<CourseworkOutcome> outcome, boolean forcedToFinal, EnrollmentStatus currentStatus,
-            boolean freeByAbsences, PaymentsStanding payments, boolean documentsComplete) {
+            boolean freeByAbsences, PaymentsStanding payments, boolean documentsComplete,
+            boolean requirementsPending) {
         if (outcome.filter(result -> result.status() == EnrollmentStatus.FAILED).isPresent()) {
             return Optional.of(ClosureFinalCondition.FAILED);
         }
@@ -23,7 +24,7 @@ public final class ClosureConditionPolicy {
         }
         if (outcome.filter(CourseworkOutcome::isPromotion).isPresent()) {
             boolean administrativeBlocked = payments == PaymentsStanding.NOT_OK || !documentsComplete;
-            return Optional.of(administrativeBlocked ? ClosureFinalCondition.PROMOTION_CONDITIONAL : ClosureFinalCondition.PROMOTES);
+            return Optional.of(administrativeBlocked || requirementsPending ? ClosureFinalCondition.PROMOTION_CONDITIONAL : ClosureFinalCondition.PROMOTES);
         }
         if (currentStatus == EnrollmentStatus.REGULAR
                 || outcome.filter(result -> result.status() == EnrollmentStatus.REGULAR).isPresent()) {

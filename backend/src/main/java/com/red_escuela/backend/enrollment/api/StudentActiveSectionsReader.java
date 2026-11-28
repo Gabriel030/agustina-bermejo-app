@@ -17,7 +17,7 @@ import java.util.stream.Stream;
 public class StudentActiveSectionsReader {
 
     private static final List<EnrollmentStatus> ACTIVE_STATUSES =
-            List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR);
+            List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVAL_PENDING);
 
     private final SubjectSectionEnrollmentRepository programRepository;
     private final CourseSubjectSectionEnrollmentRepository courseRepository;

@@ -89,7 +89,7 @@ public class ProgramProgressReader {
             return false;
         }
         Set<Long> coursedSubjectIds = subjectIdsMatching(
-                standingsOf(programEnrollmentId, entries, List.of(EnrollmentStatus.APPROVED, EnrollmentStatus.REGULAR)),
+                standingsOf(programEnrollmentId, entries, List.of(EnrollmentStatus.APPROVED, EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVAL_PENDING)),
                 SubjectStanding::isApprovedOrRegular);
         List<ProgramSubjectView> coursed = entriesOfSubjects(entries, coursedSubjectIds);
         boolean mandatoryPending = entries.stream()
@@ -104,7 +104,7 @@ public class ProgramProgressReader {
     public boolean hasActiveCoursework(Long programEnrollmentId) {
         return subjectSectionEnrollmentRepository.existsByProgramEnrollmentIdAndStatusIn(
                 programEnrollmentId,
-                List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR));
+                List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVAL_PENDING));
     }
 
     public List<ProgramSubjectView> listApprovedSubjects(Long programEnrollmentId) {

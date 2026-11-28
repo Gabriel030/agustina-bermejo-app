@@ -3829,7 +3829,7 @@
             "type" : "integer"
           },
           "enrollmentStatus" : {
-            "enum" : [ "ENROLLED", "IN_PROGRESS", "REGULAR", "APPROVED", "FAILED", "WITHDRAWN", "WAITLISTED", "WAITLIST_EXPIRED" ],
+            "enum" : [ "ENROLLED", "IN_PROGRESS", "REGULAR", "APPROVED", "FAILED", "WITHDRAWN", "WAITLISTED", "WAITLIST_EXPIRED", "APPROVAL_PENDING" ],
             "type" : "string"
           },
           "exempted" : {
@@ -10805,7 +10805,7 @@
             "type" : "string"
           },
           "status" : {
-            "enum" : [ "ENROLLED", "IN_PROGRESS", "REGULAR", "APPROVED", "FAILED", "WITHDRAWN", "WAITLISTED", "WAITLIST_EXPIRED" ],
+            "enum" : [ "ENROLLED", "IN_PROGRESS", "REGULAR", "APPROVED", "FAILED", "WITHDRAWN", "WAITLISTED", "WAITLIST_EXPIRED", "APPROVAL_PENDING" ],
             "type" : "string"
           }
         },

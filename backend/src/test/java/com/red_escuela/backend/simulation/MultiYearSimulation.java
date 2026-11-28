@@ -237,7 +237,7 @@ public class MultiYearSimulation {
                 if (statuses.contains("APPROVED")) {
                     continue;
                 }
-                if (statuses.contains("REGULAR")) {
+                if (statuses.contains("REGULAR") || statuses.contains("APPROVAL_PENDING")) {
                     blocked = true;
                     continue;
                 }

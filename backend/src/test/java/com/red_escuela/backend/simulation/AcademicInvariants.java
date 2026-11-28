@@ -23,8 +23,9 @@ public final class AcademicInvariants {
     public static final String ENROLLMENT_PROGRAM_MISMATCH = "ENROLLMENT_PROGRAM_MISMATCH";
     public static final String SECTION_WITHOUT_APPROVED_CYCLE = "SECTION_WITHOUT_APPROVED_CYCLE";
     public static final String FOREIGN_KEY_ORPHAN = "FOREIGN_KEY_ORPHAN";
+    public static final String APPROVAL_PENDING_WITH_REQUIREMENTS_MET = "APPROVAL_PENDING_WITH_REQUIREMENTS_MET";
 
-    private static final String OCCUPYING = "('ENROLLED','IN_PROGRESS','REGULAR')";
+    private static final String OCCUPYING = "('ENROLLED','IN_PROGRESS','REGULAR','APPROVAL_PENDING')";
     private static final String ACTIVE_ENROLLMENT = "('ENROLLED','IN_PROGRESS','REGULAR','APPROVED','FAILED')";
 
     private static final List<AcademicInvariant> DAILY = List.of(
@@ -84,7 +85,7 @@ public final class AcademicInvariants {
                         where prior.program_enrollment_id = sse.program_enrollment_id
                           and pss.subject_id = pps.subject_id
                           and prior.id <> sse.id
-                          and (prior.status = 'APPROVED' or (pr.requirement_type = 'PASSED_COURSEWORK' and prior.status = 'REGULAR')))
+                          and (prior.status = 'APPROVED' or (pr.requirement_type = 'PASSED_COURSEWORK' and prior.status in ('REGULAR', 'APPROVAL_PENDING'))))
                     """.formatted(ACTIVE_ENROLLMENT)),
             new AcademicInvariant(ATTENDANCE_OUTSIDE_CLASS_DAY, """
                     select a.class_date as fact_day, sse.student_id as student_id,
@@ -215,6 +216,32 @@ public final class AcademicInvariants {
                     join subject_section ss on ss.id = sse.program_section_id
                     join academic_offering_cycle c on c.id = ss.academic_offering_cycle_id
                     where c.program_id is distinct from pe.program_id
+                    """),
+            new AcademicInvariant(APPROVAL_PENDING_WITH_REQUIREMENTS_MET, """
+                    select cast(:today as date) as fact_day, sse.student_id as student_id,
+                           'enrollment ' || sse.id || ' ' || sub.name || ' is APPROVAL_PENDING with every prerequisite met' as detail
+                    from subject_section_enrollment sse
+                    join subject_section ss on ss.id = sse.program_section_id
+                    join subject sub on sub.id = ss.subject_id
+                    join program_enrollment pe on pe.id = sse.program_enrollment_id
+                    where sse.status = 'APPROVAL_PENDING'
+                      and (exists (select 1 from director_approval_request dar
+                                   where dar.program_enrollment_id = sse.program_enrollment_id and dar.subject_id = ss.subject_id
+                                     and dar.type = 'PREREQUISITE_WAIVER' and dar.status = 'APPROVED')
+                           or not exists (
+                            select 1 from program_subject ps
+                            join program_subject_prerequisite pr on pr.program_subject_id = ps.id
+                            join program_subject pps on pps.id = pr.prerequisite_program_subject_id
+                            where ps.program_id = pe.program_id and ps.plan_id = pe.plan_id and ps.subject_id = ss.subject_id
+                              and not exists (
+                                select 1 from subject_section_enrollment prior
+                                join subject_section pss on pss.id = prior.program_section_id
+                                where prior.program_enrollment_id = sse.program_enrollment_id
+                                  and pss.subject_id = pps.subject_id and prior.status = 'APPROVED')
+                              and not exists (
+                                select 1 from subject_equivalence eq
+                                where eq.program_enrollment_id = sse.program_enrollment_id
+                                  and eq.subject_id = pps.subject_id and eq.status = 'ACTIVE')))
                     """),
             new AcademicInvariant(SECTION_WITHOUT_APPROVED_CYCLE, """
                     select ss.created_at::date as fact_day, cast(null as bigint) as student_id,

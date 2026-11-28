@@ -25,6 +25,7 @@ const SECTION_STATUS = {
   WITHDRAWN: { label: 'Baja', tone: 'neutral' },
   WAITLISTED: { label: 'En lista de espera', tone: 'warning' },
   WAITLIST_EXPIRED: { label: 'Lista de espera vencida', tone: 'neutral' },
+  APPROVAL_PENDING: { label: 'Promocionada · falta aprobar', tone: 'warning' },
 };
 
 const GRADED_STATUSES = new Set(['APPROVED', 'FAILED']);

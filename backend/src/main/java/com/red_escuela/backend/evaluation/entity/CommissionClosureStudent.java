@@ -61,12 +61,23 @@ public class CommissionClosureStudent {
         if (finalCondition != ClosureFinalCondition.PROMOTION_CONDITIONAL) {
             return;
         }
+        if (hasPendingRequirements() && (exempted || !hasAdministrativeBlock())) {
+            return;
+        }
         if (exempted) {
             this.finalCondition = ClosureFinalCondition.PROMOTES;
         } else {
             this.finalCondition = ClosureFinalCondition.GOES_TO_FINAL;
             this.promotionGrade = null;
         }
+    }
+
+    private boolean hasPendingRequirements() {
+        return Boolean.FALSE.equals(correlativesOk);
+    }
+
+    private boolean hasAdministrativeBlock() {
+        return Boolean.FALSE.equals(administrativeOk) || Boolean.FALSE.equals(documentsComplete);
     }
 
     public void changeTeacherObservation(String observation) {

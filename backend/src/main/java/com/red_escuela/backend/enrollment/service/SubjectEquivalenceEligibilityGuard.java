@@ -14,7 +14,8 @@ import java.util.List;
 public class SubjectEquivalenceEligibilityGuard {
 
     private static final List<EnrollmentStatus> BLOCKING_STATUSES = List.of(
-            EnrollmentStatus.APPROVED, EnrollmentStatus.REGULAR, EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS);
+            EnrollmentStatus.APPROVED, EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVAL_PENDING, EnrollmentStatus.ENROLLED,
+            EnrollmentStatus.IN_PROGRESS);
 
     private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
 

@@ -100,7 +100,7 @@ class ProgramProgressReaderTest {
     private void markAsCoursed(ProgramSubjectView... subjects) {
         for (int index = 0; index < subjects.length; index++) {
             markRowAs(subjects[index], index == 0 ? EnrollmentStatus.APPROVED : EnrollmentStatus.REGULAR,
-                    EnrollmentStatus.APPROVED, EnrollmentStatus.REGULAR);
+                    EnrollmentStatus.APPROVED, EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVAL_PENDING);
         }
     }
 
@@ -189,7 +189,7 @@ class ProgramProgressReaderTest {
     @Test
     void progressReportsRegularWhenSomeSubjectIsStillActive() {
         when(sectionRepository.existsByProgramEnrollmentIdAndStatusIn(ENROLLMENT_ID,
-                List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR)))
+                List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVAL_PENDING)))
                 .thenReturn(true);
 
         assertThat(reader.calculateProgress(ENROLLMENT_ID).hasActiveCoursework()).isTrue();
@@ -212,9 +212,19 @@ class ProgramProgressReaderTest {
     }
 
     @Test
+    void onlyFinalExamsLeftWhenTheLastCoursedSubjectIsApprovalPending() {
+        markAsCoursed(mandatoryOne, mandatoryTwo);
+        markRowAs(electiveOne, EnrollmentStatus.APPROVAL_PENDING, EnrollmentStatus.APPROVED, EnrollmentStatus.REGULAR,
+                EnrollmentStatus.APPROVAL_PENDING);
+
+        assertThat(reader.hasOnlyFinalExamsLeft(ENROLLMENT_ID)).isTrue();
+    }
+
+    @Test
     void aRowThatIsNeitherRegularNorApprovedDoesNotCountAsCoursed() {
         markAsCoursed(mandatoryOne, mandatoryTwo);
-        markRowAs(electiveOne, EnrollmentStatus.FAILED, EnrollmentStatus.APPROVED, EnrollmentStatus.REGULAR);
+        markRowAs(electiveOne, EnrollmentStatus.FAILED, EnrollmentStatus.APPROVED, EnrollmentStatus.REGULAR,
+                EnrollmentStatus.APPROVAL_PENDING);
 
         assertThat(reader.hasOnlyFinalExamsLeft(ENROLLMENT_ID)).isFalse();
     }

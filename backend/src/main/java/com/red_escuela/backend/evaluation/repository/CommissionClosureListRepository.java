@@ -82,10 +82,10 @@ public interface CommissionClosureListRepository extends Repository<CommissionCl
                    case p.section_kind
                        when 'PROGRAM' then (
                            select count(*) from subject_section_enrollment e
-                           where e.program_section_id = p.section_id and e.status in ('ENROLLED', 'IN_PROGRESS', 'REGULAR', 'APPROVED', 'FAILED'))
+                           where e.program_section_id = p.section_id and e.status in ('ENROLLED', 'IN_PROGRESS', 'REGULAR', 'APPROVAL_PENDING', 'APPROVED', 'FAILED'))
                        else (
                            select count(*) from course_section_enrollment e
-                           where e.course_section_id = p.section_id and e.status in ('ENROLLED', 'IN_PROGRESS', 'REGULAR', 'APPROVED', 'FAILED'))
+                           where e.course_section_id = p.section_id and e.status in ('ENROLLED', 'IN_PROGRESS', 'REGULAR', 'APPROVAL_PENDING', 'APPROVED', 'FAILED'))
                    end as studentCount,
                    (select count(*) from commission_closure_student s where s.closure_id = p.closure_id) as snapshotCount,
                    (select count(*) from commission_closure_student s

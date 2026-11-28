@@ -308,10 +308,10 @@ class ClosureRequirementsCalculatorIT extends AbstractIntegrationTest {
         assertThat(prerequisiteMet).hasSize(BIG_SECTION / 2);
         assertThat(prerequisiteUnmet).hasSize(BIG_SECTION / 2);
         assertThat(prerequisiteUnmet).allSatisfy(assessment -> {
-            assertThat(assessment.finalCondition()).contains(ClosureFinalCondition.GOES_TO_FINAL);
+            assertThat(assessment.finalCondition()).contains(ClosureFinalCondition.PROMOTION_CONDITIONAL);
             assertThat(assessment.alerts()).containsExactly(ClosureAlert.UNMET_PREREQUISITE);
             assertThat(assessment.gradeOk()).isTrue();
-            assertThat(assessment.promotionGrade()).isNull();
+            assertThat(assessment.promotionGrade()).isEqualTo(Grade.of(new BigDecimal("8.50")));
             assertThat(assessment.prerequisites().orElseThrow().details()).singleElement()
                     .satisfies(detail -> assertThat(detail.subjectCode()).isEqualTo(prerequisite.getCode()));
         });
@@ -353,7 +353,7 @@ class ClosureRequirementsCalculatorIT extends AbstractIntegrationTest {
             assertThat(row.getAttendanceOk()).isTrue();
             assertThat(row.getGradeOk()).isTrue();
         });
-        assertThat(rows.stream().filter(row -> row.getFinalCondition() == ClosureFinalCondition.GOES_TO_FINAL)).isNotEmpty();
+        assertThat(rows.stream().filter(row -> row.getFinalCondition() == ClosureFinalCondition.PROMOTION_CONDITIONAL)).isNotEmpty();
         assertThat(rows.stream().filter(row -> row.getFinalCondition() == ClosureFinalCondition.PROMOTES
                 || row.getFinalCondition() == ClosureFinalCondition.PROMOTION_CONDITIONAL)
                 .allMatch(row -> row.getPromotionGrade() != null)).isTrue();

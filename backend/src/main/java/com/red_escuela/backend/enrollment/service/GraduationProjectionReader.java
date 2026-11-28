@@ -23,7 +23,7 @@ import java.util.List;
 public class GraduationProjectionReader {
 
     private static final List<EnrollmentStatus> ATTEMPT_STATUSES = List.of(EnrollmentStatus.ENROLLED,
-            EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVED, EnrollmentStatus.FAILED);
+            EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVAL_PENDING, EnrollmentStatus.APPROVED, EnrollmentStatus.FAILED);
 
     private final GraduationProjectionPolicy projectionPolicy = new GraduationProjectionPolicy();
     private final ProgramEnrollmentRepository programEnrollmentRepository;

@@ -23,7 +23,7 @@ import java.util.List;
 public class ProgramEnrollmentSectionWithdrawer {
 
     private static final List<EnrollmentStatus> OPEN_STATUSES =
-            List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR, EnrollmentStatus.WAITLISTED);
+            List.of(EnrollmentStatus.ENROLLED, EnrollmentStatus.IN_PROGRESS, EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVAL_PENDING, EnrollmentStatus.WAITLISTED);
 
     private final SubjectSectionEnrollmentRepository subjectSectionEnrollmentRepository;
     private final ProgramEnrollmentRepository programEnrollmentRepository;

@@ -49,8 +49,18 @@ class PrerequisiteRequirementPolicyTest {
     }
 
     @Test
-    void relevantStatusesAreRegularAndApproved() {
-        assertThat(policy.relevantStatuses()).containsExactlyInAnyOrder(EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVED);
+    void relevantStatusesAreRegularApprovalPendingAndApproved() {
+        assertThat(policy.relevantStatuses()).containsExactlyInAnyOrder(
+                EnrollmentStatus.REGULAR, EnrollmentStatus.APPROVAL_PENDING, EnrollmentStatus.APPROVED);
+    }
+
+    @Test
+    void approvalPendingCountsAsRegularButNeverAsApproved() {
+        PrerequisiteStanding standing = policy.standingOf(Set.of(EnrollmentStatus.APPROVAL_PENDING));
+
+        assertThat(standing).isEqualTo(PrerequisiteStanding.REGULAR);
+        assertThat(policy.isMet(RequirementType.APPROVED, standing)).isFalse();
+        assertThat(policy.isMet(RequirementType.PASSED_COURSEWORK, standing)).isTrue();
     }
 
     private static Grade grade(String value) {
