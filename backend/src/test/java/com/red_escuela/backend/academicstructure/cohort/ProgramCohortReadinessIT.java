@@ -53,6 +53,7 @@ class ProgramCohortReadinessIT extends AbstractIntegrationTest {
     @Autowired private CreateProgramTermCohortUseCase createCohort;
     @Autowired private OpenProgramCohortUseCase openCohort;
     @Autowired private GetProgramCohortReadinessUseCase readiness;
+    @Autowired private com.red_escuela.backend.academicstructure.usecase.readiness.GetIncompleteAcademicOfferUseCase incompleteOffer;
     @Autowired private TransactionTemplate transactions;
     @Autowired private EntityManager entityManager;
     @Autowired private JdbcTemplate jdbc;
@@ -113,6 +114,24 @@ class ProgramCohortReadinessIT extends AbstractIntegrationTest {
                 .isInstanceOfSatisfying(ProgramCohortNotReadyException.class,
                         exception -> assertThat(exception.details()).containsEntry("missingItems", List.of(CohortReadinessItemCode.HOLIDAYS_LOADED.name())));
         assertThat(jdbc.queryForObject("select opened_at from program_cohort where id = ?", java.sql.Timestamp.class, cohortId)).isNull();
+    }
+
+    @Test
+    void incompleteOfferListsACohortWithMissingItemsAndItsReasonsAndSkipsAReadyOne() {
+        switchBillingTo("OFF", false);
+        Long[] incompleteIds = persistProgramTermAndActor(HOLIDAYLESS_YEAR);
+        Long incompleteCohortId = createCohort.createProgramTermCohort(incompleteIds[0], incompleteIds[1], request(List.of(preceptors.createPreceptorId()))).id();
+        Long[] readyIds = persistProgramTermAndActor(2026);
+        Long readyCohortId = createCohort.createProgramTermCohort(readyIds[0], readyIds[1], request(List.of(preceptors.createPreceptorId()))).id();
+
+        var offer = incompleteOffer.getIncompleteAcademicOffer();
+
+        assertThat(offer.cohorts()).filteredOn(item -> item.id().equals(incompleteCohortId)).singleElement().satisfies(item -> {
+            assertThat(item.missingCodes()).containsExactly(CohortReadinessItemCode.HOLIDAYS_LOADED.name());
+            assertThat(item.reasons()).hasSize(1);
+        });
+        assertThat(offer.cohorts()).noneMatch(item -> item.id().equals(readyCohortId));
+        assertThat(offer.incompleteCohortCount()).isEqualTo(offer.cohorts().size());
     }
 
     @Test

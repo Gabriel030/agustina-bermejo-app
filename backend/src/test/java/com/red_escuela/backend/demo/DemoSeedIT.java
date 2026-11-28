@@ -1,5 +1,6 @@
 package com.red_escuela.backend.demo;
 
+import com.red_escuela.backend.identity.api.CohortResponsibleAssigner;
 import com.red_escuela.backend.demo.infrastructure.DemoHttpClient;
 import com.red_escuela.backend.config.AbstractIntegrationTest;
 import com.red_escuela.backend.config.DemoEducationalSeedRunner;
@@ -52,6 +53,8 @@ class DemoSeedIT extends AbstractIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
     @Autowired
+    private CohortResponsibleAssigner preceptorAssigner;
+    @Autowired
     private PersonRepository personRepository;
     @Autowired
     private RoleRepository roleRepository;
@@ -82,7 +85,7 @@ class DemoSeedIT extends AbstractIntegrationTest {
         LocalSeedRunner localSeedRunner = new LocalSeedRunner(personRepository, roleRepository, personFactory, passwordEncoder);
         new DemoLearnerAccountsSeeder(localSeedRunner, personRepository, roleRepository, personFactory, passwordEncoder,
                 institutionRepository, studentRepository, instructorProfileCreationPort).run(new DefaultApplicationArguments());
-        new DemoEducationalSeedRunner(environment, jdbcTemplate).seedThroughPort(port);
+        new DemoEducationalSeedRunner(environment, jdbcTemplate, preceptorAssigner).seedThroughPort(port);
         long startedAt = System.currentTimeMillis();
         demoSeedRunner.seedThroughPort(port);
         seedMillis = System.currentTimeMillis() - startedAt;
@@ -200,6 +203,48 @@ class DemoSeedIT extends AbstractIntegrationTest {
     @Test
     void educationalSeedLeavesAJustificationPendingWithRealDates() {
         assertThat(api.get(DemoPersona.ADMIN, "/attendance/justifications")).isNotEmpty();
+    }
+
+    @Test
+    void preceptorDemoSeesOnlyTheChangeRequestsOfTheCommissionsAssignedToThem() {
+        Long assignedAttendanceId = attendanceIdOfSection(true);
+        Long foreignAttendanceId = attendanceIdOfSection(false);
+        long ownRequestId = api.post(DemoPersona.TEACHER, "/attendance/" + assignedAttendanceId + "/change-requests",
+                java.util.Map.of("requestedStatus", "PRESENT", "reason", "El alumno estaba presente")).get("id").asLong();
+        long foreignRequestId = api.post(DemoPersona.TEACHER, "/attendance/" + foreignAttendanceId + "/change-requests",
+                java.util.Map.of("requestedStatus", "PRESENT", "reason", "El alumno estaba presente")).get("id").asLong();
+
+        assertThat(requestIds(api.get(DemoPersona.DIRECTOR, "/attendance/change-requests?status=PENDING")))
+                .contains(ownRequestId, foreignRequestId);
+        assertThat(requestIds(api.get("preceptor.demo", "/attendance/change-requests?status=PENDING")))
+                .contains(ownRequestId, foreignRequestId);
+
+        List<java.util.Map<String, Object>> cohortAssignments = jdbcTemplate.queryForList(
+                "select pa.id, pa.person_id, pa.program_cohort_id, pa.created_by from preceptor_assignment pa join person p on p.id = pa.person_id "
+                        + "where p.username = 'preceptor.demo' and pa.program_cohort_id is not null");
+        jdbcTemplate.update("delete from preceptor_assignment where id in (select pa.id from preceptor_assignment pa join person p on p.id = pa.person_id "
+                + "where p.username = 'preceptor.demo' and pa.program_cohort_id is not null)");
+        try {
+            assertThat(requestIds(api.get("preceptor.demo", "/attendance/change-requests?status=PENDING")))
+                    .contains(ownRequestId).doesNotContain(foreignRequestId);
+        } finally {
+            cohortAssignments.forEach(row -> jdbcTemplate.update(
+                    "insert into preceptor_assignment (id, person_id, program_cohort_id, created_by) values (?, ?, ?, ?)",
+                    row.get("id"), row.get("person_id"), row.get("program_cohort_id"), row.get("created_by")));
+        }
+    }
+
+    private Long attendanceIdOfSection(boolean assignedToPreceptorDemo) {
+        String condition = assignedToPreceptorDemo ? "in" : "not in";
+        return jdbcTemplate.queryForObject("select a.id from attendance a join subject_section_enrollment e on e.id = a.program_section_enrollment_id "
+                + "where a.status = 'ABSENT' and e.program_section_id " + condition + " (select pa.subject_section_id from preceptor_assignment pa join person p on p.id = pa.person_id "
+                + "where p.username = 'preceptor.demo' and pa.subject_section_id is not null) order by a.id limit 1", Long.class);
+    }
+
+    private static java.util.Set<Long> requestIds(JsonNode requests) {
+        java.util.Set<Long> ids = new java.util.HashSet<>();
+        requests.forEach(request -> ids.add(request.get("id").asLong()));
+        return ids;
     }
 
     @Test
