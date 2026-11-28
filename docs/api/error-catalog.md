@@ -211,6 +211,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `PAYMENT_REJECTION_REASON_REQUIRED` | no | `PaymentRejectionReasonRequiredException` | billing |
 | `PAYMENT_REJECTION_REASON_TOO_LONG` | no | `PaymentRejectionReasonTooLongException` | billing |
 | `PAYMENT_REVIEW_NOTE_TOO_LONG` | no | `PaymentReviewNoteTooLongException` | billing |
+| `PRECEPTOR_ASSIGNMENT_TARGET_INVALID` | no | `PreceptorAssignmentTargetInvalidException` | identity |
 | `PREREQUISITE_NOT_MET` | no | `PrerequisiteNotMetException` | enrollment |
 | `PRICE_FILTER_CONFLICT` | no | `PriceFilterConflictException` | billing |
 | `PROGRAM_ENROLLMENT_COHORT_REQUIRED` | no | `ProgramEnrollmentCohortRequiredException` | enrollment |
@@ -357,6 +358,8 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `PAYMENT_RECEIPT_FILE_NOT_FOUND` | no | `PaymentReceiptFileNotFoundException` | billing |
 | `PAYMENT_RECEIPT_NOT_FOUND` | no | `PaymentReceiptNotFoundException` | billing |
 | `PERSON_NOT_FOUND` | no | `PersonNotFoundException` | identity |
+| `PRECEPTOR_ASSIGNMENT_NOT_FOUND` | no | `PreceptorAssignmentNotFoundException` | identity |
+| `PRECEPTOR_ASSIGNMENT_SECTION_NOT_FOUND` | no | `PreceptorAssignmentSectionNotFoundException` | identity |
 | `PREREQUISITE_NOT_FOUND` | no | `PrerequisiteNotFoundException` | academicstructure |
 | `PRICE_NOT_FOUND` | no | `PriceNotFoundException` | billing |
 | `PRICE_VERSION_NOT_FOUND` | no | `PriceVersionNotFoundException` | billing |
@@ -633,6 +636,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `PERSON_ALREADY_ACTIVATED` | no | `PersonAlreadyActivatedException` | identity |
 | `PERSON_NOT_ELIGIBLE_FOR_ACTIVATION` | no | `PersonNotEligibleForActivationException` | identity |
 | `POSSIBLE_DUPLICATE_BANK_TRANSFER` | no | `PossibleDuplicateBankTransferException` | billing |
+| `PRECEPTOR_ASSIGNMENT_ALREADY_EXISTS` | no | `PreceptorAssignmentAlreadyExistsException` | identity |
 | `PRECEPTOR_ROLE_REQUIRED` | no | `PreceptorRoleRequiredException` | identity |
 | `PREREQUISITE_ALREADY_EXISTS` | no | `PrerequisiteAlreadyExistsException` | academicstructure |
 | `PRICE_CHANGED_CONCURRENTLY` | no | `PriceChangedConcurrentlyException` | billing |
@@ -1034,6 +1038,7 @@ Se asume idempotentes por contrato HTTP los PUT y DELETE. Los POST y PATCH de ab
 | POST | `/payments/{paymentId}/approval-revocation/preview` | `PaymentReversalPreviewController#previewApprovalRevocation` |
 | POST | `/payments/{paymentId}/chargebacks` | `PaymentReversalController#registerChargeback` |
 | POST | `/payments/{paymentId}/chargebacks/preview` | `PaymentReversalPreviewController#previewChargebackRegistration` |
+| POST | `/preceptor-assignments` | `PreceptorAssignmentController#assign` |
 | POST | `/price-versions/{priceVersionId}/cancellation` | `PriceController#cancelScheduledPriceVersion` |
 | POST | `/prices/{priceId}/versions` | `PriceController#publishPriceVersion` |
 | POST | `/prices/{priceId}/versions/impact` | `PriceController#getPriceChangeImpact` |
