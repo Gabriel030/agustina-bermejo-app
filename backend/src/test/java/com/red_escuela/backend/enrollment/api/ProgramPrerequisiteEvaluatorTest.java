@@ -73,8 +73,10 @@ class ProgramPrerequisiteEvaluatorTest {
     }
 
     private void studentApprovedWithScore(Long prerequisiteSubjectId, String... scores) {
+        java.util.concurrent.atomic.AtomicInteger order = new java.util.concurrent.atomic.AtomicInteger();
         Arrays.stream(scores).map(score -> {
             PrerequisiteStatusRow row = mock(PrerequisiteStatusRow.class);
+            when(row.getFinalScoreDate()).thenReturn(java.time.LocalDate.of(2026, 1, 1).plusDays(order.incrementAndGet()));
             when(row.getProgramEnrollmentId()).thenReturn(ENROLLMENT_ID);
             when(row.getSubjectId()).thenReturn(prerequisiteSubjectId);
             when(row.getStatus()).thenReturn(EnrollmentStatus.APPROVED);
@@ -280,13 +282,13 @@ class ProgramPrerequisiteEvaluatorTest {
     }
 
     @Test
-    void bestScoreAmongSeveralApprovedAttemptsDecides() {
+    void mostRecentApprovedAttemptDecides() {
         prerequisites(prerequisiteWithMinimum(RequirementType.APPROVED, "6"));
         studentApprovedWithScore(10L, "4", "7", "5");
 
         assertThat(evaluator.assess(ENROLLMENT_ID, SUBJECT_ID)).singleElement().satisfies(assessment -> {
-            assertThat(assessment.met()).isTrue();
-            assertThat(assessment.approvedScore()).isEqualTo(Grade.of(new BigDecimal("7")));
+            assertThat(assessment.met()).isFalse();
+            assertThat(assessment.approvedScore()).isEqualTo(Grade.of(new BigDecimal("5")));
         });
     }
 

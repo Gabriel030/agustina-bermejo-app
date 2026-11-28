@@ -8,6 +8,7 @@ import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundExc
 import com.red_escuela.backend.enrollment.repository.CourseSubjectSectionEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
 import com.red_escuela.backend.shared.domain.Grade;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,9 +35,13 @@ public class SectionEnrollmentOutcomeRecorder {
         if (finalScore != null) {
             enrollment.setFinalScore(finalScore);
             enrollment.setFinalGradeType(finalGradeType);
+            if (status == EnrollmentStatus.APPROVED && enrollment.getFinalScoreDate() == null) {
+                enrollment.setFinalScoreDate(ApplicationTime.today());
+            }
         } else if (clearFinalWhenAbsent) {
             enrollment.setFinalScore(null);
             enrollment.setFinalGradeType(null);
+            enrollment.setFinalScoreDate(null);
         }
         programEnrollmentRepository.save(enrollment);
     }

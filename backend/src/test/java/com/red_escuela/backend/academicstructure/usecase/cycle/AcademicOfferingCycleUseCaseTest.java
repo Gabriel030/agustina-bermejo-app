@@ -105,7 +105,7 @@ class AcademicOfferingCycleUseCaseTest extends AbstractIntegrationTest {
     void addingASectionToAnApprovedCycleIsRejected() {
         Term term = fixtures.term(2027);
         AcademicOfferingCycle cycle = fixtures.programCycle(fixtures.program(), term, AcademicOfferingCycleStatus.APPROVED);
-        Subject subject = fixtures.subject();
+        Subject subject = fixtures.subjectInPlanOf(cycle);
         Classroom classroom = fixtures.classroom(30);
         fixtures.flushAndClear();
 
@@ -117,7 +117,7 @@ class AcademicOfferingCycleUseCaseTest extends AbstractIntegrationTest {
     void addingASectionToAPendingCycleIsRejected() {
         Term term = fixtures.term(2027);
         AcademicOfferingCycle cycle = fixtures.programCycle(fixtures.program(), term, AcademicOfferingCycleStatus.PENDING_APPROVAL);
-        Subject subject = fixtures.subject();
+        Subject subject = fixtures.subjectInPlanOf(cycle);
         Classroom classroom = fixtures.classroom(30);
         fixtures.flushAndClear();
 
@@ -131,7 +131,7 @@ class AcademicOfferingCycleUseCaseTest extends AbstractIntegrationTest {
         AcademicOfferingCycle cycle = cycleWithLeadSection(term, AcademicOfferingCycleStatus.REJECTED);
         cycle.setRejectionReason("Faltan comisiones de primer año");
         cycle.setDecidedBy(fixtures.person());
-        Subject subject = fixtures.subject();
+        Subject subject = fixtures.subjectInPlanOf(cycle);
         Classroom classroom = fixtures.classroom(30);
         fixtures.flushAndClear();
 
@@ -158,7 +158,7 @@ class AcademicOfferingCycleUseCaseTest extends AbstractIntegrationTest {
     void sectionCapacityAboveClassroomCapacityIsRejected() {
         Term term = fixtures.term(2027);
         AcademicOfferingCycle cycle = fixtures.programCycle(fixtures.program(), term, AcademicOfferingCycleStatus.DRAFT);
-        Subject subject = fixtures.subject();
+        Subject subject = fixtures.subjectInPlanOf(cycle);
         Classroom classroom = fixtures.classroom(18);
         fixtures.flushAndClear();
 
@@ -170,7 +170,7 @@ class AcademicOfferingCycleUseCaseTest extends AbstractIntegrationTest {
     void sectionCapacityEqualToClassroomCapacityIsAccepted() {
         Term term = fixtures.term(2027);
         AcademicOfferingCycle cycle = fixtures.programCycle(fixtures.program(), term, AcademicOfferingCycleStatus.DRAFT);
-        Subject subject = fixtures.subject();
+        Subject subject = fixtures.subjectInPlanOf(cycle);
         Classroom classroom = fixtures.classroom(18);
         fixtures.flushAndClear();
 
@@ -186,7 +186,7 @@ class AcademicOfferingCycleUseCaseTest extends AbstractIntegrationTest {
             fixtures.slot(pastSection, classroom, DayOfWeek.MONDAY, EVENING_START, EVENING_END);
         }
         AcademicOfferingCycle cycle = fixtures.programCycle(fixtures.program(), fixtures.term(2027), AcademicOfferingCycleStatus.DRAFT);
-        Subject subject = fixtures.subject();
+        Subject subject = fixtures.subjectInPlanOf(cycle);
         fixtures.flushAndClear();
 
         assertThat(createCycleSection.createSection(cycle.getId(), eveningSectionRequest(subject, classroom, 20))).isNotNull();
@@ -199,7 +199,7 @@ class AcademicOfferingCycleUseCaseTest extends AbstractIntegrationTest {
         SubjectSection activeSection = fixtures.section(fixtures.subject(), term, StatusType.ACTIVE, null);
         fixtures.slot(activeSection, classroom, DayOfWeek.MONDAY, LocalTime.of(19, 0), LocalTime.of(21, 0));
         AcademicOfferingCycle cycle = fixtures.programCycle(fixtures.program(), term, AcademicOfferingCycleStatus.DRAFT);
-        Subject subject = fixtures.subject();
+        Subject subject = fixtures.subjectInPlanOf(cycle);
         fixtures.flushAndClear();
 
         assertThatThrownBy(() -> createCycleSection.createSection(cycle.getId(), eveningSectionRequest(subject, classroom, 20)))
@@ -214,7 +214,7 @@ class AcademicOfferingCycleUseCaseTest extends AbstractIntegrationTest {
         SubjectSection draftSection = fixtures.section(fixtures.subject(), term, StatusType.INACTIVE, otherDraft);
         fixtures.slot(draftSection, classroom, DayOfWeek.MONDAY, EVENING_START, EVENING_END);
         AcademicOfferingCycle cycle = fixtures.programCycle(fixtures.program(), term, AcademicOfferingCycleStatus.DRAFT);
-        Subject subject = fixtures.subject();
+        Subject subject = fixtures.subjectInPlanOf(cycle);
         fixtures.flushAndClear();
 
         assertThatThrownBy(() -> createCycleSection.createSection(cycle.getId(), eveningSectionRequest(subject, classroom, 20)))
@@ -231,7 +231,7 @@ class AcademicOfferingCycleUseCaseTest extends AbstractIntegrationTest {
         SubjectSection deactivated = fixtures.section(fixtures.subject(), term, StatusType.INACTIVE, null);
         fixtures.slot(deactivated, classroom, DayOfWeek.MONDAY, EVENING_START, EVENING_END);
         AcademicOfferingCycle cycle = fixtures.programCycle(fixtures.program(), term, AcademicOfferingCycleStatus.DRAFT);
-        Subject subject = fixtures.subject();
+        Subject subject = fixtures.subjectInPlanOf(cycle);
         fixtures.flushAndClear();
 
         assertThat(createCycleSection.createSection(cycle.getId(), eveningSectionRequest(subject, classroom, 20))).isNotNull();
