@@ -337,6 +337,8 @@ POST,/platform/provisioning/first-director,DENY,DENY,DENY,DENY,DENY,DENY,DENY,AL
 GET,/preceptor-assignments,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/preceptor-assignments,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,"{""personId"":1}"
 DELETE,/preceptor-assignments/{id},DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+PUT,/preceptor-assignments/course-sections/{courseSectionId},DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,"{""personIds"":[]}"
+PUT,/preceptor-assignments/subject-sections/{subjectSectionId},DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,"{""personIds"":[]}"
 POST,/price-versions/{priceVersionId}/cancellation,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
 GET,/prices,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/prices/{priceId}/versions,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,

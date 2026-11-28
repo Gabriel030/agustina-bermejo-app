@@ -8,6 +8,9 @@ import com.red_escuela.backend.identity.usecase.preceptorassignment.AssignPrecep
 import com.red_escuela.backend.identity.dto.ListPreceptorAssignmentsCommand;
 import com.red_escuela.backend.identity.usecase.preceptorassignment.ListPreceptorAssignmentsUseCase;
 import com.red_escuela.backend.identity.dto.PreceptorAssignmentResult;
+import com.red_escuela.backend.identity.dto.ReplaceSectionPreceptorsCommand;
+import com.red_escuela.backend.identity.dto.ReplaceSectionPreceptorsRequest;
+import com.red_escuela.backend.identity.usecase.preceptorassignment.ReplaceSectionPreceptorsUseCase;
 import com.red_escuela.backend.identity.usecase.preceptorassignment.UnassignPreceptorUseCase;
 import com.red_escuela.backend.shared.permission.RequiresPermission;
 import jakarta.validation.Valid;
@@ -16,6 +19,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -34,15 +38,18 @@ public class PreceptorAssignmentController {
     private final ListPreceptorAssignmentsUseCase listPreceptorAssignmentsUseCase;
     private final AssignPreceptorUseCase assignPreceptorUseCase;
     private final UnassignPreceptorUseCase unassignPreceptorUseCase;
+    private final ReplaceSectionPreceptorsUseCase replaceSectionPreceptorsUseCase;
     private final CurrentActorFinder currentActorFinder;
 
     public PreceptorAssignmentController(ListPreceptorAssignmentsUseCase listPreceptorAssignmentsUseCase,
                                          AssignPreceptorUseCase assignPreceptorUseCase,
                                          UnassignPreceptorUseCase unassignPreceptorUseCase,
+                                         ReplaceSectionPreceptorsUseCase replaceSectionPreceptorsUseCase,
                                          CurrentActorFinder currentActorFinder) {
         this.listPreceptorAssignmentsUseCase = listPreceptorAssignmentsUseCase;
         this.assignPreceptorUseCase = assignPreceptorUseCase;
         this.unassignPreceptorUseCase = unassignPreceptorUseCase;
+        this.replaceSectionPreceptorsUseCase = replaceSectionPreceptorsUseCase;
         this.currentActorFinder = currentActorFinder;
     }
 
@@ -67,6 +74,24 @@ public class PreceptorAssignmentController {
     @RequiresPermission(code = PERMISSION, legacyRoles = LEGACY_ROLES)
     public void unassign(@PathVariable Long id) {
         unassignPreceptorUseCase.unassign(id);
+    }
+
+    @PutMapping("/subject-sections/{subjectSectionId}")
+    @RequiresPermission(code = PERMISSION, legacyRoles = LEGACY_ROLES)
+    public List<PreceptorAssignmentResponse> replaceForSubjectSection(@PathVariable Long subjectSectionId,
+                                                                      @Valid @RequestBody ReplaceSectionPreceptorsRequest request) {
+        return replaceSectionPreceptorsUseCase.replace(new ReplaceSectionPreceptorsCommand(subjectSectionId, null,
+                        request.personIds(), currentActorFinder.currentPersonId()))
+                .stream().map(this::toResponse).toList();
+    }
+
+    @PutMapping("/course-sections/{courseSectionId}")
+    @RequiresPermission(code = PERMISSION, legacyRoles = LEGACY_ROLES)
+    public List<PreceptorAssignmentResponse> replaceForCourseSection(@PathVariable Long courseSectionId,
+                                                                     @Valid @RequestBody ReplaceSectionPreceptorsRequest request) {
+        return replaceSectionPreceptorsUseCase.replace(new ReplaceSectionPreceptorsCommand(null, courseSectionId,
+                        request.personIds(), currentActorFinder.currentPersonId()))
+                .stream().map(this::toResponse).toList();
     }
 
     private PreceptorAssignmentResponse toResponse(PreceptorAssignmentResult result) {
