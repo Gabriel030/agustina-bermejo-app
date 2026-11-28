@@ -3,6 +3,7 @@ package com.red_escuela.backend.academicstructure.exception;
 import com.red_escuela.backend.shared.exception.ConflictException;
 import com.red_escuela.backend.shared.exception.ReportsErrorDetails;
 
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -18,6 +19,13 @@ public class CourseCycleNotReadyException extends ConflictException implements R
 
     @Override
     public Map<String, Object> details() {
-        return Map.of("missingItems", missingItems, "reasons", reasons);
+        Map<String, Object> details = new LinkedHashMap<>();
+        if (missingItems != null) {
+            details.put("missingItems", missingItems);
+        }
+        if (reasons != null) {
+            details.put("reasons", reasons);
+        }
+        return details;
     }
 }
