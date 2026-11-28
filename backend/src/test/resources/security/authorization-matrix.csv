@@ -523,7 +523,9 @@ POST,/terms/{id}/enrollment/open,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,ALLOW,DENY,,
 GET,/verify-email,PUBLIC,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,ALLOW,,
 GET,/year-billing-templates/{id}/cohorts,DENY,ALLOW,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/year-billing-templates/{id}/cohorts,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
-POST,/programs/{programId}/terms/{termId}/cohorts,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,"{""intake"":""FIRST"",""admissionStart"":""2027-01-01"",""admissionEnd"":""2027-02-01"",""cursadaStart"":""2027-03-01""}"
+POST,/programs/{programId}/terms/{termId}/cohorts,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,"{""intake"":""FIRST"",""admissionStart"":""2027-01-01"",""admissionEnd"":""2027-02-01"",""cursadaStart"":""2027-03-01"",""responsiblePreceptorIds"":[1]}"
+GET,/cohorts/{id}/readiness,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
+POST,/cohorts/{id}/open,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 PATCH,/year-billing-templates/{id}/configuration,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,
 GET,/billing-run-alerts,DENY,DENY,DENY,DENY,ALLOW,ALLOW,ALLOW,DENY,,
 POST,/billing-runs/executions,DENY,DENY,DENY,DENY,DENY,DENY,ALLOW,DENY,,

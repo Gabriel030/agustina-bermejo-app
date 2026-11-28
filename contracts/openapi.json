@@ -3888,6 +3888,54 @@
         "required" : [ "conditional", "failed", "free", "goToFinal", "pending", "promote" ],
         "type" : "object"
       },
+      "CohortReadinessItemResponse" : {
+        "properties" : {
+          "blocking" : {
+            "type" : "boolean"
+          },
+          "code" : {
+            "enum" : [ "CURRENT_PLAN", "FIRST_YEAR_SECTIONS", "SECTION_PRECEPTORS", "COHORT_RESPONSIBLE", "HOLIDAYS_LOADED", "BILLING_TEMPLATE" ],
+            "type" : "string"
+          },
+          "fulfilled" : {
+            "type" : "boolean"
+          },
+          "reasons" : {
+            "items" : {
+              "type" : "string"
+            },
+            "type" : "array"
+          }
+        },
+        "required" : [ "blocking", "code", "fulfilled", "reasons" ],
+        "type" : "object"
+      },
+      "CohortReadinessResponse" : {
+        "properties" : {
+          "cohortId" : {
+            "format" : "int64",
+            "type" : "integer"
+          },
+          "items" : {
+            "items" : {
+              "$ref" : "#/components/schemas/CohortReadinessItemResponse"
+            },
+            "type" : "array"
+          },
+          "open" : {
+            "type" : "boolean"
+          },
+          "openedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
+          "ready" : {
+            "type" : "boolean"
+          }
+        },
+        "required" : [ "cohortId", "items", "open", "openedAt", "ready" ],
+        "type" : "object"
+      },
       "CollectionReminderImpactRequest" : {
         "properties" : {
           "effectiveFrom" : {
@@ -5431,9 +5479,17 @@
           "intake" : {
             "enum" : [ "FIRST", "SECOND" ],
             "type" : "string"
+          },
+          "responsiblePreceptorIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "minItems" : 1,
+            "type" : "array"
           }
         },
-        "required" : [ "admissionEnd", "admissionStart", "cursadaStart", "intake" ],
+        "required" : [ "admissionEnd", "admissionStart", "cursadaStart", "intake", "responsiblePreceptorIds" ],
         "type" : "object"
       },
       "CreateProgramEnrollmentRequest" : {
@@ -5553,9 +5609,17 @@
           "intake" : {
             "enum" : [ "FIRST", "SECOND" ],
             "type" : "string"
+          },
+          "responsiblePreceptorIds" : {
+            "items" : {
+              "format" : "int64",
+              "type" : "integer"
+            },
+            "minItems" : 1,
+            "type" : "array"
           }
         },
-        "required" : [ "admissionEnd", "admissionStart", "cursadaStart", "intake" ],
+        "required" : [ "admissionEnd", "admissionStart", "cursadaStart", "intake", "responsiblePreceptorIds" ],
         "type" : "object"
       },
       "CreateProgramYearBillingTemplateRequest" : {
@@ -14120,6 +14184,10 @@
           "intake" : {
             "type" : "string"
           },
+          "openedAt" : {
+            "format" : "date-time",
+            "type" : "string"
+          },
           "planId" : {
             "format" : "int64",
             "type" : "integer"
@@ -14133,7 +14201,7 @@
             "type" : "integer"
           }
         },
-        "required" : [ "admissionEnd", "admissionStart", "createdAt", "cursadaStart", "id", "intake", "planId", "programId", "termId" ],
+        "required" : [ "admissionEnd", "admissionStart", "createdAt", "cursadaStart", "id", "intake", "openedAt", "planId", "programId", "termId" ],
         "type" : "object"
       },
       "ProgramYearBillingTemplateResponse" : {
@@ -36324,6 +36392,260 @@
           }
         },
         "tags" : [ "program-year-billing-template-controller" ]
+      }
+    },
+    "/cohorts/{id}/open" : {
+      "post" : {
+        "operationId" : "ProgramCohort_openProgramCohort",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ProgramTermCohortResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "program-cohort-controller" ]
+      }
+    },
+    "/cohorts/{id}/readiness" : {
+      "get" : {
+        "operationId" : "ProgramCohort_getProgramCohortReadiness",
+        "parameters" : [ {
+          "in" : "path",
+          "name" : "id",
+          "required" : true,
+          "schema" : {
+            "format" : "int64",
+            "type" : "integer"
+          }
+        } ],
+        "responses" : {
+          "200" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/CohortReadinessResponse"
+                }
+              }
+            },
+            "description" : "OK"
+          },
+          "400" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Request"
+          },
+          "401" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unauthorized"
+          },
+          "403" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Forbidden"
+          },
+          "404" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Not Found"
+          },
+          "409" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Conflict"
+          },
+          "422" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Unprocessable Content"
+          },
+          "429" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Too Many Requests"
+          },
+          "500" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Internal Server Error"
+          },
+          "502" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Bad Gateway"
+          },
+          "503" : {
+            "content" : {
+              "application/json" : {
+                "schema" : {
+                  "$ref" : "#/components/schemas/ErrorCodeResponse"
+                }
+              }
+            },
+            "description" : "Service Unavailable"
+          }
+        },
+        "tags" : [ "program-cohort-controller" ]
       }
     },
     "/collection-reminders/contact-list" : {
