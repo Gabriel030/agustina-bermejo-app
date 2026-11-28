@@ -215,6 +215,7 @@ export const DOMAIN_ERROR_MESSAGES = {
   EQUIVALENCE_REASON_INVALID: 'El motivo debe tener entre 10 y 500 caracteres.',
   SUBJECT_EQUIVALENCE_NOT_FOUND: 'No encontramos la equivalencia.',
   SUBJECT_IN_PROGRESS: 'La materia se está cursando: primero hay que dar de baja la cursada.',
+  SUBJECT_REGULAR: 'La materia está regular: no se puede reconocer por equivalencia.',
   SUBJECT_NOT_IN_PLAN: 'La materia no está en el plan vigente de la carrera.',
   ENROLLMENT_NOT_ACTIVE: 'La inscripción a la carrera no está activa.',
   INVALID_SCORE: 'La nota de origen debe estar entre 1 y 10, con hasta 2 decimales.',

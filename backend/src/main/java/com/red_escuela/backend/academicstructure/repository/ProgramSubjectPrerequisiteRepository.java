@@ -20,6 +20,14 @@ public interface ProgramSubjectPrerequisiteRepository extends JpaRepository<Prog
             where p.programSubject.plan.id = """ + com.red_escuela.backend.academicstructure.repository.ProgramSubjectRepository.CURRENT_PLAN_ID_OF_PROGRAM)
     List<ProgramSubjectPrerequisite> findAllOfProgram(@Param("programId") Long programId);
 
+    @Query("""
+            select p from ProgramSubjectPrerequisite p
+            join fetch p.prerequisiteProgramSubject prerequisiteEntry
+            join fetch prerequisiteEntry.subject
+            where p.programSubject.plan.id = :planId
+            """)
+    List<ProgramSubjectPrerequisite> findAllOfPlan(@Param("planId") Long planId);
+
     List<ProgramSubjectPrerequisite> findByPrerequisiteProgramSubjectId(Long prerequisiteProgramSubjectId);
 
     boolean existsByProgramSubjectIdAndPrerequisiteProgramSubjectId(Long programSubjectId, Long prerequisiteProgramSubjectId);

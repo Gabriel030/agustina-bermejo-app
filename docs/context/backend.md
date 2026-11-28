@@ -262,6 +262,23 @@ distintos mezclados en un mismo service/controller:
    `rechazar`). 7 use cases, con `ProgramEnrollmentApplicationFinder` como
    colaborador del findOrThrow compartido.
 
+**Progreso y promedio (E34-B P2).** Hay un solo motor de progreso por plan de
+la matrícula: `ProgramProgressReader` (egreso) y `CurriculumProgressReader`
+(vista) leen las entradas activas del `ProgramEnrollment.plan` y sus totales
+(`CurriculumPlan.totalCreditsRequired`), nunca las del programa. Una materia
+desactivada del plan no se exige ni suma. Cuando una materia tiene varias
+aprobaciones vale la más reciente (`finalScoreDate`, desempate por id de
+cursada; D8) en correlativa, constancia y promedio: la elige
+`SubjectStanding.approvedScore()`. El promedio es el de las materias
+aprobadas del plan, una nota por materia (incluye la nota de origen de una
+equivalencia). D9: el promedio se redondea a 2 decimales (`Grade.average`)
+antes de compararlo con cualquier umbral, y eso es intencional: 3,996 se
+trata como 4,00. `final_score_date` se escribe al aprobar en
+`SectionEnrollmentOutcomeRecorder`. Registrar una equivalencia pide
+elegibilidad de egreso y anularla marca `graduation_request.outdated_at`
+(`SubjectEquivalenceGraduationListener`, por evento síncrono); anular exige
+matrícula activa y una materia `REGULAR` no admite equivalencia.
+
 ## Paquete por feature: `evaluation`
 
 Mesas de examen, notas, esquemas de evaluación y configuración de
