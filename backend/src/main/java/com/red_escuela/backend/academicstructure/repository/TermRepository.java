@@ -15,6 +15,8 @@ public interface TermRepository extends JpaRepository<Term, Long> {
 
     List<Term> findByStatus(StatusType status);
 
+    List<Term> findByStatusAndEndDateLessThan(StatusType status, java.time.LocalDateTime before);
+
     boolean existsByYearAndTypeAndStatus(Integer year, TermType type, StatusType status);
 
     boolean existsByYearAndTypeAndStatusAndIdNot(Integer year, TermType type, StatusType status, Long id);

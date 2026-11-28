@@ -81,13 +81,11 @@ class StructuralGapsReproductionTest {
     }
 
     @Test
-    @Disabled("E34-B-P3")
     void someScheduledJobClosesTermsAfterTheirEndDate() {
         assertThat(someScheduledJobReachesCallTo(Term.class, "setStatus")).isTrue();
     }
 
     @Test
-    @Disabled("E34-B-P3")
     void someScheduledJobClosesOrNotifiesExamBoardsWithPastExamDate() {
         assertThat(someScheduledJobReachesCallTo(ExamBoard.class, "setStatus", "close")).isTrue();
     }

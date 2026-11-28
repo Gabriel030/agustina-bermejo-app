@@ -141,8 +141,10 @@ public class Course {
     }
 
     public boolean waitlistDeadlineHasPassed(LocalDate today) {
-        LocalDate deadline = waitlistDeadline();
-        return deadline != null && !today.isBefore(deadline);
+        if (waitlistDeadlineOffsetDays == null) {
+            return term.getEndDate() != null && today.isAfter(term.getEndDate().toLocalDate());
+        }
+        return !today.isBefore(waitlistDeadline());
     }
 
     @Column(name = "duration_hours")

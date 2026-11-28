@@ -64,7 +64,6 @@ class PlanAndCycleRulesReproductionIT extends ReproductionFixture {
     }
 
     @Test
-    @Disabled("E34-B-P3")
     void cycleOfAnAlreadyEndedTermCannotBeApproved() {
         CycleTestFixtures fixtures = new CycleTestFixtures(entityManager);
         Program program = fixtures.program();
@@ -76,14 +75,13 @@ class PlanAndCycleRulesReproductionIT extends ReproductionFixture {
         flushAndClear();
 
         try {
-            assertThatThrownBy(() -> cycleApproval.approve(cycle.getId(), "reproduction-key")).isInstanceOf(RuntimeException.class);
+            assertThatThrownBy(() -> cycleApproval.approve(cycle.getId(), "reproduction-key")).isInstanceOf(com.red_escuela.backend.academicstructure.exception.TermNotOpenForOfferingException.class);
         } finally {
             com.red_escuela.backend.academicstructure.RequesterAuthentication.clear();
         }
     }
 
     @Test
-    @Disabled("E34-B-P3")
     void courseWaitlistWithoutDeadlineOffsetStillExpiresAfterTheTermEnds() {
         Term term = new Term();
         term.setStartDate(LocalDateTime.of(2027, 3, 1, 0, 0));

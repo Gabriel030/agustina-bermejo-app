@@ -19,6 +19,8 @@ public interface ExamBoardRegistrationRepository extends JpaRepository<ExamBoard
 
     List<ExamBoardRegistration> findByExamBoardId(Long examBoardId);
 
+    long countByExamBoardIdAndStatus(Long examBoardId, ExamBoardRegistrationStatus status);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select r from ExamBoardRegistration r where r.examBoard.id = :examBoardId and r.id in :ids order by r.id")
     List<ExamBoardRegistration> findByExamBoardIdAndIdInForUpdate(

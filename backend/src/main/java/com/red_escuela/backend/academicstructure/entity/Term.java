@@ -74,11 +74,19 @@ public class Term {
     }
 
     public boolean hasEnrollmentEndedAt(LocalDateTime moment) {
-        return enrollmentOverride != TermEnrollmentOverride.OPEN && enrollmentEnd.isBefore(moment);
+        return effectiveEnrollmentOverrideAt(moment) != TermEnrollmentOverride.OPEN && enrollmentEnd.isBefore(moment);
     }
 
     public boolean isEnrollmentOpenAt(LocalDateTime moment) {
-        return enrollmentWindow().isOpenAt(moment, enrollmentOverride);
+        return enrollmentWindow().isOpenAt(moment, effectiveEnrollmentOverrideAt(moment));
+    }
+
+    public boolean hasOpenOverrideExpiredAt(LocalDateTime moment) {
+        return enrollmentOverride == TermEnrollmentOverride.OPEN && endDate != null && endDate.isBefore(moment);
+    }
+
+    private TermEnrollmentOverride effectiveEnrollmentOverrideAt(LocalDateTime moment) {
+        return hasOpenOverrideExpiredAt(moment) ? null : enrollmentOverride;
     }
 
     public boolean isEnrollmentClosedByOverride() {
