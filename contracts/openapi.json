@@ -1179,6 +1179,16 @@
           "requestedStatus" : {
             "type" : "string"
           },
+          "revertReason" : {
+            "type" : [ "string", "null" ]
+          },
+          "revertedAt" : {
+            "format" : "date-time",
+            "type" : [ "string", "null" ]
+          },
+          "revertedByName" : {
+            "type" : [ "string", "null" ]
+          },
           "revertible" : {
             "type" : "boolean"
           },

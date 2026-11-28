@@ -135,10 +135,12 @@ public class AttendanceChangeRequestController {
         }
         Person requestedByPerson = request.getRequestedBy().getPerson();
         Person decidedByPerson = request.getApprovedBy();
+        Person revertedByPerson = request.getRevertedBy();
         return AttendanceChangeRequestResponse.from(
                 request, fullName(requestedByPerson), subjectName, sectionName,
                 attendance.getClassDate(), fullName(studentPerson),
-                decidedByPerson == null ? null : fullName(decidedByPerson));
+                decidedByPerson == null ? null : fullName(decidedByPerson),
+                revertedByPerson == null ? null : fullName(revertedByPerson));
     }
 
     private String fullName(Person person) {

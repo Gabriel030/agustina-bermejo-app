@@ -14,6 +14,8 @@ public interface ProgramCohortRepository extends JpaRepository<ProgramCohort, Lo
 
     List<ProgramCohort> findByTemplateId(Long templateId);
 
+    long countByTemplateIdIsNull();
+
     List<ProgramCohort> findByTemplateIdIn(Collection<Long> templateIds);
 
     Optional<ProgramCohort> findByTemplateIdAndIntake(Long templateId, CohortIntake intake);

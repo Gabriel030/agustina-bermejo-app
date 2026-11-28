@@ -98,4 +98,17 @@ public interface ExamBoardRegistrationRepository extends JpaRepository<ExamBoard
               and b.status = com.red_escuela.backend.evaluation.entity.ExamBoardStatus.CLOSED
             """)
     List<ExamBoardRegistration> findAttendedCourseRegistrationsOfStudent(@Param("studentId") Long studentId);
+
+    @Query("""
+            select count(r) > 0 from ExamBoardRegistration r
+            join r.examBoard b
+            left join r.programSubjectSectionEnrollment pe
+            left join r.courseSubjectSectionEnrollment ce
+            where r.status = com.red_escuela.backend.evaluation.entity.ExamBoardRegistrationStatus.REGISTERED
+              and b.id <> :examBoardId and b.examDate = :examDate
+              and b.status = com.red_escuela.backend.evaluation.entity.ExamBoardStatus.SCHEDULED
+              and (pe.student.id = :studentId or ce.student.id = :studentId)
+            """)
+    boolean existsRegisteredOfStudentAt(@Param("studentId") Long studentId, @Param("examBoardId") Long examBoardId,
+                                        @Param("examDate") LocalDateTime examDate);
 }

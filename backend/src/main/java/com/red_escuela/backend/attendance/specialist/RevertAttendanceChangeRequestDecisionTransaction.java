@@ -11,6 +11,7 @@ import com.red_escuela.backend.shared.audit.AuditAction;
 import com.red_escuela.backend.shared.audit.AuditEntityType;
 import com.red_escuela.backend.shared.audit.AuditRecord;
 import com.red_escuela.backend.shared.audit.service.AuditTrail;
+import com.red_escuela.backend.shared.time.ApplicationTime;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +23,7 @@ public class RevertAttendanceChangeRequestDecisionTransaction {
     private final AttendanceRepository attendanceRepository;
     private final AttendanceChangeRequestFinder finder;
     private final AttendanceDecisionRevertPolicy revertPolicy;
+    private final AttendanceActorResolver actorResolver;
     private final AuditTrail auditTrail;
     private final ApplicationEventPublisher eventPublisher;
     private final AttendanceChangeRequestResponseAssembler responseAssembler;
@@ -30,6 +32,7 @@ public class RevertAttendanceChangeRequestDecisionTransaction {
                                                             AttendanceRepository attendanceRepository,
                                                             AttendanceChangeRequestFinder finder,
                                                             AttendanceDecisionRevertPolicy revertPolicy,
+                                                            AttendanceActorResolver actorResolver,
                                                             AuditTrail auditTrail,
                                                             ApplicationEventPublisher eventPublisher,
                                                             AttendanceChangeRequestResponseAssembler responseAssembler) {
@@ -37,6 +40,7 @@ public class RevertAttendanceChangeRequestDecisionTransaction {
         this.attendanceRepository = attendanceRepository;
         this.finder = finder;
         this.revertPolicy = revertPolicy;
+        this.actorResolver = actorResolver;
         this.auditTrail = auditTrail;
         this.eventPublisher = eventPublisher;
         this.responseAssembler = responseAssembler;
@@ -53,7 +57,7 @@ public class RevertAttendanceChangeRequestDecisionTransaction {
             attendanceRepository.save(attendance);
             eventPublisher.publishEvent(AttendanceStatusChangedEvent.of(attendance));
         }
-        request.reopen();
+        request.reopenReverted(actorResolver.currentActor(), reason.trim(), ApplicationTime.now());
         AttendanceChangeRequest saved = attendanceChangeRequestRepository.save(request);
         auditTrail.record(new AuditRecord(AuditAction.ATTENDANCE_CHANGE_DECISION_REVERTED,
                 AuditEntityType.ATTENDANCE_CHANGE_REQUEST, saved.getId(),
