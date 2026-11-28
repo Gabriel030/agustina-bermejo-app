@@ -49,6 +49,16 @@ public interface DirectorApprovalRequestRepository extends JpaRepository<Directo
     @Query("update DirectorApprovalRequest r set r.consumedAt = :consumedAt where r.id = :id and r.consumedAt is null")
     int markConsumed(@Param("id") Long id, @Param("consumedAt") java.time.LocalDateTime consumedAt);
 
+    @Modifying(flushAutomatically = true)
+    @Query("""
+            update DirectorApprovalRequest r set r.consumedAt = :consumedAt
+            where r.programEnrollment.id = :programEnrollmentId and r.type = :type
+              and r.status = com.red_escuela.backend.enrollment.entity.DirectorApprovalRequestStatus.APPROVED
+              and r.consumedAt is null
+            """)
+    int markAllApprovedConsumed(@Param("programEnrollmentId") Long programEnrollmentId, @Param("type") ExceptionType type,
+                                @Param("consumedAt") java.time.LocalDateTime consumedAt);
+
     default boolean hasUnconsumedApproved(Long programEnrollmentId, Long subjectId, ExceptionType type) {
         return !findByProgramEnrollmentIdAndSubjectIdAndTypeAndStatusAndConsumedAtIsNullOrderByDecidedAtAscIdAsc(
                 programEnrollmentId, subjectId, type, DirectorApprovalRequestStatus.APPROVED).isEmpty();

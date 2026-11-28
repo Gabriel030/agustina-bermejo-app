@@ -89,6 +89,12 @@ public class GraduationRequest {
         }
     }
 
+    public void closeBecauseEnrollmentEnded(String reason, LocalDateTime closedAt) {
+        status = GraduationRequestStatus.REJECTED;
+        rejectionReason = reason;
+        decidedAt = closedAt;
+    }
+
     public void approve(Person director, LocalDateTime approvedAt) {
         requireAwaitingDirectorDecision();
         status = GraduationRequestStatus.APPROVED;

@@ -5,6 +5,8 @@ import com.red_escuela.backend.graduation.certificate.regular.entity.RegularRequ
 import com.red_escuela.backend.graduation.certificate.regular.specialist.RegularCertificateReader;
 import com.red_escuela.backend.shared.UseCase;
 
+import com.red_escuela.backend.graduation.certificate.regular.dto.CertificatePage;
+
 import java.util.List;
 
 @UseCase
@@ -19,5 +21,10 @@ public class ListRegularCertificateRequestsService implements ListRegularCertifi
     @Override
     public List<RegularCertificateRequestResponse> list(Long studentId, RegularRequestOutcome outcome) {
         return reader.listRequests(studentId, outcome);
+    }
+
+    @Override
+    public CertificatePage<RegularCertificateRequestResponse> listPage(Long studentId, RegularRequestOutcome outcome, Integer page, Integer size) {
+        return reader.listRequestsPage(studentId, outcome, page, size);
     }
 }

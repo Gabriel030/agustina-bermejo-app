@@ -90,6 +90,7 @@ public class ExamBoardRegistrationManager {
         requireScheduledExamBoard(examBoard);
 
         SubjectSectionEnrollment enrollment = sectionEnrollmentFinder.findProgramEnrollment(enrollmentId);
+        enrollment.getProgramEnrollment().requireActive();
         requireEnrollmentFeeOfExamTerm(examBoard, enrollment);
         Long programEnrollmentId = enrollment.getProgramEnrollment().getId();
         Long enrollmentSubjectId = enrollment.getSubjectSection().getSubject().getId();

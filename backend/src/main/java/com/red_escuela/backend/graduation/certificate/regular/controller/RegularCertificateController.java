@@ -29,6 +29,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.swagger.v3.oas.annotations.headers.Header;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import org.springframework.http.ResponseEntity;
+import com.red_escuela.backend.graduation.certificate.regular.dto.CertificatePage;
+
 import java.util.List;
 
 @RestController
@@ -69,11 +75,16 @@ public class RegularCertificateController {
         return issueUseCase.issue(request);
     }
 
+    @ApiResponse(responseCode = "200", description = "Constancias de regularidad, la más nueva primero; el total sin paginar viaja en el header X-Total-Count",
+            headers = @Header(name = "X-Total-Count", description = "Cantidad total que cumple el filtro, sin paginar", schema = @Schema(type = "integer", format = "int64")))
     @GetMapping
     @RequiresPermission(code = "certificate.regular_view", legacyRoles = "ROLE_ADMINISTRATIVO,ROLE_DIRECTOR")
-    public List<RegularCertificateResponse> list(@RequestParam(required = false) Long studentId,
-                                                 @RequestParam(required = false) RegularCertificateStatus status) {
-        return listUseCase.list(studentId, status);
+    public ResponseEntity<List<RegularCertificateResponse>> list(@RequestParam(required = false) Long studentId,
+                                                                 @RequestParam(required = false) RegularCertificateStatus status,
+                                                                 @RequestParam(required = false) Integer page,
+                                                                 @RequestParam(required = false) Integer size) {
+        CertificatePage<RegularCertificateResponse> certificates = listUseCase.listPage(studentId, status, page, size);
+        return ResponseEntity.ok().header("X-Total-Count", Long.toString(certificates.totalElements())).body(certificates.items());
     }
 
     @GetMapping("/{id}")

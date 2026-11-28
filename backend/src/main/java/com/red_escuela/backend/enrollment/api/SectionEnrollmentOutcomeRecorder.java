@@ -4,13 +4,17 @@ import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.FinalGradeType;
 import com.red_escuela.backend.enrollment.entity.SubjectSectionEnrollment;
+import com.red_escuela.backend.enrollment.events.ProgramSectionStatusChangedEvent;
 import com.red_escuela.backend.enrollment.exception.SectionEnrollmentNotFoundException;
 import com.red_escuela.backend.enrollment.repository.CourseSubjectSectionEnrollmentRepository;
 import com.red_escuela.backend.enrollment.repository.SubjectSectionEnrollmentRepository;
 import com.red_escuela.backend.shared.domain.Grade;
 import com.red_escuela.backend.shared.time.ApplicationTime;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.Objects;
 
 @Component
 public class SectionEnrollmentOutcomeRecorder {
@@ -19,11 +23,14 @@ public class SectionEnrollmentOutcomeRecorder {
 
     private final SubjectSectionEnrollmentRepository programEnrollmentRepository;
     private final CourseSubjectSectionEnrollmentRepository courseEnrollmentRepository;
+    private final ApplicationEventPublisher eventPublisher;
 
     public SectionEnrollmentOutcomeRecorder(SubjectSectionEnrollmentRepository programEnrollmentRepository,
-                                            CourseSubjectSectionEnrollmentRepository courseEnrollmentRepository) {
+                                            CourseSubjectSectionEnrollmentRepository courseEnrollmentRepository,
+                                            ApplicationEventPublisher eventPublisher) {
         this.programEnrollmentRepository = programEnrollmentRepository;
         this.courseEnrollmentRepository = courseEnrollmentRepository;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional
@@ -31,6 +38,8 @@ public class SectionEnrollmentOutcomeRecorder {
                                      FinalGradeType finalGradeType, boolean clearFinalWhenAbsent) {
         SubjectSectionEnrollment enrollment = programEnrollmentRepository.findById(enrollmentId)
                 .orElseThrow(() -> new SectionEnrollmentNotFoundException(enrollmentId));
+        EnrollmentStatus previousStatus = enrollment.getStatus();
+        Grade previousScore = enrollment.getFinalScore();
         enrollment.setStatus(status);
         if (finalScore != null) {
             enrollment.setFinalScore(finalScore);
@@ -44,6 +53,12 @@ public class SectionEnrollmentOutcomeRecorder {
             enrollment.setFinalScoreDate(null);
         }
         programEnrollmentRepository.save(enrollment);
+        boolean approvedOutcomeChanged = previousStatus == EnrollmentStatus.APPROVED
+                && (status != EnrollmentStatus.APPROVED || !Objects.equals(previousScore, enrollment.getFinalScore()));
+        if (previousStatus != status || approvedOutcomeChanged) {
+            eventPublisher.publishEvent(ProgramSectionStatusChangedEvent.changed(
+                    enrollment.getProgramEnrollment().getId(), enrollmentId, previousStatus != status, approvedOutcomeChanged));
+        }
     }
 
     @Transactional

@@ -228,6 +228,7 @@ public class SubjectSectionEnrollmentService {
             promoteNextFromWaitlist(enrollment.subjectSectionId());
         }
         changeEventPublisher.publishSubjectWithdrawn(enrollment, change);
+        changeEventPublisher.publishProgramSectionStatusChanged(enrollment, previousStatus);
     }
 
     private void markWithdrawn(SubjectSectionEnrollment enrollment, EnrollmentChange change, LocalDateTime now) {
