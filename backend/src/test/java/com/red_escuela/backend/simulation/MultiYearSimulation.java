@@ -210,8 +210,11 @@ public class MultiYearSimulation {
         cohort.put("admissionStart", (year - 1) + "-12-01");
         cohort.put("admissionEnd", year + "-12-31");
         cohort.put("cursadaStart", year + "-03-01");
+        cohort.put("responsiblePreceptorIds", List.of(jdbc.queryForObject("select id from person where username = 'preceptor.demo'", Long.class)));
         report.count("cohortsCreated");
-        return api.post(DemoPersona.ADMIN, "/programs/" + programId + "/terms/" + termIds.get(year) + "/cohorts", cohort).get("id").asLong();
+        long cohortId = api.post(DemoPersona.ADMIN, "/programs/" + programId + "/terms/" + termIds.get(year) + "/cohorts", cohort).get("id").asLong();
+        jdbc.update("update program_cohort set opened_at = now() where id = ?", cohortId);
+        return cohortId;
     }
 
     private void enrollInPendingSubjects(Pupil pupil, int year, List<Long> active) {
@@ -394,7 +397,7 @@ public class MultiYearSimulation {
                 Map<String, Object> board = new LinkedHashMap<>();
                 board.put("subjectId", subjectId);
                 board.put("termId", termIds.get(year - 1));
-                board.put("examDate", LocalDateTime.of(year, 2, 20, 10, 0).toString());
+                board.put("examDate", LocalDateTime.of(year, 2, 20, 8, 0).plusMinutes(10L * boardIdsByKey.size()).toString());
                 board.put("registrationStart", LocalDateTime.of(year, 2, 10, 0, 0).toString());
                 board.put("registrationEnd", LocalDateTime.of(year, 2, 17, 0, 0).toString());
                 board.put("classroom", "Aula 1");

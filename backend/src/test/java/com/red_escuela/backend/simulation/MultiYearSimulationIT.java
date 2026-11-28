@@ -26,11 +26,12 @@ import com.red_escuela.backend.identity.specialist.DemoLearnerAccountsSeeder;
 import com.red_escuela.backend.identity.specialist.LocalSeedRunner;
 import com.red_escuela.backend.identity.specialist.PersonFactory;
 import com.red_escuela.backend.platform.infrastructure.FeatureSnapshotHolder;
+import com.red_escuela.backend.platform.specialist.InitialBillingModeProvisioner;
+import com.red_escuela.backend.shared.module.BillingMode;
 import com.red_escuela.backend.platform.infrastructure.InstituteSettingsSnapshotHolder;
 import com.red_escuela.backend.shared.time.ApplicationTime;
 import com.red_escuela.backend.testsupport.NightlyTest;
 import com.red_escuela.backend.testsupport.SlowTest;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -106,11 +107,12 @@ class MultiYearSimulationIT extends AbstractIntegrationTest {
     @Autowired
     private HolidaysMissingForNextYearReminderJob holidaysReminderJob;
     @Autowired
+    private InitialBillingModeProvisioner billingModeProvisioner;
+    @Autowired
     private List<FeatureSnapshotHolder> featureSnapshotHolders;
     @Autowired
     private List<InstituteSettingsSnapshotHolder> settingsSnapshotHolders;
 
-    @Disabled("E34-A S9b: la cohorte 2029 responde 409 PROGRAM_COHORT_BILLING_TEMPLATE_REQUIRED con billing OFF; ver docs/cell/handoffs/1638-S9b.md")
     @Test
     void fiveYearsOfSevenProfilesRunWithoutErrorsMeetExpectedOutcomesAndAreDeterministic() throws IOException {
         SimulationReport first = simulate();
@@ -119,6 +121,7 @@ class MultiYearSimulationIT extends AbstractIntegrationTest {
         assertThat(first.counter("graduationsApproved")).isPositive();
         assertThat(first.counter("recoveries")).isPositive();
         TestDatabaseIsolation.restoreNow();
+        billingModeProvisioner.provisionInitialBillingMode(BillingMode.OFF);
         featureSnapshotHolders.forEach(FeatureSnapshotHolder::refresh);
         settingsSnapshotHolders.forEach(InstituteSettingsSnapshotHolder::refresh);
         SimulationReport second = simulate();
