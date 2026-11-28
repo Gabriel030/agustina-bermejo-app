@@ -25,7 +25,7 @@ public record CycleSectionResponse(
         @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) SectionShift shift,
         @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String code,
         @Schema(nullable = true, requiredMode = Schema.RequiredMode.NOT_REQUIRED) String description,
-        @Schema(requiredMode = Schema.RequiredMode.REQUIRED) List<PreceptorInfo> preceptors
+        @Schema(requiredMode = Schema.RequiredMode.NOT_REQUIRED) List<PreceptorInfo> preceptors
 ) {
     public record PreceptorInfo(
             @Schema(requiredMode = Schema.RequiredMode.REQUIRED) Long assignmentId,

@@ -6528,7 +6528,7 @@
             "type" : "string"
           }
         },
-        "required" : [ "capacity", "id", "instructors", "name", "pendingApproval", "preceptors", "slots", "status", "subjectName" ],
+        "required" : [ "capacity", "id", "instructors", "name", "pendingApproval", "slots", "status", "subjectName" ],
         "type" : "object"
       },
       "DaysValue" : {
