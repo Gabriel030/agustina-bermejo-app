@@ -40,6 +40,7 @@ class TermEndEscalationJobTest {
     private static final LocalDate TERM_END = LocalDate.of(2026, 12, 10);
 
     private final TermEndClosureReview closureReview = mock(TermEndClosureReview.class);
+    private final CommissionClosureAutoCloser autoCloser = mock(CommissionClosureAutoCloser.class);
     private final CommissionClosureReminderRepository reminderRepository = mock(CommissionClosureReminderRepository.class);
     private final ExamBoardManager examBoardManager = mock(ExamBoardManager.class);
     private final ExamBoardRegistrationRepository registrationRepository = mock(ExamBoardRegistrationRepository.class);
@@ -54,13 +55,18 @@ class TermEndEscalationJobTest {
         when(instructorRepository.existsByExamBoardId(any())).thenReturn(true);
         when(examBoardRepository.findByIdForUpdate(any())).thenAnswer(call -> Optional.ofNullable(boards.get((Long) call.getArgument(0))));
         when(closureReview.graceReference(any())).thenAnswer(call -> ((ExamBoard) call.getArgument(0)).getExamDate().toLocalDate());
-        return new TermEndEscalationJob(closureReview, reminderRepository, examBoardManager, registrationRepository, examBoardRepository, instructorRepository, eventPublisher,
+        return new TermEndEscalationJob(closureReview, autoCloser, reminderRepository, examBoardManager, registrationRepository, examBoardRepository, instructorRepository, eventPublisher,
                 TransactionOperations.withoutTransaction(), clock);
     }
 
     private PendingSectionClosureResponse pending(Long sectionId, boolean graceOver) {
         return new PendingSectionClosureResponse("PROGRAM", sectionId, "Teorías · " + sectionId, TERM_END,
                 graceOver ? 15 : 10, graceOver, PendingClosureState.NOT_STARTED, false);
+    }
+
+    private PendingSectionClosureResponse pendingWithGrades(Long sectionId, boolean graceOver, boolean hasPublishedGrades) {
+        return new PendingSectionClosureResponse("PROGRAM", sectionId, "Teorías · " + sectionId, TERM_END,
+                graceOver ? 15 : 10, graceOver, PendingClosureState.NOT_STARTED, hasPublishedGrades);
     }
 
     private ExamBoard board(Long id, LocalDateTime examDate) {
@@ -217,5 +223,29 @@ class TermEndEscalationJobTest {
 
         assertThat(job.closeExpiredExamBoards()).isZero();
         verify(eventPublisher, never()).publishEvent(any(ExamBoardAutoClosedEvent.class));
+    }
+
+    @Test
+    void onlySectionsPastTheGraceWindowWithPublishedGradesAreAutoClosed() {
+        TermEndEscalationJob job = jobOn(TERM_END.plusDays(15));
+        when(closureReview.pendingSections(any())).thenReturn(List.of(
+                pendingWithGrades(1L, true, true), pendingWithGrades(2L, true, false), pendingWithGrades(3L, false, true)));
+        when(autoCloser.closeIfGradesLoaded(SectionKind.PROGRAM, 1L)).thenReturn(true);
+
+        assertThat(job.closeGradedSections()).isEqualTo(1);
+
+        verify(autoCloser).closeIfGradesLoaded(SectionKind.PROGRAM, 1L);
+        verify(autoCloser, never()).closeIfGradesLoaded(SectionKind.PROGRAM, 2L);
+        verify(autoCloser, never()).closeIfGradesLoaded(SectionKind.PROGRAM, 3L);
+    }
+
+    @Test
+    void aFailingSectionDoesNotStopTheAutoCloseOfTheOthers() {
+        TermEndEscalationJob job = jobOn(TERM_END.plusDays(15));
+        when(closureReview.pendingSections(any())).thenReturn(List.of(pendingWithGrades(1L, true, true), pendingWithGrades(2L, true, true)));
+        when(autoCloser.closeIfGradesLoaded(SectionKind.PROGRAM, 1L)).thenThrow(new IllegalStateException("boom"));
+        when(autoCloser.closeIfGradesLoaded(SectionKind.PROGRAM, 2L)).thenReturn(true);
+
+        assertThat(job.closeGradedSections()).isEqualTo(1);
     }
 }

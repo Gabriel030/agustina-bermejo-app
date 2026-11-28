@@ -581,6 +581,17 @@ where not exists (select 1 from curriculum_plan cp where cp.program_id = pe.prog
 order by 1, 2;
 \endif
 
+select :current_version < 508 as run_block \gset
+\if :run_block
+\echo
+\echo [V507/V508] Cierres CLOSED que no cumplen el CHECK nuevo (V508 ABORTA al validar ck_commission_closure_closed_has_report si hay filas; no se borran datos: completar libro, folio y quien cerro antes) y auditorias sin actor (V508 valida ck_commission_closure_audit_actor_required); debe devolver 0 filas:
+select 'CLOSURE' as origin, id as row_id from commission_closure
+where status = 'CLOSED' and (report_number is null or closed_at is null or book is null or folio is null or closed_by_id is null)
+union all
+select 'AUDIT', id from commission_closure_audit where actor_person_id is null
+order by 1, 2;
+\endif
+
 \echo
 \echo [V470] Franjas de aula solapadas (misma aula, mismo dia y hora, periodos de termino que se pisan, ambas de comisiones ACTIVE); V470 ABORTA al crear el EXCLUDE si hay filas (corregir antes: mover una franja a otra aula u horario o desactivar la comision; no se borran datos):
 with active_slots as (

@@ -48,14 +48,14 @@ public class ProgramPrerequisiteEvaluator {
     public List<PrerequisiteAssessment> assess(Long programEnrollmentId, Long subjectId, Long targetTermId) {
         ProgramEnrollment programEnrollment = findProgramEnrollment(programEnrollmentId);
         Long programId = programEnrollment.getProgram().getId();
-        ProgramSubjectView programSubject = programCurriculumFinder.findProgramSubject(programId, subjectId)
+        ProgramSubjectView programSubject = programCurriculumFinder.findProgramSubjectOfPlan(programEnrollment.getPlan().getId(), subjectId)
                 .orElseThrow(() -> new SubjectNotInProgramPlanException(subjectId, programId));
         return assessPrerequisites(programEnrollmentId, subjectId, programSubject, targetTermId);
     }
 
     public boolean areAllMetOrSubjectOutsidePlan(Long programEnrollmentId, Long subjectId) {
-        Long programId = findProgramEnrollment(programEnrollmentId).getProgram().getId();
-        return programCurriculumFinder.findProgramSubject(programId, subjectId)
+        Long planId = findProgramEnrollment(programEnrollmentId).getPlan().getId();
+        return programCurriculumFinder.findProgramSubjectOfPlan(planId, subjectId)
                 .map(programSubject -> assessPrerequisites(programEnrollmentId, subjectId, programSubject, null).stream()
                         .allMatch(PrerequisiteAssessment::met))
                 .orElse(true);
@@ -77,8 +77,8 @@ public class ProgramPrerequisiteEvaluator {
 
     private List<PrerequisiteAssessment> findAssessmentsMatchingOrEmptyOutsidePlan(
             Long programEnrollmentId, Long subjectId, Predicate<PrerequisiteAssessment> filter) {
-        Long programId = findProgramEnrollment(programEnrollmentId).getProgram().getId();
-        return programCurriculumFinder.findProgramSubject(programId, subjectId)
+        Long planId = findProgramEnrollment(programEnrollmentId).getPlan().getId();
+        return programCurriculumFinder.findProgramSubjectOfPlan(planId, subjectId)
                 .map(programSubject -> assessPrerequisites(programEnrollmentId, subjectId, programSubject, null).stream()
                         .filter(filter)
                         .toList())

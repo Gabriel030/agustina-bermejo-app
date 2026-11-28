@@ -23,6 +23,7 @@ import com.red_escuela.backend.billing.entity.PaymentPlanCadence;
 import com.red_escuela.backend.billing.entity.PaymentPlanOption;
 import com.red_escuela.backend.config.TestSubjectCodes;
 import com.red_escuela.backend.enrollment.entity.CourseEnrollment;
+import com.red_escuela.backend.enrollment.entity.CourseEnrollmentApplication;
 import com.red_escuela.backend.enrollment.entity.CourseSubjectSectionEnrollment;
 import com.red_escuela.backend.enrollment.entity.EnrollmentStatus;
 import com.red_escuela.backend.enrollment.entity.ProgramEnrollment;
@@ -120,6 +121,8 @@ final class OwnershipFixtures {
     private Long closureConfirmSectionId;
     private Long closureObservationSectionId;
     private Long closureObservationEnrollmentId;
+    private Long subjectId;
+    private Long courseApplicationId;
 
     OwnershipFixtures(TransactionTemplate transactions, EntityManager entityManager, RoleRepository roleRepository,
                       JwtService jwtService) {
@@ -174,6 +177,14 @@ final class OwnershipFixtures {
         };
     }
 
+    Long subjectId() {
+        return subjectId;
+    }
+
+    Long courseApplicationId() {
+        return courseApplicationId;
+    }
+
     Long closureId() {
         return closureId;
     }
@@ -226,6 +237,7 @@ final class OwnershipFixtures {
         subject.setCode(TestSubjectCodes.next());
         subject.setName("Materia matriz");
         entityManager.persist(subject);
+        subjectId = subject.getId();
         Program program = new Program();
         program.setName("Carrera matriz");
         program.setTotalYears(3);
@@ -519,6 +531,11 @@ final class OwnershipFixtures {
         courseEnrollment.setEnrollmentDate(LocalDateTime.now());
         entityManager.persist(courseEnrollment);
         courseEnrollmentId = courseEnrollment.getId();
+        CourseEnrollmentApplication application = new CourseEnrollmentApplication();
+        application.setStudent(student);
+        application.setCourse(course);
+        entityManager.persist(application);
+        courseApplicationId = application.getId();
         CourseSubjectSectionEnrollment enrollment = new CourseSubjectSectionEnrollment();
         enrollment.setStudent(student);
         enrollment.setCourseEnrollment(courseEnrollment);

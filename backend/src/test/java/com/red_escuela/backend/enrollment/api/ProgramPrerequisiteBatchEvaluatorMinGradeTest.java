@@ -24,7 +24,7 @@ import static org.mockito.Mockito.when;
 class ProgramPrerequisiteBatchEvaluatorMinGradeTest {
 
     private static final Long ENROLLMENT_ID = 5L;
-    private static final Long PROGRAM_ID = 9L;
+    private static final Long PLAN_ID = 17L;
 
     private final ProgramEnrollmentRepository enrollmentRepository = mock(ProgramEnrollmentRepository.class);
     private final DirectorApprovalRequestRepository approvalRepository = mock(DirectorApprovalRequestRepository.class);
@@ -35,17 +35,17 @@ class ProgramPrerequisiteBatchEvaluatorMinGradeTest {
 
     @BeforeEach
     void setUp() {
-        ProgramEnrollmentRepository.ProgramIdOfEnrollment row = mock(ProgramEnrollmentRepository.ProgramIdOfEnrollment.class);
+        ProgramEnrollmentRepository.PlanIdOfEnrollment row = mock(ProgramEnrollmentRepository.PlanIdOfEnrollment.class);
         when(row.getEnrollmentId()).thenReturn(ENROLLMENT_ID);
-        when(row.getProgramId()).thenReturn(PROGRAM_ID);
-        when(enrollmentRepository.findProgramIdsByIdIn(any())).thenReturn(List.of(row));
-        when(curriculumFinder.findProgramSubjects(PROGRAM_ID))
+        when(row.getPlanId()).thenReturn(PLAN_ID);
+        when(enrollmentRepository.findPlanIdsByIdIn(any())).thenReturn(List.of(row));
+        when(curriculumFinder.findProgramSubjectsOfPlan(PLAN_ID))
                 .thenReturn(List.of(new ProgramSubjectView(33L, 3L, "Analisis", 4, 1, null, null)));
         when(approvalRepository.findProgramEnrollmentIdsWithRequest(any(), any(), any(), any())).thenReturn(List.of());
     }
 
     private PrerequisiteBatchResult assessWith(String minGrade, String approvedScore) {
-        when(curriculumFinder.findProgramPrerequisites(PROGRAM_ID)).thenReturn(Map.of(33L, List.of(
+        when(curriculumFinder.findPrerequisitesOfPlan(PLAN_ID)).thenReturn(Map.of(33L, List.of(
                 new PrerequisiteView(1L, "Algebra", RequirementType.APPROVED, "S1", Grade.of(new BigDecimal(minGrade))))));
         SubjectStanding standing = new SubjectStanding(List.of(new CourseworkEntry(
                 EnrollmentStatus.APPROVED, Grade.of(new BigDecimal(approvedScore)), 11L)), null);

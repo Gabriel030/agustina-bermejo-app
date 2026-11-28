@@ -43,7 +43,7 @@ public class RequestDirectorApprovalTransaction {
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(request.programEnrollmentId()));
         var subject = request.subjectId() == null ? null
                 : programSubjectReferenceFinder.findSubjectInProgramPlan(
-                        programEnrollment.getProgram().getId(), request.subjectId());
+                        programEnrollment, request.subjectId());
 
         DirectorApprovalRequest entity = DirectorApprovalRequest.open(
                 request.type(), programEnrollment, subject, request.justification(),

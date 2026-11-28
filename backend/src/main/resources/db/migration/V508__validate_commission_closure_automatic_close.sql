@@ -1,0 +1,4 @@
+alter table commission_closure validate constraint ck_commission_closure_closed_has_report;
+alter table commission_closure validate constraint ck_commission_closure_automatic_has_no_actor;
+alter table commission_closure_audit validate constraint ck_commission_closure_audit_action;
+alter table commission_closure_audit validate constraint ck_commission_closure_audit_actor_required;

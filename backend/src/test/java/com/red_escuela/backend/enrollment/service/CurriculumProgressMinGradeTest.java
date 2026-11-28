@@ -131,7 +131,7 @@ class CurriculumProgressMinGradeTest {
         when(curriculumFinder.findCorequisitesOfPlan(PLAN_ID)).thenReturn(Map.of());
         when(curriculumFinder.findElectiveGroupRequirements(PROGRAM_ID)).thenReturn(List.of());
         when(curriculumFinder.findActiveCurriculumEntriesOfPlan(PLAN_ID)).thenReturn(List.of(entry(1L), entry(2L)));
-        when(curriculumFinder.findProgramSubject(PROGRAM_ID, TARGET_SUBJECT_ID)).thenReturn(Optional.of(
+        when(curriculumFinder.findProgramSubjectOfPlan(PLAN_ID, TARGET_SUBJECT_ID)).thenReturn(Optional.of(
                 new ProgramSubjectView(TARGET_SUBJECT_ID, TARGET_SUBJECT_ID, "Materia 2", 4, 1, null, null)));
         when(approvalRepository.findSubjectIdsWithRequest(any(), any(), any())).thenReturn(List.of());
     }

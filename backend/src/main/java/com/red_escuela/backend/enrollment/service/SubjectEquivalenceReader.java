@@ -143,10 +143,10 @@ public class SubjectEquivalenceReader {
     }
 
     private SubjectLabels labelsOf(ProgramEnrollment enrollment) {
-        Long programId = enrollment.getProgram().getId();
-        Map<Long, ProgramCurriculumEntryView> activeEntries = programCurriculumFinder.findActiveCurriculumEntries(programId).stream()
+        Long planId = enrollment.getPlan().getId();
+        Map<Long, ProgramCurriculumEntryView> activeEntries = programCurriculumFinder.findActiveCurriculumEntriesOfPlan(planId).stream()
                 .collect(Collectors.toMap(ProgramCurriculumEntryView::subjectId, Function.identity(), (first, second) -> first));
-        Map<Long, ProgramSubjectView> planEntries = programCurriculumFinder.findProgramSubjects(programId).stream()
+        Map<Long, ProgramSubjectView> planEntries = programCurriculumFinder.findProgramSubjectsOfPlan(planId).stream()
                 .collect(Collectors.toMap(ProgramSubjectView::subjectId, Function.identity(), (first, second) -> first));
         return new SubjectLabels(activeEntries, planEntries);
     }
