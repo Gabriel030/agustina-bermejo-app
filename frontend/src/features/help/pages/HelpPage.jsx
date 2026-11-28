@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { EmptyState } from '@/components/EmptyState';
 import { LoadErrorState } from '@/components/LoadErrorState';
@@ -23,15 +24,18 @@ function BackButton({ onClick, children }) {
   );
 }
 
-function TaskView({ task, onBack }) {
+function TaskView({ task, onBack, headingRef }) {
   const headings = task.blocks.filter((block) => block.type === 'heading' && block.level === 2);
-  const scrollToHeading = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const scrollToHeading = (id) => {
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)')?.matches;
+    document.getElementById(id)?.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' });
+  };
   return (
     <div className="flex flex-col gap-3">
       <BackButton onClick={onBack}>Volver</BackButton>
       <div className="grid gap-4 lg:grid-cols-[14rem_minmax(0,1fr)]">
         <HelpToc headings={headings} onSelect={scrollToHeading} />
-        <HelpTaskArticle task={task} />
+        <HelpTaskArticle task={task} headingRef={headingRef} />
       </div>
     </div>
   );
@@ -68,11 +72,11 @@ function SearchResults({ sections, results, onOpenTask }) {
   );
 }
 
-function SectionTasks({ section, onBack, onOpenTask }) {
+function SectionTasks({ section, onBack, onOpenTask, headingRef }) {
   return (
     <div className="flex flex-col gap-3">
       <BackButton onClick={onBack}>Todas las secciones</BackButton>
-      <h2 className="font-heading text-size-18 font-semibold text-ink">{section.label}</h2>
+      <h2 ref={headingRef} tabIndex={-1} className="font-heading text-size-18 font-semibold text-ink focus:outline-none">{section.label}</h2>
       <div className="rounded-card border border-border bg-surface p-1">
         {section.tasks.map((task) => (
           <HelpResultItem key={task.id} title={task.title} draft={isDraft(task)} onOpen={() => onOpenTask(task.id)} />
@@ -100,15 +104,15 @@ function SectionGrid({ sections, onOpenSection }) {
   );
 }
 
-function HelpBody({ browser }) {
+function HelpBody({ browser, headingRef }) {
   if (browser.isPending) return <Skeleton className="h-40 w-full" />;
   if (browser.error) return <LoadErrorState error={browser.error} onRetry={browser.retry} resource="la ayuda" />;
-  if (browser.selectedTask) return <TaskView task={browser.selectedTask} onBack={browser.closeTask} />;
+  if (browser.selectedTask) return <TaskView task={browser.selectedTask} onBack={browser.closeTask} headingRef={headingRef} />;
   if (browser.searching) {
     return <SearchResults sections={browser.sections} results={browser.results} onOpenTask={browser.openTask} />;
   }
   if (browser.activeSection) {
-    return <SectionTasks section={browser.activeSection} onBack={browser.closeSection} onOpenTask={browser.openTask} />;
+    return <SectionTasks section={browser.activeSection} onBack={browser.closeSection} onOpenTask={browser.openTask} headingRef={headingRef} />;
   }
   if (!browser.hasTasks) {
     return <EmptyState icon="📖" title="Todavía no hay tareas para tu rol" description="Activá «Ver todos los roles» para ver el resto." />;
@@ -118,6 +122,15 @@ function HelpBody({ browser }) {
 
 export function HelpPage() {
   const browser = useHelpBrowser();
+  const headingRef = useRef(null);
+  const lastViewKey = useRef(browser.viewKey);
+
+  useEffect(() => {
+    if (lastViewKey.current === browser.viewKey) return;
+    lastViewKey.current = browser.viewKey;
+    window.scrollTo(0, 0);
+    headingRef.current?.focus();
+  }, [browser.viewKey]);
 
   if (!browser.allowed) {
     return (
@@ -137,12 +150,14 @@ export function HelpPage() {
           ariaLabel="Buscar en la ayuda"
           className="w-full md:max-w-sm"
         />
-        <label className="flex min-h-11 items-center gap-2 text-size-14 text-ink-soft md:min-h-0">
-          <Switch checked={browser.showAllRoles} onCheckedChange={browser.setShowAllRoles} aria-label="Ver todos los roles" />
-          Ver todos los roles
-        </label>
+        <div className="flex min-h-11 items-center gap-2 md:min-h-0">
+          <Switch id="help-all-roles" checked={browser.showAllRoles} onCheckedChange={browser.setShowAllRoles} />
+          <label htmlFor="help-all-roles" className="text-size-14 text-ink-soft">
+            Ver todos los roles
+          </label>
+        </div>
       </div>
-      <HelpBody browser={browser} />
+      <HelpBody browser={browser} headingRef={headingRef} />
     </PageContainer>
   );
 }

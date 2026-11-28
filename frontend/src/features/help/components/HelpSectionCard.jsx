@@ -7,7 +7,7 @@ const CARD = 'min-h-20 w-full gap-3 rounded-card border border-border bg-surface
 export function HelpSectionCard({ label, taskCount, underRedesign = false, onOpen }) {
   if (underRedesign) {
     return (
-      <div className={`${CARD} flex items-center text-ink-faint`}>
+      <div className={`${CARD} flex items-center text-ink-soft`}>
         <span className="min-w-0 flex-1 truncate font-heading text-size-15 font-semibold">{label}</span>
         <StatusPill tone="warning">En rediseño</StatusPill>
       </div>

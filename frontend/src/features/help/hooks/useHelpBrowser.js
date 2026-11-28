@@ -15,27 +15,33 @@ export function useHelpBrowser() {
   const tasksQuery = useHelpTasks();
   const [searchParams, setSearchParams] = useSearchParams();
   const [query, setQuery] = useState('');
-  const [showAllRoles, setShowAllRoles] = useState(false);
+  const [showAllRolesChoice, setShowAllRoles] = useState(false);
 
   const sectionId = searchParams.get('seccion');
   const taskId = searchParams.get('tarea');
   const allowed = canReadHelp(roleBase);
 
+  const selectedTask = useMemo(
+    () => (taskId ? (tasksQuery.data ?? []).find((task) => task.id === taskId) ?? null : null),
+    [tasksQuery.data, taskId],
+  );
+  const showAllRoles = showAllRolesChoice || (selectedTask !== null && !selectedTask.roles.includes(roleBase));
   const visibleTasks = useMemo(
     () => browsableTasks(tasksForRole(tasksQuery.data ?? [], roleBase, showAllRoles)),
     [tasksQuery.data, roleBase, showAllRoles],
   );
   const sections = useMemo(() => groupBySection(visibleTasks), [visibleTasks]);
   const results = useMemo(() => searchTasks(visibleTasks, query), [visibleTasks, query]);
-  const selectedTask = useMemo(
-    () => (taskId ? (tasksQuery.data ?? []).find((task) => task.id === taskId) ?? null : null),
-    [tasksQuery.data, taskId],
-  );
 
   const updateParams = (changes) => {
     const next = new URLSearchParams(searchParams);
     Object.entries(changes).forEach(([key, value]) => (value ? next.set(key, value) : next.delete(key)));
     setSearchParams(next);
+  };
+
+  const changeQuery = (value) => {
+    setQuery(value);
+    if (value.trim() !== '' && taskId) updateParams({ tarea: null });
   };
 
   return {
@@ -44,7 +50,8 @@ export function useHelpBrowser() {
     error: tasksQuery.error,
     retry: tasksQuery.refetch,
     query,
-    setQuery,
+    setQuery: changeQuery,
+    viewKey: `${sectionId ?? ''}|${selectedTask?.id ?? ''}`,
     showAllRoles,
     setShowAllRoles,
     searching: query.trim() !== '',
@@ -56,6 +63,9 @@ export function useHelpBrowser() {
     openSection: (id) => updateParams({ seccion: id, tarea: null }),
     closeSection: () => updateParams({ seccion: null, tarea: null }),
     openTask: (id) => updateParams({ tarea: id }),
-    closeTask: () => updateParams({ tarea: null }),
+    closeTask: () => {
+      setShowAllRoles(showAllRoles);
+      updateParams({ tarea: null });
+    },
   };
 }

@@ -29,13 +29,14 @@ vi.mock('@/features/help/lib/helpContentSource', () => ({
   loadHelpTasks: () => Promise.resolve(TASKS),
 }));
 
-const renderHelp = (role = 'PRECEPTOR') => {
+const renderHelp = (role = 'PRECEPTOR', route = '/ayuda') => {
   authState.roles = [role];
-  return renderWithProviders(<HelpPage />, { route: '/ayuda' });
+  return renderWithProviders(<HelpPage />, { route });
 };
 
 beforeEach(() => {
   authState.roles = ['PRECEPTOR'];
+  window.scrollTo = vi.fn();
 });
 
 describe('HelpPage', () => {
@@ -89,11 +90,40 @@ describe('HelpPage', () => {
 
     expect(screen.getByRole('heading', { name: 'Abrir una cohorte', level: 2 })).toBeInTheDocument();
     expect(screen.getByRole('navigation', { name: 'En esta tarea' })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: 'Pasos' })).toBeInTheDocument();
+    expect(screen.getAllByRole('button', { name: 'Pasos' }).length).toBeGreaterThan(0);
 
     await user.click(screen.getByRole('button', { name: 'Volver' }));
 
     expect(screen.getByRole('button', { name: /Abrir una cohorte/ })).toBeInTheDocument();
+  });
+
+  it('movesFocusToTheTaskTitleAndScrollsToTopWhenOpeningATask', async () => {
+    const user = userEvent.setup();
+    renderHelp('PRECEPTOR');
+
+    await user.click(await screen.findByRole('button', { name: /Armar el año/ }));
+    await user.click(screen.getByRole('button', { name: /Abrir una cohorte/ }));
+
+    expect(screen.getByRole('heading', { name: 'Abrir una cohorte', level: 2 })).toHaveFocus();
+    expect(window.scrollTo).toHaveBeenCalledWith(0, 0);
+  });
+
+  it('closesTheOpenTaskAndShowsResultsWhenTypingInTheSearch', async () => {
+    const user = userEvent.setup();
+    renderHelp('PRECEPTOR', '/ayuda?tarea=students/take-attendance');
+    expect(await screen.findByRole('heading', { name: 'Tomar asistencia', level: 2 })).toBeInTheDocument();
+
+    await user.type(screen.getByRole('searchbox'), 'asis');
+
+    expect(screen.queryByRole('heading', { name: 'Tomar asistencia', level: 2 })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Tomar asistencia/ })).toBeInTheDocument();
+  });
+
+  it('turnsOnAllRolesWhenTheLinkedTaskBelongsToAnotherRole', async () => {
+    renderHelp('PRECEPTOR', '/ayuda?tarea=roles-and-permissions/approve-permissions');
+
+    expect(await screen.findByRole('heading', { name: 'Aprobar permisos', level: 2 })).toBeInTheDocument();
+    expect(screen.getByRole('switch', { name: 'Ver todos los roles' })).toBeChecked();
   });
 
   it('findsTasksByBodyTextIgnoringAccentsAndCase', async () => {
