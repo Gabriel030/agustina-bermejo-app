@@ -3,6 +3,8 @@ package com.red_escuela.backend.enrollment.service;
 import com.red_escuela.backend.billing.events.AdmissionInvoicePaidEvent;
 import com.red_escuela.backend.enrollment.events.AdmissionEnrollmentStalledEvent;
 import com.red_escuela.backend.enrollment.repository.ProgramEnrollmentApplicationRepository;
+import com.red_escuela.backend.shared.module.BillingMode;
+import com.red_escuela.backend.shared.module.CurrentBillingModePort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
@@ -34,18 +36,24 @@ public class AdmissionEnrollmentStalledNotifier {
     private final ProgramEnrollmentApplicationRepository applicationRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
+    private final CurrentBillingModePort billingMode;
 
     public AdmissionEnrollmentStalledNotifier(JdbcTemplate jdbcTemplate, TransactionTemplate transactionTemplate,
                                               ProgramEnrollmentApplicationRepository applicationRepository,
-                                              ApplicationEventPublisher eventPublisher, Clock clock) {
+                                              ApplicationEventPublisher eventPublisher, Clock clock,
+                                              CurrentBillingModePort billingMode) {
         this.jdbcTemplate = jdbcTemplate;
         this.transactionTemplate = transactionTemplate;
         this.applicationRepository = applicationRepository;
         this.eventPublisher = eventPublisher;
         this.clock = clock;
+        this.billingMode = billingMode;
     }
 
     public int notifySecretariatOfStalledEnrollments() {
+        if (billingMode.currentMode() != BillingMode.FULL) {
+            return 0;
+        }
         OffsetDateTime threshold = OffsetDateTime.ofInstant(clock.instant().minus(STALLED_AFTER), clock.getZone());
         List<Long> applicationIds = jdbcTemplate.queryForList(FIND_STALLED_APPLICATIONS, Long.class,
                 AdmissionInvoicePaidEvent.class.getName(), "%" + ProgramEnrollmentAdmissionPaymentListener.class.getName() + "%", threshold);

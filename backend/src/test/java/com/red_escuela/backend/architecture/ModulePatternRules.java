@@ -112,6 +112,21 @@ public final class ModulePatternRules {
                 .because("an interface in api is an inverted port: it is named *Port and implemented by a class of another module");
     }
 
+    public static ArchRule enrollmentDoesNotImportBillingInternalTypes(String root) {
+        return noClasses()
+                .that().resideInAPackage(root + ".enrollment..")
+                .should().dependOnClassesThat(resideInBillingOutsideItsPublicSurface(root))
+                .allowEmptyShould(true)
+                .because("enrollment talks to billing only through ports in enrollment.api or billing.api and billing events, never through billing internals");
+    }
+
+    private static DescribedPredicate<JavaClass> resideInBillingOutsideItsPublicSurface(String root) {
+        return DescribedPredicate.describe("billing internal types",
+                javaClass -> javaClass.getPackageName().startsWith(root + ".billing")
+                        && !javaClass.getPackageName().startsWith(root + ".billing.api")
+                        && !javaClass.getPackageName().startsWith(root + ".billing.events"));
+    }
+
     static String moduleOf(JavaClass javaClass, String root) {
         String packageName = javaClass.getPackageName();
         if (!packageName.startsWith(root + ".")) {

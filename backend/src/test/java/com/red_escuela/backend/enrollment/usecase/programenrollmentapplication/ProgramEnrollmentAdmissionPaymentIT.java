@@ -35,6 +35,7 @@ import com.red_escuela.backend.identity.repository.RoleRepository;
 import com.red_escuela.backend.shared.domain.Address;
 import com.red_escuela.backend.shared.domain.StatusType;
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
@@ -79,6 +80,7 @@ class ProgramEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
     @Autowired private ApplicationEventPublisher eventPublisher;
     @Autowired private AdmissionEnrollmentStalledNotifier stalledNotifier;
     @Autowired private NotificationRepository notificationRepository;
+    @Autowired private com.red_escuela.backend.platform.infrastructure.FeatureSnapshotHolder snapshotHolder;
     @Autowired private com.red_escuela.backend.billing.usecase.paymentreceipt.UploadPaymentReceiptUseCase uploadPaymentReceiptUseCase;
     @Autowired private com.red_escuela.backend.billing.usecase.paymentreceipt.ApprovePaymentReceiptUseCase approvePaymentReceiptUseCase;
     @Autowired private ProgramEnrollmentService programEnrollmentService;
@@ -91,6 +93,12 @@ class ProgramEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
     void startBillingInvariantBaseline() {
         invariants = BillingInvariantChecker.startingNow(jdbc);
         reset(programEnrollmentService);
+    }
+
+    @AfterEach
+    void restoreBillingFull() {
+        jdbc.update("update platform_feature set enabled = true, mode = 'FULL', version = 0 where code = 'BILLING'");
+        snapshotHolder.refresh();
     }
 
     private Person persistPerson(String dni) {
@@ -290,6 +298,24 @@ class ProgramEnrollmentAdmissionPaymentIT extends AbstractIntegrationTest {
         await().pollDelay(Duration.ofSeconds(3)).atMost(Duration.ofSeconds(10)).untilAsserted(() -> assertThat(stalledNotificationsFor(staff, application)).isEqualTo(1L));
         assertThat(notificationRepository.findByRecipientIdOrderByCreatedAtDesc(application.getStudent().getPerson().getId()))
                 .noneMatch(notification -> notification.getType() == NotificationType.PROGRAM_ENROLLMENT_STALLED);
+    }
+
+    @Test
+    void admissionStalledJobDoesNotNotifyWhenBillingIsOff() {
+        Person staff = persistPreceptor();
+        ProgramEnrollmentApplication application = requestApplication();
+        Invoice invoice = approve(application);
+        failEnrollmentTechnically();
+        payInFull(invoice);
+        await().atMost(Duration.ofSeconds(30)).untilAsserted(() -> assertThat(incompletePublicationsOf(invoice)).isEqualTo(1L));
+        jdbc.update("update platform_feature set enabled = false, mode = 'OFF' where code = 'BILLING'");
+        snapshotHolder.refresh();
+
+        MutableClock.INSTANCE.advance(Duration.ofMinutes(61));
+        int notified = stalledNotifier.notifySecretariatOfStalledEnrollments();
+
+        assertThat(notified).isZero();
+        assertThat(stalledNotificationsFor(staff, application)).isZero();
     }
 
     @Test
