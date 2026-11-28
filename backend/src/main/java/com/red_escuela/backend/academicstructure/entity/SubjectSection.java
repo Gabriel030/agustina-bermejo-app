@@ -11,7 +11,6 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.List;
 import com.red_escuela.backend.academicstructure.domain.SectionShift;
-import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.shared.domain.StatusType;
 
 @NamedInterface("model")
@@ -40,9 +39,8 @@ public class SubjectSection {
     @JoinColumn(name = "term_id", nullable = false)
     private Term term;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "evaluation_scheme_id")
-    private EvaluationScheme evaluationScheme;
+    @Column(name = "evaluation_scheme_id")
+    private Long evaluationSchemeId;
 
     @Column(name = "schedule")
     private String schedule;

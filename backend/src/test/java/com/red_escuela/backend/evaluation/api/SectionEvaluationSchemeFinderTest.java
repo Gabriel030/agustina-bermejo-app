@@ -5,6 +5,7 @@ import com.red_escuela.backend.academicstructure.domain.SectionKind;
 import com.red_escuela.backend.academicstructure.entity.CourseSubjectSection;
 import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
+import com.red_escuela.backend.evaluation.repository.EvaluationSchemeRepository;
 import com.red_escuela.backend.shared.domain.Grade;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -23,13 +25,18 @@ class SectionEvaluationSchemeFinderTest {
     @Mock
     private SectionFinder sectionFinder;
 
+    @Mock
+    private EvaluationSchemeRepository schemeRepository;
+
     @InjectMocks
     private SectionEvaluationSchemeFinder finder;
 
     @Test
     void summarizesTheSchemeOfAProgramSection() {
         SubjectSection section = new SubjectSection();
-        section.setEvaluationScheme(scheme());
+        EvaluationScheme scheme = scheme();
+        section.setEvaluationSchemeId(scheme.getId());
+        when(schemeRepository.findById(scheme.getId())).thenReturn(Optional.of(scheme));
         when(sectionFinder.exists(SectionKind.PROGRAM, 3L)).thenReturn(true);
         when(sectionFinder.findProgramSectionEntity(3L)).thenReturn(section);
 
@@ -40,7 +47,9 @@ class SectionEvaluationSchemeFinderTest {
     @Test
     void summarizesTheSchemeOfACourseSection() {
         CourseSubjectSection section = new CourseSubjectSection();
-        section.setEvaluationScheme(scheme());
+        EvaluationScheme scheme = scheme();
+        section.setEvaluationSchemeId(scheme.getId());
+        when(schemeRepository.findById(scheme.getId())).thenReturn(Optional.of(scheme));
         when(sectionFinder.exists(SectionKind.COURSE, 4L)).thenReturn(true);
         when(sectionFinder.findCourseSectionEntity(4L)).thenReturn(section);
 
@@ -68,7 +77,8 @@ class SectionEvaluationSchemeFinderTest {
         EvaluationScheme scheme = scheme();
         scheme.setMinApprovalGrade(null);
         SubjectSection section = new SubjectSection();
-        section.setEvaluationScheme(scheme);
+        section.setEvaluationSchemeId(scheme.getId());
+        when(schemeRepository.findById(scheme.getId())).thenReturn(Optional.of(scheme));
         when(sectionFinder.exists(SectionKind.PROGRAM, 3L)).thenReturn(true);
         when(sectionFinder.findProgramSectionEntity(3L)).thenReturn(section);
 
@@ -77,6 +87,7 @@ class SectionEvaluationSchemeFinderTest {
 
     private EvaluationScheme scheme() {
         EvaluationScheme scheme = new EvaluationScheme();
+        scheme.setId(77L);
         scheme.setExamCountExpected(3);
         scheme.setTpCountExpected(2);
         scheme.setHasFinal(true);

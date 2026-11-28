@@ -6,7 +6,6 @@ import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.academicstructure.exception.SectionEvaluationSchemeLockedException;
 import com.red_escuela.backend.academicstructure.repository.SubjectSectionRepository;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
-import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,8 +30,6 @@ class ProgramSectionEvaluationSchemeLockTest {
     @Mock
     private SectionEvaluationSetupPort evaluationSetupPort;
     @Mock
-    private EntityManager entityManager;
-    @Mock
     private CapacityChangeEvents capacityChangeEvents;
     @InjectMocks
     private SubjectSectionService service;
@@ -46,7 +43,7 @@ class ProgramSectionEvaluationSchemeLockTest {
         section.setId(SECTION_ID);
         currentScheme = new EvaluationScheme();
         currentScheme.setId(10L);
-        section.setEvaluationScheme(currentScheme);
+        section.setEvaluationSchemeId(currentScheme == null ? null : currentScheme.getId());
         when(sectionRepository.findById(SECTION_ID)).thenReturn(Optional.of(section));
     }
 
@@ -63,21 +60,19 @@ class ProgramSectionEvaluationSchemeLockTest {
         var newScheme = new EvaluationScheme();
         newScheme.setId(11L);
         when(evaluationSetupPort.hasGradesLoadedInProgramSection(SECTION_ID)).thenReturn(false);
-        when(entityManager.find(EvaluationScheme.class, 11L)).thenReturn(newScheme);
         when(sectionRepository.save(any(SubjectSection.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var updated = service.update(SECTION_ID, new UpdateSectionRequest(null, null, null, 11L));
 
-        assertThat(updated.getEvaluationScheme()).isSameAs(newScheme);
+        assertThat(updated.getEvaluationSchemeId()).isEqualTo(newScheme.getId());
     }
 
     @Test
     void sendingTheSameSchemeOfSectionWithGradesIsAllowed() {
-        when(entityManager.find(EvaluationScheme.class, 10L)).thenReturn(currentScheme);
         when(sectionRepository.save(any(SubjectSection.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         var updated = service.update(SECTION_ID, new UpdateSectionRequest(null, null, null, 10L));
 
-        assertThat(updated.getEvaluationScheme()).isSameAs(currentScheme);
+        assertThat(updated.getEvaluationSchemeId()).isEqualTo(currentScheme.getId());
     }
 }

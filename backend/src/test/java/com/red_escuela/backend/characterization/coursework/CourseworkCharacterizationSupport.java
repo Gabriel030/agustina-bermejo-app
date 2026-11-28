@@ -219,7 +219,7 @@ abstract class CourseworkCharacterizationSupport extends AbstractIntegrationTest
         section.setName("Comision " + key);
         section.setSubject(subject);
         section.setTerm(term);
-        section.setEvaluationScheme(scheme);
+        section.setEvaluationSchemeId(scheme == null ? null : scheme.getId());
         section.setMaxAbsenceRate(maxAbsenceRate);
         section.setCapacity(30);
         section.setStatus(StatusType.ACTIVE);

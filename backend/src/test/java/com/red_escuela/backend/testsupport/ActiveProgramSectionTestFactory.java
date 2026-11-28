@@ -45,7 +45,7 @@ public class ActiveProgramSectionTestFactory {
         identityAssigner.identifyNewSubjectSection(section, null, null);
         if (evaluationSchemeId != null) {
             evaluationSetupPort.requireEvaluationSchemeExists(evaluationSchemeId);
-            section.setEvaluationScheme(entityManager.find(EvaluationScheme.class, evaluationSchemeId));
+            section.setEvaluationSchemeId(evaluationSchemeId);
         }
         SubjectSection saved = sectionRepository.save(section);
         evaluationSetupPort.createInitialEvaluationDraft(saved);

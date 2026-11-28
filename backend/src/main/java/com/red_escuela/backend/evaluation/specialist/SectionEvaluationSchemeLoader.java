@@ -5,7 +5,6 @@ import com.red_escuela.backend.academicstructure.entity.SubjectSection;
 import com.red_escuela.backend.evaluation.entity.EvaluationScheme;
 import com.red_escuela.backend.evaluation.entity.SectionEvaluationConfig;
 import com.red_escuela.backend.evaluation.repository.EvaluationSchemeRepository;
-import org.hibernate.Hibernate;
 import org.springframework.stereotype.Component;
 
 @Component
@@ -18,11 +17,11 @@ public class SectionEvaluationSchemeLoader {
     }
 
     public EvaluationScheme ofProgramSection(SubjectSection section) {
-        return section == null ? null : resolve(section.getEvaluationScheme());
+        return section == null ? null : resolve(section.getEvaluationSchemeId());
     }
 
     public EvaluationScheme ofCourseSection(CourseSubjectSection section) {
-        return section == null ? null : resolve(section.getEvaluationScheme());
+        return section == null ? null : resolve(section.getEvaluationSchemeId());
     }
 
     public EvaluationScheme ofConfig(SectionEvaluationConfig config) {
@@ -31,10 +30,7 @@ public class SectionEvaluationSchemeLoader {
                 : ofProgramSection(config.getSubjectSection());
     }
 
-    private EvaluationScheme resolve(EvaluationScheme related) {
-        if (related == null || Hibernate.isInitialized(related)) {
-            return related;
-        }
-        return related.getId() == null ? null : schemeRepository.findById(related.getId()).orElse(null);
+    private EvaluationScheme resolve(Long schemeId) {
+        return schemeId == null ? null : schemeRepository.findById(schemeId).orElse(null);
     }
 }
