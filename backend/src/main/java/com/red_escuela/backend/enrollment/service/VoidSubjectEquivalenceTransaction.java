@@ -49,7 +49,7 @@ public class VoidSubjectEquivalenceTransaction {
     }
 
     private String subjectNameOf(ProgramEnrollment enrollment, Long subjectId) {
-        return programCurriculumFinder.findProgramSubject(enrollment.getProgram().getId(), subjectId)
+        return programCurriculumFinder.findProgramSubjectOfPlan(enrollment.getPlan().getId(), subjectId)
                 .map(ProgramSubjectView::subjectName)
                 .orElse(null);
     }

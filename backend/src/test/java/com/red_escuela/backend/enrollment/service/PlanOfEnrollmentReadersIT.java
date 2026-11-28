@@ -11,7 +11,14 @@ import com.red_escuela.backend.enrollment.api.PrerequisiteDetail;
 import com.red_escuela.backend.enrollment.api.PrerequisiteOutcome;
 import com.red_escuela.backend.enrollment.api.ProgramPrerequisiteBatchEvaluator;
 import com.red_escuela.backend.enrollment.dto.OwnSubjectEquivalenceResponse;
+import com.red_escuela.backend.enrollment.api.ProgramPrerequisiteEvaluator;
+import com.red_escuela.backend.enrollment.api.PrerequisiteAssessment;
 import com.red_escuela.backend.enrollment.entity.SubjectEquivalence;
+import com.red_escuela.backend.enrollment.events.SubjectEquivalenceVoidedEvent;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import java.time.LocalDateTime;
 
 import com.red_escuela.backend.academicstructure.domain.CohortIntake;
@@ -61,6 +68,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @SpringBootTest
 @ActiveProfiles("test")
 @Transactional
+@RecordApplicationEvents
 class PlanOfEnrollmentReadersIT extends AbstractIntegrationTest {
     @Autowired
     private ProgramEnrollmentService programEnrollmentService;
@@ -76,6 +84,12 @@ class PlanOfEnrollmentReadersIT extends AbstractIntegrationTest {
     private ProgramPrerequisiteBatchEvaluator prerequisiteBatchEvaluator;
     @Autowired
     private SubjectEquivalenceReader subjectEquivalenceReader;
+    @Autowired
+    private ProgramPrerequisiteEvaluator programPrerequisiteEvaluator;
+    @Autowired
+    private VoidSubjectEquivalenceTransaction voidSubjectEquivalenceTransaction;
+    @Autowired
+    private ApplicationEvents applicationEvents;
     @Autowired
     private ProgramCurriculumFinder programCurriculumFinder;
     @Autowired
@@ -187,6 +201,30 @@ class PlanOfEnrollmentReadersIT extends AbstractIntegrationTest {
         entityManager.flush();
     }
 
+    private SubjectEquivalence persistEquivalence(ProgramEnrollment enrollment, Student student, Subject subject) {
+        SubjectEquivalence equivalence = new SubjectEquivalence();
+        equivalence.setProgramEnrollment(enrollment);
+        equivalence.setSubjectId(subject.getId());
+        equivalence.setOriginInstitution("Otra institución");
+        equivalence.setOriginSubjectName("Biología I");
+        equivalence.setRecognizedOn(LocalDate.now(clock));
+        equivalence.setResolutionNumber("R-1");
+        equivalence.setReason("Equivalencia");
+        equivalence.setRecordedById(student.getPerson().getId());
+        equivalence.setRecordedAt(LocalDateTime.now(clock));
+        entityManager.persist(equivalence);
+        return equivalence;
+    }
+
+    private void activateNewPlanWithoutTheSubjects(Program program) {
+        CurriculumPlanResponse draft = createCurriculumPlanUseCase.createDraftVersion(program.getId(),
+                new CreateCurriculumPlanRequest("Plan sin materias previas", LocalDate.now(clock), null, null, null, null));
+        programSubjectService.addSubjectToPlan(draft.id(), new CreateProgramSubjectRequest(
+                persistSubject("Química").getId(), ProgramSubjectCategory.MANDATORY, 1, CurricularTerm.FIRST, 10, null, null, null));
+        activateCurriculumPlanUseCase.activate(draft.id());
+        entityManager.flush();
+    }
+
     @Test
     void prerequisitesAreReadFromThePlanOfTheEnrollmentNotFromTheCurrentPlanOfTheProgram() {
         Program program = persistProgram("Carrera con correlativa quitada");
@@ -238,6 +276,53 @@ class PlanOfEnrollmentReadersIT extends AbstractIntegrationTest {
     }
 
     @Test
+    void enrollmentPrerequisiteAssessmentUsesThePlanOfTheEnrollmentNotTheCurrentPlan() {
+        Program program = persistProgram("Carrera con correlativa quitada para una matrícula");
+        Subject algebra = persistSubject("Álgebra");
+        Subject analysis = persistSubject("Análisis");
+        ProgramSubject algebraEntry = addToProgram(program, algebra, 1);
+        ProgramSubject analysisEntry = addToProgram(program, analysis, 2);
+        programSubjectService.addPrerequisite(analysisEntry.getId(),
+                new AddPrerequisiteRequest(algebraEntry.getId(), RequirementType.APPROVED, null, null));
+        ProgramCohort cohort = persistOpenCohort(program);
+        Student student = persistStudent("72000004");
+        entityManager.flush();
+        ProgramEnrollment enrollment = programEnrollmentService.enroll(student.getId(),
+                new CreateProgramEnrollmentRequest(program.getId(), cohort.getId()));
+        startNewPlanVersionWithout(program, cohort.getPlan().getId(), null, analysis);
+
+        List<PrerequisiteAssessment> assessments = programPrerequisiteEvaluator.assess(enrollment.getId(), analysis.getId());
+
+        assertThat(assessments).extracting(PrerequisiteAssessment::subjectId).containsExactly(algebra.getId());
+        assertThat(programPrerequisiteEvaluator.areAllMetOrSubjectOutsidePlan(enrollment.getId(), analysis.getId())).isFalse();
+    }
+
+    @Test
+    void voidedEquivalenceEventCarriesTheSubjectNameEvenWhenTheCurrentPlanDoesNotHaveTheSubject() {
+        Program program = persistProgram("Carrera con equivalencia anulada");
+        Subject biology = persistSubject("Biología");
+        addToProgram(program, biology, 1);
+        ProgramCohort cohort = persistOpenCohort(program);
+        Student student = persistStudent("72000005");
+        entityManager.flush();
+        ProgramEnrollment enrollment = programEnrollmentService.enroll(student.getId(),
+                new CreateProgramEnrollmentRequest(program.getId(), cohort.getId()));
+        SubjectEquivalence equivalence = persistEquivalence(enrollment, student, biology);
+        activateNewPlanWithoutTheSubjects(program);
+        SecurityContextHolder.getContext().setAuthentication(
+                new UsernamePasswordAuthenticationToken(student.getPerson().getId().toString(), null, List.of()));
+
+        try {
+            voidSubjectEquivalenceTransaction.voidEquivalence(enrollment.getId(), equivalence.getId(), "Se cargó sobre la materia equivocada");
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+
+        assertThat(applicationEvents.stream(SubjectEquivalenceVoidedEvent.class).map(SubjectEquivalenceVoidedEvent::subjectName))
+                .containsExactly("Biología");
+    }
+
+    @Test
     void equivalenceLabelsComeFromThePlanOfTheEnrollmentEvenWhenTheCurrentPlanDroppedTheSubject() {
         Program program = persistProgram("Carrera con materia dada de baja");
         Subject biology = persistSubject("Biología");
@@ -247,17 +332,7 @@ class PlanOfEnrollmentReadersIT extends AbstractIntegrationTest {
         entityManager.flush();
         ProgramEnrollment enrollment = programEnrollmentService.enroll(student.getId(),
                 new CreateProgramEnrollmentRequest(program.getId(), cohort.getId()));
-        SubjectEquivalence equivalence = new SubjectEquivalence();
-        equivalence.setProgramEnrollment(enrollment);
-        equivalence.setSubjectId(biology.getId());
-        equivalence.setOriginInstitution("Otra institución");
-        equivalence.setOriginSubjectName("Biología I");
-        equivalence.setRecognizedOn(LocalDate.now(clock));
-        equivalence.setResolutionNumber("R-1");
-        equivalence.setReason("Equivalencia");
-        equivalence.setRecordedById(student.getPerson().getId());
-        equivalence.setRecordedAt(LocalDateTime.now(clock));
-        entityManager.persist(equivalence);
+        persistEquivalence(enrollment, student, biology);
         startNewPlanVersionWithout(program, cohort.getPlan().getId(), biology, null);
         entityManager.flush();
         entityManager.clear();

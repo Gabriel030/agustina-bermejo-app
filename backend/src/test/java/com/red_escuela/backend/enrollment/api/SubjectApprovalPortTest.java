@@ -140,7 +140,7 @@ class SubjectApprovalPortTest {
         when(enrollment.getPlan()).thenReturn(plan);
         when(plan.getId()).thenReturn(PLAN_ID);
         when(program.getId()).thenReturn(PROGRAM_ID);
-        when(curriculumFinder.findProgramSubject(PROGRAM_ID, 3L))
+        when(curriculumFinder.findProgramSubjectOfPlan(PLAN_ID, 3L))
                 .thenReturn(Optional.of(new ProgramSubjectView(33L, 3L, "Analisis", 4, 1, null, null)));
         when(curriculumFinder.findPrerequisites(33L)).thenReturn(List.of(
                 new PrerequisiteView(1L, "Algebra", RequirementType.APPROVED, "S1", null),
