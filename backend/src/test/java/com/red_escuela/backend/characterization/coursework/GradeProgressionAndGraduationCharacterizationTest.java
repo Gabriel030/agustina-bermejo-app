@@ -122,7 +122,7 @@ class GradeProgressionAndGraduationCharacterizationTest extends CourseworkCharac
     }
 
     @Test
-    void promotionThresholdOnAllExamsApprovesWithoutFinalAndRequestsGraduation() throws Exception {
+    void promotionThresholdOnAllExamsApprovesWithoutFinalAndDefersGraduationToClosure() throws Exception {
         Classroom classroom = persistClassroom("grade5", "7700005", persistScheme(2, true, 7.0), null, 10, 10, InstructorRole.LEAD);
 
         load(classroom, GradeItemType.EXAM, 1, "8");
@@ -131,7 +131,7 @@ class GradeProgressionAndGraduationCharacterizationTest extends CourseworkCharac
         assertThat(statusOf(classroom.enrollment())).isEqualTo(EnrollmentStatus.APPROVED);
         assertThat(classroom.enrollment().getFinalGradeType()).isEqualTo(FinalGradeType.PROMOTION);
         assertThat(classroom.enrollment().getFinalScore().value()).isEqualByComparingTo("8.5");
-        assertThat(countRows("GraduationRequest", "e.programEnrollment.id = " + classroom.programEnrollment().getId())).isEqualTo(1);
+        assertThat(countRows("GraduationRequest", "e.programEnrollment.id = " + classroom.programEnrollment().getId())).isZero();
     }
 
     @Test

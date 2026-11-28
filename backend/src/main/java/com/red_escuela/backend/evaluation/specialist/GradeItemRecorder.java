@@ -291,7 +291,9 @@ public class GradeItemRecorder {
             sectionEnrollmentOutcomeRecorder.recordProgramOutcome(
                     enrollmentId, result.status(), result.finalScore(), result.finalGradeType(), finalCorrection || rebuild);
             if (result.status() == EnrollmentStatus.APPROVED) {
-                graduationRequestTrigger.requestGraduationIfEligible(programEnrollmentId);
+                if (result.finalGradeType() != FinalGradeType.PROMOTION) {
+                    graduationRequestTrigger.requestGraduationIfEligible(programEnrollmentId);
+                }
             } else if (losesApproval) {
                 graduationRequestTrigger.flagGraduationRequestOutdated(programEnrollmentId);
             }
