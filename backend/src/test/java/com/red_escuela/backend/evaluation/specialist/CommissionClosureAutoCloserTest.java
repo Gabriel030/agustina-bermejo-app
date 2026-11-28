@@ -33,6 +33,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -174,5 +175,34 @@ class CommissionClosureAutoCloserTest {
         closer.closeIfGradesLoaded(SectionKind.PROGRAM, 5L);
 
         assertThat(conditional.getFinalCondition()).isEqualTo(ClosureFinalCondition.GOES_TO_FINAL);
+    }
+
+    @Test
+    void aSectionWithSomeLiveEnrollmentWithoutAGradeIsNotClosedAndNothingIsApplied() {
+        CommissionClosure closure = closureIn(ClosureStatus.DRAFT_AVAILABLE);
+        CommissionClosureAutoCloser closer = closerOn(TERM_END.plusDays(15));
+        when(snapshotRecorder.recordSnapshot(9L)).thenReturn(new ClosureSnapshotResult(List.of(), List.of(2L)));
+        when(studentRepository.findByClosureId(9L)).thenReturn(List.of(graded(1L, ClosureFinalCondition.PROMOTES)));
+
+        assertThat(closer.closeIfGradesLoaded(SectionKind.PROGRAM, 5L)).isFalse();
+
+        assertThat(closure.getStatus()).isEqualTo(ClosureStatus.DRAFT_AVAILABLE);
+        verify(outcomeApplier, never()).applyClosedResults(any(), any());
+        verify(auditRepository, never()).save(any());
+        verify(eventPublisher, never()).publishEvent(any(ClosureApprovedEvent.class));
+    }
+
+    @Test
+    void runningTwiceClosesOnceAndTheSecondRunChangesNothing() {
+        closureIn(ClosureStatus.DRAFT_AVAILABLE);
+        CommissionClosureAutoCloser closer = closerOn(TERM_END.plusDays(15));
+        when(snapshotRecorder.recordSnapshot(9L)).thenReturn(new ClosureSnapshotResult(List.of(), List.of()));
+        when(studentRepository.findByClosureId(9L)).thenReturn(List.of(graded(1L, ClosureFinalCondition.PROMOTES)));
+
+        assertThat(closer.closeIfGradesLoaded(SectionKind.PROGRAM, 5L)).isTrue();
+        assertThat(closer.closeIfGradesLoaded(SectionKind.PROGRAM, 5L)).isFalse();
+
+        verify(outcomeApplier, times(1)).applyClosedResults(any(), any());
+        verify(auditRepository, times(1)).save(any());
     }
 }

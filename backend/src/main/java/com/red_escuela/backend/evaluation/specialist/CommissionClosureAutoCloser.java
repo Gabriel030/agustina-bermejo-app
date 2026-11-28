@@ -86,7 +86,8 @@ public class CommissionClosureAutoCloser {
         if (withoutConfirmation) {
             int pending = snapshotRecorder.recordSnapshot(closureId).pendingEnrollmentIds().size();
             if (pending > 0) {
-                log.warn("El cierre automático deja matrículas sin nota: kind={}, sectionId={}, pendientes={}", kind, sectionId, pending);
+                log.warn("La comisión no se cierra sola porque tiene matrículas vivas sin nota: kind={}, sectionId={}, pendientes={}", kind, sectionId, pending);
+                return false;
             }
         }
         List<CommissionClosureStudent> rows = settleConditionalPromotions(closureId);
