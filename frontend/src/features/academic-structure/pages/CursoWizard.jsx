@@ -8,6 +8,7 @@ import { Stepper } from '@/components/Stepper';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { LoadErrorState } from '@/components/LoadErrorState';
+import { PreceptorMultiSelect } from '@/components/PreceptorMultiSelect';
 import { useCreateCourse } from '@/features/academic-structure/hooks/useCourses';
 import { useTerminos } from '@/features/academic-structure/hooks/useTerminos';
 import { useUnsavedChangesGuard } from '@/features/academic-structure/components/UnsavedChangesGuard';
@@ -37,6 +38,7 @@ function estadoInicial() {
     capacity: '',
     price: '',
     teachingMode: '',
+    responsiblePreceptorIds: [],
     schedule: '',
     durationMonths: '',
     durationHours: '',
@@ -139,6 +141,15 @@ function Paso1Datos({ state, dispatch }) {
         options={TEACHING_MODE_OPTIONS}
       />
 
+      <PreceptorMultiSelect
+        label="Responsable"
+        required
+        value={state.responsiblePreceptorIds}
+        onChange={(ids) => dispatch({ type: 'SET', campo: 'responsiblePreceptorIds', valor: ids })}
+        error={errors.responsiblePreceptorIds}
+        hint="Preceptor de todo el curso"
+      />
+
       {countErrors(errors) > 0 && (
         <p role="alert" className="text-size-13 text-danger">
           {invalidFieldsSummary(errors)}
@@ -171,6 +182,7 @@ function Paso2Detalle({ state, dispatch }) {
         termId: parseInt(state.termId),
         capacity: parseInt(state.capacity),
         price: { amount: String(parseFloat(state.price)), currency: 'ARS' },
+        responsiblePreceptorIds: state.responsiblePreceptorIds,
         ...(state.teachingMode && { teachingMode: state.teachingMode }),
         ...(state.schedule.trim() && { schedule: state.schedule.trim() }),
         ...(state.durationMonths && { durationMonths: parseInt(state.durationMonths) }),
@@ -285,7 +297,7 @@ const FIELD_KEYS = [
 export function CursoWizard() {
   const [state, dispatch] = useReducer(reducer, null, estadoInicial);
   const initial = estadoInicial();
-  const dirty = FIELD_KEYS.some((key) => state[key] !== initial[key]);
+  const dirty = FIELD_KEYS.some((key) => state[key] !== initial[key]) || state.responsiblePreceptorIds.length > 0;
   const { guardDialog } = useUnsavedChangesGuard(dirty);
 
   function handleStepClick(paso) {

@@ -50,6 +50,9 @@ export function validateCourseBasics(values) {
   }
   const priceError = validateRequiredPositiveAmount(values.price, 'La cuota');
   if (priceError) errors.price = priceError;
+  if (values.responsiblePreceptorIds !== undefined && values.responsiblePreceptorIds.length === 0) {
+    errors.responsiblePreceptorIds = 'Elegí al menos un preceptor.';
+  }
   return errors;
 }
 
