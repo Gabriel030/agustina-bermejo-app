@@ -4,6 +4,9 @@ import com.red_escuela.backend.graduation.certificate.approvedsubjects.entity.Ap
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.entity.ApprovedSubjectsCertificateStatus;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.port.ApprovedSubjectsAuditLog;
 import com.red_escuela.backend.graduation.certificate.approvedsubjects.repository.ApprovedSubjectsCertificateRepository;
+import com.red_escuela.backend.graduation.events.CertificateInvalidatedEvent;
+import com.red_escuela.backend.identity.api.StudentFinder;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,12 +18,17 @@ public class ApprovedSubjectsEnrollmentCertificateRevoker {
 
     private final ApprovedSubjectsCertificateRepository repository;
     private final ApprovedSubjectsAuditLog auditLog;
+    private final StudentFinder studentFinder;
+    private final ApplicationEventPublisher eventPublisher;
     private final Clock clock;
 
     public ApprovedSubjectsEnrollmentCertificateRevoker(ApprovedSubjectsCertificateRepository repository,
-                                                        ApprovedSubjectsAuditLog auditLog, Clock clock) {
+                                                        ApprovedSubjectsAuditLog auditLog, StudentFinder studentFinder,
+                                                        ApplicationEventPublisher eventPublisher, Clock clock) {
         this.repository = repository;
         this.auditLog = auditLog;
+        this.studentFinder = studentFinder;
+        this.eventPublisher = eventPublisher;
         this.clock = clock;
     }
 
@@ -32,6 +40,9 @@ public class ApprovedSubjectsEnrollmentCertificateRevoker {
             certificate.revoke(reason, null, now);
             repository.save(certificate);
             auditLog.certificateRevoked(certificate.getId(), reason);
+            eventPublisher.publishEvent(CertificateInvalidatedEvent.of(certificate.getId(),
+                    CertificateInvalidatedEvent.APPROVED_SUBJECTS,
+                    studentFinder.requireById(certificate.getStudentId()).getPerson().getId(), reason));
         }
     }
 }
