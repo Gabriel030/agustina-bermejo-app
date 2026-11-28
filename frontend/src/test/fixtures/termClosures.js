@@ -20,6 +20,7 @@ export function pendingExamBoardClosure(overrides = {}) {
     daysAfterExamDate: 18,
     graceOver: true,
     registeredCount: 4,
+    withoutTribunal: false,
     ...overrides,
   };
 }

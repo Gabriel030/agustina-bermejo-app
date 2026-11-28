@@ -8,6 +8,7 @@ import com.red_escuela.backend.evaluation.events.ClosureConfirmationReminderEven
 import com.red_escuela.backend.evaluation.events.ClosureExceptionGrantedEvent;
 import com.red_escuela.backend.evaluation.events.ClosureReopenedEvent;
 import com.red_escuela.backend.evaluation.events.ExamBoardAutoClosedEvent;
+import com.red_escuela.backend.evaluation.events.ExamBoardWithoutTribunalEvent;
 import com.red_escuela.backend.evaluation.events.TermEndClosureOverdueEvent;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.notification.domain.ClosureNotification;
@@ -32,6 +33,7 @@ public class ClosureEventsNotificationListener {
     static final String NOTIFY_CLOSURE_REMINDER_HANDLER = "ClosureEventsNotificationListener.notifyClosureConfirmationReminder";
     static final String NOTIFY_TERM_END_OVERDUE_HANDLER = "ClosureEventsNotificationListener.notifyTermEndClosureOverdue";
     static final String NOTIFY_EXAM_BOARD_AUTO_CLOSED_HANDLER = "ClosureEventsNotificationListener.notifyExamBoardAutoClosed";
+    static final String NOTIFY_EXAM_BOARD_WITHOUT_TRIBUNAL_HANDLER = "ClosureEventsNotificationListener.notifyExamBoardWithoutTribunal";
     static final String CLOSURE_ENTITY_TYPE = "CommissionClosure";
 
     private final ProcessedEffectGuard effectGuard;
@@ -120,6 +122,14 @@ public class ClosureEventsNotificationListener {
                 eventPublisher.publishEvent(new ClosureNotification(NotificationType.EXAM_BOARD_AUTO_CLOSED,
                         "La mesa de " + event.subjectName() + " se cerró sola al terminar el plazo de gracia: "
                                 + event.absentCount() + " inscriptos sin nota quedaron ausentes.",
+                        List.of(NotificationTopic.TERM_CLOSURE_SUPERVISION), "ExamBoard", event.examBoardId())));
+    }
+
+    @ApplicationModuleListener
+    public void notifyExamBoardWithoutTribunal(ExamBoardWithoutTribunalEvent event) {
+        effectGuard.runEffectOnce(DerivedEventIdentity.of(event), NOTIFY_EXAM_BOARD_WITHOUT_TRIBUNAL_HANDLER, () ->
+                eventPublisher.publishEvent(new ClosureNotification(NotificationType.TERM_CLOSURE_OVERDUE,
+                        "La mesa de " + event.subjectName() + " venció el plazo de gracia pero no se puede cerrar sola: no tiene tribunal asignado.",
                         List.of(NotificationTopic.TERM_CLOSURE_SUPERVISION), "ExamBoard", event.examBoardId())));
     }
 

@@ -22,6 +22,7 @@ import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
 import com.red_escuela.backend.evaluation.repository.CommissionClosureReminderRepository;
 import com.red_escuela.backend.evaluation.repository.CommissionClosureRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardAuditRepository;
+import com.red_escuela.backend.evaluation.repository.ExamBoardInstructorRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRegistrationRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRepository;
 import com.red_escuela.backend.evaluation.repository.SectionGradeItemPublicationRepository;
@@ -82,6 +83,8 @@ class ExamBoardReopenAutoCloseIT extends AbstractIntegrationTest {
     private ExamBoardAuditRepository auditRepository;
     @Autowired
     private ExamBoardRegistrationRepository registrationRepository;
+    @Autowired
+    private ExamBoardInstructorRepository instructorRepository;
     @Autowired
     private CommissionClosureReminderRepository reminderRepository;
     @Autowired
@@ -151,9 +154,9 @@ class ExamBoardReopenAutoCloseIT extends AbstractIntegrationTest {
         when(actorFinder.currentPersonId()).thenReturn(fixtures.person().getId());
         reopener = new ExamBoardReopener(examBoardRepository, auditRepository, actorFinder, clock);
         TermEndClosureReview review = new TermEndClosureReview(mock(EndedSectionFinder.class), closureRepository, publicationRepository,
-                mock(ClosureNotificationTargetsFinder.class), examBoardRepository, registrationRepository, auditRepository);
+                mock(ClosureNotificationTargetsFinder.class), examBoardRepository, registrationRepository, auditRepository, instructorRepository);
         job = new TermEndEscalationJob(review, reminderRepository, examBoardManager, registrationRepository, examBoardRepository,
-                eventPublisher, TransactionOperations.withoutTransaction(), clock);
+                instructorRepository, eventPublisher, TransactionOperations.withoutTransaction(), clock);
 
         reopener.reopen(board.getId(), "Error de carga en el acta");
         entityManager.flush();

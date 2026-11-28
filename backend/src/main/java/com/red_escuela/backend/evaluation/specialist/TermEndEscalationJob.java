@@ -9,6 +9,9 @@ import com.red_escuela.backend.evaluation.events.ExamBoardAutoClosedEvent;
 import com.red_escuela.backend.evaluation.events.TermEndClosureOverdueEvent;
 import com.red_escuela.backend.evaluation.repository.CommissionClosureReminderRepository;
 import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
+import com.red_escuela.backend.evaluation.events.ExamBoardWithoutTribunalEvent;
+import com.red_escuela.backend.evaluation.exception.ExamBoardWithoutTribunalException;
+import com.red_escuela.backend.evaluation.repository.ExamBoardInstructorRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRegistrationRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRepository;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -27,6 +30,7 @@ import java.time.LocalDateTime;
 public class TermEndEscalationJob {
 
     static final int ESCALATION_THRESHOLD = TermEndGracePolicy.GRACE_DAYS + 1;
+    static final int WITHOUT_TRIBUNAL_MARKER = 9000;
 
     private static final Logger log = LoggerFactory.getLogger(TermEndEscalationJob.class);
 
@@ -35,18 +39,21 @@ public class TermEndEscalationJob {
     private final ExamBoardManager examBoardManager;
     private final ExamBoardRegistrationRepository registrationRepository;
     private final ExamBoardRepository examBoardRepository;
+    private final ExamBoardInstructorRepository examBoardInstructorRepository;
     private final ApplicationEventPublisher eventPublisher;
     private final TransactionOperations transactionOperations;
     private final Clock clock;
 
     public TermEndEscalationJob(TermEndClosureReview closureReview, CommissionClosureReminderRepository reminderRepository,
             ExamBoardManager examBoardManager, ExamBoardRegistrationRepository registrationRepository,
-            ExamBoardRepository examBoardRepository, ApplicationEventPublisher eventPublisher, TransactionOperations transactionOperations, Clock clock) {
+            ExamBoardRepository examBoardRepository, ExamBoardInstructorRepository examBoardInstructorRepository,
+            ApplicationEventPublisher eventPublisher, TransactionOperations transactionOperations, Clock clock) {
         this.closureReview = closureReview;
         this.reminderRepository = reminderRepository;
         this.examBoardManager = examBoardManager;
         this.registrationRepository = registrationRepository;
         this.examBoardRepository = examBoardRepository;
+        this.examBoardInstructorRepository = examBoardInstructorRepository;
         this.eventPublisher = eventPublisher;
         this.transactionOperations = transactionOperations;
         this.clock = clock;
@@ -111,6 +118,10 @@ public class TermEndEscalationJob {
                 if (current == null || current.getStatus() != ExamBoardStatus.SCHEDULED) {
                     return false;
                 }
+                if (!examBoardInstructorRepository.existsByExamBoardId(boardId)) {
+                    announceWithoutTribunal(current);
+                    return false;
+                }
                 long absentBefore = registrationRepository.countByExamBoardIdAndStatus(boardId, ExamBoardRegistrationStatus.ABSENT);
                 ExamBoard closed = examBoardManager.close(boardId);
                 long absentNow = registrationRepository.countByExamBoardIdAndStatus(boardId, ExamBoardRegistrationStatus.ABSENT) - absentBefore;
@@ -118,9 +129,23 @@ public class TermEndEscalationJob {
                 eventPublisher.publishEvent(ExamBoardAutoClosedEvent.of(boardId, subjectName, absentNow));
                 return true;
             }));
+        } catch (ExamBoardWithoutTribunalException exception) {
+            log.warn("La mesa vencida sigue sin tribunal y no se puede cerrar: examBoardId={}", boardId);
+            return false;
         } catch (RuntimeException exception) {
             log.error("No se pudo cerrar la mesa vencida: examBoardId={}", boardId, exception);
             return false;
         }
+    }
+
+    private void announceWithoutTribunal(ExamBoard board) {
+        SectionKind kind = board.getSubject() != null ? SectionKind.PROGRAM : SectionKind.COURSE;
+        int inserted = reminderRepository.insertIfAbsent(kind, board.getId(), WITHOUT_TRIBUNAL_MARKER, LocalDateTime.now(clock));
+        if (inserted == 0) {
+            return;
+        }
+        String subjectName = board.getSubject() != null ? board.getSubject().getName() : board.getCourseSubject().getName();
+        log.warn("La mesa vencida no se cierra sola porque no tiene tribunal: examBoardId={}", board.getId());
+        eventPublisher.publishEvent(ExamBoardWithoutTribunalEvent.of(board.getId(), subjectName));
     }
 }

@@ -13,6 +13,7 @@ import com.red_escuela.backend.evaluation.events.ExamBoardAutoClosedEvent;
 import com.red_escuela.backend.evaluation.repository.CommissionClosureReminderRepository;
 import com.red_escuela.backend.evaluation.repository.CommissionClosureRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardAuditRepository;
+import com.red_escuela.backend.evaluation.repository.ExamBoardInstructorRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRegistrationRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRepository;
 import com.red_escuela.backend.evaluation.repository.SectionGradeItemPublicationRepository;
@@ -60,6 +61,7 @@ class ExamBoardReopenAndAutoCloseCycleTest {
 
     private final ExamBoardRepository examBoardRepository = mock(ExamBoardRepository.class);
     private final ExamBoardAuditRepository auditRepository = mock(ExamBoardAuditRepository.class);
+    private final ExamBoardInstructorRepository instructorRepository = mock(ExamBoardInstructorRepository.class);
     private final ExamBoardRegistrationRepository registrationRepository = mock(ExamBoardRegistrationRepository.class);
     private final ExamBoardManager examBoardManager = mock(ExamBoardManager.class);
     private final ApplicationEventPublisher eventPublisher = mock(ApplicationEventPublisher.class);
@@ -69,9 +71,9 @@ class ExamBoardReopenAndAutoCloseCycleTest {
 
     private final TermEndClosureReview review = new TermEndClosureReview(mock(EndedSectionFinder.class), mock(CommissionClosureRepository.class),
             mock(SectionGradeItemPublicationRepository.class), mock(ClosureNotificationTargetsFinder.class), examBoardRepository,
-            registrationRepository, auditRepository);
+            registrationRepository, auditRepository, instructorRepository);
     private final TermEndEscalationJob job = new TermEndEscalationJob(review, mock(CommissionClosureReminderRepository.class),
-            examBoardManager, registrationRepository, examBoardRepository, eventPublisher, TransactionOperations.withoutTransaction(), clock);
+            examBoardManager, registrationRepository, examBoardRepository, instructorRepository, eventPublisher, TransactionOperations.withoutTransaction(), clock);
     private final ExamBoardReopener reopener = new ExamBoardReopener(examBoardRepository, auditRepository, actorFinder, clock);
 
     private void wire() {
@@ -94,6 +96,7 @@ class ExamBoardReopenAndAutoCloseCycleTest {
         when(auditRepository.findLastOccurredAt(5L, ExamBoardAuditAction.REOPENED))
                 .thenAnswer(call -> audits.stream().map(ExamBoardAudit::getOccurredAt).max(LocalDateTime::compareTo));
         when(actorFinder.currentPersonId()).thenReturn(77L);
+        when(instructorRepository.existsByExamBoardId(5L)).thenReturn(true);
         when(examBoardManager.close(5L)).thenAnswer(call -> {
             board.setStatus(ExamBoardStatus.CLOSED);
             return board;

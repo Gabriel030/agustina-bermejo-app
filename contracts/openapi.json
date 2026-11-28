@@ -12916,9 +12916,12 @@
           },
           "subjectName" : {
             "type" : "string"
+          },
+          "withoutTribunal" : {
+            "type" : "boolean"
           }
         },
-        "required" : [ "daysAfterExamDate", "examBoardId", "examDate", "graceOver", "registeredCount", "subjectName" ],
+        "required" : [ "daysAfterExamDate", "examBoardId", "examDate", "graceOver", "registeredCount", "subjectName", "withoutTribunal" ],
         "type" : "object"
       },
       "PendingLegalAcceptancesResponse" : {

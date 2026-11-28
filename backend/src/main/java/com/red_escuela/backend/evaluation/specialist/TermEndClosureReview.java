@@ -15,6 +15,7 @@ import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
 import com.red_escuela.backend.evaluation.repository.CommissionClosureRepository;
 import com.red_escuela.backend.evaluation.entity.ExamBoardAuditAction;
 import com.red_escuela.backend.evaluation.repository.ExamBoardAuditRepository;
+import com.red_escuela.backend.evaluation.repository.ExamBoardInstructorRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRegistrationRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRepository;
 import com.red_escuela.backend.evaluation.repository.SectionGradeItemPublicationRepository;
@@ -39,11 +40,12 @@ public class TermEndClosureReview {
     private final ExamBoardRepository examBoardRepository;
     private final ExamBoardRegistrationRepository registrationRepository;
     private final ExamBoardAuditRepository examBoardAuditRepository;
+    private final ExamBoardInstructorRepository examBoardInstructorRepository;
 
     public TermEndClosureReview(EndedSectionFinder endedSectionFinder, CommissionClosureRepository closureRepository,
             SectionGradeItemPublicationRepository publicationRepository, ClosureNotificationTargetsFinder targetsFinder,
             ExamBoardRepository examBoardRepository, ExamBoardRegistrationRepository registrationRepository,
-            ExamBoardAuditRepository examBoardAuditRepository) {
+            ExamBoardAuditRepository examBoardAuditRepository, ExamBoardInstructorRepository examBoardInstructorRepository) {
         this.endedSectionFinder = endedSectionFinder;
         this.closureRepository = closureRepository;
         this.publicationRepository = publicationRepository;
@@ -51,6 +53,7 @@ public class TermEndClosureReview {
         this.examBoardRepository = examBoardRepository;
         this.registrationRepository = registrationRepository;
         this.examBoardAuditRepository = examBoardAuditRepository;
+        this.examBoardInstructorRepository = examBoardInstructorRepository;
     }
 
     public PendingTermClosuresResponse review(LocalDate today) {
@@ -98,6 +101,7 @@ public class TermEndClosureReview {
         String subjectName = board.getSubject() != null ? board.getSubject().getName() : board.getCourseSubject().getName();
         return new PendingExamBoardClosureResponse(board.getId(), subjectName, board.getExamDate(),
                 ChronoUnit.DAYS.between(referenceDay, today), TermEndGracePolicy.isGraceOver(referenceDay, today),
-                registrationRepository.countByExamBoardIdAndStatus(board.getId(), ExamBoardRegistrationStatus.REGISTERED));
+                registrationRepository.countByExamBoardIdAndStatus(board.getId(), ExamBoardRegistrationStatus.REGISTERED),
+                !examBoardInstructorRepository.existsByExamBoardId(board.getId()));
     }
 }
