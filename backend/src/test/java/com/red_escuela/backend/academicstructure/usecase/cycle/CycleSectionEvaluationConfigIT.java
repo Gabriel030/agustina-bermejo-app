@@ -39,8 +39,9 @@ class CycleSectionEvaluationConfigIT extends AbstractIntegrationTest {
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             var fixtures = new CycleTestFixtures(entityManager);
             var term = fixtures.term(2100 + (int) (System.nanoTime() % 800));
-            cycleId = fixtures.programCycle(fixtures.program(), term, AcademicOfferingCycleStatus.DRAFT).getId();
-            subjectId = fixtures.subject().getId();
+            var program = fixtures.program();
+            cycleId = fixtures.programCycle(program, term, AcademicOfferingCycleStatus.DRAFT).getId();
+            subjectId = fixtures.subjectInPlanOf(program).getId();
         });
     }
 
