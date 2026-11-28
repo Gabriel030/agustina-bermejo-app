@@ -10,6 +10,7 @@ import org.springframework.boot.ApplicationRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.env.Environment;
+import com.red_escuela.backend.identity.api.CohortResponsibleAssigner;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClientResponseException;
@@ -57,9 +58,11 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
 
     private final Environment environment;
     private final JdbcTemplate jdbcTemplate;
+    private final CohortResponsibleAssigner preceptorAssigner;
 
-    public DemoEducationalSeedRunner(Environment environment, JdbcTemplate jdbcTemplate) {
+    public DemoEducationalSeedRunner(Environment environment, JdbcTemplate jdbcTemplate, CohortResponsibleAssigner preceptorAssigner) {
         this.environment = environment;
+        this.preceptorAssigner = preceptorAssigner;
         this.jdbcTemplate = jdbcTemplate;
     }
 
@@ -209,7 +212,13 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
         long sectionId = api.post(ADMIN, "/academic-offering-cycles/" + cycleId + "/sections", section).asLong();
         api.put(ADMIN, "/program-sections/" + sectionId, Map.of("evaluationSchemeId", schemeId));
         api.post(ADMIN, "/program-sections/" + sectionId + "/instructors", Map.of("instructorId", instructorId, "role", "LEAD"));
+        long preceptorId = findPreceptorId();
+        preceptorAssigner.assignToSubjectSection(sectionId, List.of(preceptorId), preceptorId);
         return sectionId;
+    }
+
+    private long findPreceptorId() {
+        return jdbcTemplate.queryForObject("select id from person where username = 'preceptor.demo'", Long.class);
     }
 
     private long findStudentId(DemoApiClient api, String username) {
@@ -223,8 +232,12 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
 
     private long createOpenCohort(DemoApiClient api, long programId, long termId) {
         long templateId = api.post(DIRECTOR, "/programs/" + programId + "/year-billing-templates", Map.of("termId", termId)).get("id").asLong();
-        return api.post(ADMIN, "/year-billing-templates/" + templateId + "/cohorts",
-                Map.of("intake", "FIRST", "admissionStart", "2020-01-01", "admissionEnd", "2099-12-31", "cursadaStart", "2026-03-01")).get("id").asLong();
+        long preceptorId = jdbcTemplate.queryForObject("select id from person where username = 'preceptor.demo'", Long.class);
+        long cohortId = api.post(ADMIN, "/year-billing-templates/" + templateId + "/cohorts",
+                Map.of("intake", "FIRST", "admissionStart", "2020-01-01", "admissionEnd", "2099-12-31", "cursadaStart", "2026-03-01",
+                        "responsiblePreceptorIds", List.of(preceptorId))).get("id").asLong();
+        jdbcTemplate.update("update program_cohort set opened_at = now() where id = ?", cohortId);
+        return cohortId;
     }
 
     private void enrollRegularStudent(DemoApiClient api, long studentId, long programId, long termId, List<Long> sectionIds) {
@@ -276,7 +289,8 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
         api.post(ADMIN, "/exam-boards/" + examBoardId + "/tribunal", Map.of("instructorId", board.instructorId()));
         api.post(ADMIN, "/exam-boards/" + examBoardId + "/registrations",
                 Map.of("examBoardId", examBoardId, board.registrationKey(), board.enrollmentId()));
-        api.post(ADMIN, "/exam-boards/" + examBoardId + "/reschedule", Map.of("examDate", finalExamDate(api)));
+        jdbcTemplate.update("update exam_board set exam_date = ? where id = ?",
+                java.sql.Timestamp.valueOf(LocalDate.parse(finalExamDate(api).substring(0, 10)).atStartOfDay()), examBoardId);
         return examBoardId;
     }
 
@@ -349,6 +363,8 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
         course.put("capacity", 20);
         course.put("price", Map.of("amount", "15000", "currency", "ARS"));
         course.put("durationMonths", 3);
+        long preceptorId = jdbcTemplate.queryForObject("select id from person where username = 'preceptor.demo'", Long.class);
+        course.put("responsiblePreceptorIds", List.of(preceptorId));
         long courseId = api.post(ADMIN, "/courses", course).get("id").asLong();
         long cycleId = createCycle(api, "courseId", courseId, termId);
         List<Long> moduleSectionIds = new ArrayList<>();
@@ -365,6 +381,7 @@ public class DemoEducationalSeedRunner implements ApplicationRunner {
             long sectionId = api.post(ADMIN, "/academic-offering-cycles/" + cycleId + "/sections", section).asLong();
             api.put(ADMIN, "/course-sections/" + sectionId, Map.of("evaluationSchemeId", schemeId));
             api.post(ADMIN, "/course-sections/" + sectionId + "/instructors", Map.of("instructorId", instructorId, "role", "LEAD"));
+            preceptorAssigner.assignToCourseSection(sectionId, List.of(preceptorId), preceptorId);
             moduleSectionIds.add(sectionId);
         }
         approveCycle(api, cycleId);

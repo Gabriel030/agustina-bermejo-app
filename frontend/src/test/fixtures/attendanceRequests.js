@@ -17,6 +17,9 @@ export function attendanceChangeRequest(overrides = {}) {
     decidedByName: null,
     revertibleUntil: null,
     revertible: false,
+    revertedByName: null,
+    revertedAt: null,
+    revertReason: null,
     ...overrides,
   };
 }

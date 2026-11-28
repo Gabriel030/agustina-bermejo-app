@@ -20,14 +20,17 @@ public class BillingTransitionPreviewer {
     private final PlatformFeatureRepository featureRepository;
     private final BillingShutdownImpactPort impactPort;
     private final FeatureTransitionConfirmationSigner confirmationSigner;
+    private final BillingActivationCohortGuard activationCohortGuard;
 
     public BillingTransitionPreviewer(
             PlatformFeatureRepository featureRepository,
             BillingShutdownImpactPort impactPort,
-            FeatureTransitionConfirmationSigner confirmationSigner) {
+            FeatureTransitionConfirmationSigner confirmationSigner,
+            BillingActivationCohortGuard activationCohortGuard) {
         this.featureRepository = featureRepository;
         this.impactPort = impactPort;
         this.confirmationSigner = confirmationSigner;
+        this.activationCohortGuard = activationCohortGuard;
     }
 
     @Transactional(readOnly = true)
@@ -42,6 +45,7 @@ public class BillingTransitionPreviewer {
         if (current == target) {
             throw new FeatureAlreadyInRequestedStateException(code);
         }
+        activationCohortGuard.requireNoCohortsWithoutTemplate(current, target);
         IssuedTransitionConfirmation confirmation = confirmationSigner.issueConfirmation(code, current, target, feature.getVersion());
         return new FeatureTransitionPreview(code, current, target, feature.getVersion(), impactPort.describeBillingShutdownImpact(),
                 confirmation.token(), confirmation.expiresAt());

@@ -18,6 +18,7 @@ import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -26,6 +27,7 @@ import static org.mockito.ArgumentMatchers.any;
 @SpringBootTest
 @ActiveProfiles("test")
 class CohortTransactionBoundaryIT extends AbstractStudentDiscountIssuingIT {
+    @org.springframework.beans.factory.annotation.Autowired private com.red_escuela.backend.testsupport.PreceptorTestFactory preceptorTestFactory;
 
     private static final String[] OBSERVED_TABLES = {"program_cohort", "configuration_version", "authorization_request"};
 
@@ -70,7 +72,7 @@ class CohortTransactionBoundaryIT extends AbstractStudentDiscountIssuingIT {
                 return outcome;
             }).when(operationPipeline).runOperation(any(), any());
             createCohort.create(template, new CreateProgramCohortRequest(CohortIntake.SECOND, LocalDate.of(2027, 1, 1), LocalDate.of(2027, 2, 1),
-                    LocalDate.of(2027, 8, 1), Percentage.ofPoints(new BigDecimal("20"))));
+                    LocalDate.of(2027, 8, 1), List.of(preceptorTestFactory.createPreceptorId()), Percentage.ofPoints(new BigDecimal("20"))));
         });
     }
 
@@ -135,7 +137,8 @@ class CohortTransactionBoundaryIT extends AbstractStudentDiscountIssuingIT {
     }
 
     private CreateProgramCohortRequest secondIntakeRequest() {
-        return new CreateProgramCohortRequest(CohortIntake.SECOND, LocalDate.of(2027, 1, 1), LocalDate.of(2027, 2, 1), LocalDate.of(2027, 8, 1));
+        return new CreateProgramCohortRequest(CohortIntake.SECOND, LocalDate.of(2027, 1, 1), LocalDate.of(2027, 2, 1), LocalDate.of(2027, 8, 1),
+                List.of(preceptorTestFactory.createPreceptorId()));
     }
 
     private long count(String table) {

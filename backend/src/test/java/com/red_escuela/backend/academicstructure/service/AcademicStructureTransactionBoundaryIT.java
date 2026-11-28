@@ -65,8 +65,9 @@ class AcademicStructureTransactionBoundaryIT extends AbstractIntegrationTest {
         new TransactionTemplate(transactionManager).executeWithoutResult(status -> {
             var fixtures = new CycleTestFixtures(entityManager);
             var term = fixtures.term(2040);
-            ids[0] = fixtures.programCycle(fixtures.program(), term, AcademicOfferingCycleStatus.DRAFT).getId();
-            ids[1] = fixtures.subject().getId();
+            var program = fixtures.program();
+            ids[0] = fixtures.programCycle(program, term, AcademicOfferingCycleStatus.DRAFT).getId();
+            ids[1] = fixtures.subjectInPlanOf(program).getId();
             ids[2] = fixtures.classroom(30).getId();
             ids[3] = fixtures.classroom(5).getId();
         });

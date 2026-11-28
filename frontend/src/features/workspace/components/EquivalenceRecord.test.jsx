@@ -320,6 +320,7 @@ describe('equivalence record form', () => {
     ['EQUIVALENCE_ALREADY_ACTIVE', 'La materia ya tiene una equivalencia vigente.'],
     ['SUBJECT_ALREADY_APPROVED', 'La materia ya está aprobada y no se puede volver a cursar.'],
     ['SUBJECT_IN_PROGRESS', 'La materia se está cursando: primero hay que dar de baja la cursada.'],
+    ['SUBJECT_REGULAR', 'La materia está regular: no se puede reconocer por equivalencia.'],
     ['ENROLLMENT_NOT_ACTIVE', 'La inscripción a la carrera no está activa.'],
   ])('shows %s as a conflict, refreshes the data and offers Cerrar', async (code, message) => {
     const user = userEvent.setup();

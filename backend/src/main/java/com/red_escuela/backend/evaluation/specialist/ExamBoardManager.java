@@ -11,6 +11,7 @@ import com.red_escuela.backend.evaluation.entity.GradeItemType;
 import com.red_escuela.backend.evaluation.exception.ExamBoardCanceledException;
 import com.red_escuela.backend.evaluation.entity.ExamBoardStatus;
 import com.red_escuela.backend.evaluation.exception.ExamBoardNotFoundException;
+import com.red_escuela.backend.evaluation.exception.ExamBoardWithoutTribunalException;
 import com.red_escuela.backend.evaluation.repository.ExamBoardInstructorRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRegistrationRepository;
 import com.red_escuela.backend.evaluation.repository.ExamBoardRepository;
@@ -112,7 +113,11 @@ public class ExamBoardManager {
         if (examBoard.getStatus() == ExamBoardStatus.CANCELED) {
             throw new ExamBoardCanceledException(examBoardId);
         }
+        boolean alreadyClosed = examBoard.getStatus() == ExamBoardStatus.CLOSED;
         examBoard.close(LocalDateTime.now(clock));
+        if (!alreadyClosed && !examBoardInstructorRepository.existsByExamBoardId(examBoardId)) {
+            throw new ExamBoardWithoutTribunalException(examBoardId);
+        }
         settleRegistrations(examBoardId);
         return examBoardRepository.save(examBoard);
     }

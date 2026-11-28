@@ -5,6 +5,7 @@ import com.red_escuela.backend.academicstructure.dto.CreateCourseRequest;
 import com.red_escuela.backend.academicstructure.dto.UpdateCourseRequest;
 import com.red_escuela.backend.academicstructure.domain.CatalogArea;
 import com.red_escuela.backend.academicstructure.entity.Course;
+import com.red_escuela.backend.identity.api.CohortResponsibleAssigner;
 import com.red_escuela.backend.identity.entity.Person;
 import com.red_escuela.backend.shared.domain.StatusType;
 import com.red_escuela.backend.academicstructure.entity.Term;
@@ -36,11 +37,13 @@ public class CourseService {
     private final OfferingListPriceReader listPriceReader;
     private final CurrentPersonService currentPersonService;
     private final CapacityChangeEvents capacityChangeEvents;
+    private final CohortResponsibleAssigner responsibleAssigner;
 
     public CourseService(CourseRepository courseRepository, TermRepository termRepository,
                           OfferingPriceCatalog offeringPriceCatalog, OfferingListPriceReader listPriceReader, CurrentPersonService currentPersonService,
-                          CapacityChangeEvents capacityChangeEvents) {
+                          CapacityChangeEvents capacityChangeEvents, CohortResponsibleAssigner responsibleAssigner) {
         this.capacityChangeEvents = capacityChangeEvents;
+        this.responsibleAssigner = responsibleAssigner;
         this.courseRepository = courseRepository;
         this.termRepository = termRepository;
         this.offeringPriceCatalog = offeringPriceCatalog;
@@ -72,6 +75,7 @@ public class CourseService {
         Course saved = courseRepository.save(course);
 
         Person actor = currentPersonService.resolveCurrentPerson();
+        responsibleAssigner.assignToCourse(saved.getId(), request.responsiblePreceptorIds(), actor.getId());
         offeringPriceCatalog.registerInitialOfferingPrice(OfferingReference.ofCourse(saved.getId()), OfferingFee.MONTHLY_INSTALLMENT, request.price(), actor.getId());
         return withListPrice(saved);
     }
