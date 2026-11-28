@@ -417,6 +417,7 @@ Cada excepción concreta del backend. El código sale del nombre de la clase; la
 | `ATTENDANCE_CHANGE_REQUEST_NOT_DECIDED` | no | `AttendanceChangeRequestNotDecidedException` | attendance |
 | `ATTENDANCE_DECISION_REVERT_WINDOW_EXPIRED` | no | `AttendanceDecisionRevertWindowExpiredException` | attendance |
 | `AUTHORIZATION_PENDING` | no | `AuthorizationPendingException` | billing |
+| `BILLING_ACTIVATION_BLOCKED_BY_COHORTS_WITHOUT_TEMPLATE` | no | `BillingActivationBlockedByCohortsWithoutTemplateException` | platform |
 | `BILLING_CONFIGURATION_FROZEN` | no | `BillingConfigurationFrozenException` | billing |
 | `BILLING_MODE_NOT_OFF` | no | `BillingModeNotOffException` | dataimport |
 | `CANNOT_CHANGE_AUDIENCE_OF_SENT_ANNOUNCEMENT` | no | `CannotChangeAudienceOfSentAnnouncementException` | announcement |

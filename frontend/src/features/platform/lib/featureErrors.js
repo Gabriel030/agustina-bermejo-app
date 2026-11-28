@@ -4,6 +4,7 @@ export const STALE_FEATURE_VERSION = 'STALE_FEATURE_VERSION';
 
 const MESSAGE_BY_CODE = {
   FEATURE_ALREADY_IN_REQUESTED_STATE: 'Este módulo ya estaba en ese estado.',
+  BILLING_ACTIVATION_BLOCKED_BY_COHORTS_WITHOUT_TEMPLATE: 'No se puede activar la facturación mientras haya cohortes sin plantilla de facturación. Asignales una plantilla antes de activarla.',
   INVALID_BILLING_MODE_TRANSITION: 'Ese cambio de modo no está permitido. Volvé a empezar el cambio.',
   INVALID_TRANSITION_CONFIRMATION: 'La verificación previa venció. Volvé a empezar el cambio.',
   FEATURE_CHANGE_REASON_INVALID: 'El motivo debe tener entre 5 y 500 caracteres.',
