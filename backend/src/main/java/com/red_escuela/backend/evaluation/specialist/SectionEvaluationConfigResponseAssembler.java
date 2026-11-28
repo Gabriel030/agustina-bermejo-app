@@ -15,10 +15,13 @@ public class SectionEvaluationConfigResponseAssembler {
     private final SectionEvaluationConfigInstructorAccessChecker instructorAccess;
     private final SectionEvaluationConfigRepository configRepository;
     private final SectionEvaluationConfigDueDaysReader dueDaysReader;
+    private final SectionEvaluationSchemeLoader schemeLoader;
 
     public SectionEvaluationConfigResponseAssembler(SectionEvaluationConfigInstructorAccessChecker instructorAccess,
                                                     SectionEvaluationConfigRepository configRepository,
-                                                    SectionEvaluationConfigDueDaysReader dueDaysReader) {
+                                                    SectionEvaluationConfigDueDaysReader dueDaysReader,
+                                                    SectionEvaluationSchemeLoader schemeLoader) {
+        this.schemeLoader = schemeLoader;
         this.instructorAccess = instructorAccess;
         this.configRepository = configRepository;
         this.dueDaysReader = dueDaysReader;
@@ -26,7 +29,8 @@ public class SectionEvaluationConfigResponseAssembler {
 
     public SectionEvaluationConfigResponse assembleForStaff(SectionEvaluationConfig detachedConfig) {
         SectionEvaluationConfig config = reload(detachedConfig);
-        return SectionEvaluationConfigResponse.from(config, instructorAccess.listInstructors(SectionEvaluationConfigOwner.sectionRefOf(config)));
+        return SectionEvaluationConfigResponse.from(config, schemeLoader.ofConfig(config),
+                instructorAccess.listInstructors(SectionEvaluationConfigOwner.sectionRefOf(config)));
     }
 
     public SectionEvaluationConfigResponse assembleForInstructor(SectionEvaluationConfig detachedConfig, Long instructorId) {
@@ -34,7 +38,7 @@ public class SectionEvaluationConfigResponseAssembler {
         SectionRef section = SectionEvaluationConfigOwner.sectionRefOf(config);
         boolean isLead = instructorAccess.isLeadInstructor(section, instructorId);
         return SectionEvaluationConfigResponse.from(
-                config, instructorAccess.listInstructors(section),
+                config, schemeLoader.ofConfig(config), instructorAccess.listInstructors(section),
                 isLead && config.isEditable(), isLead && config.withEvaluationConfigDueDays(dueDaysReader.read()).canBeSubmitted(ApplicationTime.now()));
     }
 

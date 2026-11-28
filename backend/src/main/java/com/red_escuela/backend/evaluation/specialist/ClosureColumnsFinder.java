@@ -17,12 +17,14 @@ import java.util.stream.Collectors;
 @Service
 public class ClosureColumnsFinder {
 
+    private final SectionEvaluationSchemeLoader schemeLoader;
     private final SectionGradeItemPublicationRepository publicationRepository;
     private final SectionFinder sectionFinder;
     private final ApprovedCourseworkCountFinder courseworkCountFinder;
 
     public ClosureColumnsFinder(SectionGradeItemPublicationRepository publicationRepository, SectionFinder sectionFinder,
-                                ApprovedCourseworkCountFinder courseworkCountFinder) {
+                                ApprovedCourseworkCountFinder courseworkCountFinder, SectionEvaluationSchemeLoader schemeLoader) {
+        this.schemeLoader = schemeLoader;
         this.publicationRepository = publicationRepository;
         this.sectionFinder = sectionFinder;
         this.courseworkCountFinder = courseworkCountFinder;
@@ -31,8 +33,8 @@ public class ClosureColumnsFinder {
     @Transactional(readOnly = true)
     public List<ClosureSheetColumnResponse> findColumns(SectionKind kind, Long sectionId) {
         EvaluationScheme scheme = kind == SectionKind.PROGRAM
-                ? sectionFinder.findProgramSectionEntity(sectionId).getEvaluationScheme()
-                : sectionFinder.findCourseSectionEntity(sectionId).getEvaluationScheme();
+                ? schemeLoader.ofProgramSection(sectionFinder.findProgramSectionEntity(sectionId))
+                : schemeLoader.ofCourseSection(sectionFinder.findCourseSectionEntity(sectionId));
         if (scheme == null) {
             return List.of();
         }

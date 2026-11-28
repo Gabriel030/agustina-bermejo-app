@@ -36,7 +36,7 @@ class EvaluationConfigSubmissionWindowReproductionTest {
     @Test
     void submissionRemainsOpenUntilTheAnnouncedEvaluationConfigDeadline() {
         SectionEvaluationConfig config = draftConfig();
-        LocalDate announcedDeadline = SectionEvaluationConfigResponse.from(config, List.of())
+        LocalDate announcedDeadline = SectionEvaluationConfigResponse.from(config, null, List.of())
                 .withEvaluationConfigDueDays(DUE_DAYS).evaluationConfigDeadline();
         LocalDateTime insideAnnouncedWindow = TERM_START.plusDays(5).withHour(10);
 
