@@ -129,4 +129,47 @@ class InvoicePlanningCompletionFactsIT extends ReproductionFixture {
 
         assertThat(factsOf(enrollment).onlyFinalExamsLeft()).isTrue();
     }
+
+    private ProgramEnrollment enrollmentOnPlanTwoWithOneSubject(Program program, Subject planTwoSubject) {
+        Subject planOneSubject = subject("Algebra");
+        programSubject(program, planOneSubject, 4, StatusType.ACTIVE);
+        ProgramEnrollment onPlanOne = programEnrollment(student(), program, ProgramEnrollmentStatus.ENROLLED);
+        onPlanOne.getPlan().expire(LocalDate.of(2026, 7, 31), null);
+        entityManager.flush();
+        CurriculumPlan planTwo = CurriculumPlan.draftVersionOf(program, 2, "Plan 2", LocalDate.of(2026, 8, 1), 3, 6, null);
+        planTwo.activate();
+        entityManager.persist(planTwo);
+        ProgramSubject entry = new ProgramSubject();
+        entry.setProgram(program);
+        entry.setPlan(planTwo);
+        entry.setSubject(planTwoSubject);
+        entry.setCredits(6);
+        entry.setCurricularYear(1);
+        entry.setStatus(StatusType.ACTIVE);
+        entityManager.persist(entry);
+        entityManager.flush();
+        ProgramEnrollment onPlanTwo = programEnrollment(student(), program, ProgramEnrollmentStatus.ENROLLED);
+        assertThat(onPlanTwo.getPlan().getVersionNumber()).isEqualTo(2);
+        attempt(onPlanTwo, planOneSubject, EnrollmentStatus.APPROVED, "9.00");
+        return onPlanTwo;
+    }
+
+    @Test
+    void enrollmentOnPlanTwoIsNotCompletedByASubjectThatOnlyExistsInPlanOne() {
+        Program program = program(4);
+
+        ProgramEnrollment enrollment = enrollmentOnPlanTwoWithOneSubject(program, subject("Geometria"));
+
+        assertThat(factsOf(enrollment).planCompleted()).isFalse();
+    }
+
+    @Test
+    void enrollmentOnPlanTwoIsCompletedWithTheSubjectsAndCreditsOfPlanTwo() {
+        Program program = program(4);
+        Subject geometry = subject("Geometria");
+        ProgramEnrollment enrollment = enrollmentOnPlanTwoWithOneSubject(program, geometry);
+        attempt(enrollment, geometry, EnrollmentStatus.APPROVED, "8.00");
+
+        assertThat(factsOf(enrollment).planCompleted()).isTrue();
+    }
 }

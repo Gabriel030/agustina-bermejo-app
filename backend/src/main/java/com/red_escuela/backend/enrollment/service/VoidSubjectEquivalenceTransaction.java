@@ -56,7 +56,7 @@ public class VoidSubjectEquivalenceTransaction {
 
     @Transactional
     public void voidEquivalence(Long programEnrollmentId, Long equivalenceId, String rawReason) {
-        ProgramEnrollment enrollment = programEnrollmentRepository.findById(programEnrollmentId)
+        ProgramEnrollment enrollment = programEnrollmentRepository.findByIdForUpdate(programEnrollmentId)
                 .orElseThrow(() -> new ProgramEnrollmentNotFoundException(programEnrollmentId));
         SubjectEquivalence equivalence = subjectEquivalenceRepository.findById(equivalenceId)
                 .filter(found -> found.getProgramEnrollment().getId().equals(programEnrollmentId))

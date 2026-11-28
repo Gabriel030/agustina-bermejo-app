@@ -34,7 +34,7 @@ class VoidSubjectEquivalenceTransactionTest {
         enrollment.setId(1L);
         enrollment.setStatus(com.red_escuela.backend.enrollment.entity.ProgramEnrollmentStatus.ENROLLED);
         SubjectEquivalence equivalence = SubjectEquivalence.builder().id(7L).programEnrollment(enrollment).subjectId(3L).build();
-        when(enrollments.findById(1L)).thenReturn(Optional.of(enrollment));
+        when(enrollments.findByIdForUpdate(1L)).thenReturn(Optional.of(enrollment));
         when(equivalences.findById(7L)).thenReturn(Optional.of(equivalence));
         when(staff.currentStaffPersonId()).thenReturn(9L);
         when(equivalences.saveAndFlush(any())).thenThrow(new ObjectOptimisticLockingFailureException(SubjectEquivalence.class, 7L));
