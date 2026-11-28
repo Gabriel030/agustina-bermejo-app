@@ -139,6 +139,38 @@ describe('SolicitudesAsistencia resolved tab', () => {
     await waitFor(() => expect(calls.sizes).toContain(40));
   });
 
+  it('shows who reverted a request earlier on a resolved row', async () => {
+    mockResolved([
+      { ...APPROVED_CORRECTION, id: 61, studentName: 'Con reversión', revertedByName: 'Marcela Quiroga', revertedAt: '2026-11-22T10:00:00', revertReason: 'Faltaba el parte médico.' },
+      { ...APPROVED_CORRECTION, id: 62, studentName: 'Sin reversión', revertedByName: null, revertedAt: null, revertReason: null },
+    ]);
+    renderWithProviders(<SolicitudesAsistencia />, { route: '/?tab=resueltas' });
+
+    const reverted = (await screen.findByText('Con reversión')).closest('[data-testid]');
+    const plain = screen.getByText('Sin reversión').closest('[data-testid]');
+
+    expect(within(reverted).getByText('Revertida antes por Marcela Quiroga · 22/11/2026: Faltaba el parte médico.')).toBeInTheDocument();
+    expect(within(plain).queryByTestId('reversal-line')).not.toBeInTheDocument();
+  });
+
+  it('shows the reverted pill and line on a reopened pending request', async () => {
+    server.use(
+      http.get(`${API}/attendance/change-requests`, () =>
+        HttpResponse.json([
+          { ...APPROVED_CORRECTION, id: 71, studentName: 'Reabierta', status: 'PENDING', decidedAt: null, decidedByName: null, revertible: false, revertibleUntil: null, revertedByName: 'Paula Ríos', revertedAt: '2026-11-25T09:00:00', revertReason: 'Se aprobó con el alumno equivocado.' },
+        ]),
+      ),
+      http.get(`${API}/attendance/justifications`, () => HttpResponse.json({ items: [], totalElements: 0 })),
+    );
+    renderWithProviders(<SolicitudesAsistencia />);
+
+    const card = (await screen.findByText('Reabierta')).closest('[data-testid]');
+
+    expect(within(card).getByText('Revertida')).toBeInTheDocument();
+    expect(within(card).getByText('Revertida por Paula Ríos · 25/11/2026: Se aprobó con el alumno equivocado.')).toBeInTheDocument();
+    expect(within(card).getByRole('button', { name: 'Aprobar' })).toBeInTheDocument();
+  });
+
   it('offers to revert only when the backend says so and shows its deadline', async () => {
     mockResolved([
       { ...APPROVED_CORRECTION, id: 51, studentName: 'En plazo', revertible: true, revertibleUntil: '2026-12-03' },

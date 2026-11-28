@@ -92,6 +92,7 @@ function toRequestItem(s) {
     ],
     reason: s.reason,
     hasAttachment: false,
+    reversal: s.revertedAt ? { byName: s.revertedByName, at: s.revertedAt, reason: s.revertReason } : null,
   };
 }
 
@@ -133,6 +134,15 @@ function toResolvedItem(r) {
   };
 }
 
+function ReversalLine({ reversal, prefix }) {
+  return (
+    <div className="text-size-12-5 text-ink-soft" data-testid="reversal-line">
+      {prefix} {reversal.byName ?? 'sistema'} · {formatDayKey(reversal.at)}
+      {reversal.reason ? `: ${reversal.reason}` : ''}
+    </div>
+  );
+}
+
 function ResolutionFooter({ item, onRevert }) {
   const { resolution } = item;
   const pill = RESULT_PILL[resolution.result];
@@ -146,6 +156,7 @@ function ResolutionFooter({ item, onRevert }) {
           {pill?.verb} por {resolution.decidedByName ?? 'sistema'} · {formatDayKey(resolution.decidedAt)}
         </span>
       </div>
+      {item.reversal && <ReversalLine reversal={item.reversal} prefix="Revertida antes por" />}
       {resolution.result === 'REJECTED' && resolution.rejectionReason && (
         <div className="text-size-12-5">
           <span className="text-ink-faint">Motivo del rechazo: </span>
@@ -182,6 +193,7 @@ function RequestCard({ item, busy, onApprove, onReject, onRevert }) {
           <StatusPill tone={item.kind === 'justification' ? 'accent' : 'neutral'}>
             {item.kind === 'justification' ? 'Justificación' : 'Corrección'}
           </StatusPill>
+          {item.reversal && !item.resolution && <StatusPill tone="warning">Revertida</StatusPill>}
           <span className="text-size-12-5 text-ink-faint">{item.caption}</span>
         </div>
       </div>
@@ -213,6 +225,8 @@ function RequestCard({ item, busy, onApprove, onReject, onRevert }) {
             <div className="text-size-12-5 text-ink-faint">Sin adjunto</div>
           ))}
       </div>
+
+      {item.reversal && !item.resolution && <ReversalLine reversal={item.reversal} prefix="Revertida por" />}
 
       {item.resolution ? (
         <ResolutionFooter item={item} onRevert={onRevert} />
