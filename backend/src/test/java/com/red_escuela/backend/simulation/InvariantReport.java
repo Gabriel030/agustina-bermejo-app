@@ -43,11 +43,15 @@ public final class InvariantReport {
         try {
             MessageDigest sha = MessageDigest.getInstance("SHA-256");
             sha.update(("seed=" + seed + ";dailyChecks=" + dailyChecks + "\n").getBytes(StandardCharsets.UTF_8));
-            violations.forEach(violation -> sha.update((violation.detectedOn() + "|" + violation.key() + "\n").getBytes(StandardCharsets.UTF_8)));
+            violations.forEach(violation -> sha.update((violation.detectedOn() + "|" + violation.rule() + "|" + violation.factDay() + "|" + violation.studentId() + "|" + stableDetail(violation.detail()) + "\n").getBytes(StandardCharsets.UTF_8)));
             return HexFormat.of().formatHex(sha.digest());
         } catch (NoSuchAlgorithmException failure) {
             throw new IllegalStateException(failure);
         }
+    }
+
+    private static String stableDetail(String detail) {
+        return detail.replaceAll("(?<=[a-z_]) \\d+\\b", " #");
     }
 
     public String toJson() {
