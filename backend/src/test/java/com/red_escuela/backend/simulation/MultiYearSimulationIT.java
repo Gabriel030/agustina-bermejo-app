@@ -141,7 +141,7 @@ class MultiYearSimulationIT extends AbstractIntegrationTest {
         assertThat(failuresOfLastRun).isEmpty();
         assertThat(second.digest()).isEqualTo(first.digest());
         assertThat(secondInvariants.digest()).isEqualTo(firstInvariants.digest());
-        assertThat(secondInvariants.violations().stream().filter(violation -> !KNOWN_FINDINGS.contains(violation.rule())).toList()).isEmpty();
+        assertThat(secondInvariants.violations()).isEmpty();
         assertSabotageIsDetected();
     }
 
@@ -158,9 +158,6 @@ class MultiYearSimulationIT extends AbstractIntegrationTest {
         assertThat(checker.detect(AcademicInvariants.ENROLLMENT_WITHOUT_COHORT, LAST_DAY)).isEmpty();
     }
 
-    private static final Set<String> KNOWN_FINDINGS = Set.of(AcademicInvariants.GRADUATION_WITH_PENDING_SUBJECTS);
-
-    @org.junit.jupiter.api.Disabled("E34-A: una solicitud de egreso de un alumno con materias obligatorias sin aprobar queda aceptada en REQUESTED (hallazgo 4 de #1678)")
     @Test
     void graduationRequestIsOnlyAcceptedWhenEveryMandatorySubjectIsApproved() {
         assertThat(invariantReportOfLastRun.violationsOf(AcademicInvariants.GRADUATION_WITH_PENDING_SUBJECTS)).isEmpty();
